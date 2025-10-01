@@ -1,0 +1,346 @@
+import { useState, useMemo } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { ArrowLeft, TrendingUp, Info, Plus, Minus } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { useAppStore } from '@/store/useAppStore';
+import { calculateBuyImpact, calculateSellImpact } from '@/utils/bondingCurve';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer } from 'recharts';
+import { toast } from 'sonner';
+
+export default function AthleteDetail() {
+  const { slug } = useParams<{ slug: string }>();
+  const navigate = useNavigate();
+  const { athletes, wallet, trades, buyTokens, sellTokens } = useAppStore();
+  
+  const athlete = athletes.find((a) => a.slug === slug);
+  const position = athlete ? wallet.positions[athlete.id] : null;
+  const athleteTrades = trades.filter((t) => t.athleteId === athlete?.id).slice(0, 20);
+
+  const [tradeType, setTradeType] = useState<'buy' | 'sell'>('buy');
+  const [quantity, setQuantity] = useState(1);
+
+  if (!athlete) {
+    return (
+      <div className="container mx-auto px-4 py-16 text-center">
+        <h1 className="mb-4 text-2xl font-bold">Athlete not found</h1>
+        <Button onClick={() => navigate('/')}>Back to Marketplace</Button>
+      </div>
+    );
+  }
+
+  const chartData = useMemo(() => {
+    const last100Trades = athleteTrades.slice(0, 100);
+    return last100Trades.reverse().map((trade, index) => ({
+      index,
+      price: trade.price,
+      time: new Date(trade.timestamp).toLocaleTimeString(),
+    }));
+  }, [athleteTrades]);
+
+  const impact = useMemo(() => {
+    if (quantity <= 0) return null;
+    return tradeType === 'buy'
+      ? calculateBuyImpact(athlete.supply, athlete.reserve, quantity)
+      : calculateSellImpact(athlete.supply, athlete.reserve, quantity);
+  }, [tradeType, quantity, athlete]);
+
+  const handleTrade = () => {
+    try {
+      if (tradeType === 'buy') {
+        buyTokens(athlete.id, quantity);
+        toast.success(`Bought ${quantity} ${athlete.name} tokens!`);
+      } else {
+        sellTokens(athlete.id, quantity);
+        toast.success(`Sold ${quantity} ${athlete.name} tokens!`);
+      }
+      setQuantity(1);
+    } catch (error) {
+      toast.error((error as Error).message);
+    }
+  };
+
+  const canTrade = 
+    quantity > 0 && 
+    impact && 
+    (tradeType === 'buy' ? wallet.usdc >= impact.total : position && position.quantity >= quantity);
+
+  return (
+    <div className="container mx-auto px-4 py-8">
+      {/* Back Button */}
+      <Button
+        variant="ghost"
+        onClick={() => navigate('/')}
+        className="mb-6 gap-2"
+      >
+        <ArrowLeft className="h-4 w-4" />
+        Back to Marketplace
+      </Button>
+
+      <div className="grid gap-6 lg:grid-cols-3">
+        {/* Left: Profile */}
+        <Card className="glass-card">
+          <CardContent className="p-6">
+            <img
+              src={athlete.avatar}
+              alt={athlete.name}
+              className="mb-4 h-24 w-24 rounded-full ring-4 ring-primary/20"
+            />
+            <h1 className="mb-2 text-2xl font-bold">{athlete.name}</h1>
+            <Badge className="mb-4">{athlete.sport}</Badge>
+            <p className="mb-4 text-sm text-muted-foreground">{athlete.bio}</p>
+            <div className="space-y-2 text-sm">
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Location</span>
+                <span className="font-medium">{athlete.location}</span>
+              </div>
+              {athlete.socials.instagram && (
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Instagram</span>
+                  <span className="font-medium">{athlete.socials.instagram}</span>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Center: Chart & Stats */}
+        <Card className="glass-card lg:col-span-2">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle>Price Chart</CardTitle>
+              <div className="flex items-center gap-4">
+                <div className="text-right">
+                  <div className="text-3xl font-bold">${athlete.price.toFixed(2)}</div>
+                  <div
+                    className={`text-sm ${
+                      athlete.change24h >= 0 ? 'text-success' : 'text-destructive'
+                    }`}
+                  >
+                    {athlete.change24h >= 0 ? '+' : ''}
+                    {athlete.change24h.toFixed(2)}% 24h
+                  </div>
+                </div>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {/* Stats */}
+            <div className="mb-6 grid grid-cols-4 gap-4">
+              <div className="stat-card">
+                <div className="text-xs text-muted-foreground">Supply</div>
+                <div className="text-lg font-bold">{athlete.supply.toFixed(0)}</div>
+              </div>
+              <div className="stat-card">
+                <div className="text-xs text-muted-foreground">Market Cap</div>
+                <div className="text-lg font-bold">
+                  ${(athlete.marketCap / 1000).toFixed(1)}k
+                </div>
+              </div>
+              <div className="stat-card">
+                <div className="text-xs text-muted-foreground">24h Vol</div>
+                <div className="text-lg font-bold">
+                  ${(athlete.volume24h / 1000).toFixed(1)}k
+                </div>
+              </div>
+              <div className="stat-card">
+                <div className="text-xs text-muted-foreground">Reserve</div>
+                <div className="text-lg font-bold">
+                  ${(athlete.reserve / 1000).toFixed(1)}k
+                </div>
+              </div>
+            </div>
+
+            {/* Chart */}
+            <div className="h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={chartData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                  <XAxis dataKey="index" hide />
+                  <YAxis domain={['auto', 'auto']} />
+                  <RechartsTooltip
+                    contentStyle={{
+                      backgroundColor: 'hsl(var(--card))',
+                      border: '1px solid hsl(var(--border))',
+                      borderRadius: '0.5rem',
+                    }}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="price"
+                    stroke="hsl(var(--primary))"
+                    strokeWidth={2}
+                    dot={false}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Trading & Activity */}
+      <div className="mt-6 grid gap-6 lg:grid-cols-3">
+        {/* Trade Panel */}
+        <Card className="glass-card">
+          <CardHeader>
+            <CardTitle>Trade</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <Tabs value={tradeType} onValueChange={(v) => setTradeType(v as 'buy' | 'sell')}>
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="buy">Buy</TabsTrigger>
+                <TabsTrigger value="sell">Sell</TabsTrigger>
+              </TabsList>
+            </Tabs>
+
+            {/* Quantity Input */}
+            <div>
+              <label className="mb-2 block text-sm font-medium">Quantity</label>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                >
+                  <Minus className="h-4 w-4" />
+                </Button>
+                <Input
+                  type="number"
+                  min="1"
+                  value={quantity}
+                  onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
+                  className="text-center"
+                />
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => setQuantity(quantity + 1)}
+                >
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+
+            {/* Impact Preview */}
+            {impact && (
+              <div className="space-y-2 rounded-lg bg-muted/50 p-4 text-sm">
+                <div className="flex justify-between">
+                  <span>Avg Price</span>
+                  <span className="font-medium">${impact.avgPrice.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Subtotal</span>
+                  <span className="font-medium">${impact.subtotal.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Fee (3%)</span>
+                  <span className="font-medium">${impact.fee.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between border-t border-border pt-2 font-bold">
+                  <span>Total</span>
+                  <span>${impact.total.toFixed(2)}</span>
+                </div>
+                <div className="flex items-center justify-between text-xs">
+                  <span>Price Impact</span>
+                  <span
+                    className={
+                      Math.abs(impact.priceImpact) > 5
+                        ? 'text-destructive'
+                        : 'text-muted-foreground'
+                    }
+                  >
+                    {impact.priceImpact > 0 ? '+' : ''}
+                    {impact.priceImpact.toFixed(2)}%
+                  </span>
+                </div>
+              </div>
+            )}
+
+            {/* Wallet Info */}
+            <div className="space-y-2 text-sm">
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Your USDC</span>
+                <span className="font-medium">${wallet.usdc.toFixed(2)}</span>
+              </div>
+              {position && (
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Your Tokens</span>
+                  <span className="font-medium">{position.quantity.toFixed(2)}</span>
+                </div>
+              )}
+            </div>
+
+            <Button
+              className="w-full"
+              disabled={!canTrade}
+              onClick={handleTrade}
+            >
+              {tradeType === 'buy' ? 'Buy' : 'Sell'} {quantity} Token{quantity > 1 ? 's' : ''}
+            </Button>
+
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button variant="ghost" size="sm" className="w-full gap-2">
+                    <Info className="h-4 w-4" />
+                    What is this curve?
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent className="max-w-xs">
+                  <p>
+                    This uses a quadratic bonding curve where Price = (Supply²) / K. As more
+                    tokens are bought, the price increases exponentially. This is a simulation
+                    for educational purposes only.
+                  </p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </CardContent>
+        </Card>
+
+        {/* Activity Feed */}
+        <Card className="glass-card lg:col-span-2">
+          <CardHeader>
+            <CardTitle>Recent Activity</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              {athleteTrades.length === 0 ? (
+                <div className="py-8 text-center text-muted-foreground">
+                  No trades yet
+                </div>
+              ) : (
+                athleteTrades.map((trade) => (
+                  <div
+                    key={trade.id}
+                    className="flex items-center justify-between rounded-lg border border-border/50 p-3 text-sm"
+                  >
+                    <div className="flex items-center gap-3">
+                      <Badge variant={trade.type === 'buy' ? 'default' : 'secondary'}>
+                        {trade.type}
+                      </Badge>
+                      <span>
+                        {trade.quantity.toFixed(2)} tokens @ ${trade.price.toFixed(2)}
+                      </span>
+                    </div>
+                    <div className="text-right">
+                      <div className="font-medium">${trade.total.toFixed(2)}</div>
+                      <div className="text-xs text-muted-foreground">
+                        {new Date(trade.timestamp).toLocaleString()}
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+}
