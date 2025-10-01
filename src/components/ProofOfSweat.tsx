@@ -8,6 +8,9 @@ interface ProofOfSweatProps {
 }
 
 export default function ProofOfSweat({ workouts }: ProofOfSweatProps) {
+  // Safety check for undefined workouts
+  const safeWorkouts = workouts || [];
+  
   const getWorkoutIcon = (type: Workout['type']) => {
     switch (type) {
       case 'Run':
@@ -49,13 +52,13 @@ export default function ProofOfSweat({ workouts }: ProofOfSweatProps) {
         </CardTitle>
       </CardHeader>
       <CardContent>
-        {workouts.length === 0 ? (
+        {safeWorkouts.length === 0 ? (
           <div className="py-8 text-center text-muted-foreground">
             No workouts yet
           </div>
         ) : (
           <div className="space-y-3">
-            {workouts.map((workout) => (
+            {safeWorkouts.map((workout) => (
               <div
                 key={workout.id}
                 className="group relative overflow-hidden rounded-xl border border-border/50 bg-card/50 p-4 transition-all hover:border-primary/30 hover:bg-card/80"
