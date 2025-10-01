@@ -20,6 +20,7 @@ export interface Athlete {
   athleteRevenue: number;
   change24h: number;
   volume24h: number;
+  workouts: Workout[];
 }
 
 export interface Trade {

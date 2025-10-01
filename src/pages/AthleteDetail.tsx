@@ -11,6 +11,7 @@ import { useAppStore } from '@/store/useAppStore';
 import { calculateBuyImpact, calculateSellImpact } from '@/utils/bondingCurve';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer } from 'recharts';
 import { toast } from 'sonner';
+import ProofOfSweat from '@/components/ProofOfSweat';
 
 export default function AthleteDetail() {
   const { slug } = useParams<{ slug: string }>();
@@ -183,7 +184,7 @@ export default function AthleteDetail() {
         </Card>
       </div>
 
-      {/* Trading & Activity */}
+      {/* Proof of Sweat & Trading */}
       <div className="mt-6 grid gap-6 lg:grid-cols-3">
         {/* Trade Panel */}
         <Card className="glass-card">
@@ -303,10 +304,17 @@ export default function AthleteDetail() {
           </CardContent>
         </Card>
 
-        {/* Activity Feed */}
-        <Card className="glass-card lg:col-span-2">
+        {/* Proof of Sweat */}
+        <div className="lg:col-span-2">
+          <ProofOfSweat workouts={athlete.workouts} />
+        </div>
+      </div>
+
+      {/* Trading Activity Feed */}
+      <div className="mt-6">
+        <Card className="glass-card">
           <CardHeader>
-            <CardTitle>Recent Activity</CardTitle>
+            <CardTitle>Recent Trades</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-2">

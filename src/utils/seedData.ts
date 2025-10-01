@@ -1,13 +1,21 @@
-import { Athlete, Trade, Wallet, UserProfile } from '@/types';
+import { Athlete, Trade, Wallet, UserProfile, Workout } from '@/types';
 import { calculatePrice, generatePriceHistory } from './bondingCurve';
+import nilsAvatar from '@/assets/athletes/nils.jpg';
+import maraAvatar from '@/assets/athletes/mara.jpg';
+import leoAvatar from '@/assets/athletes/leo.jpg';
+import avaAvatar from '@/assets/athletes/ava.jpg';
+import kaiAvatar from '@/assets/athletes/kai.jpg';
+import rioAvatar from '@/assets/athletes/rio.jpg';
+import zaraAvatar from '@/assets/athletes/zara.jpg';
+import maxAvatar from '@/assets/athletes/max.jpg';
 
-const ATHLETE_DATA: Omit<Athlete, 'supply' | 'reserve' | 'price' | 'marketCap' | 'athleteRevenue' | 'change24h' | 'volume24h'>[] = [
+const ATHLETE_DATA: Omit<Athlete, 'supply' | 'reserve' | 'price' | 'marketCap' | 'athleteRevenue' | 'change24h' | 'volume24h' | 'workouts'>[] = [
   {
     id: '1',
     slug: 'nils',
     name: 'Nils Bergström',
     sport: 'Running',
-    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=nils',
+    avatar: nilsAvatar,
     bio: 'Marathon specialist with 2:15 PR. Training for Berlin 2025.',
     location: 'Stockholm, Sweden',
     socials: { instagram: '@nilsruns', strava: 'nils-bergstrom' },
@@ -17,7 +25,7 @@ const ATHLETE_DATA: Omit<Athlete, 'supply' | 'reserve' | 'price' | 'marketCap' |
     slug: 'mara',
     name: 'Mara Chen',
     sport: 'HYROX',
-    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=mara',
+    avatar: maraAvatar,
     bio: 'Elite HYROX athlete. 2x World Championships podium.',
     location: 'Singapore',
     socials: { instagram: '@marahyrox', twitter: '@marac' },
@@ -27,7 +35,7 @@ const ATHLETE_DATA: Omit<Athlete, 'supply' | 'reserve' | 'price' | 'marketCap' |
     slug: 'leo',
     name: 'Leo Martinez',
     sport: 'Cycling',
-    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=leo',
+    avatar: leoAvatar,
     bio: 'Professional cyclist. Climbing specialist, mountain lover.',
     location: 'Barcelona, Spain',
     socials: { instagram: '@leocycles', strava: 'leo-martinez' },
@@ -37,7 +45,7 @@ const ATHLETE_DATA: Omit<Athlete, 'supply' | 'reserve' | 'price' | 'marketCap' |
     slug: 'ava',
     name: 'Ava Thompson',
     sport: 'Triathlon',
-    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=ava',
+    avatar: avaAvatar,
     bio: 'Ironman 70.3 champion. Swim-bike-run enthusiast.',
     location: 'Boulder, USA',
     socials: { instagram: '@avatri', strava: 'ava-thompson' },
@@ -47,7 +55,7 @@ const ATHLETE_DATA: Omit<Athlete, 'supply' | 'reserve' | 'price' | 'marketCap' |
     slug: 'kai',
     name: 'Kai Anderson',
     sport: 'CrossFit',
-    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=kai',
+    avatar: kaiAvatar,
     bio: 'CrossFit Games veteran. Strength meets conditioning.',
     location: 'Auckland, New Zealand',
     socials: { instagram: '@kaicf', twitter: '@kaianderson' },
@@ -57,7 +65,7 @@ const ATHLETE_DATA: Omit<Athlete, 'supply' | 'reserve' | 'price' | 'marketCap' |
     slug: 'rio',
     name: 'Rio Silva',
     sport: 'Swimming',
-    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=rio',
+    avatar: rioAvatar,
     bio: 'Olympic swimmer. 100m freestyle specialist.',
     location: 'Rio de Janeiro, Brazil',
     socials: { instagram: '@rioswims' },
@@ -67,7 +75,7 @@ const ATHLETE_DATA: Omit<Athlete, 'supply' | 'reserve' | 'price' | 'marketCap' |
     slug: 'zara',
     name: 'Zara Williams',
     sport: 'Trail Run',
-    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=zara',
+    avatar: zaraAvatar,
     bio: 'Ultra-runner. UTMB finisher. Mountains are my playground.',
     location: 'Chamonix, France',
     socials: { instagram: '@zaratrails', strava: 'zara-williams' },
@@ -77,12 +85,67 @@ const ATHLETE_DATA: Omit<Athlete, 'supply' | 'reserve' | 'price' | 'marketCap' |
     slug: 'max',
     name: 'Max Jensen',
     sport: 'Rowing',
-    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=max',
+    avatar: maxAvatar,
     bio: 'Competitive rower. 2k PR: 6:15. Erg life.',
     location: 'Copenhagen, Denmark',
     socials: { instagram: '@maxrows', twitter: '@maxjensen' },
   },
 ];
+
+function generateWorkoutsForAthlete(athleteId: string, sport: string): Workout[] {
+  const now = Date.now();
+  const dayMs = 24 * 60 * 60 * 1000;
+  const workouts: Workout[] = [];
+  
+  const workoutTypes: Record<string, string[]> = {
+    'Running': ['Run', 'Run', 'Run', 'Strength'],
+    'HYROX': ['HYROX', 'Strength', 'Run'],
+    'Cycling': ['Bike', 'Bike', 'Strength'],
+    'Triathlon': ['Swim', 'Bike', 'Run', 'Strength'],
+    'CrossFit': ['Strength', 'Strength', 'Other'],
+    'Swimming': ['Swim', 'Swim', 'Strength'],
+    'Trail Run': ['Run', 'Run', 'Strength'],
+    'Rowing': ['Other', 'Strength', 'Other'],
+  };
+
+  const types = workoutTypes[sport] || ['Other', 'Strength'];
+  
+  // Generate 5-8 recent workouts
+  const numWorkouts = Math.floor(Math.random() * 4) + 5;
+  
+  for (let i = 0; i < numWorkouts; i++) {
+    const type = types[Math.floor(Math.random() * types.length)] as Workout['type'];
+    const daysAgo = i * (Math.random() * 2 + 1); // 1-3 days apart
+    const duration = Math.floor(Math.random() * 60) + 30; // 30-90 min
+    const distance = type === 'Run' || type === 'Bike' ? Math.random() * 15 + 5 : undefined;
+    const pace = type === 'Run' && distance ? `${Math.floor(4 + Math.random() * 2)}:${Math.floor(Math.random() * 60).toString().padStart(2, '0')}/km` : undefined;
+    const speed = type === 'Bike' && distance ? `${(15 + Math.random() * 10).toFixed(1)} km/h` : undefined;
+    const rpe = Math.floor(Math.random() * 3) + 6; // 6-9
+
+    const notes = [
+      'Felt great today! Perfect conditions.',
+      'Tough session but pushed through.',
+      'Easy recovery day.',
+      'New PR! Feeling strong.',
+      'Good progress on technique.',
+      'Solid effort, ready for more.',
+    ];
+
+    workouts.push({
+      id: `${athleteId}-workout-${i}`,
+      date: new Date(now - daysAgo * dayMs).toISOString().split('T')[0],
+      type,
+      distance,
+      duration,
+      pace,
+      speed,
+      rpe,
+      notes: notes[Math.floor(Math.random() * notes.length)],
+    });
+  }
+
+  return workouts.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+}
 
 export function generateSeedAthletes(): Athlete[] {
   return ATHLETE_DATA.map((athlete, index) => {
@@ -104,6 +167,7 @@ export function generateSeedAthletes(): Athlete[] {
       athleteRevenue: Math.random() * 500 + 100,
       change24h,
       volume24h,
+      workouts: generateWorkoutsForAthlete(athlete.id, athlete.sport),
     };
   });
 }
