@@ -114,8 +114,8 @@ export default function Landing() {
         <Card className="max-w-4xl mx-auto overflow-hidden">
           <CardContent className="p-0">
             <img 
-              src="https://images.unsplash.com/photo-1461896836934-ffe607ba8211?w=1200&h=600&fit=crop" 
-              alt="PodiumX Platform Preview" 
+              src="https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=1200&h=600&fit=crop" 
+              alt="HYROX athlete training" 
               className="w-full h-auto"
             />
           </CardContent>

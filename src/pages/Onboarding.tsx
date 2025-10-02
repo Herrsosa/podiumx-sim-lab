@@ -111,12 +111,30 @@ export default function Onboarding() {
               <div className="flex items-center gap-4">
                 <Avatar className="w-20 h-20">
                   <AvatarImage src={avatar} />
-                  <AvatarFallback>{name[0]}</AvatarFallback>
+                  <AvatarFallback>{name[0] || "?"}</AvatarFallback>
                 </Avatar>
-                <Button variant="outline" size="sm">
-                  <Upload className="w-4 h-4 mr-2" />
-                  Change Photo
-                </Button>
+                <div>
+                  <Button variant="outline" size="sm" onClick={() => document.getElementById('avatar-upload')?.click()}>
+                    <Upload className="w-4 h-4 mr-2" />
+                    Change Photo
+                  </Button>
+                  <input
+                    id="avatar-upload"
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        const reader = new FileReader();
+                        reader.onloadend = () => {
+                          setAvatar(reader.result as string);
+                        };
+                        reader.readAsDataURL(file);
+                      }
+                    }}
+                  />
+                </div>
               </div>
 
               <div className="space-y-2">
