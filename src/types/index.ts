@@ -85,11 +85,13 @@ export interface AppState {
   wallet: Wallet;
   trades: Trade[];
   userProfile: UserProfile;
+  userAthleteId?: string;
   initialized: boolean;
   
   // Actions
   buyTokens: (athleteId: string, quantity: number) => void;
   sellTokens: (athleteId: string, quantity: number) => void;
+  createUserAthlete: (initialSupply: number) => void;
   addWorkout: (workout: Omit<Workout, 'id'>) => void;
   updateWorkout: (id: string, workout: Partial<Workout>) => void;
   deleteWorkout: (id: string) => void;

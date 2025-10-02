@@ -1,5 +1,6 @@
-import { useState, useRef } from 'react';
-import { Camera, Upload, Plus, X, Edit2, Save, Link as LinkIcon } from 'lucide-react';
+import { useState, useRef, useMemo } from 'react';
+import { Camera, Upload, Plus, X, Edit2, Save, Link as LinkIcon, TrendingUp } from 'lucide-react';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -13,11 +14,41 @@ import { Workout } from '@/types';
 import { toast } from 'sonner';
 
 export default function MyAthlete() {
-  const { userProfile, updateProfile, addWorkout, deleteWorkout } = useAppStore();
+  const { userProfile, userAthleteId, athletes, trades, updateProfile, addWorkout, deleteWorkout } = useAppStore();
   const [isEditing, setIsEditing] = useState(false);
   const [editedProfile, setEditedProfile] = useState(userProfile);
   const [addWorkoutOpen, setAddWorkoutOpen] = useState(false);
   const avatarInputRef = useRef<HTMLInputElement>(null);
+
+  const userAthlete = useMemo(() => 
+    athletes.find(a => a.id === userAthleteId),
+    [athletes, userAthleteId]
+  );
+
+  const priceHistory = useMemo(() => {
+    if (!userAthleteId) return [];
+    
+    // Get trades for this athlete
+    const athleteTrades = trades.filter(t => t.athleteId === userAthleteId);
+    
+    // Generate price history from trades
+    const history = athleteTrades.map(trade => ({
+      timestamp: trade.timestamp,
+      price: trade.price,
+      date: new Date(trade.timestamp).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+    })).reverse();
+
+    // Add current price
+    if (userAthlete) {
+      history.push({
+        timestamp: Date.now(),
+        price: userAthlete.price,
+        date: 'Now',
+      });
+    }
+
+    return history;
+  }, [userAthleteId, trades, userAthlete]);
 
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -254,6 +285,64 @@ export default function MyAthlete() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Price Chart */}
+      {userAthlete && priceHistory.length > 0 && (
+        <Card className="glass-card mb-6">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <TrendingUp className="h-5 w-5" />
+              PodiumPass Price Chart
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-4 sm:grid-cols-3 mb-6">
+              <div>
+                <p className="text-sm text-muted-foreground">Current Price</p>
+                <p className="text-2xl font-bold">${userAthlete.price.toFixed(4)}</p>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Market Cap</p>
+                <p className="text-2xl font-bold">${userAthlete.marketCap.toFixed(2)}</p>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">24h Volume</p>
+                <p className="text-2xl font-bold">${userAthlete.volume24h.toFixed(2)}</p>
+              </div>
+            </div>
+            <ResponsiveContainer width="100%" height={300}>
+              <LineChart data={priceHistory}>
+                <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                <XAxis 
+                  dataKey="date" 
+                  className="text-xs"
+                  stroke="hsl(var(--muted-foreground))"
+                />
+                <YAxis 
+                  className="text-xs"
+                  stroke="hsl(var(--muted-foreground))"
+                  tickFormatter={(value) => `$${value.toFixed(2)}`}
+                />
+                <Tooltip 
+                  contentStyle={{ 
+                    backgroundColor: 'hsl(var(--card))',
+                    border: '1px solid hsl(var(--border))',
+                    borderRadius: '8px',
+                  }}
+                  formatter={(value: number) => [`$${value.toFixed(4)}`, 'Price']}
+                />
+                <Line 
+                  type="monotone" 
+                  dataKey="price" 
+                  stroke="hsl(var(--primary))" 
+                  strokeWidth={2}
+                  dot={{ fill: 'hsl(var(--primary))' }}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Workouts Timeline */}
       <Card className="glass-card">

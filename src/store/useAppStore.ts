@@ -13,6 +13,7 @@ export const useAppStore = create<AppState>()(
       wallet: { usdc: 0, positions: {} },
       trades: [],
       userProfile: generateSeedProfile(),
+      userAthleteId: undefined,
       initialized: false,
 
       initializeStore: () => {
@@ -183,6 +184,58 @@ export const useAppStore = create<AppState>()(
           athletes: updatedAthletes,
           wallet: updatedWallet,
           trades: [trade, ...state.trades],
+        });
+      },
+
+      createUserAthlete: (initialSupply: number) => {
+        const state = get();
+        const athleteId = `user-athlete-${Date.now()}`;
+        const slug = state.userProfile.displayName.toLowerCase().replace(/\s+/g, '-');
+        
+        // Calculate initial reserve (0.1 USDC per token)
+        const initialPrice = 0.1;
+        const initialReserve = initialPrice * initialSupply;
+
+        const newAthlete: Athlete = {
+          id: athleteId,
+          slug,
+          name: state.userProfile.displayName,
+          sport: state.userProfile.sport,
+          avatar: state.userProfile.avatar || '',
+          bio: state.userProfile.bio,
+          location: state.userProfile.location,
+          socials: state.userProfile.socials,
+          supply: initialSupply,
+          reserve: initialReserve,
+          price: initialPrice,
+          marketCap: initialPrice * initialSupply,
+          athleteRevenue: 0,
+          change24h: 0,
+          volume24h: 0,
+          workouts: state.userProfile.workouts,
+        };
+
+        // Give user 1 token
+        const position: Position = {
+          athleteId,
+          athleteName: newAthlete.name,
+          quantity: 1,
+          avgCost: initialPrice,
+          currentPrice: initialPrice,
+          pnl: 0,
+          pnlPercent: 0,
+        };
+
+        set({
+          athletes: [...state.athletes, newAthlete],
+          userAthleteId: athleteId,
+          wallet: {
+            ...state.wallet,
+            positions: {
+              ...state.wallet.positions,
+              [athleteId]: position,
+            },
+          },
         });
       },
 

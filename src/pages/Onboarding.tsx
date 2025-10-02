@@ -17,6 +17,10 @@ export default function Onboarding() {
   const navigate = useNavigate();
   const updateProfile = useAppStore((state) => state.updateProfile);
   const addWorkout = useAppStore((state) => state.addWorkout);
+  const createUserAthlete = useAppStore((state) => state.createUserAthlete);
+  const buyTokens = useAppStore((state) => state.buyTokens);
+  const userAthleteId = useAppStore((state) => state.userAthleteId);
+  const wallet = useAppStore((state) => state.wallet);
 
   // Step 1: Profile
   const [name, setName] = useState("");
@@ -33,6 +37,7 @@ export default function Onboarding() {
 
   // Step 3: Token
   const [tokenSupply, setTokenSupply] = useState("10000");
+  const [additionalTokens, setAdditionalTokens] = useState("0");
 
   const handleStep1Next = () => {
     if (!name || !handle || !sport) {
@@ -70,6 +75,19 @@ export default function Onboarding() {
       avatar,
       isAthlete: true,
     });
+
+    // Create athlete and give 1 token
+    createUserAthlete(parseInt(tokenSupply));
+
+    // Buy additional tokens if requested
+    const additionalQty = parseInt(additionalTokens);
+    if (additionalQty > 0 && userAthleteId) {
+      try {
+        buyTokens(userAthleteId, additionalQty);
+      } catch (error) {
+        toast.error("Could not purchase additional tokens. You can buy them later!");
+      }
+    }
 
     toast.success("Welcome to PodiumX! 🎉");
     navigate("/marketplace");
@@ -297,6 +315,10 @@ export default function Onboarding() {
                   <span className="text-sm text-muted-foreground">Initial Price</span>
                   <span className="font-semibold">$0.10</span>
                 </div>
+                <div className="flex items-center justify-between pt-4 border-t">
+                  <span className="text-sm text-muted-foreground">You'll receive</span>
+                  <span className="font-semibold text-primary">1 token (FREE)</span>
+                </div>
               </div>
 
               <div className="space-y-2">
@@ -310,6 +332,21 @@ export default function Onboarding() {
                 />
                 <p className="text-xs text-muted-foreground">
                   More tokens = lower initial price and easier for fans to buy in
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="additional">Buy Additional Tokens (Optional)</Label>
+                <Input
+                  id="additional"
+                  type="number"
+                  value={additionalTokens}
+                  onChange={(e) => setAdditionalTokens(e.target.value)}
+                  placeholder="0"
+                  min="0"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Available balance: ${wallet.usdc.toFixed(2)} USDC
                 </p>
               </div>
 
