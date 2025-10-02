@@ -1,6 +1,7 @@
 import { useState, useRef, useMemo } from 'react';
-import { Camera, Upload, Plus, X, Edit2, Save, Link as LinkIcon, TrendingUp } from 'lucide-react';
+import { Camera, Upload, Plus, X, Edit2, Save, Link as LinkIcon, TrendingUp, Link2 } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -391,6 +392,8 @@ export default function MyAthlete() {
 }
 
 function AddWorkoutForm({ onSubmit }: { onSubmit: (workout: Omit<Workout, 'id'>) => void }) {
+  const [importMode, setImportMode] = useState<'manual' | 'strava' | 'garmin' | 'apple'>('manual');
+  const [activityUrl, setActivityUrl] = useState('');
   const [workout, setWorkout] = useState<Omit<Workout, 'id'>>({
     date: new Date().toISOString().split('T')[0],
     type: 'Run',
@@ -425,14 +428,100 @@ function AddWorkoutForm({ onSubmit }: { onSubmit: (workout: Omit<Workout, 'id'>)
   };
 
   const handleSubmit = () => {
+    if (importMode !== 'manual' && !activityUrl) {
+      toast.error('Please provide an activity URL');
+      return;
+    }
     if (workout.duration <= 0) {
       toast.error('Duration must be greater than 0');
       return;
     }
     const pace = calculatePace();
-    onSubmit({ ...workout, pace: pace || undefined });
+    const notes = importMode !== 'manual' 
+      ? `${workout.notes}\n\nImported from ${importMode}: ${activityUrl}`
+      : workout.notes;
+    onSubmit({ ...workout, pace: pace || undefined, notes });
   };
 
+  return (
+    <Tabs defaultValue="manual" className="w-full" onValueChange={(v) => setImportMode(v as any)}>
+      <TabsList className="grid w-full grid-cols-4">
+        <TabsTrigger value="manual">Manual</TabsTrigger>
+        <TabsTrigger value="strava">
+          <Link2 className="h-4 w-4 mr-1" />
+          Strava
+        </TabsTrigger>
+        <TabsTrigger value="garmin">
+          <Link2 className="h-4 w-4 mr-1" />
+          Garmin
+        </TabsTrigger>
+        <TabsTrigger value="apple">
+          <Link2 className="h-4 w-4 mr-1" />
+          Apple
+        </TabsTrigger>
+      </TabsList>
+
+      <TabsContent value="manual" className="space-y-4 mt-4">
+        <ManualWorkoutForm 
+          workout={workout}
+          setWorkout={setWorkout}
+          mediaFile={mediaFile}
+          setMediaFile={setMediaFile}
+          mediaInputRef={mediaInputRef}
+          handleMediaChange={handleMediaChange}
+        />
+      </TabsContent>
+
+      <TabsContent value="strava" className="space-y-4 mt-4">
+        <ImportWorkoutForm
+          service="Strava"
+          activityUrl={activityUrl}
+          setActivityUrl={setActivityUrl}
+          workout={workout}
+          setWorkout={setWorkout}
+          placeholder="https://www.strava.com/activities/..."
+        />
+      </TabsContent>
+
+      <TabsContent value="garmin" className="space-y-4 mt-4">
+        <ImportWorkoutForm
+          service="Garmin"
+          activityUrl={activityUrl}
+          setActivityUrl={setActivityUrl}
+          workout={workout}
+          setWorkout={setWorkout}
+          placeholder="https://connect.garmin.com/modern/activity/..."
+        />
+      </TabsContent>
+
+      <TabsContent value="apple" className="space-y-4 mt-4">
+        <ImportWorkoutForm
+          service="Apple Watch"
+          activityUrl={activityUrl}
+          setActivityUrl={setActivityUrl}
+          workout={workout}
+          setWorkout={setWorkout}
+          placeholder="Export your workout from Apple Health"
+        />
+      </TabsContent>
+
+      <Button className="w-full" onClick={handleSubmit}>
+        Add Workout
+      </Button>
+    </Tabs>
+  );
+}
+
+interface ManualWorkoutFormProps {
+  workout: Omit<Workout, 'id'>;
+  setWorkout: (workout: Omit<Workout, 'id'>) => void;
+  mediaFile: File | null;
+  setMediaFile: (file: File | null) => void;
+  mediaInputRef: React.RefObject<HTMLInputElement>;
+  handleMediaChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+}
+
+function ManualWorkoutForm({ workout, setWorkout, mediaFile, mediaInputRef, handleMediaChange }: ManualWorkoutFormProps) {
   return (
     <div className="space-y-4">
       <div className="grid gap-4 sm:grid-cols-2">
@@ -548,17 +637,121 @@ function AddWorkoutForm({ onSubmit }: { onSubmit: (workout: Omit<Workout, 'id'>)
             className="absolute right-2 top-2 h-8 w-8 rounded-full"
             onClick={() => {
               setWorkout({ ...workout, mediaUrl: undefined, mediaType: undefined });
-              setMediaFile(null);
             }}
           >
             <X className="h-4 w-4" />
           </Button>
         </div>
       )}
+    </div>
+  );
+}
 
-      <Button className="w-full" onClick={handleSubmit}>
-        Add Workout
-      </Button>
+interface ImportWorkoutFormProps {
+  service: string;
+  activityUrl: string;
+  setActivityUrl: (url: string) => void;
+  workout: Omit<Workout, 'id'>;
+  setWorkout: (workout: Omit<Workout, 'id'>) => void;
+  placeholder: string;
+}
+
+function ImportWorkoutForm({ service, activityUrl, setActivityUrl, workout, setWorkout, placeholder }: ImportWorkoutFormProps) {
+  return (
+    <div className="space-y-4">
+      <div className="p-4 bg-primary/10 rounded-lg">
+        <p className="text-sm font-medium mb-2">Import from {service}</p>
+        <p className="text-xs text-muted-foreground">
+          Paste the link to your {service} activity below, then fill in the workout details.
+        </p>
+      </div>
+
+      <div>
+        <Label htmlFor="activityUrl">Activity URL</Label>
+        <Input
+          id="activityUrl"
+          type="url"
+          value={activityUrl}
+          onChange={(e) => setActivityUrl(e.target.value)}
+          placeholder={placeholder}
+        />
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div>
+          <Label>Date</Label>
+          <Input
+            type="date"
+            value={workout.date}
+            onChange={(e) => setWorkout({ ...workout, date: e.target.value })}
+          />
+        </div>
+        <div>
+          <Label>Type</Label>
+          <Select
+            value={workout.type}
+            onValueChange={(type) => setWorkout({ ...workout, type: type as any })}
+          >
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="Run">Run</SelectItem>
+              <SelectItem value="HYROX">HYROX</SelectItem>
+              <SelectItem value="Swim">Swim</SelectItem>
+              <SelectItem value="Bike">Bike</SelectItem>
+              <SelectItem value="Strength">Strength</SelectItem>
+              <SelectItem value="Other">Other</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div>
+          <Label>Distance (km)</Label>
+          <Input
+            type="number"
+            step="0.1"
+            value={workout.distance || ''}
+            onChange={(e) =>
+              setWorkout({ ...workout, distance: parseFloat(e.target.value) || undefined })
+            }
+            placeholder="Optional"
+          />
+        </div>
+        <div>
+          <Label>Duration (minutes)</Label>
+          <Input
+            type="number"
+            value={workout.duration || ''}
+            onChange={(e) => setWorkout({ ...workout, duration: parseInt(e.target.value) || 0 })}
+          />
+        </div>
+      </div>
+
+      <div>
+        <Label>RPE (1-10)</Label>
+        <Input
+          type="number"
+          min="1"
+          max="10"
+          value={workout.rpe}
+          onChange={(e) =>
+            setWorkout({ ...workout, rpe: Math.min(10, Math.max(1, parseInt(e.target.value))) })
+          }
+        />
+      </div>
+
+      <div>
+        <Label>Notes</Label>
+        <Textarea
+          value={workout.notes}
+          onChange={(e) => setWorkout({ ...workout, notes: e.target.value })}
+          rows={3}
+          placeholder="Additional notes about this workout..."
+        />
+      </div>
     </div>
   );
 }
