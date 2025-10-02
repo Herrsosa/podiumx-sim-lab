@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useUser } from "@clerk/clerk-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -16,16 +15,15 @@ import { toast } from "sonner";
 export default function Onboarding() {
   const [step, setStep] = useState(1);
   const navigate = useNavigate();
-  const { user } = useUser();
   const updateProfile = useAppStore((state) => state.updateProfile);
   const addWorkout = useAppStore((state) => state.addWorkout);
 
   // Step 1: Profile
-  const [name, setName] = useState(user?.fullName || "");
+  const [name, setName] = useState("");
   const [handle, setHandle] = useState("");
   const [sport, setSport] = useState<Sport>("Running");
   const [bio, setBio] = useState("");
-  const [avatar, setAvatar] = useState(user?.imageUrl || "");
+  const [avatar, setAvatar] = useState("");
 
   // Step 2: First Workout
   const [workoutType, setWorkoutType] = useState<Workout['type']>("Run");
