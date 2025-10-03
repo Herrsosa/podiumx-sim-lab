@@ -20,6 +20,11 @@ export default function AthleteDetail() {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
   
+  // All hooks must be called before any conditional returns
+  const [tradeType, setTradeType] = useState<'buy' | 'sell'>('buy');
+  const [quantity, setQuantity] = useState(1);
+  const [showTradeModal, setShowTradeModal] = useState(false);
+  
   const { data: athletes, isLoading: athletesLoading } = useAthletes();
   const { data: wallet, isLoading: walletLoading } = useWallet();
   const { data: trades, isLoading: tradesLoading } = useTrades();
@@ -29,10 +34,44 @@ export default function AthleteDetail() {
   const position = athlete && wallet ? wallet.positions[athlete.id] : null;
   const athleteTrades = trades?.filter((t) => t.athleteId === athlete?.id).slice(0, 100) || [];
 
-  const [tradeType, setTradeType] = useState<'buy' | 'sell'>('buy');
-  const [quantity, setQuantity] = useState(1);
-  const [showTradeModal, setShowTradeModal] = useState(false);
+  const chartData = useMemo(() => {
+    return athleteTrades.reverse().map((trade, index) => ({
+      index,
+      price: trade.price,
+      time: new Date(trade.timestamp).toLocaleTimeString(),
+    }));
+  }, [athleteTrades]);
 
+  const impact = useMemo(() => {
+    if (!athlete || quantity <= 0) return null;
+    return tradeType === 'buy'
+      ? calculateBuyImpact(athlete.supply, athlete.reserve, quantity)
+      : calculateSellImpact(athlete.supply, athlete.reserve, quantity);
+  }, [tradeType, quantity, athlete]);
+
+  const canTrade = 
+    quantity > 0 && 
+    impact && 
+    wallet &&
+    athlete &&
+    (tradeType === 'buy' ? wallet.usdc >= impact.total : position && position.quantity >= quantity);
+
+  const userHoldings = position?.quantity || 0;
+
+  const handleTrade = async () => {
+    if (!canTrade || !athlete) return;
+    
+    await tradeMutation.mutateAsync({
+      athleteId: athlete.id,
+      quantity,
+      side: tradeType === 'buy' ? 'BUY' : 'SELL',
+    });
+    
+    setQuantity(1);
+    setShowTradeModal(false);
+  };
+
+  // Now check loading and not found states
   if (athletesLoading || walletLoading || tradesLoading) {
     return (
       <div className="container mx-auto px-4 py-16 text-center">
@@ -49,42 +88,6 @@ export default function AthleteDetail() {
       </div>
     );
   }
-
-  const chartData = useMemo(() => {
-    return athleteTrades.reverse().map((trade, index) => ({
-      index,
-      price: trade.price,
-      time: new Date(trade.timestamp).toLocaleTimeString(),
-    }));
-  }, [athleteTrades]);
-
-  const impact = useMemo(() => {
-    if (quantity <= 0) return null;
-    return tradeType === 'buy'
-      ? calculateBuyImpact(athlete.supply, athlete.reserve, quantity)
-      : calculateSellImpact(athlete.supply, athlete.reserve, quantity);
-  }, [tradeType, quantity, athlete]);
-
-  const handleTrade = async () => {
-    if (!canTrade) return;
-    
-    await tradeMutation.mutateAsync({
-      athleteId: athlete.id,
-      quantity,
-      side: tradeType === 'buy' ? 'BUY' : 'SELL',
-    });
-    
-    setQuantity(1);
-    setShowTradeModal(false);
-  };
-
-  const canTrade = 
-    quantity > 0 && 
-    impact && 
-    wallet &&
-    (tradeType === 'buy' ? wallet.usdc >= impact.total : position && position.quantity >= quantity);
-
-  const userHoldings = position?.quantity || 0;
 
   return (
     <div className="container mx-auto px-4 py-8">
