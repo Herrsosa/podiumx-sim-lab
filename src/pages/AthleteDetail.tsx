@@ -342,10 +342,13 @@ export default function AthleteDetail() {
             athleteId={athlete.id}
             athleteName={athlete.name}
             userHoldings={userHoldings}
-            onBuyClick={() => {
-              setTradeType('buy');
-              setQuantity(1);
-              setShowTradeModal(true);
+            onBuyClick={async () => {
+              // Directly execute a buy of 1 token
+              await tradeMutation.mutateAsync({
+                athleteId: athlete.id,
+                quantity: 1,
+                side: 'BUY',
+              });
             }}
           />
         </div>
