@@ -21,7 +21,14 @@ serve(async (req) => {
     // Get the authorization header
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
-      throw new Error("No authorization header");
+      console.error("No authorization header provided");
+      return new Response(
+        JSON.stringify({ error: "No authorization header" }),
+        {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 401,
+        }
+      );
     }
 
     const token = authHeader.replace("Bearer ", "");
@@ -41,8 +48,17 @@ serve(async (req) => {
     const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token);
 
     if (authError || !user) {
-      console.error("Auth error:", authError);
-      throw new Error("Unauthorized");
+      console.error("Auth error:", authError?.message || "No user found");
+      return new Response(
+        JSON.stringify({ 
+          error: "Authentication failed. Please sign out and sign back in.",
+          details: authError?.message 
+        }),
+        {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 401,
+        }
+      );
     }
 
     const { athleteId, quantity, side }: TradeRequest = await req.json();
