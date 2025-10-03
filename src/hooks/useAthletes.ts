@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Athlete, Sport } from '@/types';
+import { athleteAvatars } from '@/utils/athleteAvatars';
 
 export function useAthletes() {
   return useQuery({
@@ -52,7 +53,7 @@ export function useAthletes() {
           slug: profile.username,
           name: profile.display_name || profile.username,
           sport: (profile.sport || 'Other') as Sport,
-          avatar: profile.avatar_url || '',
+          avatar: athleteAvatars[profile.username] || profile.avatar_url || '',
           bio: profile.bio || '',
           location: '',
           socials: {
