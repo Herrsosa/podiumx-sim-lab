@@ -1,29 +1,45 @@
 import { useState, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, TrendingUp, Info, Plus, Minus } from 'lucide-react';
+import { ArrowLeft, Info, Plus, Minus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { useAppStore } from '@/store/useAppStore';
+import { useAthletes } from '@/hooks/useAthletes';
+import { useWallet } from '@/hooks/useWallet';
+import { useTrades } from '@/hooks/useTrades';
+import { useTrade } from '@/hooks/useTrade';
 import { calculateBuyImpact, calculateSellImpact } from '@/utils/bondingCurve';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer } from 'recharts';
-import { toast } from 'sonner';
 import ProofOfSweat from '@/components/ProofOfSweat';
+import TokengatedChat from '@/components/TokengatedChat';
 
 export default function AthleteDetail() {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
-  const { athletes, wallet, trades, buyTokens, sellTokens } = useAppStore();
   
-  const athlete = athletes.find((a) => a.slug === slug);
-  const position = athlete ? wallet.positions[athlete.id] : null;
-  const athleteTrades = trades.filter((t) => t.athleteId === athlete?.id).slice(0, 20);
+  const { data: athletes, isLoading: athletesLoading } = useAthletes();
+  const { data: wallet, isLoading: walletLoading } = useWallet();
+  const { data: trades, isLoading: tradesLoading } = useTrades();
+  const tradeMutation = useTrade();
+  
+  const athlete = athletes?.find((a) => a.slug === slug);
+  const position = athlete && wallet ? wallet.positions[athlete.id] : null;
+  const athleteTrades = trades?.filter((t) => t.athleteId === athlete?.id).slice(0, 100) || [];
 
   const [tradeType, setTradeType] = useState<'buy' | 'sell'>('buy');
   const [quantity, setQuantity] = useState(1);
+  const [showTradeModal, setShowTradeModal] = useState(false);
+
+  if (athletesLoading || walletLoading || tradesLoading) {
+    return (
+      <div className="container mx-auto px-4 py-16 text-center">
+        <div className="text-muted-foreground">Loading...</div>
+      </div>
+    );
+  }
 
   if (!athlete) {
     return (
@@ -35,8 +51,7 @@ export default function AthleteDetail() {
   }
 
   const chartData = useMemo(() => {
-    const last100Trades = athleteTrades.slice(0, 100);
-    return last100Trades.reverse().map((trade, index) => ({
+    return athleteTrades.reverse().map((trade, index) => ({
       index,
       price: trade.price,
       time: new Date(trade.timestamp).toLocaleTimeString(),
@@ -50,25 +65,26 @@ export default function AthleteDetail() {
       : calculateSellImpact(athlete.supply, athlete.reserve, quantity);
   }, [tradeType, quantity, athlete]);
 
-  const handleTrade = () => {
-    try {
-      if (tradeType === 'buy') {
-        buyTokens(athlete.id, quantity);
-        toast.success(`Bought ${quantity} ${athlete.name} tokens!`);
-      } else {
-        sellTokens(athlete.id, quantity);
-        toast.success(`Sold ${quantity} ${athlete.name} tokens!`);
-      }
-      setQuantity(1);
-    } catch (error) {
-      toast.error((error as Error).message);
-    }
+  const handleTrade = async () => {
+    if (!canTrade) return;
+    
+    await tradeMutation.mutateAsync({
+      athleteId: athlete.id,
+      quantity,
+      side: tradeType === 'buy' ? 'BUY' : 'SELL',
+    });
+    
+    setQuantity(1);
+    setShowTradeModal(false);
   };
 
   const canTrade = 
     quantity > 0 && 
     impact && 
+    wallet &&
     (tradeType === 'buy' ? wallet.usdc >= impact.total : position && position.quantity >= quantity);
+
+  const userHoldings = position?.quantity || 0;
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -266,22 +282,34 @@ export default function AthleteDetail() {
             <div className="space-y-2 text-sm">
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Your USDC</span>
-                <span className="font-medium">${wallet.usdc.toFixed(2)}</span>
+                <span className="font-medium">${wallet?.usdc.toFixed(2) || '0.00'}</span>
               </div>
               {position && (
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Your Tokens</span>
-                  <span className="font-medium">{position.quantity.toFixed(2)}</span>
-                </div>
+                <>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Your Tokens</span>
+                    <span className="font-medium">{position.quantity.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Avg Cost</span>
+                    <span className="font-medium">${position.avgCost.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Unrealized P&L</span>
+                    <span className={`font-medium ${position.pnl >= 0 ? 'text-success' : 'text-destructive'}`}>
+                      ${position.pnl.toFixed(2)} ({position.pnl >= 0 ? '+' : ''}{position.pnlPercent.toFixed(2)}%)
+                    </span>
+                  </div>
+                </>
               )}
             </div>
 
             <Button
               className="w-full"
-              disabled={!canTrade}
+              disabled={!canTrade || tradeMutation.isPending}
               onClick={handleTrade}
             >
-              {tradeType === 'buy' ? 'Buy' : 'Sell'} {quantity} Token{quantity > 1 ? 's' : ''}
+              {tradeMutation.isPending ? 'Processing...' : `${tradeType === 'buy' ? 'Buy' : 'Sell'} ${quantity} Token${quantity > 1 ? 's' : ''}`}
             </Button>
 
             <TooltipProvider>
@@ -304,9 +332,19 @@ export default function AthleteDetail() {
           </CardContent>
         </Card>
 
-        {/* Proof of Sweat */}
-        <div className="lg:col-span-2">
+        {/* Proof of Sweat & Chat */}
+        <div className="lg:col-span-2 space-y-6">
           <ProofOfSweat workouts={athlete.workouts} />
+          <TokengatedChat
+            athleteId={athlete.id}
+            athleteName={athlete.name}
+            userHoldings={userHoldings}
+            onBuyClick={() => {
+              setTradeType('buy');
+              setQuantity(1);
+              setShowTradeModal(true);
+            }}
+          />
         </div>
       </div>
 

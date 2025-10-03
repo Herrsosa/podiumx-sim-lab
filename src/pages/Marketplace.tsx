@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
-import { useAppStore } from '@/store/useAppStore';
+import { useAthletes } from '@/hooks/useAthletes';
 import { Sport } from '@/types';
 import { Sparklines, SparklinesLine } from 'react-sparklines';
 
@@ -13,11 +13,20 @@ const SPORTS: Sport[] = ['Running', 'HYROX', 'Cycling', 'Triathlon', 'CrossFit',
 
 export default function Marketplace() {
   const navigate = useNavigate();
-  const athletes = useAppStore((state) => state.athletes);
+  const { data: athletes, isLoading } = useAthletes();
   const [search, setSearch] = useState('');
   const [selectedSport, setSelectedSport] = useState<Sport | 'All'>('All');
 
+  if (isLoading) {
+    return (
+      <div className="container mx-auto px-4 py-16 text-center">
+        <div className="text-muted-foreground">Loading athletes...</div>
+      </div>
+    );
+  }
+
   const filteredAthletes = useMemo(() => {
+    if (!athletes) return [];
     return athletes.filter((athlete) => {
       const matchesSearch = athlete.name.toLowerCase().includes(search.toLowerCase());
       const matchesSport = selectedSport === 'All' || athlete.sport === selectedSport;

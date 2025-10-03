@@ -2,13 +2,33 @@ import { DollarSign, TrendingUp, TrendingDown, Coins } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { useAppStore } from '@/store/useAppStore';
+import { useWallet } from '@/hooks/useWallet';
+import { useAthletes } from '@/hooks/useAthletes';
+import { useFaucet } from '@/hooks/useTrade';
 import { useNavigate } from 'react-router-dom';
-import { toast } from 'sonner';
 
 export default function Portfolio() {
   const navigate = useNavigate();
-  const { wallet, athletes, faucet } = useAppStore();
+  const { data: wallet, isLoading: walletLoading } = useWallet();
+  const { data: athletes, isLoading: athletesLoading } = useAthletes();
+  const faucetMutation = useFaucet();
+
+  if (walletLoading || athletesLoading) {
+    return (
+      <div className="container mx-auto px-4 py-16 text-center">
+        <div className="text-muted-foreground">Loading...</div>
+      </div>
+    );
+  }
+
+  if (!wallet) {
+    return (
+      <div className="container mx-auto px-4 py-16 text-center">
+        <h1 className="mb-4 text-2xl font-bold">Wallet not found</h1>
+        <p className="mb-4 text-muted-foreground">Initialize your wallet to get started</p>
+      </div>
+    );
+  }
 
   const positions = Object.values(wallet.positions);
   const totalValue = positions.reduce(
@@ -22,12 +42,11 @@ export default function Portfolio() {
   }, 0) / (positions.length || 1);
 
   const handleFaucet = () => {
-    faucet(1000);
-    toast.success('Added 1,000 USDC to your wallet!');
+    faucetMutation.mutate(1000);
   };
 
   const getAthlete = (athleteId: string) => {
-    return athletes.find((a) => a.id === athleteId);
+    return athletes?.find((a) => a.id === athleteId);
   };
 
   return (
@@ -37,9 +56,9 @@ export default function Portfolio() {
           <h1 className="mb-2 text-4xl font-bold">Portfolio</h1>
           <p className="text-muted-foreground">Track your positions and performance</p>
         </div>
-        <Button onClick={handleFaucet} className="gap-2">
+        <Button onClick={handleFaucet} disabled={faucetMutation.isPending} className="gap-2">
           <DollarSign className="h-4 w-4" />
-          Get 1,000 USDC
+          {faucetMutation.isPending ? 'Adding...' : 'Get Test USDC'}
         </Button>
       </div>
 

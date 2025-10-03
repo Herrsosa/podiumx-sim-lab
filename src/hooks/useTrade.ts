@@ -22,12 +22,21 @@ export function useTrade() {
       if (error) throw error;
       return data;
     },
-    onSuccess: () => {
-      // Refetch all relevant queries
-      queryClient.invalidateQueries({ queryKey: ['athletes'] });
-      queryClient.invalidateQueries({ queryKey: ['wallet'] });
-      queryClient.invalidateQueries({ queryKey: ['trades'] });
-      queryClient.invalidateQueries({ queryKey: ['user-trades'] });
+    onSuccess: async (data, variables) => {
+      // Wait for all invalidations to complete
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['athletes'] }),
+        queryClient.invalidateQueries({ queryKey: ['wallet'] }),
+        queryClient.invalidateQueries({ queryKey: ['trades'] }),
+        queryClient.invalidateQueries({ queryKey: ['user-trades'] }),
+      ]);
+
+      // Show success toast with fill price
+      const fillPrice = data?.newPrice || 0;
+      toast({
+        title: `${variables.side === 'BUY' ? 'Bought' : 'Sold'}!`,
+        description: `Filled ${variables.quantity} @ $${fillPrice.toFixed(2)}`,
+      });
     },
     onError: (error: any) => {
       toast({
@@ -53,24 +62,51 @@ export function useFaucet() {
         .from('wallets')
         .select('balance')
         .eq('user_id', user.id)
-        .single();
+        .maybeSingle();
 
       if (fetchError) throw fetchError;
 
-      // Update with new balance
-      const { error } = await supabase
-        .from('wallets')
-        .update({ balance: (wallet.balance || 0) + amount })
-        .eq('user_id', user.id);
-
-      if (error) throw error;
+      // If no wallet exists, create one
+      if (!wallet) {
+        const { error: insertError } = await supabase
+          .from('wallets')
+          .insert({ user_id: user.id, balance: amount });
+        if (insertError) throw insertError;
+      } else {
+        // Update with new balance
+        const { error } = await supabase
+          .from('wallets')
+          .update({ balance: (wallet.balance || 0) + amount })
+          .eq('user_id', user.id);
+        if (error) throw error;
+      }
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['wallet'] });
+    onSuccess: async (_, amount) => {
+      await queryClient.invalidateQueries({ queryKey: ['wallet'] });
       toast({
         title: 'Funds Added',
-        description: 'USDC has been added to your wallet',
+        description: `${amount} USDC added to your wallet`,
       });
     },
   });
+}
+
+// Initialize wallet on sign-in
+export async function initWallet() {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return;
+
+  // Check if wallet exists
+  const { data: wallet } = await supabase
+    .from('wallets')
+    .select('user_id')
+    .eq('user_id', user.id)
+    .maybeSingle();
+
+  // Create wallet if it doesn't exist
+  if (!wallet) {
+    await supabase
+      .from('wallets')
+      .insert({ user_id: user.id, balance: 0 });
+  }
 }
