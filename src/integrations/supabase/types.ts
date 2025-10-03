@@ -259,7 +259,22 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      execute_trade_transaction: {
+        Args: {
+          p_athlete_id: string
+          p_fee: number
+          p_gross_amount: number
+          p_net_amount: number
+          p_new_athlete_earnings: number
+          p_new_price: number
+          p_new_supply: number
+          p_new_treasury: number
+          p_qty: number
+          p_side: Database["public"]["Enums"]["trade_side"]
+          p_user_id: string
+        }
+        Returns: undefined
+      }
     }
     Enums: {
       trade_side: "BUY" | "SELL"
