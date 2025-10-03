@@ -125,7 +125,8 @@ export default function Onboarding() {
       if (postError) throw postError;
 
       toast.success("Welcome to PodiumX! 🎉");
-      navigate("/marketplace");
+      // Force a page reload to refresh authentication state
+      window.location.href = "/me";
     } catch (error: any) {
       console.error('Onboarding error:', error);
       toast.error(error.message || "Failed to complete onboarding");
