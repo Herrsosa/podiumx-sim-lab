@@ -14,10 +14,8 @@ interface Message {
   athlete_id: string;
   content: string;
   created_at: string;
-  profiles: {
-    display_name: string;
-    avatar_url: string;
-  };
+  display_name?: string;
+  avatar_url?: string;
 }
 
 interface TokengatedChatProps {
@@ -50,24 +48,27 @@ export default function TokengatedChat({
     const channel = supabase
       .channel(`chat:${athleteId}`)
       .on(
-        'postgres_changes',
+        'postgres_changes' as any,
         {
           event: 'INSERT',
           schema: 'public',
           table: 'chat_messages',
           filter: `athlete_id=eq.${athleteId}`,
         },
-        (payload) => {
-          const newMsg = payload.new as any;
+        async (payload: any) => {
+          const newMsg = payload.new;
           // Fetch the profile data for the new message
-          supabase
+          const { data: profile } = await supabase
             .from('profiles')
             .select('display_name, avatar_url')
             .eq('id', newMsg.user_id)
-            .single()
-            .then(({ data: profile }) => {
-              setMessages((prev) => [...prev, { ...newMsg, profiles: profile }]);
-            });
+            .single();
+          
+          setMessages((prev) => [...prev, { 
+            ...newMsg, 
+            display_name: profile?.display_name,
+            avatar_url: profile?.avatar_url 
+          }]);
         }
       )
       .subscribe();
@@ -82,25 +83,34 @@ export default function TokengatedChat({
   }, [messages]);
 
   const fetchMessages = async () => {
-    const { data, error } = await supabase
-      .from('chat_messages')
-      .select(`
-        *,
-        profiles:user_id (
-          display_name,
-          avatar_url
-        )
-      `)
+    const { data: msgs } = await supabase
+      .from('chat_messages' as any)
+      .select('*')
       .eq('athlete_id', athleteId)
       .order('created_at', { ascending: true })
       .limit(100);
 
-    if (error) {
-      console.error('Error fetching messages:', error);
-      return;
-    }
+    if (!msgs) return;
 
-    setMessages(data || []);
+    // Fetch profiles for all messages
+    const userIds = [...new Set(msgs.map((m: any) => m.user_id))];
+    const { data: profiles } = await supabase
+      .from('profiles')
+      .select('id, display_name, avatar_url')
+      .in('id', userIds);
+
+    const profileMap = new Map(profiles?.map(p => [p.id, p]) || []);
+    
+    const enrichedMessages = msgs.map((m: any) => {
+      const profile = profileMap.get(m.user_id);
+      return {
+        ...m,
+        display_name: profile?.display_name,
+        avatar_url: profile?.avatar_url,
+      };
+    });
+
+    setMessages(enrichedMessages);
   };
 
   const handleSend = async () => {
@@ -109,7 +119,7 @@ export default function TokengatedChat({
     setSending(true);
     try {
       const { error } = await supabase
-        .from('chat_messages')
+        .from('chat_messages' as any)
         .insert({
           athlete_id: athleteId,
           user_id: user.id,
@@ -161,14 +171,14 @@ export default function TokengatedChat({
             messages.map((message) => (
               <div key={message.id} className="flex gap-3">
                 <img
-                  src={message.profiles?.avatar_url || '/placeholder.svg'}
-                  alt={message.profiles?.display_name || 'User'}
+                  src={message.avatar_url || '/placeholder.svg'}
+                  alt={message.display_name || 'User'}
                   className="h-8 w-8 rounded-full ring-2 ring-primary/20"
                 />
                 <div className="flex-1">
                   <div className="mb-1 flex items-baseline gap-2">
                     <span className="text-sm font-semibold">
-                      {message.profiles?.display_name || 'Anonymous'}
+                      {message.display_name || 'Anonymous'}
                     </span>
                     <span className="text-xs text-muted-foreground">
                       {new Date(message.created_at).toLocaleTimeString()}

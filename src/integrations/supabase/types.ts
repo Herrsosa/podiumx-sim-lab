@@ -58,6 +58,30 @@ export type Database = {
           },
         ]
       }
+      chat_messages: {
+        Row: {
+          athlete_id: string
+          content: string
+          created_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          athlete_id: string
+          content: string
+          created_at?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          athlete_id?: string
+          content?: string
+          created_at?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       holdings: {
         Row: {
           athlete_id: string

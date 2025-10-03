@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
+import { initWallet } from './useTrade';
 
 export function useAuth() {
   const [user, setUser] = useState<User | null>(null);
@@ -14,6 +15,13 @@ export function useAuth() {
         setSession(session);
         setUser(session?.user ?? null);
         setLoading(false);
+        
+        // Initialize wallet when user signs in
+        if (session?.user) {
+          setTimeout(() => {
+            initWallet();
+          }, 0);
+        }
       }
     );
 
@@ -22,6 +30,11 @@ export function useAuth() {
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
+      
+      // Initialize wallet for existing session
+      if (session?.user) {
+        initWallet();
+      }
     });
 
     return () => subscription.unsubscribe();
