@@ -105,14 +105,23 @@ export default function AthleteDetail() {
         {/* Left: Profile */}
         <Card className="glass-card">
           <CardContent className="p-6">
-            <img
-              src={athlete.avatar}
-              alt={athlete.name}
-              className="mb-4 h-24 w-24 rounded-full ring-4 ring-primary/20"
-            />
-            <h1 className="mb-2 text-2xl font-bold">{athlete.name}</h1>
-            <Badge className="mb-4">{athlete.sport}</Badge>
-            <p className="mb-4 text-sm text-muted-foreground">{athlete.bio}</p>
+            {/* Instagram-style profile picture */}
+            <div className="relative mx-auto mb-4 h-32 w-32">
+              <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-yellow-400 via-pink-500 to-purple-600 p-1">
+                <div className="h-full w-full rounded-full bg-background p-1">
+                  <img
+                    src={athlete.avatar}
+                    alt={athlete.name}
+                    className="h-full w-full rounded-full object-cover"
+                  />
+                </div>
+              </div>
+            </div>
+            <h1 className="mb-2 text-center text-2xl font-bold">{athlete.name}</h1>
+            <div className="mb-4 flex justify-center">
+              <Badge>{athlete.sport}</Badge>
+            </div>
+            <p className="mb-4 text-center text-sm text-muted-foreground">{athlete.bio}</p>
             <div className="space-y-2 text-sm">
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Location</span>
@@ -309,11 +318,20 @@ export default function AthleteDetail() {
 
             <Button
               className="w-full"
-              disabled={!canTrade || tradeMutation.isPending}
+              disabled={tradeMutation.isPending}
               onClick={handleTrade}
             >
               {tradeMutation.isPending ? 'Processing...' : `${tradeType === 'buy' ? 'Buy' : 'Sell'} ${quantity} Token${quantity > 1 ? 's' : ''}`}
             </Button>
+            
+            {!canTrade && wallet && (
+              <p className="text-xs text-muted-foreground text-center">
+                {tradeType === 'buy' 
+                  ? `Insufficient funds. You have $${wallet.usdc.toFixed(2)} USDC${impact ? `, need $${impact.total.toFixed(2)}` : ''}`
+                  : 'Insufficient tokens to sell'
+                }
+              </p>
+            )}
 
             <TooltipProvider>
               <Tooltip>

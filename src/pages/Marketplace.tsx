@@ -99,11 +99,18 @@ export default function Marketplace() {
               <CardContent className="p-6">
                 {/* Avatar & Name */}
                 <div className="mb-4 flex items-center gap-3">
-                  <img
-                    src={athlete.avatar}
-                    alt={athlete.name}
-                    className="h-12 w-12 rounded-full ring-2 ring-primary/20"
-                  />
+                  {/* Instagram-style avatar */}
+                  <div className="relative h-12 w-12 flex-shrink-0">
+                    <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-yellow-400 via-pink-500 to-purple-600 p-0.5">
+                      <div className="h-full w-full rounded-full bg-background p-0.5">
+                        <img
+                          src={athlete.avatar}
+                          alt={athlete.name}
+                          className="h-full w-full rounded-full object-cover"
+                        />
+                      </div>
+                    </div>
+                  </div>
                   <div className="flex-1">
                     <h3 className="font-semibold">{athlete.name}</h3>
                     <Badge variant="secondary" className="text-xs">
