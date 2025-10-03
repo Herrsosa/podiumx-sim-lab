@@ -13,17 +13,10 @@ const SPORTS: Sport[] = ['Running', 'HYROX', 'Cycling', 'Triathlon', 'CrossFit',
 
 export default function Marketplace() {
   const navigate = useNavigate();
-  const { data: athletes, isLoading } = useAthletes();
   const [search, setSearch] = useState('');
   const [selectedSport, setSelectedSport] = useState<Sport | 'All'>('All');
-
-  if (isLoading) {
-    return (
-      <div className="container mx-auto px-4 py-16 text-center">
-        <div className="text-muted-foreground">Loading athletes...</div>
-      </div>
-    );
-  }
+  
+  const { data: athletes, isLoading } = useAthletes();
 
   const filteredAthletes = useMemo(() => {
     if (!athletes) return [];
@@ -33,6 +26,14 @@ export default function Marketplace() {
       return matchesSearch && matchesSport;
     });
   }, [athletes, search, selectedSport]);
+
+  if (isLoading) {
+    return (
+      <div className="container mx-auto px-4 py-16 text-center">
+        <div className="text-muted-foreground">Loading athletes...</div>
+      </div>
+    );
+  }
 
   const generateSparklineData = (basePrice: number) => {
     return Array.from({ length: 20 }, (_, i) => {
