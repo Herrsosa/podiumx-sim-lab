@@ -14,9 +14,9 @@ export default function Landing() {
         <p className="text-xl md:text-2xl text-muted-foreground mb-8 max-w-2xl mx-auto">
           The marketplace for athlete tokens. Invest in talent, share the journey.
         </p>
-        <Link to="/onboarding">
+        <Link to="/auth">
           <Button size="lg" className="gap-2">
-            Join the Community <ArrowRight className="w-5 h-5" />
+            Get Started <ArrowRight className="w-5 h-5" />
           </Button>
         </Link>
         <Link to="/marketplace">

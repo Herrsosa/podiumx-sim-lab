@@ -5,8 +5,10 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { useAppStore } from "@/store/useAppStore";
+import { useAuth } from "@/hooks/useAuth";
 import Navigation from "@/components/Navigation";
 import Landing from "./pages/Landing";
+import Auth from "./pages/Auth";
 import Onboarding from "./pages/Onboarding";
 import Marketplace from "./pages/Marketplace";
 import AthleteDetail from "./pages/AthleteDetail";
@@ -16,10 +18,22 @@ import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
+function ProtectedRoute({ children }: { children: React.ReactNode }) {
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
+  }
+
+  if (!user) {
+    return <Navigate to="/auth" replace />;
+  }
+
+  return <>{children}</>;
+}
+
 function AppContent() {
   const initializeStore = useAppStore((state) => state.initializeStore);
-  const userProfile = useAppStore((state) => state.userProfile);
-  const hasCompletedOnboarding = userProfile.displayName && userProfile.isAthlete;
 
   useEffect(() => {
     initializeStore();
@@ -28,30 +42,35 @@ function AppContent() {
   return (
     <Routes>
       <Route path="/" element={<Landing />} />
-      <Route path="/onboarding" element={<Onboarding />} />
+      <Route path="/auth" element={<Auth />} />
+      <Route path="/onboarding" element={
+        <ProtectedRoute>
+          <Onboarding />
+        </ProtectedRoute>
+      } />
       <Route path="/marketplace" element={
-        <>
+        <ProtectedRoute>
           <Navigation />
           <Marketplace />
-        </>
+        </ProtectedRoute>
       } />
       <Route path="/athlete/:slug" element={
-        <>
+        <ProtectedRoute>
           <Navigation />
           <AthleteDetail />
-        </>
+        </ProtectedRoute>
       } />
       <Route path="/portfolio" element={
-        <>
+        <ProtectedRoute>
           <Navigation />
           <Portfolio />
-        </>
+        </ProtectedRoute>
       } />
       <Route path="/me" element={
-        <>
+        <ProtectedRoute>
           <Navigation />
           <MyAthlete />
-        </>
+        </ProtectedRoute>
       } />
       <Route path="*" element={<NotFound />} />
     </Routes>

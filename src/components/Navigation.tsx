@@ -1,12 +1,16 @@
 import { Link, useLocation } from 'react-router-dom';
-import { Home, TrendingUp, Wallet, User, RotateCcw, Moon, Sun } from 'lucide-react';
+import { Home, TrendingUp, Wallet, User, RotateCcw, Moon, Sun, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAppStore } from '@/store/useAppStore';
+import { useAuth } from '@/hooks/useAuth';
+import { useToast } from '@/hooks/use-toast';
 import { useEffect, useState } from 'react';
 
 export default function Navigation() {
   const location = useLocation();
   const resetDemo = useAppStore((state) => state.resetDemo);
+  const { signOut } = useAuth();
+  const { toast } = useToast();
   const [theme, setTheme] = useState<'light' | 'dark'>('dark');
 
   useEffect(() => {
@@ -25,6 +29,14 @@ export default function Navigation() {
       resetDemo();
       window.location.reload();
     }
+  };
+
+  const handleSignOut = async () => {
+    await signOut();
+    toast({
+      title: "Signed out",
+      description: "You've been successfully signed out.",
+    });
   };
 
   const isActive = (path: string) => location.pathname === path;
@@ -97,6 +109,15 @@ export default function Navigation() {
             >
               <RotateCcw className="h-4 w-4" />
               <span className="hidden sm:inline">Reset</span>
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleSignOut}
+              className="gap-2"
+            >
+              <LogOut className="h-4 w-4" />
+              <span className="hidden sm:inline">Sign Out</span>
             </Button>
           </div>
         </div>
