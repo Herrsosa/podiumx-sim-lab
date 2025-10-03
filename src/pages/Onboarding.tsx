@@ -6,21 +6,18 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useAppStore } from "@/store/useAppStore";
 import { Sport, Workout } from "@/types";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Upload, Dumbbell, Trophy } from "lucide-react";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 
 export default function Onboarding() {
   const [step, setStep] = useState(1);
   const navigate = useNavigate();
-  const updateProfile = useAppStore((state) => state.updateProfile);
-  const addWorkout = useAppStore((state) => state.addWorkout);
-  const createUserAthlete = useAppStore((state) => state.createUserAthlete);
-  const buyTokens = useAppStore((state) => state.buyTokens);
-  const userAthleteId = useAppStore((state) => state.userAthleteId);
-  const wallet = useAppStore((state) => state.wallet);
+  const { user } = useAuth();
+  const [submitting, setSubmitting] = useState(false);
 
   // Step 1: Profile
   const [name, setName] = useState("");
@@ -52,45 +49,86 @@ export default function Onboarding() {
       toast.error("Please add your first workout details");
       return;
     }
-
-    // Save workout
-    addWorkout({
-      date: new Date().toISOString(),
-      type: workoutType,
-      distance: distance ? parseFloat(distance) : undefined,
-      duration: parseInt(duration),
-      notes,
-      rpe: 7,
-    });
-
     setStep(3);
   };
 
-  const handleComplete = () => {
-    // Update profile
-    updateProfile({
-      displayName: name,
-      sport,
-      bio,
-      avatar,
-      isAthlete: true,
-    });
-
-    // Create athlete and give 1 token
-    createUserAthlete(parseInt(tokenSupply));
-
-    // Buy additional tokens if requested
-    const additionalQty = parseInt(additionalTokens);
-    if (additionalQty > 0 && userAthleteId) {
-      try {
-        buyTokens(userAthleteId, additionalQty);
-      } catch (error) {
-        toast.error("Could not purchase additional tokens. You can buy them later!");
-      }
+  const handleComplete = async () => {
+    if (!user) {
+      toast.error("You must be logged in to complete onboarding");
+      return;
     }
 
-    toast.success("Welcome to PodiumX! 🎉");
-    navigate("/marketplace");
+    setSubmitting(true);
+    try {
+      // 1. Update profile
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .update({
+          display_name: name,
+          sport,
+          bio,
+          avatar_url: avatar || null,
+        })
+        .eq('id', user.id);
+
+      if (profileError) throw profileError;
+
+      // 2. Create athlete token
+      const { error: tokenError } = await supabase
+        .from('athlete_tokens')
+        .insert({
+          athlete_id: user.id,
+          symbol: handle.replace('@', '').toUpperCase(),
+          supply: 0,
+          a: 0.0002,
+          b: 0.02,
+          c: 1,
+          treasury_balance: 0,
+          athlete_earnings: 0,
+        });
+
+      if (tokenError) throw tokenError;
+
+      // 3. Create wallet if it doesn't exist
+      const { error: walletError } = await supabase
+        .from('wallets')
+        .insert({
+          user_id: user.id,
+          balance: 1000, // Starting balance
+        })
+        .select()
+        .single();
+
+      if (walletError && walletError.code !== '23505') throw walletError;
+
+      // 4. Create first workout post
+      const workoutData = {
+        date: new Date().toISOString().split('T')[0],
+        type: workoutType,
+        distance: distance ? parseFloat(distance) : undefined,
+        duration: parseInt(duration),
+        notes,
+        rpe: 7,
+      };
+
+      const { error: postError } = await supabase
+        .from('posts')
+        .insert({
+          author_id: user.id,
+          text: notes,
+          workout_json: workoutData,
+        });
+
+      if (postError) throw postError;
+
+      toast.success("Welcome to PodiumX! 🎉");
+      navigate("/marketplace");
+    } catch (error: any) {
+      console.error('Onboarding error:', error);
+      toast.error(error.message || "Failed to complete onboarding");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -335,27 +373,12 @@ export default function Onboarding() {
                 </p>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="additional">Buy Additional Tokens (Optional)</Label>
-                <Input
-                  id="additional"
-                  type="number"
-                  value={additionalTokens}
-                  onChange={(e) => setAdditionalTokens(e.target.value)}
-                  placeholder="0"
-                  min="0"
-                />
-                <p className="text-xs text-muted-foreground">
-                  Available balance: ${wallet.usdc.toFixed(2)} USDC
-                </p>
-              </div>
-
               <div className="flex gap-3">
                 <Button variant="outline" onClick={() => setStep(2)} className="w-full">
                   Back
                 </Button>
-                <Button onClick={handleComplete} className="w-full">
-                  Launch PodiumPass 🚀
+                <Button onClick={handleComplete} disabled={submitting} className="w-full">
+                  {submitting ? 'Creating...' : 'Launch PodiumPass 🚀'}
                 </Button>
               </div>
             </>

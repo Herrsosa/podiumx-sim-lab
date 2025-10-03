@@ -10,27 +10,40 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useAppStore } from '@/store/useAppStore';
 import { Workout } from '@/types';
 import { toast } from 'sonner';
+import { useAuth } from '@/hooks/useAuth';
+import { useAthletes } from '@/hooks/useAthletes';
+import { useTrades } from '@/hooks/useTrades';
+import { supabase } from '@/integrations/supabase/client';
 
 export default function MyAthlete() {
-  const { userProfile, userAthleteId, athletes, trades, updateProfile, addWorkout, deleteWorkout } = useAppStore();
+  const { user } = useAuth();
+  const { data: athletes } = useAthletes();
+  const { data: allTrades } = useTrades();
   const [isEditing, setIsEditing] = useState(false);
-  const [editedProfile, setEditedProfile] = useState(userProfile);
   const [addWorkoutOpen, setAddWorkoutOpen] = useState(false);
   const avatarInputRef = useRef<HTMLInputElement>(null);
 
   const userAthlete = useMemo(() => 
-    athletes.find(a => a.id === userAthleteId),
-    [athletes, userAthleteId]
+    athletes?.find(a => a.id === user?.id),
+    [athletes, user?.id]
   );
 
+  const [editedProfile, setEditedProfile] = useState({
+    displayName: userAthlete?.name || '',
+    sport: userAthlete?.sport || 'Running',
+    location: userAthlete?.location || '',
+    bio: userAthlete?.bio || '',
+    avatar: userAthlete?.avatar || '',
+    socials: userAthlete?.socials || {},
+  });
+
   const priceHistory = useMemo(() => {
-    if (!userAthleteId) return [];
+    if (!user?.id || !allTrades) return [];
     
     // Get trades for this athlete
-    const athleteTrades = trades.filter(t => t.athleteId === userAthleteId);
+    const athleteTrades = allTrades.filter(t => t.athleteId === user.id);
     
     // Generate price history from trades
     const history = athleteTrades.map(trade => ({
@@ -49,7 +62,7 @@ export default function MyAthlete() {
     }
 
     return history;
-  }, [userAthleteId, trades, userAthlete]);
+  }, [user?.id, allTrades, userAthlete]);
 
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -62,16 +75,65 @@ export default function MyAthlete() {
     }
   };
 
-  const handleSaveProfile = () => {
-    updateProfile(editedProfile);
-    setIsEditing(false);
-    toast.success('Profile updated!');
+  const handleSaveProfile = async () => {
+    if (!user) return;
+
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          display_name: editedProfile.displayName,
+          sport: editedProfile.sport,
+          bio: editedProfile.bio,
+          avatar_url: editedProfile.avatar || null,
+          instagram_url: editedProfile.socials.instagram || null,
+          strava_url: editedProfile.socials.strava || null,
+        })
+        .eq('id', user.id);
+
+      if (error) throw error;
+
+      setIsEditing(false);
+      toast.success('Profile updated!');
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to update profile');
+    }
   };
 
-  const handleAddWorkout = (workout: Omit<Workout, 'id'>) => {
-    addWorkout(workout);
-    setAddWorkoutOpen(false);
-    toast.success('Workout added!');
+  const handleAddWorkout = async (workout: Omit<Workout, 'id'>) => {
+    if (!user) return;
+
+    try {
+      const { error } = await supabase
+        .from('posts')
+        .insert({
+          author_id: user.id,
+          text: workout.notes,
+          workout_json: workout,
+        });
+
+      if (error) throw error;
+
+      setAddWorkoutOpen(false);
+      toast.success('Workout added!');
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to add workout');
+    }
+  };
+
+  const handleDeleteWorkout = async (workoutId: string) => {
+    try {
+      const { error } = await supabase
+        .from('posts')
+        .delete()
+        .eq('id', workoutId);
+
+      if (error) throw error;
+
+      toast.success('Workout deleted');
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to delete workout');
+    }
   };
 
   return (
@@ -223,33 +285,25 @@ export default function MyAthlete() {
               ) : (
                 <>
                   <div>
-                    <h2 className="text-2xl font-bold">{userProfile.displayName}</h2>
+                    <h2 className="text-2xl font-bold">{userAthlete?.name || 'No name'}</h2>
                     <div className="mt-2 flex gap-2">
-                      <Badge>{userProfile.sport}</Badge>
-                      <Badge variant="outline">{userProfile.location}</Badge>
+                      <Badge>{userAthlete?.sport || 'Sport'}</Badge>
+                      {userAthlete?.location && <Badge variant="outline">{userAthlete.location}</Badge>}
                     </div>
                   </div>
-                  <p className="text-muted-foreground">{userProfile.bio}</p>
-                  {(userProfile.socials.instagram ||
-                    userProfile.socials.strava ||
-                    userProfile.socials.twitter) && (
+                  <p className="text-muted-foreground">{userAthlete?.bio || 'No bio'}</p>
+                  {(userAthlete?.socials.instagram || userAthlete?.socials.strava) && (
                     <div className="flex gap-4 text-sm">
-                      {userProfile.socials.instagram && (
+                      {userAthlete?.socials.instagram && (
                         <span className="flex items-center gap-1">
                           <LinkIcon className="h-3 w-3" />
-                          {userProfile.socials.instagram}
+                          {userAthlete.socials.instagram}
                         </span>
                       )}
-                      {userProfile.socials.strava && (
+                      {userAthlete?.socials.strava && (
                         <span className="flex items-center gap-1">
                           <LinkIcon className="h-3 w-3" />
-                          {userProfile.socials.strava}
-                        </span>
-                      )}
-                      {userProfile.socials.twitter && (
-                        <span className="flex items-center gap-1">
-                          <LinkIcon className="h-3 w-3" />
-                          {userProfile.socials.twitter}
+                          {userAthlete.socials.strava}
                         </span>
                       )}
                     </div>
@@ -268,7 +322,14 @@ export default function MyAthlete() {
                     <Button
                       variant="outline"
                       onClick={() => {
-                        setEditedProfile(userProfile);
+                        setEditedProfile({
+                          displayName: userAthlete?.name || '',
+                          sport: userAthlete?.sport || 'Running',
+                          location: userAthlete?.location || '',
+                          bio: userAthlete?.bio || '',
+                          avatar: userAthlete?.avatar || '',
+                          socials: userAthlete?.socials || {},
+                        });
                         setIsEditing(false);
                       }}
                     >
@@ -367,20 +428,17 @@ export default function MyAthlete() {
           </div>
         </CardHeader>
         <CardContent>
-          {userProfile.workouts.length === 0 ? (
+          {!userAthlete?.workouts || userAthlete.workouts.length === 0 ? (
             <div className="py-16 text-center text-muted-foreground">
               No workouts yet. Add your first workout to get started!
             </div>
           ) : (
             <div className="space-y-4">
-              {userProfile.workouts.map((workout) => (
+              {userAthlete.workouts.map((workout) => (
                 <WorkoutCard
                   key={workout.id}
                   workout={workout}
-                  onDelete={() => {
-                    deleteWorkout(workout.id);
-                    toast.success('Workout deleted');
-                  }}
+                  onDelete={() => handleDeleteWorkout(workout.id)}
                 />
               ))}
             </div>
