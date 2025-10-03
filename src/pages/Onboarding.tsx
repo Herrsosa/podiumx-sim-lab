@@ -60,16 +60,19 @@ export default function Onboarding() {
 
     setSubmitting(true);
     try {
-      // 1. Update profile
+      // 1. Upsert profile (create or update)
       const { error: profileError } = await supabase
         .from('profiles')
-        .update({
+        .upsert({
+          id: user.id,
           display_name: name,
+          username: handle.replace('@', ''),
           sport,
           bio,
           avatar_url: avatar || null,
         })
-        .eq('id', user.id);
+        .select()
+        .single();
 
       if (profileError) throw profileError;
 
