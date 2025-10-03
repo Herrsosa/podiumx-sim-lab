@@ -18,7 +18,16 @@ serve(async (req) => {
   }
 
   try {
-    const supabaseClient = createClient(
+    // Get the authorization header
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) {
+      throw new Error("No authorization header");
+    }
+
+    const token = authHeader.replace("Bearer ", "");
+    
+    // Create Supabase client with service role key for admin operations
+    const supabaseAdmin = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
       {
@@ -28,18 +37,20 @@ serve(async (req) => {
       }
     );
 
-    const authHeader = req.headers.get("Authorization")!;
-    const token = authHeader.replace("Bearer ", "");
-    const { data: { user } } = await supabaseClient.auth.getUser(token);
+    // Verify the user's JWT token
+    const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token);
 
-    if (!user) {
+    if (authError || !user) {
+      console.error("Auth error:", authError);
       throw new Error("Unauthorized");
     }
 
     const { athleteId, quantity, side }: TradeRequest = await req.json();
 
+    console.log(`Processing ${side} trade for user ${user.id}: ${quantity} tokens of athlete ${athleteId}`);
+
     // Get athlete token data
-    const { data: token_data, error: tokenError } = await supabaseClient
+    const { data: token_data, error: tokenError } = await supabaseAdmin
       .from('athlete_tokens')
       .select('*')
       .eq('athlete_id', athleteId)
@@ -48,7 +59,7 @@ serve(async (req) => {
     if (tokenError) throw tokenError;
 
     // Get user wallet
-    const { data: wallet, error: walletError } = await supabaseClient
+    const { data: wallet, error: walletError } = await supabaseAdmin
       .from('wallets')
       .select('*')
       .eq('user_id', user.id)
@@ -90,7 +101,7 @@ serve(async (req) => {
     } else {
       // SELL
       // Get user holdings
-      const { data: holding, error: holdingError } = await supabaseClient
+      const { data: holding, error: holdingError } = await supabaseAdmin
         .from('holdings')
         .select('*')
         .eq('user_id', user.id)
@@ -120,8 +131,10 @@ serve(async (req) => {
 
     const newPrice = a * newSupply * newSupply + b * newSupply + c;
 
+    console.log(`Executing trade transaction: newSupply=${newSupply}, newPrice=${newPrice}`);
+
     // Execute transaction atomically
-    const { error: txError } = await supabaseClient.rpc('execute_trade_transaction', {
+    const { error: txError } = await supabaseAdmin.rpc('execute_trade_transaction', {
       p_user_id: user.id,
       p_athlete_id: athleteId,
       p_side: side,
