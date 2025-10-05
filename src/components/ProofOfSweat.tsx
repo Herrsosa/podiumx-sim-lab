@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Activity, Calendar, Clock, Gauge, Zap, Trash2 } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Activity, Calendar, Clock, Gauge, Zap, Trash2, Edit } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -17,6 +17,7 @@ import { Workout } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
+import EditWorkoutModal from './EditWorkoutModal';
 
 interface ProofOfSweatProps {
   workouts: Workout[];
@@ -30,11 +31,46 @@ export default function ProofOfSweat({ workouts, athleteId, onWorkoutDeleted }: 
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [workoutToDelete, setWorkoutToDelete] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [workoutToEdit, setWorkoutToEdit] = useState<any>(null);
+  const [workoutPosts, setWorkoutPosts] = useState<any[]>([]);
+
+  // Fetch workout posts to get full post data including token_gated
+  useEffect(() => {
+    if (athleteId) {
+      fetchWorkoutPosts();
+    }
+  }, [athleteId, workouts]);
+
+  const fetchWorkoutPosts = async () => {
+    if (!athleteId) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('posts')
+        .select('*')
+        .eq('author_id', athleteId)
+        .not('workout_json', 'is', null);
+
+      if (error) throw error;
+      setWorkoutPosts(data || []);
+    } catch (error) {
+      console.error('Error fetching workout posts:', error);
+    }
+  };
 
   // Safety check for undefined workouts
   const safeWorkouts = workouts || [];
   
   const canDelete = user?.id === athleteId;
+
+  const handleEditClick = (workout: Workout) => {
+    const post = workoutPosts.find(p => p.id === workout.id);
+    if (post) {
+      setWorkoutToEdit(post);
+      setEditModalOpen(true);
+    }
+  };
 
   const handleDeleteClick = (workoutId: string) => {
     setWorkoutToDelete(workoutId);
@@ -46,28 +82,21 @@ export default function ProofOfSweat({ workouts, athleteId, onWorkoutDeleted }: 
 
     setDeleting(true);
     try {
-      // Find the post with this workout
-      const { data: posts } = await supabase
+      const { error } = await supabase
         .from('posts')
-        .select('*')
-        .eq('author_id', athleteId)
-        .contains('workout_json', { id: workoutToDelete });
+        .delete()
+        .eq('id', workoutToDelete);
 
-      if (posts && posts.length > 0) {
-        const { error } = await supabase
-          .from('posts')
-          .delete()
-          .eq('id', posts[0].id);
+      if (error) throw error;
 
-        if (error) throw error;
+      toast({
+        title: 'Workout deleted',
+        description: 'Your workout has been removed',
+      });
 
-        toast({
-          title: 'Workout deleted',
-          description: 'Your workout has been removed',
-        });
-
-        onWorkoutDeleted?.();
-      }
+      // Refetch workout posts
+      await fetchWorkoutPosts();
+      onWorkoutDeleted?.();
     } catch (error: any) {
       console.error('Error deleting workout:', error);
       toast({
@@ -182,14 +211,24 @@ export default function ProofOfSweat({ workouts, athleteId, onWorkoutDeleted }: 
                     </div>
 
                     {canDelete && (
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleDeleteClick(workout.id)}
-                        className="opacity-0 group-hover:opacity-100 transition-opacity"
-                      >
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                      </Button>
+                      <div className="flex gap-1">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleEditClick(workout)}
+                          className="opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleDeleteClick(workout.id)}
+                          className="opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      </div>
                     )}
                   </div>
                   
@@ -222,6 +261,19 @@ export default function ProofOfSweat({ workouts, athleteId, onWorkoutDeleted }: 
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Edit Workout Modal */}
+      {workoutToEdit && (
+        <EditWorkoutModal
+          open={editModalOpen}
+          onOpenChange={setEditModalOpen}
+          workoutPost={workoutToEdit}
+          onSuccess={async () => {
+            await fetchWorkoutPosts();
+            onWorkoutDeleted?.();
+          }}
+        />
+      )}
     </>
   );
 }
