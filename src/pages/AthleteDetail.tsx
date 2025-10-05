@@ -417,35 +417,35 @@ export default function AthleteDetail() {
 
         {/* Proof of Sweat & Posts */}
         <div className="lg:col-span-2 space-y-6">
-          <ProofOfSweat workouts={athlete.workouts} />
+          <ProofOfSweat 
+            workouts={athlete.workouts} 
+            athleteId={athlete.id}
+            onWorkoutDeleted={handleWorkoutSuccess}
+          />
           
           {/* Workout Posts Section */}
-          <Card className="glass-card">
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle>Training Feed</CardTitle>
-                {isOwnProfile && (
-                  <Button onClick={() => setShowAddWorkout(true)} size="sm" className="gap-2">
-                    <Edit className="h-4 w-4" />
-                    Add Workout
-                  </Button>
-                )}
-              </div>
-            </CardHeader>
-            <CardContent>
-              <WorkoutPosts
-                athleteId={athlete.id}
-                userHoldings={userHoldings}
-                onUnlockClick={async () => {
-                  await tradeMutation.mutateAsync({
-                    athleteId: athlete.id,
-                    quantity: 1,
-                    side: 'BUY',
-                  });
-                }}
-              />
-            </CardContent>
-          </Card>
+          <div>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-2xl font-bold">Training Feed</h2>
+              {isOwnProfile && (
+                <Button onClick={() => setShowAddWorkout(true)} size="sm" className="gap-2">
+                  <Edit className="h-4 w-4" />
+                  Add Workout
+                </Button>
+              )}
+            </div>
+            <WorkoutPosts
+              athleteId={athlete.id}
+              userHoldings={userHoldings}
+              onUnlockClick={async () => {
+                await tradeMutation.mutateAsync({
+                  athleteId: athlete.id,
+                  quantity: 1,
+                  side: 'BUY',
+                });
+              }}
+            />
+          </div>
 
           <TokengatedChat
             athleteId={athlete.id}
