@@ -1,5 +1,5 @@
-import { useState, useRef, useMemo, useCallback } from 'react';
-import { Camera, Upload, Plus, X, Edit2, Save, Link as LinkIcon, TrendingUp, Link2 } from 'lucide-react';
+import { useState, useRef, useMemo, useCallback, useEffect } from 'react';
+import { Camera, Upload, Plus, X, Edit2, Save, Link as LinkIcon, TrendingUp, Link2, Edit, Trash2 } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
@@ -16,7 +16,18 @@ import { useAthletes } from '@/hooks/useAthletes';
 import { useTrades } from '@/hooks/useTrades';
 import { supabase } from '@/integrations/supabase/client';
 import AddWorkoutModal from '@/components/AddWorkoutModal';
+import EditWorkoutModal from '@/components/EditWorkoutModal';
 import { useQueryClient } from '@tanstack/react-query';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 export default function MyAthlete() {
   const { user } = useAuth();
@@ -25,6 +36,11 @@ export default function MyAthlete() {
   const queryClient = useQueryClient();
   const [isEditing, setIsEditing] = useState(false);
   const [addWorkoutOpen, setAddWorkoutOpen] = useState(false);
+  const [editWorkoutOpen, setEditWorkoutOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [workoutToEdit, setWorkoutToEdit] = useState<any>(null);
+  const [workoutToDelete, setWorkoutToDelete] = useState<string | null>(null);
+  const [workoutPosts, setWorkoutPosts] = useState<any[]>([]);
   const avatarInputRef = useRef<HTMLInputElement>(null);
 
   const userAthlete = useMemo(() => 
@@ -102,23 +118,71 @@ export default function MyAthlete() {
     }
   };
 
-  const handleWorkoutSuccess = useCallback(() => {
-    queryClient.invalidateQueries({ queryKey: ['athletes'] });
+  // Fetch workout posts with full data
+  useEffect(() => {
+    if (user?.id) {
+      fetchWorkoutPosts();
+    }
+  }, [user?.id]);
+
+  const fetchWorkoutPosts = async () => {
+    if (!user?.id) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('posts')
+        .select('*')
+        .eq('author_id', user.id)
+        .not('workout_json', 'is', null)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setWorkoutPosts(data || []);
+    } catch (error) {
+      console.error('Error fetching workout posts:', error);
+    }
+  };
+
+  const handleWorkoutSuccess = useCallback(async () => {
+    await queryClient.invalidateQueries({ queryKey: ['athletes'] });
+    await fetchWorkoutPosts();
     setAddWorkoutOpen(false);
   }, [queryClient]);
 
-  const handleDeleteWorkout = async (workoutId: string) => {
+  const handleEditWorkout = (workout: Workout) => {
+    const post = workoutPosts.find(p => p.id === workout.id);
+    if (post) {
+      setWorkoutToEdit(post);
+      setEditWorkoutOpen(true);
+    }
+  };
+
+  const handleDeleteClick = (workoutId: string) => {
+    setWorkoutToDelete(workoutId);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteWorkout = async () => {
+    if (!workoutToDelete) return;
+
     try {
       const { error } = await supabase
         .from('posts')
         .delete()
-        .eq('id', workoutId);
+        .eq('id', workoutToDelete);
 
       if (error) throw error;
 
       toast.success('Workout deleted');
+      
+      // Refresh data
+      await queryClient.invalidateQueries({ queryKey: ['athletes'] });
+      await fetchWorkoutPosts();
     } catch (error: any) {
       toast.error(error.message || 'Failed to delete workout');
+    } finally {
+      setDeleteDialogOpen(false);
+      setWorkoutToDelete(null);
     }
   };
 
@@ -414,7 +478,8 @@ export default function MyAthlete() {
                 <WorkoutCard
                   key={workout.id}
                   workout={workout}
-                  onDelete={() => handleDeleteWorkout(workout.id)}
+                  onEdit={() => handleEditWorkout(workout)}
+                  onDelete={() => handleDeleteClick(workout.id)}
                 />
               ))}
             </div>
@@ -431,13 +496,56 @@ export default function MyAthlete() {
           onSuccess={handleWorkoutSuccess}
         />
       )}
+
+      {/* Edit Workout Modal */}
+      {workoutToEdit && (
+        <EditWorkoutModal
+          open={editWorkoutOpen}
+          onOpenChange={setEditWorkoutOpen}
+          workoutPost={workoutToEdit}
+          onSuccess={async () => {
+            await queryClient.invalidateQueries({ queryKey: ['athletes'] });
+            await fetchWorkoutPosts();
+            setEditWorkoutOpen(false);
+          }}
+        />
+      )}
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Workout?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete this workout.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteWorkout}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
 
-function WorkoutCard({ workout, onDelete }: { workout: Workout; onDelete: () => void }) {
+function WorkoutCard({ 
+  workout, 
+  onEdit, 
+  onDelete 
+}: { 
+  workout: Workout; 
+  onEdit: () => void;
+  onDelete: () => void;
+}) {
   return (
-    <div className="rounded-lg border border-border/50 p-4 transition-all hover:border-primary/30">
+    <div className="group rounded-lg border border-border/50 p-4 transition-all hover:border-primary/30">
       <div className="flex items-start justify-between">
         <div className="flex-1">
           <div className="mb-2 flex items-center gap-2">
@@ -493,14 +601,24 @@ function WorkoutCard({ workout, onDelete }: { workout: Workout; onDelete: () => 
           )}
         </div>
 
-        <Button
-          size="icon"
-          variant="ghost"
-          className="text-muted-foreground hover:text-destructive"
-          onClick={onDelete}
-        >
-          <X className="h-4 w-4" />
-        </Button>
+        <div className="flex gap-1">
+          <Button
+            size="icon"
+            variant="ghost"
+            className="opacity-0 group-hover:opacity-100 transition-opacity"
+            onClick={onEdit}
+          >
+            <Edit className="h-4 w-4" />
+          </Button>
+          <Button
+            size="icon"
+            variant="ghost"
+            className="opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive"
+            onClick={onDelete}
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        </div>
       </div>
     </div>
   );
