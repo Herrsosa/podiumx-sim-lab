@@ -5,9 +5,11 @@ import { UserProfile } from '@/types';
 interface LocalState {
   userProfile: UserProfile;
   userAthleteId?: string;
+  onboardingRole?: 'fan' | 'athlete';
   
   updateProfile: (profile: Partial<UserProfile>) => void;
   setUserAthleteId: (id: string) => void;
+  setOnboardingRole: (role: 'fan' | 'athlete') => void;
 }
 
 const defaultProfile: UserProfile = {
@@ -25,6 +27,7 @@ export const useLocalStore = create<LocalState>()(
     (set) => ({
       userProfile: defaultProfile,
       userAthleteId: undefined,
+      onboardingRole: undefined,
 
       updateProfile: (updates) => {
         set((state) => ({
@@ -37,6 +40,10 @@ export const useLocalStore = create<LocalState>()(
 
       setUserAthleteId: (id) => {
         set({ userAthleteId: id });
+      },
+
+      setOnboardingRole: (role) => {
+        set({ onboardingRole: role });
       },
     }),
     {

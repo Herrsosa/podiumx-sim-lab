@@ -23,19 +23,28 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
   const location = useLocation();
   const [needsOnboarding, setNeedsOnboarding] = useState<boolean | null>(null);
+  const [isAthlete, setIsAthlete] = useState(false);
 
   useEffect(() => {
     async function checkOnboarding() {
       if (!user) return;
 
-      // Check if user has completed onboarding (has an athlete token)
-      const { data, error } = await supabase
+      // Check if user has a profile
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('id', user.id)
+        .maybeSingle();
+
+      // Check if user is an athlete (has athlete token)
+      const { data: athleteToken } = await supabase
         .from('athlete_tokens')
         .select('athlete_id')
         .eq('athlete_id', user.id)
         .maybeSingle();
 
-      setNeedsOnboarding(!data);
+      setIsAthlete(!!athleteToken);
+      setNeedsOnboarding(!profile);
     }
 
     checkOnboarding();
@@ -49,9 +58,14 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
     return <Navigate to="/auth" replace />;
   }
 
-  // Redirect to onboarding if not completed, unless already on onboarding page
+  // Redirect to onboarding if no profile exists
   if (needsOnboarding && location.pathname !== '/onboarding') {
     return <Navigate to="/onboarding" replace />;
+  }
+
+  // Restrict /me to athletes only
+  if (location.pathname === '/me' && !isAthlete) {
+    return <Navigate to="/marketplace" replace />;
   }
 
   return <>{children}</>;
