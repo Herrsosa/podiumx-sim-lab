@@ -1,4 +1,4 @@
-import { useState, useRef, useMemo } from 'react';
+import { useState, useRef, useMemo, useCallback } from 'react';
 import { Camera, Upload, Plus, X, Edit2, Save, Link as LinkIcon, TrendingUp, Link2 } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -7,7 +7,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Workout } from '@/types';
@@ -16,11 +15,14 @@ import { useAuth } from '@/hooks/useAuth';
 import { useAthletes } from '@/hooks/useAthletes';
 import { useTrades } from '@/hooks/useTrades';
 import { supabase } from '@/integrations/supabase/client';
+import AddWorkoutModal from '@/components/AddWorkoutModal';
+import { useQueryClient } from '@tanstack/react-query';
 
 export default function MyAthlete() {
   const { user } = useAuth();
   const { data: athletes } = useAthletes();
   const { data: allTrades } = useTrades();
+  const queryClient = useQueryClient();
   const [isEditing, setIsEditing] = useState(false);
   const [addWorkoutOpen, setAddWorkoutOpen] = useState(false);
   const avatarInputRef = useRef<HTMLInputElement>(null);
@@ -100,26 +102,10 @@ export default function MyAthlete() {
     }
   };
 
-  const handleAddWorkout = async (workout: Omit<Workout, 'id'>) => {
-    if (!user) return;
-
-    try {
-      const { error } = await supabase
-        .from('posts')
-        .insert({
-          author_id: user.id,
-          text: workout.notes,
-          workout_json: workout,
-        });
-
-      if (error) throw error;
-
-      setAddWorkoutOpen(false);
-      toast.success('Workout added!');
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to add workout');
-    }
-  };
+  const handleWorkoutSuccess = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: ['athletes'] });
+    setAddWorkoutOpen(false);
+  }, [queryClient]);
 
   const handleDeleteWorkout = async (workoutId: string) => {
     try {
@@ -411,20 +397,10 @@ export default function MyAthlete() {
         <CardHeader>
           <div className="flex items-center justify-between">
             <CardTitle>Workout Timeline</CardTitle>
-            <Dialog open={addWorkoutOpen} onOpenChange={setAddWorkoutOpen}>
-              <DialogTrigger asChild>
-                <Button className="gap-2">
-                  <Plus className="h-4 w-4" />
-                  Add Workout
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-2xl">
-                <DialogHeader>
-                  <DialogTitle>Add Workout</DialogTitle>
-                </DialogHeader>
-                <AddWorkoutForm onSubmit={handleAddWorkout} />
-              </DialogContent>
-            </Dialog>
+            <Button className="gap-2" onClick={() => setAddWorkoutOpen(true)}>
+              <Plus className="h-4 w-4" />
+              Add Workout
+            </Button>
           </div>
         </CardHeader>
         <CardContent>
@@ -445,371 +421,16 @@ export default function MyAthlete() {
           )}
         </CardContent>
       </Card>
-    </div>
-  );
-}
 
-function AddWorkoutForm({ onSubmit }: { onSubmit: (workout: Omit<Workout, 'id'>) => void }) {
-  const [importMode, setImportMode] = useState<'manual' | 'strava' | 'garmin' | 'apple'>('manual');
-  const [activityUrl, setActivityUrl] = useState('');
-  const [workout, setWorkout] = useState<Omit<Workout, 'id'>>({
-    date: new Date().toISOString().split('T')[0],
-    type: 'Run',
-    duration: 0,
-    rpe: 5,
-    notes: '',
-  });
-  const [mediaFile, setMediaFile] = useState<File | null>(null);
-  const mediaInputRef = useRef<HTMLInputElement>(null);
-
-  const handleMediaChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setMediaFile(file);
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const mediaType = file.type.startsWith('video/') ? 'video' : 'image';
-        setWorkout({ ...workout, mediaUrl: reader.result as string, mediaType });
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  const calculatePace = () => {
-    if (workout.distance && workout.duration) {
-      const paceMinPerKm = workout.duration / workout.distance;
-      const mins = Math.floor(paceMinPerKm);
-      const secs = Math.floor((paceMinPerKm - mins) * 60);
-      return `${mins}:${secs.toString().padStart(2, '0')} /km`;
-    }
-    return '';
-  };
-
-  const handleSubmit = () => {
-    if (importMode !== 'manual' && !activityUrl) {
-      toast.error('Please provide an activity URL');
-      return;
-    }
-    if (workout.duration <= 0) {
-      toast.error('Duration must be greater than 0');
-      return;
-    }
-    const pace = calculatePace();
-    const notes = importMode !== 'manual' 
-      ? `${workout.notes}\n\nImported from ${importMode}: ${activityUrl}`
-      : workout.notes;
-    onSubmit({ ...workout, pace: pace || undefined, notes });
-  };
-
-  return (
-    <Tabs defaultValue="manual" className="w-full" onValueChange={(v) => setImportMode(v as any)}>
-      <TabsList className="grid w-full grid-cols-4">
-        <TabsTrigger value="manual">Manual</TabsTrigger>
-        <TabsTrigger value="strava">
-          <Link2 className="h-4 w-4 mr-1" />
-          Strava
-        </TabsTrigger>
-        <TabsTrigger value="garmin">
-          <Link2 className="h-4 w-4 mr-1" />
-          Garmin
-        </TabsTrigger>
-        <TabsTrigger value="apple">
-          <Link2 className="h-4 w-4 mr-1" />
-          Apple
-        </TabsTrigger>
-      </TabsList>
-
-      <TabsContent value="manual" className="space-y-4 mt-4">
-        <ManualWorkoutForm 
-          workout={workout}
-          setWorkout={setWorkout}
-          mediaFile={mediaFile}
-          setMediaFile={setMediaFile}
-          mediaInputRef={mediaInputRef}
-          handleMediaChange={handleMediaChange}
+      {/* Add Workout Modal */}
+      {user && (
+        <AddWorkoutModal
+          open={addWorkoutOpen}
+          onOpenChange={setAddWorkoutOpen}
+          athleteId={user.id}
+          onSuccess={handleWorkoutSuccess}
         />
-      </TabsContent>
-
-      <TabsContent value="strava" className="space-y-4 mt-4">
-        <ImportWorkoutForm
-          service="Strava"
-          activityUrl={activityUrl}
-          setActivityUrl={setActivityUrl}
-          workout={workout}
-          setWorkout={setWorkout}
-          placeholder="https://www.strava.com/activities/..."
-        />
-      </TabsContent>
-
-      <TabsContent value="garmin" className="space-y-4 mt-4">
-        <ImportWorkoutForm
-          service="Garmin"
-          activityUrl={activityUrl}
-          setActivityUrl={setActivityUrl}
-          workout={workout}
-          setWorkout={setWorkout}
-          placeholder="https://connect.garmin.com/modern/activity/..."
-        />
-      </TabsContent>
-
-      <TabsContent value="apple" className="space-y-4 mt-4">
-        <ImportWorkoutForm
-          service="Apple Watch"
-          activityUrl={activityUrl}
-          setActivityUrl={setActivityUrl}
-          workout={workout}
-          setWorkout={setWorkout}
-          placeholder="Export your workout from Apple Health"
-        />
-      </TabsContent>
-
-      <Button className="w-full" onClick={handleSubmit}>
-        Add Workout
-      </Button>
-    </Tabs>
-  );
-}
-
-interface ManualWorkoutFormProps {
-  workout: Omit<Workout, 'id'>;
-  setWorkout: (workout: Omit<Workout, 'id'>) => void;
-  mediaFile: File | null;
-  setMediaFile: (file: File | null) => void;
-  mediaInputRef: React.RefObject<HTMLInputElement>;
-  handleMediaChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-}
-
-function ManualWorkoutForm({ workout, setWorkout, mediaFile, mediaInputRef, handleMediaChange }: ManualWorkoutFormProps) {
-  return (
-    <div className="space-y-4">
-      <div className="grid gap-4 sm:grid-cols-2">
-        <div>
-          <Label>Date</Label>
-          <Input
-            type="date"
-            value={workout.date}
-            onChange={(e) => setWorkout({ ...workout, date: e.target.value })}
-          />
-        </div>
-        <div>
-          <Label>Type</Label>
-          <Select
-            value={workout.type}
-            onValueChange={(type) => setWorkout({ ...workout, type: type as any })}
-          >
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="Run">Run</SelectItem>
-              <SelectItem value="HYROX">HYROX</SelectItem>
-              <SelectItem value="Swim">Swim</SelectItem>
-              <SelectItem value="Bike">Bike</SelectItem>
-              <SelectItem value="Strength">Strength</SelectItem>
-              <SelectItem value="Other">Other</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
-
-      <div className="grid gap-4 sm:grid-cols-2">
-        <div>
-          <Label>Distance (km)</Label>
-          <Input
-            type="number"
-            step="0.1"
-            value={workout.distance || ''}
-            onChange={(e) =>
-              setWorkout({ ...workout, distance: parseFloat(e.target.value) || undefined })
-            }
-            placeholder="Optional"
-          />
-        </div>
-        <div>
-          <Label>Duration (minutes)</Label>
-          <Input
-            type="number"
-            value={workout.duration || ''}
-            onChange={(e) => setWorkout({ ...workout, duration: parseInt(e.target.value) || 0 })}
-          />
-        </div>
-      </div>
-
-      <div>
-        <Label>RPE (1-10)</Label>
-        <Input
-          type="number"
-          min="1"
-          max="10"
-          value={workout.rpe}
-          onChange={(e) =>
-            setWorkout({ ...workout, rpe: Math.min(10, Math.max(1, parseInt(e.target.value))) })
-          }
-        />
-      </div>
-
-      <div>
-        <Label>Notes</Label>
-        <Textarea
-          value={workout.notes}
-          onChange={(e) => setWorkout({ ...workout, notes: e.target.value })}
-          rows={3}
-          placeholder="How did it feel?"
-        />
-      </div>
-
-      <div>
-        <Label>Media (Image or Video)</Label>
-        <input
-          ref={mediaInputRef}
-          type="file"
-          accept="image/*,video/*"
-          className="hidden"
-          onChange={handleMediaChange}
-        />
-        <Button
-          type="button"
-          variant="outline"
-          className="w-full gap-2"
-          onClick={() => mediaInputRef.current?.click()}
-        >
-          <Upload className="h-4 w-4" />
-          {mediaFile ? mediaFile.name : 'Upload Media'}
-        </Button>
-      </div>
-
-      {workout.mediaUrl && (
-        <div className="relative">
-          {workout.mediaType === 'image' ? (
-            <img
-              src={workout.mediaUrl}
-              alt="Workout"
-              className="h-48 w-full rounded-lg object-cover"
-            />
-          ) : (
-            <video src={workout.mediaUrl} className="h-48 w-full rounded-lg object-cover" controls />
-          )}
-          <Button
-            size="icon"
-            variant="destructive"
-            className="absolute right-2 top-2 h-8 w-8 rounded-full"
-            onClick={() => {
-              setWorkout({ ...workout, mediaUrl: undefined, mediaType: undefined });
-            }}
-          >
-            <X className="h-4 w-4" />
-          </Button>
-        </div>
       )}
-    </div>
-  );
-}
-
-interface ImportWorkoutFormProps {
-  service: string;
-  activityUrl: string;
-  setActivityUrl: (url: string) => void;
-  workout: Omit<Workout, 'id'>;
-  setWorkout: (workout: Omit<Workout, 'id'>) => void;
-  placeholder: string;
-}
-
-function ImportWorkoutForm({ service, activityUrl, setActivityUrl, workout, setWorkout, placeholder }: ImportWorkoutFormProps) {
-  return (
-    <div className="space-y-4">
-      <div className="p-4 bg-primary/10 rounded-lg">
-        <p className="text-sm font-medium mb-2">Import from {service}</p>
-        <p className="text-xs text-muted-foreground">
-          Paste the link to your {service} activity below, then fill in the workout details.
-        </p>
-      </div>
-
-      <div>
-        <Label htmlFor="activityUrl">Activity URL</Label>
-        <Input
-          id="activityUrl"
-          type="url"
-          value={activityUrl}
-          onChange={(e) => setActivityUrl(e.target.value)}
-          placeholder={placeholder}
-        />
-      </div>
-
-      <div className="grid gap-4 sm:grid-cols-2">
-        <div>
-          <Label>Date</Label>
-          <Input
-            type="date"
-            value={workout.date}
-            onChange={(e) => setWorkout({ ...workout, date: e.target.value })}
-          />
-        </div>
-        <div>
-          <Label>Type</Label>
-          <Select
-            value={workout.type}
-            onValueChange={(type) => setWorkout({ ...workout, type: type as any })}
-          >
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="Run">Run</SelectItem>
-              <SelectItem value="HYROX">HYROX</SelectItem>
-              <SelectItem value="Swim">Swim</SelectItem>
-              <SelectItem value="Bike">Bike</SelectItem>
-              <SelectItem value="Strength">Strength</SelectItem>
-              <SelectItem value="Other">Other</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
-
-      <div className="grid gap-4 sm:grid-cols-2">
-        <div>
-          <Label>Distance (km)</Label>
-          <Input
-            type="number"
-            step="0.1"
-            value={workout.distance || ''}
-            onChange={(e) =>
-              setWorkout({ ...workout, distance: parseFloat(e.target.value) || undefined })
-            }
-            placeholder="Optional"
-          />
-        </div>
-        <div>
-          <Label>Duration (minutes)</Label>
-          <Input
-            type="number"
-            value={workout.duration || ''}
-            onChange={(e) => setWorkout({ ...workout, duration: parseInt(e.target.value) || 0 })}
-          />
-        </div>
-      </div>
-
-      <div>
-        <Label>RPE (1-10)</Label>
-        <Input
-          type="number"
-          min="1"
-          max="10"
-          value={workout.rpe}
-          onChange={(e) =>
-            setWorkout({ ...workout, rpe: Math.min(10, Math.max(1, parseInt(e.target.value))) })
-          }
-        />
-      </div>
-
-      <div>
-        <Label>Notes</Label>
-        <Textarea
-          value={workout.notes}
-          onChange={(e) => setWorkout({ ...workout, notes: e.target.value })}
-          rows={3}
-          placeholder="Additional notes about this workout..."
-        />
-      </div>
     </div>
   );
 }
