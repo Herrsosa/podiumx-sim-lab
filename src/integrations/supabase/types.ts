@@ -14,6 +14,47 @@ export type Database = {
   }
   public: {
     Tables: {
+      athlete_integrations: {
+        Row: {
+          access_token: string
+          athlete_id: string
+          created_at: string | null
+          expires_at: string | null
+          id: string
+          refresh_token: string | null
+          service: string
+          updated_at: string | null
+        }
+        Insert: {
+          access_token: string
+          athlete_id: string
+          created_at?: string | null
+          expires_at?: string | null
+          id?: string
+          refresh_token?: string | null
+          service: string
+          updated_at?: string | null
+        }
+        Update: {
+          access_token?: string
+          athlete_id?: string
+          created_at?: string | null
+          expires_at?: string | null
+          id?: string
+          refresh_token?: string | null
+          service?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "athlete_integrations_athlete_id_fkey"
+            columns: ["athlete_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       athlete_tokens: {
         Row: {
           a: number
@@ -127,7 +168,9 @@ export type Database = {
           created_at: string
           id: string
           image_url: string | null
+          strava_activity_id: number | null
           text: string | null
+          token_gated: boolean | null
           workout_json: Json | null
         }
         Insert: {
@@ -135,7 +178,9 @@ export type Database = {
           created_at?: string
           id?: string
           image_url?: string | null
+          strava_activity_id?: number | null
           text?: string | null
+          token_gated?: boolean | null
           workout_json?: Json | null
         }
         Update: {
@@ -143,7 +188,9 @@ export type Database = {
           created_at?: string
           id?: string
           image_url?: string | null
+          strava_activity_id?: number | null
           text?: string | null
+          token_gated?: boolean | null
           workout_json?: Json | null
         }
         Relationships: [

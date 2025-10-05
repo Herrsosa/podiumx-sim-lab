@@ -1,6 +1,6 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Info, Plus, Minus } from 'lucide-react';
+import { ArrowLeft, Info, Plus, Minus, Edit } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -15,15 +15,22 @@ import { calculateBuyImpact, calculateSellImpact } from '@/utils/bondingCurve';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer } from 'recharts';
 import ProofOfSweat from '@/components/ProofOfSweat';
 import TokengatedChat from '@/components/TokengatedChat';
+import WorkoutPosts from '@/components/WorkoutPosts';
+import AddWorkoutModal from '@/components/AddWorkoutModal';
+import { useAuth } from '@/hooks/useAuth';
+import { useQueryClient } from '@tanstack/react-query';
 
 export default function AthleteDetail() {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
   
   // All hooks must be called before any conditional returns
   const [tradeType, setTradeType] = useState<'buy' | 'sell'>('buy');
   const [quantity, setQuantity] = useState(1);
   const [showTradeModal, setShowTradeModal] = useState(false);
+  const [showAddWorkout, setShowAddWorkout] = useState(false);
   
   const { data: athletes, isLoading: athletesLoading } = useAthletes();
   const { data: wallet, isLoading: walletLoading } = useWallet();
@@ -82,6 +89,12 @@ export default function AthleteDetail() {
     setQuantity(1);
     setShowTradeModal(false);
   };
+
+  const handleWorkoutSuccess = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: ['posts'] });
+  }, [queryClient]);
+
+  const isOwnProfile = user?.id === athlete?.id;
 
   // Now check loading and not found states
   if (athletesLoading || walletLoading || tradesLoading) {
@@ -402,15 +415,43 @@ export default function AthleteDetail() {
           </CardContent>
         </Card>
 
-        {/* Proof of Sweat & Chat */}
+        {/* Proof of Sweat & Posts */}
         <div className="lg:col-span-2 space-y-6">
           <ProofOfSweat workouts={athlete.workouts} />
+          
+          {/* Workout Posts Section */}
+          <Card className="glass-card">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle>Training Feed</CardTitle>
+                {isOwnProfile && (
+                  <Button onClick={() => setShowAddWorkout(true)} size="sm" className="gap-2">
+                    <Edit className="h-4 w-4" />
+                    Add Workout
+                  </Button>
+                )}
+              </div>
+            </CardHeader>
+            <CardContent>
+              <WorkoutPosts
+                athleteId={athlete.id}
+                userHoldings={userHoldings}
+                onUnlockClick={async () => {
+                  await tradeMutation.mutateAsync({
+                    athleteId: athlete.id,
+                    quantity: 1,
+                    side: 'BUY',
+                  });
+                }}
+              />
+            </CardContent>
+          </Card>
+
           <TokengatedChat
             athleteId={athlete.id}
             athleteName={athlete.name}
             userHoldings={userHoldings}
             onBuyClick={async () => {
-              // Directly execute a buy of 1 token
               await tradeMutation.mutateAsync({
                 athleteId: athlete.id,
                 quantity: 1,
@@ -460,6 +501,14 @@ export default function AthleteDetail() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Add Workout Modal */}
+      <AddWorkoutModal
+        open={showAddWorkout}
+        onOpenChange={setShowAddWorkout}
+        athleteId={athlete.id}
+        onSuccess={handleWorkoutSuccess}
+      />
     </div>
   );
 }
