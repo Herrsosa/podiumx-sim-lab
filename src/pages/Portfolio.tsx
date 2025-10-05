@@ -18,32 +18,7 @@ export default function Portfolio() {
   const { data: userTrades, isLoading: tradesLoading } = useUserTrades();
   const faucetMutation = useFaucet();
 
-  if (walletLoading || athletesLoading || tradesLoading) {
-    return (
-      <div className="container mx-auto px-4 py-16 text-center">
-        <div className="text-muted-foreground">Loading...</div>
-      </div>
-    );
-  }
-
-  if (!wallet) {
-    return (
-      <div className="container mx-auto px-4 py-16 text-center">
-        <h1 className="mb-4 text-2xl font-bold">Wallet not found</h1>
-        <p className="mb-4 text-muted-foreground">Initialize your wallet to get started</p>
-      </div>
-    );
-  }
-
-  const positions = Object.values(wallet.positions);
-  const totalValue = positions.reduce(
-    (sum, pos) => sum + pos.currentPrice * pos.quantity,
-    0
-  );
-  const totalCostBasis = positions.reduce((sum, pos) => sum + pos.avgCost * pos.quantity, 0);
-  const unrealizedPnL = positions.reduce((sum, pos) => sum + pos.pnl, 0);
-
-  // Calculate realized PnL from trades
+  // Calculate realized PnL from trades - MUST be before any conditional returns
   const realizedPnL = useMemo(() => {
     if (!userTrades) return 0;
     
@@ -71,6 +46,31 @@ export default function Portfolio() {
     
     return realized;
   }, [userTrades]);
+
+  if (walletLoading || athletesLoading || tradesLoading) {
+    return (
+      <div className="container mx-auto px-4 py-16 text-center">
+        <div className="text-muted-foreground">Loading...</div>
+      </div>
+    );
+  }
+
+  if (!wallet) {
+    return (
+      <div className="container mx-auto px-4 py-16 text-center">
+        <h1 className="mb-4 text-2xl font-bold">Wallet not found</h1>
+        <p className="mb-4 text-muted-foreground">Initialize your wallet to get started</p>
+      </div>
+    );
+  }
+
+  const positions = Object.values(wallet.positions);
+  const totalValue = positions.reduce(
+    (sum, pos) => sum + pos.currentPrice * pos.quantity,
+    0
+  );
+  const totalCostBasis = positions.reduce((sum, pos) => sum + pos.avgCost * pos.quantity, 0);
+  const unrealizedPnL = positions.reduce((sum, pos) => sum + pos.pnl, 0);
 
   const totalPnL = unrealizedPnL + realizedPnL;
 
