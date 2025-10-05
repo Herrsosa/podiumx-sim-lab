@@ -91,6 +91,7 @@ export default function AthleteDetail() {
   };
 
   const handleWorkoutSuccess = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: ['athletes'] });
     queryClient.invalidateQueries({ queryKey: ['posts'] });
   }, [queryClient]);
 

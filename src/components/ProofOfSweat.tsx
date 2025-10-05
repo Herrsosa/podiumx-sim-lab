@@ -18,6 +18,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import EditWorkoutModal from './EditWorkoutModal';
+import { useQueryClient } from '@tanstack/react-query';
 
 interface ProofOfSweatProps {
   workouts: Workout[];
@@ -28,12 +29,19 @@ interface ProofOfSweatProps {
 export default function ProofOfSweat({ workouts, athleteId, onWorkoutDeleted }: ProofOfSweatProps) {
   const { user } = useAuth();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [workoutToDelete, setWorkoutToDelete] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [workoutToEdit, setWorkoutToEdit] = useState<any>(null);
   const [workoutPosts, setWorkoutPosts] = useState<any[]>([]);
+  const [optimisticWorkouts, setOptimisticWorkouts] = useState<Workout[]>([]);
+
+  // Sync optimistic state with actual workouts
+  useEffect(() => {
+    setOptimisticWorkouts(workouts || []);
+  }, [workouts]);
 
   // Fetch workout posts to get full post data including token_gated
   useEffect(() => {
@@ -59,8 +67,8 @@ export default function ProofOfSweat({ workouts, athleteId, onWorkoutDeleted }: 
     }
   };
 
-  // Safety check for undefined workouts
-  const safeWorkouts = workouts || [];
+  // Use optimistic workouts for display
+  const safeWorkouts = optimisticWorkouts;
   
   const canDelete = user?.id === athleteId;
 
@@ -81,7 +89,34 @@ export default function ProofOfSweat({ workouts, athleteId, onWorkoutDeleted }: 
     if (!workoutToDelete) return;
 
     setDeleting(true);
+
+    // Store the workout for potential restoration
+    const workoutToDeleteData = optimisticWorkouts.find(w => w.id === workoutToDelete);
+    const postToDelete = workoutPosts.find(p => p.id === workoutToDelete);
+
+    // Optimistically remove from UI
+    setOptimisticWorkouts(prev => prev.filter(w => w.id !== workoutToDelete));
+    setDeleteDialogOpen(false);
+
     try {
+      // Delete media from storage if it exists
+      if (postToDelete?.image_url) {
+        const urlParts = postToDelete.image_url.split('/');
+        const fileName = urlParts[urlParts.length - 1];
+        const folderPath = urlParts.slice(-2, -1)[0]; // Get user folder
+        const filePath = `${folderPath}/${fileName}`;
+        
+        const { error: storageError } = await supabase.storage
+          .from('workout-media')
+          .remove([filePath]);
+        
+        if (storageError) {
+          console.error('Error deleting media:', storageError);
+          // Continue with post deletion even if media deletion fails
+        }
+      }
+
+      // Delete the post from database
       const { error } = await supabase
         .from('posts')
         .delete()
@@ -94,11 +129,25 @@ export default function ProofOfSweat({ workouts, athleteId, onWorkoutDeleted }: 
         description: 'Your workout has been removed',
       });
 
+      // Invalidate queries to refetch fresh data
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['athletes'] }),
+        queryClient.invalidateQueries({ queryKey: ['posts'] }),
+      ]);
+
       // Refetch workout posts
       await fetchWorkoutPosts();
       onWorkoutDeleted?.();
     } catch (error: any) {
       console.error('Error deleting workout:', error);
+      
+      // Restore the workout on error
+      if (workoutToDeleteData) {
+        setOptimisticWorkouts(prev => [...prev, workoutToDeleteData].sort((a, b) => 
+          new Date(b.date).getTime() - new Date(a.date).getTime()
+        ));
+      }
+
       toast({
         title: 'Error',
         description: error.message || 'Failed to delete workout',
@@ -106,7 +155,6 @@ export default function ProofOfSweat({ workouts, athleteId, onWorkoutDeleted }: 
       });
     } finally {
       setDeleting(false);
-      setDeleteDialogOpen(false);
       setWorkoutToDelete(null);
     }
   };
@@ -269,6 +317,10 @@ export default function ProofOfSweat({ workouts, athleteId, onWorkoutDeleted }: 
           onOpenChange={setEditModalOpen}
           workoutPost={workoutToEdit}
           onSuccess={async () => {
+            await Promise.all([
+              queryClient.invalidateQueries({ queryKey: ['athletes'] }),
+              queryClient.invalidateQueries({ queryKey: ['posts'] }),
+            ]);
             await fetchWorkoutPosts();
             onWorkoutDeleted?.();
           }}
