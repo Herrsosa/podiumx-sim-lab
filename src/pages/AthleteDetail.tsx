@@ -59,7 +59,19 @@ export default function AthleteDetail() {
   const userHoldings = position?.quantity || 0;
 
   const handleTrade = async () => {
-    if (!canTrade || !athlete) return;
+    if (!canTrade || !athlete || !impact) return;
+    
+    // Optimistic update - immediately update local state
+    const optimisticAthlete = {
+      ...athlete,
+      price: impact.newPrice,
+      supply: impact.newSupply,
+      reserve: impact.newReserve,
+      marketCap: impact.newPrice * impact.newSupply,
+    };
+    
+    // You could dispatch an optimistic update here if using a state manager
+    // For now, the mutation will handle the refetch
     
     await tradeMutation.mutateAsync({
       athleteId: athlete.id,
@@ -230,7 +242,7 @@ export default function AthleteDetail() {
             {/* Quantity Input */}
             <div>
               <label className="mb-2 block text-sm font-medium">Quantity</label>
-              <div className="flex gap-2">
+              <div className="flex gap-2 mb-2">
                 <Button
                   variant="outline"
                   size="icon"
@@ -253,39 +265,76 @@ export default function AthleteDetail() {
                   <Plus className="h-4 w-4" />
                 </Button>
               </div>
+              {/* Quick quantity buttons */}
+              <div className="flex gap-2">
+                {[1, 5, 10].map((q) => (
+                  <Button
+                    key={q}
+                    variant={quantity === q ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setQuantity(q)}
+                    className="flex-1"
+                  >
+                    {q}
+                  </Button>
+                ))}
+              </div>
             </div>
 
             {/* Impact Preview */}
             {impact && (
-              <div className="space-y-2 rounded-lg bg-muted/50 p-4 text-sm">
-                <div className="flex justify-between">
-                  <span>Avg Price</span>
-                  <span className="font-medium">${impact.avgPrice.toFixed(2)}</span>
+              <div className="space-y-3 rounded-lg bg-muted/50 p-4 text-sm">
+                <div className="space-y-2">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Current Price</span>
+                    <span className="font-medium">${impact.oldPrice.toFixed(4)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">New Price</span>
+                    <span className="font-medium">${impact.newPrice.toFixed(4)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Avg Fill Price</span>
+                    <span className="font-medium">${impact.avgPrice.toFixed(4)}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-muted-foreground">Price Impact</span>
+                    <span
+                      className={
+                        Math.abs(impact.priceImpact) > 5
+                          ? 'font-medium text-destructive'
+                          : 'font-medium text-muted-foreground'
+                      }
+                    >
+                      {impact.priceImpact > 0 ? '+' : ''}
+                      {impact.priceImpact.toFixed(2)}%
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">New Market Cap</span>
+                    <span className="font-medium">
+                      ${((impact.newPrice * impact.newSupply) / 1000).toFixed(2)}k
+                    </span>
+                  </div>
                 </div>
-                <div className="flex justify-between">
-                  <span>Subtotal</span>
-                  <span className="font-medium">${impact.subtotal.toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Fee (3%)</span>
-                  <span className="font-medium">${impact.fee.toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between border-t border-border pt-2 font-bold">
-                  <span>Total</span>
-                  <span>${impact.total.toFixed(2)}</span>
-                </div>
-                <div className="flex items-center justify-between text-xs">
-                  <span>Price Impact</span>
-                  <span
-                    className={
-                      Math.abs(impact.priceImpact) > 5
-                        ? 'text-destructive'
-                        : 'text-muted-foreground'
-                    }
-                  >
-                    {impact.priceImpact > 0 ? '+' : ''}
-                    {impact.priceImpact.toFixed(2)}%
-                  </span>
+
+                <div className="border-t border-border pt-2 space-y-2">
+                  <div className="flex justify-between">
+                    <span>Subtotal</span>
+                    <span className="font-medium">${impact.subtotal.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between text-xs">
+                    <span className="text-muted-foreground">Fee (1.5% → Athlete)</span>
+                    <span className="text-muted-foreground">${(impact.fee / 2).toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between text-xs">
+                    <span className="text-muted-foreground">Fee (1.5% → Treasury)</span>
+                    <span className="text-muted-foreground">${(impact.fee / 2).toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between border-t border-border pt-2 font-bold">
+                    <span>Total {tradeType === 'buy' ? 'Cost' : 'Proceeds'}</span>
+                    <span>${impact.total.toFixed(2)}</span>
+                  </div>
                 </div>
               </div>
             )}
