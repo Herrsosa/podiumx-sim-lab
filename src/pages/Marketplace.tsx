@@ -8,6 +8,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { useAthletes } from '@/hooks/useAthletes';
 import { Sport } from '@/types';
 import { Sparklines, SparklinesLine } from 'react-sparklines';
+import { DevSeedTrades } from '@/components/DevSeedTrades';
 
 const SPORTS: Sport[] = ['Running', 'HYROX', 'Cycling', 'Triathlon', 'CrossFit', 'Swimming', 'Trail Run', 'Rowing'];
 
@@ -46,7 +47,10 @@ export default function Marketplace() {
     <div className="container mx-auto px-4 py-8">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="mb-2 text-4xl font-bold">Athlete Marketplace</h1>
+        <div className="flex items-center justify-between mb-2">
+          <h1 className="text-4xl font-bold">Athlete Marketplace</h1>
+          <DevSeedTrades />
+        </div>
         <p className="text-muted-foreground">
           Trade simulated athlete tokens with bonding curve mechanics
         </p>

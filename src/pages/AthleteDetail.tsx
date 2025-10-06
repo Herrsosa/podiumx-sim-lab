@@ -11,6 +11,7 @@ import { useAthletes } from '@/hooks/useAthletes';
 import { useWallet } from '@/hooks/useWallet';
 import { useTrades } from '@/hooks/useTrades';
 import { useTrade } from '@/hooks/useTrade';
+import { useAthleteTradeHistory } from '@/hooks/useAthleteTradeHistory';
 import { calculateBuyImpact, calculateSellImpact } from '@/utils/bondingCurve';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer } from 'recharts';
 import ProofOfSweat from '@/components/ProofOfSweat';
@@ -19,6 +20,9 @@ import WorkoutPosts from '@/components/WorkoutPosts';
 import AddWorkoutModal from '@/components/AddWorkoutModal';
 import { useAuth } from '@/hooks/useAuth';
 import { useQueryClient } from '@tanstack/react-query';
+
+
+type TimeRange = '24h' | '7d' | '30d';
 
 export default function AthleteDetail() {
   const { slug } = useParams<{ slug: string }>();
@@ -31,6 +35,7 @@ export default function AthleteDetail() {
   const [quantity, setQuantity] = useState(1);
   const [showTradeModal, setShowTradeModal] = useState(false);
   const [showAddWorkout, setShowAddWorkout] = useState(false);
+  const [timeRange, setTimeRange] = useState<TimeRange>('24h');
   
   const { data: athletes, isLoading: athletesLoading } = useAthletes();
   const { data: wallet, isLoading: walletLoading } = useWallet();
@@ -41,13 +46,25 @@ export default function AthleteDetail() {
   const position = athlete && wallet ? wallet.positions[athlete.id] : null;
   const athleteTrades = trades?.filter((t) => t.athleteId === athlete?.id).slice(0, 100) || [];
 
+  // Fetch real trade history data
+  const { data: tradeHistory, isLoading: historyLoading } = useAthleteTradeHistory(athlete?.id, timeRange);
+
   const chartData = useMemo(() => {
-    return athleteTrades.reverse().map((trade, index) => ({
-      index,
-      price: trade.price,
-      time: new Date(trade.timestamp).toLocaleTimeString(),
+    if (!tradeHistory || tradeHistory.length === 0) {
+      return [];
+    }
+
+    return tradeHistory.map((bucket) => ({
+      timestamp: bucket.timestamp,
+      price: bucket.price,
+      time: new Date(bucket.timestamp).toLocaleString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        hour: timeRange === '24h' ? '2-digit' : undefined,
+        minute: timeRange === '24h' ? '2-digit' : undefined,
+      }),
     }));
-  }, [athleteTrades]);
+  }, [tradeHistory, timeRange]);
 
   const impact = useMemo(() => {
     if (!athlete || quantity <= 0) return null;
@@ -169,6 +186,20 @@ export default function AthleteDetail() {
             <div className="flex items-center justify-between">
               <CardTitle>Price Chart</CardTitle>
               <div className="flex items-center gap-4">
+                {/* Time Range Selector */}
+                <div className="flex gap-1 rounded-lg border border-border p-1">
+                  {(['24h', '7d', '30d'] as TimeRange[]).map((range) => (
+                    <Button
+                      key={range}
+                      variant={timeRange === range ? 'default' : 'ghost'}
+                      size="sm"
+                      onClick={() => setTimeRange(range)}
+                      className="h-7 text-xs"
+                    >
+                      {range}
+                    </Button>
+                  ))}
+                </div>
                 <div className="text-right">
                   <div className="text-3xl font-bold">${athlete.price.toFixed(2)}</div>
                   <div
@@ -212,27 +243,48 @@ export default function AthleteDetail() {
 
             {/* Chart */}
             <div className="h-64">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={chartData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                  <XAxis dataKey="index" hide />
-                  <YAxis domain={['auto', 'auto']} />
-                  <RechartsTooltip
-                    contentStyle={{
-                      backgroundColor: 'hsl(var(--card))',
-                      border: '1px solid hsl(var(--border))',
-                      borderRadius: '0.5rem',
-                    }}
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="price"
-                    stroke="hsl(var(--primary))"
-                    strokeWidth={2}
-                    dot={false}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
+              {historyLoading ? (
+                <div className="flex h-full items-center justify-center text-muted-foreground">
+                  Loading chart data...
+                </div>
+              ) : chartData.length === 0 ? (
+                <div className="flex h-full items-center justify-center text-muted-foreground">
+                  No trade data available for this time range
+                </div>
+              ) : (
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={chartData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                    <XAxis 
+                      dataKey="time" 
+                      tick={{ fontSize: 12 }}
+                      angle={timeRange === '24h' ? -45 : 0}
+                      textAnchor={timeRange === '24h' ? 'end' : 'middle'}
+                      height={timeRange === '24h' ? 60 : 30}
+                    />
+                    <YAxis 
+                      domain={['auto', 'auto']} 
+                      tick={{ fontSize: 12 }}
+                      tickFormatter={(value) => `$${value.toFixed(2)}`}
+                    />
+                    <RechartsTooltip
+                      contentStyle={{
+                        backgroundColor: 'hsl(var(--card))',
+                        border: '1px solid hsl(var(--border))',
+                        borderRadius: '0.5rem',
+                      }}
+                      formatter={(value: number) => [`$${value.toFixed(4)}`, 'Price']}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="price"
+                      stroke="hsl(var(--primary))"
+                      strokeWidth={2}
+                      dot={false}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              )}
             </div>
           </CardContent>
         </Card>
