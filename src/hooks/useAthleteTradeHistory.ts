@@ -14,7 +14,7 @@ export function useAthleteTradeHistory(athleteId: string | undefined, range: Tim
   return useQuery({
     queryKey: ['athlete-trade-history', athleteId, range],
     queryFn: async () => {
-      if (!athleteId) return [];
+      if (!athleteId) return { data: [], changePct: 0, volume: 0 };
 
       const now = new Date();
       const rangeHours: Record<TimeRange, number> = {
@@ -36,8 +36,11 @@ export function useAthleteTradeHistory(athleteId: string | undefined, range: Tim
 
       if (error) {
         console.error('Error fetching trade history:', error);
-        return [];
+        return { data: [], changePct: 0, volume: 0 };
       }
+
+      // Calculate volume from all trades in range
+      const volume = trades?.reduce((sum, trade) => sum + Math.abs(Number(trade.price_after) || 0), 0) || 0;
 
       if (!trades || trades.length === 0) {
         // No trades yet - fetch current token data to show current price
@@ -56,14 +59,18 @@ export function useAthleteTradeHistory(athleteId: string | undefined, range: Tim
           const currentPrice = priceAt(token.supply || 0, curve);
           
           // Return a single point for the current price
-          return [{
-            timestamp: now.getTime(),
-            price: currentPrice,
-            date: now.toISOString(),
-          }];
+          return {
+            data: [{
+              timestamp: now.getTime(),
+              price: currentPrice,
+              date: now.toISOString(),
+            }],
+            changePct: 0,
+            volume: 0,
+          };
         }
         
-        return [];
+        return { data: [], changePct: 0, volume: 0 };
       }
 
       // Bucket trades into 1-hour intervals
@@ -89,7 +96,12 @@ export function useAthleteTradeHistory(athleteId: string | undefined, range: Tim
       const bucketedData = Array.from(buckets.values())
         .sort((a, b) => a.timestamp - b.timestamp);
 
-      return bucketedData;
+      // Calculate price change percentage
+      const firstPrice = bucketedData[0]?.price || 0;
+      const lastPrice = bucketedData[bucketedData.length - 1]?.price || 0;
+      const changePct = firstPrice > 0 ? ((lastPrice - firstPrice) / firstPrice) * 100 : 0;
+
+      return { data: bucketedData, changePct, volume };
     },
     enabled: !!athleteId,
   });

@@ -3,10 +3,13 @@ import { supabase } from '@/integrations/supabase/client';
 import { Athlete, Sport } from '@/types';
 import { athleteAvatars } from '@/utils/athleteAvatars';
 import { priceAt } from '@/utils/pricing';
+import { useAthleteMetrics } from './useAthleteMetrics';
 
 export function useAthletes() {
+  const { data: metricsMap } = useAthleteMetrics('24h');
+
   return useQuery({
-    queryKey: ['athletes'],
+    queryKey: ['athletes', metricsMap],
     queryFn: async () => {
       const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
@@ -49,6 +52,9 @@ export function useAthletes() {
             ...(p.workout_json as any),
           }));
 
+        // Get metrics from the bulk metrics map
+        const metrics = metricsMap?.get(profile.id);
+
         return {
           id: profile.id,
           slug: profile.username,
@@ -66,8 +72,8 @@ export function useAthletes() {
           price,
           marketCap,
           athleteRevenue: token?.athlete_earnings || 0,
-          change24h: 0, // TODO: Calculate from recent trades
-          volume24h: 0, // TODO: Calculate from recent trades
+          change24h: metrics?.changePct || 0,
+          volume24h: metrics?.volume || 0,
           workouts,
         };
       });

@@ -50,11 +50,11 @@ export default function AthleteDetail() {
   const { data: tradeHistory, isLoading: historyLoading } = useAthleteTradeHistory(athlete?.id, timeRange);
 
   const chartData = useMemo(() => {
-    if (!tradeHistory || tradeHistory.length === 0) {
+    if (!tradeHistory?.data || tradeHistory.data.length === 0) {
       return [];
     }
 
-    return tradeHistory.map((bucket) => ({
+    return tradeHistory.data.map((bucket) => ({
       timestamp: bucket.timestamp,
       price: bucket.price,
       time: new Date(bucket.timestamp).toLocaleString('en-US', {
