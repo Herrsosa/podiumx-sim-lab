@@ -39,9 +39,25 @@ export function useTrade() {
       });
     },
     onError: (error: any) => {
+      const errorMessage = error.message || 'An error occurred while processing your trade';
+      
+      // Contextual title based on error content
+      let title = 'Trade Failed';
+      if (errorMessage.includes('Insufficient USDC')) {
+        title = 'Insufficient Balance';
+      } else if (errorMessage.includes('Insufficient token')) {
+        title = 'Insufficient Tokens';
+      } else if (errorMessage.includes('Authentication')) {
+        title = 'Authentication Error';
+      } else if (errorMessage.includes('Quantity must be')) {
+        title = 'Invalid Quantity';
+      } else if (errorMessage.includes('Athlete not found')) {
+        title = 'Athlete Not Found';
+      }
+      
       toast({
-        title: 'Trade Failed',
-        description: error.message || 'An error occurred while processing your trade',
+        title,
+        description: errorMessage,
         variant: 'destructive',
       });
     },

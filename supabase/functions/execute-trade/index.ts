@@ -63,6 +63,39 @@ serve(async (req) => {
 
     const { athleteId, quantity, side }: TradeRequest = await req.json();
 
+    // Input validation
+    if (!athleteId || typeof athleteId !== 'string') {
+      console.error("Invalid athlete ID provided");
+      return new Response(
+        JSON.stringify({ error: "Invalid athlete ID provided" }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 }
+      );
+    }
+
+    if (!quantity || !Number.isInteger(quantity) || quantity < 1) {
+      console.error("Invalid quantity:", quantity);
+      return new Response(
+        JSON.stringify({ error: "Quantity must be a positive integer (minimum 1)" }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 }
+      );
+    }
+
+    if (quantity > 1000) {
+      console.error("Quantity exceeds maximum:", quantity);
+      return new Response(
+        JSON.stringify({ error: "Maximum quantity per trade is 1,000 tokens" }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 }
+      );
+    }
+
+    if (side !== 'BUY' && side !== 'SELL') {
+      console.error("Invalid trade side:", side);
+      return new Response(
+        JSON.stringify({ error: "Invalid trade side. Must be 'BUY' or 'SELL'" }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 }
+      );
+    }
+
     console.log(`Processing ${side} trade for user ${user.id}: ${quantity} tokens of athlete ${athleteId}`);
 
     // Get athlete token data
@@ -72,7 +105,24 @@ serve(async (req) => {
       .eq('athlete_id', athleteId)
       .single();
 
-    if (tokenError) throw tokenError;
+    if (tokenError) {
+      if (tokenError.code === 'PGRST116') {
+        console.error("Athlete not found:", athleteId);
+        return new Response(
+          JSON.stringify({ error: "Athlete not found" }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 404 }
+        );
+      }
+      throw tokenError;
+    }
+
+    if (!token_data) {
+      console.error("No token data for athlete:", athleteId);
+      return new Response(
+        JSON.stringify({ error: "Athlete not found" }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 404 }
+      );
+    }
 
     // Get user wallet
     const { data: wallet, error: walletError } = await supabaseAdmin
@@ -107,7 +157,14 @@ serve(async (req) => {
       netAmount = grossAmount + fee;
 
       if (wallet.balance < netAmount) {
-        throw new Error('Insufficient balance');
+        const deficit = netAmount - wallet.balance;
+        console.error(`Insufficient USDC balance for user ${user.id}: has ${wallet.balance}, needs ${netAmount}, short ${deficit}`);
+        return new Response(
+          JSON.stringify({ 
+            error: `Insufficient USDC balance. You have $${wallet.balance.toFixed(2)}, need $${netAmount.toFixed(2)} (short $${deficit.toFixed(2)})` 
+          }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 }
+        );
       }
 
       newSupply = supply + quantity;
@@ -125,7 +182,15 @@ serve(async (req) => {
         .single();
 
       if (holdingError || !holding || holding.qty < quantity) {
-        throw new Error('Insufficient token balance');
+        const currentQty = holding?.qty || 0;
+        const needed = quantity - currentQty;
+        console.error(`Insufficient token balance for user ${user.id}: has ${currentQty}, needs ${quantity}, short ${needed}`);
+        return new Response(
+          JSON.stringify({ 
+            error: `Insufficient token balance. You have ${currentQty} token${currentQty !== 1 ? 's' : ''}, need ${quantity}` 
+          }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 }
+        );
       }
 
       // Calculate proceeds from selling tokens

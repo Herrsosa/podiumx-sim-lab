@@ -33,6 +33,7 @@ export default function AthleteDetail() {
   // All hooks must be called before any conditional returns
   const [tradeType, setTradeType] = useState<'buy' | 'sell'>('buy');
   const [quantity, setQuantity] = useState(1);
+  const [quantityError, setQuantityError] = useState<string | null>(null);
   const [showTradeModal, setShowTradeModal] = useState(false);
   const [showAddWorkout, setShowAddWorkout] = useState(false);
   const [timeRange, setTimeRange] = useState<TimeRange>('24h');
@@ -127,6 +128,7 @@ export default function AthleteDetail() {
 
   const canTrade = 
     quantity > 0 && 
+    !quantityError &&
     impact && 
     wallet &&
     athlete &&
@@ -364,25 +366,88 @@ export default function AthleteDetail() {
                 <Button
                   variant="outline"
                   size="icon"
-                  onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                  onClick={() => {
+                    const newQty = Math.max(1, quantity - 1);
+                    setQuantity(newQty);
+                    setQuantityError(null);
+                  }}
                 >
                   <Minus className="h-4 w-4" />
                 </Button>
                 <Input
                   type="number"
                   min="1"
+                  max="1000"
+                  step="1"
                   value={quantity}
-                  onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
-                  className="text-center"
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    
+                    // Allow empty input temporarily
+                    if (value === '') {
+                      setQuantity(1);
+                      setQuantityError("Minimum quantity is 1");
+                      return;
+                    }
+                    
+                    const parsed = parseInt(value);
+                    
+                    if (isNaN(parsed)) {
+                      setQuantityError("Please enter a valid number");
+                      return;
+                    }
+                    
+                    if (value.includes('.')) {
+                      setQuantityError("Quantity must be a whole number");
+                      return;
+                    }
+                    
+                    if (parsed < 1) {
+                      setQuantityError("Minimum quantity is 1");
+                      setQuantity(1);
+                      return;
+                    }
+                    
+                    if (parsed > 1000) {
+                      setQuantityError("Maximum quantity is 1,000 tokens per trade");
+                      return;
+                    }
+                    
+                    setQuantityError(null);
+                    setQuantity(parsed);
+                  }}
+                  className={`text-center ${quantityError ? 'border-destructive' : ''}`}
                 />
                 <Button
                   variant="outline"
                   size="icon"
-                  onClick={() => setQuantity(quantity + 1)}
+                  onClick={() => {
+                    const newQty = quantity + 1;
+                    if (newQty > 1000) {
+                      setQuantityError("Maximum quantity is 1,000 tokens per trade");
+                      return;
+                    }
+                    setQuantity(newQty);
+                    setQuantityError(null);
+                  }}
                 >
                   <Plus className="h-4 w-4" />
                 </Button>
               </div>
+              
+              {/* Validation error or helper text */}
+              {quantityError ? (
+                <p className="mb-2 text-xs text-destructive">{quantityError}</p>
+              ) : impact && wallet && (
+                <p className="mb-2 text-xs text-muted-foreground">
+                  {tradeType === 'buy' 
+                    ? `You can buy up to ${Math.floor(wallet.usdc / impact.avgPrice)} tokens with your balance`
+                    : position 
+                      ? `You have ${position.quantity} token${position.quantity !== 1 ? 's' : ''}`
+                      : 'You don\'t own any tokens'}
+                </p>
+              )}
+              
               {/* Quick quantity buttons */}
               <div className="flex gap-2">
                 {[1, 5, 10].map((q) => (
@@ -390,7 +455,10 @@ export default function AthleteDetail() {
                     key={q}
                     variant={quantity === q ? "default" : "outline"}
                     size="sm"
-                    onClick={() => setQuantity(q)}
+                    onClick={() => {
+                      setQuantity(q);
+                      setQuantityError(null);
+                    }}
                     className="flex-1"
                   >
                     {q}
@@ -485,20 +553,25 @@ export default function AthleteDetail() {
 
             <Button
               className="w-full"
-              disabled={tradeMutation.isPending}
+              disabled={!canTrade || tradeMutation.isPending}
               onClick={handleTrade}
             >
-              {tradeMutation.isPending ? 'Processing...' : `${tradeType === 'buy' ? 'Buy' : 'Sell'} ${quantity} Token${quantity > 1 ? 's' : ''}`}
+              {tradeMutation.isPending
+                ? 'Processing...'
+                : !wallet
+                ? 'Connect Wallet'
+                : !impact
+                ? 'Enter Quantity'
+                : quantityError
+                ? 'Invalid Quantity'
+                : tradeType === 'buy'
+                ? wallet.usdc < impact.total
+                  ? `Need $${(impact.total - wallet.usdc).toFixed(2)} more USDC`
+                  : `Buy for $${impact.total.toFixed(2)}`
+                : !position || position.quantity < quantity
+                ? `Need ${quantity - (position?.quantity || 0)} more token${quantity - (position?.quantity || 0) !== 1 ? 's' : ''}`
+                : `Sell for $${impact.total.toFixed(2)}`}
             </Button>
-            
-            {!canTrade && wallet && (
-              <p className="text-xs text-muted-foreground text-center">
-                {tradeType === 'buy' 
-                  ? `Insufficient funds. You have $${wallet.usdc.toFixed(2)} USDC${impact ? `, need $${impact.total.toFixed(2)}` : ''}`
-                  : 'Insufficient tokens to sell'
-                }
-              </p>
-            )}
 
             <TooltipProvider>
               <Tooltip>
