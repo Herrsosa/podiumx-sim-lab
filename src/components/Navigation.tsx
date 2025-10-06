@@ -55,9 +55,9 @@ export default function Navigation() {
 
           {/* Nav Links */}
           <div className="flex items-center gap-1">
-            <Link to="/">
+            <Link to="/marketplace">
               <Button
-                variant={isActive('/') ? 'secondary' : 'ghost'}
+                variant={isActive('/marketplace') ? 'secondary' : 'ghost'}
                 size="sm"
                 className="gap-2"
               >
