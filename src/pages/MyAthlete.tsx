@@ -14,6 +14,7 @@ import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
 import { useAthletes } from '@/hooks/useAthletes';
 import { useTrades } from '@/hooks/useTrades';
+import { useUserRole } from '@/hooks/useUserRole';
 import { supabase } from '@/integrations/supabase/client';
 import AddWorkoutModal from '@/components/AddWorkoutModal';
 import EditWorkoutModal from '@/components/EditWorkoutModal';
@@ -33,6 +34,7 @@ export default function MyAthlete() {
   const { user } = useAuth();
   const { data: athletes } = useAthletes();
   const { data: allTrades } = useTrades();
+  const { isAthlete, loading: roleLoading } = useUserRole();
   const queryClient = useQueryClient();
   const [isEditing, setIsEditing] = useState(false);
   const [addWorkoutOpen, setAddWorkoutOpen] = useState(false);
@@ -398,8 +400,8 @@ export default function MyAthlete() {
         </CardContent>
       </Card>
 
-      {/* Price Chart */}
-      {userAthlete && priceHistory.length > 0 && (
+      {/* Price Chart - Only for Athletes */}
+      {isAthlete && userAthlete && priceHistory.length > 0 && (
         <Card className="glass-card mb-6">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
