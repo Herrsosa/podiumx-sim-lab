@@ -20,14 +20,16 @@ export default function Auth() {
     // Check if user is already logged in
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
-        navigate("/marketplace");
+        // Let ProtectedRoute handle onboarding redirect logic
+        navigate("/onboarding");
       }
     });
 
-    // Listen for auth changes
+    // Listen for auth changes (sign-up or sign-in)
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (session) {
-        navigate("/marketplace");
+      if (session && (event === 'SIGNED_IN' || event === 'INITIAL_SESSION')) {
+        // Let ProtectedRoute handle onboarding redirect logic
+        navigate("/onboarding");
       }
     });
 
@@ -43,7 +45,7 @@ export default function Auth() {
         email,
         password,
         options: {
-          emailRedirectTo: `${window.location.origin}/marketplace`,
+          emailRedirectTo: `${window.location.origin}/onboarding`,
         },
       });
 
