@@ -23,7 +23,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
   const location = useLocation();
   const [needsOnboarding, setNeedsOnboarding] = useState<boolean | null>(null);
-  const [isAthlete, setIsAthlete] = useState(false);
+  const [isAthlete, setIsAthlete] = useState<boolean | null>(null);
 
   useEffect(() => {
     async function checkOnboarding() {
@@ -50,7 +50,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
     checkOnboarding();
   }, [user]);
 
-  if (loading || needsOnboarding === null) {
+  if (loading || needsOnboarding === null || isAthlete === null) {
     return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
   }
 
@@ -63,8 +63,9 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
     return <Navigate to="/onboarding" replace />;
   }
 
-  // Restrict /me to athletes only
+  // Restrict /me to athletes only - redirect fans to marketplace
   if (location.pathname === '/me' && !isAthlete) {
+    console.log('User is not an athlete, redirecting to marketplace');
     return <Navigate to="/marketplace" replace />;
   }
 
