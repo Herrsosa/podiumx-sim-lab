@@ -82,7 +82,7 @@ export default function Navigation() {
                 className="gap-2"
               >
                 <User className="h-4 w-4" />
-                <span className="hidden sm:inline">My Athlete</span>
+                <span className="hidden sm:inline">My Page</span>
               </Button>
             </Link>
           </div>
