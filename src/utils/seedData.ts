@@ -1,5 +1,5 @@
 import { Athlete, Trade, Wallet, UserProfile, Workout } from '@/types';
-import { calculatePrice, generatePriceHistory } from './bondingCurve';
+import { priceAt } from './pricing';
 import nilsAvatar from '@/assets/athletes/nils.jpg';
 import maraAvatar from '@/assets/athletes/mara.jpg';
 import leoAvatar from '@/assets/athletes/leo.jpg';
@@ -151,7 +151,8 @@ export function generateSeedAthletes(): Athlete[] {
   return ATHLETE_DATA.map((athlete, index) => {
     const initialSupply = 40 + index * 5; // 40-75 range
     const initialReserve = 1500 + index * 200; // 1500-2900 range
-    const price = calculatePrice(initialSupply);
+    const curve = { a: 0.0002, b: 0.02, c: 1 };
+    const price = priceAt(initialSupply, curve);
     const marketCap = price * initialSupply;
     
     // Generate some random 24h change

@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { priceAt } from '@/utils/pricing';
 
 type TimeRange = '24h' | '7d' | '30d';
 
@@ -39,6 +40,29 @@ export function useAthleteTradeHistory(athleteId: string | undefined, range: Tim
       }
 
       if (!trades || trades.length === 0) {
+        // No trades yet - fetch current token data to show current price
+        const { data: token } = await supabase
+          .from('athlete_tokens')
+          .select('supply, a, b, c')
+          .eq('athlete_id', athleteId)
+          .single();
+        
+        if (token) {
+          const curve = {
+            a: token.a || 0.0002,
+            b: token.b || 0.02,
+            c: token.c || 1,
+          };
+          const currentPrice = priceAt(token.supply || 0, curve);
+          
+          // Return a single point for the current price
+          return [{
+            timestamp: now.getTime(),
+            price: currentPrice,
+            date: now.toISOString(),
+          }];
+        }
+        
         return [];
       }
 

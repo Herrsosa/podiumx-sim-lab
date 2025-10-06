@@ -12,7 +12,7 @@ import { useWallet } from '@/hooks/useWallet';
 import { useTrades } from '@/hooks/useTrades';
 import { useTrade } from '@/hooks/useTrade';
 import { useAthleteTradeHistory } from '@/hooks/useAthleteTradeHistory';
-import { calculateBuyImpact, calculateSellImpact } from '@/utils/bondingCurve';
+import { priceAt, costToBuy, payoutToSell, FEE, type Curve } from '@/utils/pricing';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer } from 'recharts';
 import ProofOfSweat from '@/components/ProofOfSweat';
 import TokengatedChat from '@/components/TokengatedChat';
@@ -68,9 +68,61 @@ export default function AthleteDetail() {
 
   const impact = useMemo(() => {
     if (!athlete || quantity <= 0) return null;
-    return tradeType === 'buy'
-      ? calculateBuyImpact(athlete.supply, athlete.reserve, quantity)
-      : calculateSellImpact(athlete.supply, athlete.reserve, quantity);
+    
+    // Get curve parameters from athlete token (use defaults if not available)
+    const curve: Curve = {
+      a: 0.0002,
+      b: 0.02,
+      c: 1,
+    };
+    
+    const oldPrice = priceAt(athlete.supply, curve);
+    
+    if (tradeType === 'buy') {
+      const grossCost = costToBuy(athlete.supply, quantity, curve);
+      const fee = grossCost * FEE;
+      const total = grossCost + fee;
+      const newSupply = athlete.supply + quantity;
+      const newPrice = priceAt(newSupply, curve);
+      const avgPrice = grossCost / quantity;
+      const priceImpact = ((newPrice - oldPrice) / oldPrice) * 100;
+      const newReserve = athlete.reserve + grossCost;
+      
+      return {
+        oldPrice,
+        newPrice,
+        avgPrice,
+        priceImpact,
+        quantity,
+        subtotal: grossCost,
+        fee,
+        total,
+        newSupply,
+        newReserve,
+      };
+    } else {
+      const grossPayout = payoutToSell(athlete.supply, quantity, curve);
+      const fee = grossPayout * FEE;
+      const total = grossPayout - fee;
+      const newSupply = Math.max(0, athlete.supply - quantity);
+      const newPrice = priceAt(newSupply, curve);
+      const avgPrice = grossPayout / quantity;
+      const priceImpact = -Math.abs(((newPrice - oldPrice) / oldPrice) * 100);
+      const newReserve = Math.max(0, athlete.reserve - grossPayout);
+      
+      return {
+        oldPrice,
+        newPrice,
+        avgPrice,
+        priceImpact,
+        quantity,
+        subtotal: grossPayout,
+        fee,
+        total,
+        newSupply,
+        newReserve,
+      };
+    }
   }, [tradeType, quantity, athlete]);
 
   const canTrade = 

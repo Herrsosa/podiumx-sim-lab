@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { AppState, Athlete, Trade, Position } from '@/types';
-import { calculateBuyImpact, calculateSellImpact, calculatePrice } from '@/utils/bondingCurve';
+import { priceAt, costToBuy, payoutToSell, FEE, type Curve } from '@/utils/pricing';
 import { generateSeedAthletes, generateSeedTrades, generateSeedWallet, generateSeedProfile } from '@/utils/seedData';
 
 const STORAGE_KEY = 'podiumx-state';
@@ -37,10 +37,17 @@ export const useAppStore = create<AppState>()(
         const athlete = state.athletes.find((a) => a.id === athleteId);
         if (!athlete) return;
 
-        const impact = calculateBuyImpact(athlete.supply, athlete.reserve, quantity);
+        const curve: Curve = { a: 0.0002, b: 0.02, c: 1 };
+        const grossCost = costToBuy(athlete.supply, quantity, curve);
+        const fee = grossCost * FEE;
+        const total = grossCost + fee;
+        const newSupply = athlete.supply + quantity;
+        const newPrice = priceAt(newSupply, curve);
+        const avgPrice = grossCost / quantity;
+        const newReserve = athlete.reserve + grossCost;
         
         // Check if user has enough USDC
-        if (state.wallet.usdc < impact.total) {
+        if (state.wallet.usdc < total) {
           throw new Error('Insufficient USDC balance');
         }
 
@@ -49,12 +56,12 @@ export const useAppStore = create<AppState>()(
           a.id === athleteId
             ? {
                 ...a,
-                supply: impact.newSupply,
-                reserve: impact.newReserve,
-                price: impact.newPrice,
-                marketCap: impact.newPrice * impact.newSupply,
-                athleteRevenue: a.athleteRevenue + impact.fee * 0.5,
-                volume24h: a.volume24h + impact.total,
+                supply: newSupply,
+                reserve: newReserve,
+                price: newPrice,
+                marketCap: newPrice * newSupply,
+                athleteRevenue: a.athleteRevenue + fee * 0.5,
+                volume24h: a.volume24h + total,
               }
             : a
         );
@@ -66,9 +73,9 @@ export const useAppStore = create<AppState>()(
               ...currentPosition,
               quantity: currentPosition.quantity + quantity,
               avgCost:
-                (currentPosition.avgCost * currentPosition.quantity + impact.subtotal) /
+                (currentPosition.avgCost * currentPosition.quantity + grossCost) /
                 (currentPosition.quantity + quantity),
-              currentPrice: impact.newPrice,
+              currentPrice: newPrice,
               pnl: 0,
               pnlPercent: 0,
             }
@@ -76,8 +83,8 @@ export const useAppStore = create<AppState>()(
               athleteId,
               athleteName: athlete.name,
               quantity,
-              avgCost: impact.avgPrice,
-              currentPrice: impact.newPrice,
+              avgCost: avgPrice,
+              currentPrice: newPrice,
               pnl: 0,
               pnlPercent: 0,
             };
@@ -87,7 +94,7 @@ export const useAppStore = create<AppState>()(
         newPosition.pnlPercent = ((newPosition.currentPrice - newPosition.avgCost) / newPosition.avgCost) * 100;
 
         const updatedWallet = {
-          usdc: state.wallet.usdc - impact.total,
+          usdc: state.wallet.usdc - total,
           positions: {
             ...state.wallet.positions,
             [athleteId]: newPosition,
@@ -101,9 +108,9 @@ export const useAppStore = create<AppState>()(
           athleteName: athlete.name,
           type: 'buy',
           quantity,
-          price: impact.avgPrice,
-          total: impact.total,
-          fee: impact.fee,
+          price: avgPrice,
+          total: total,
+          fee: fee,
           timestamp: Date.now(),
         };
 
@@ -124,19 +131,26 @@ export const useAppStore = create<AppState>()(
           throw new Error('Insufficient token balance');
         }
 
-        const impact = calculateSellImpact(athlete.supply, athlete.reserve, quantity);
+        const curve: Curve = { a: 0.0002, b: 0.02, c: 1 };
+        const grossPayout = payoutToSell(athlete.supply, quantity, curve);
+        const fee = grossPayout * FEE;
+        const total = grossPayout - fee;
+        const newSupply = Math.max(0, athlete.supply - quantity);
+        const newPrice = priceAt(newSupply, curve);
+        const avgPrice = grossPayout / quantity;
+        const newReserve = Math.max(0, athlete.reserve - grossPayout);
 
         // Update athlete
         const updatedAthletes = state.athletes.map((a) =>
           a.id === athleteId
             ? {
                 ...a,
-                supply: impact.newSupply,
-                reserve: impact.newReserve,
-                price: impact.newPrice,
-                marketCap: impact.newPrice * impact.newSupply,
-                athleteRevenue: a.athleteRevenue + impact.fee * 0.5,
-                volume24h: a.volume24h + impact.subtotal,
+                supply: newSupply,
+                reserve: newReserve,
+                price: newPrice,
+                marketCap: newPrice * newSupply,
+                athleteRevenue: a.athleteRevenue + fee * 0.5,
+                volume24h: a.volume24h + grossPayout,
               }
             : a
         );
@@ -151,20 +165,20 @@ export const useAppStore = create<AppState>()(
           const newPosition = {
             ...position,
             quantity: newQuantity,
-            currentPrice: impact.newPrice,
-            pnl: (impact.newPrice - position.avgCost) * newQuantity,
-            pnlPercent: ((impact.newPrice - position.avgCost) / position.avgCost) * 100,
+            currentPrice: newPrice,
+            pnl: (newPrice - position.avgCost) * newQuantity,
+            pnlPercent: ((newPrice - position.avgCost) / position.avgCost) * 100,
           };
           updatedPositions[athleteId] = newPosition;
         }
 
         const updatedWallet = {
-          usdc: state.wallet.usdc + impact.total,
+          usdc: state.wallet.usdc + total,
           positions: updatedPositions,
         };
 
         // Calculate realized PnL for this trade
-        const realizedPnL = (impact.avgPrice - position.avgCost) * quantity;
+        const realizedPnL = (avgPrice - position.avgCost) * quantity;
 
         // Add trade
         const trade: Trade = {
@@ -173,9 +187,9 @@ export const useAppStore = create<AppState>()(
           athleteName: athlete.name,
           type: 'sell',
           quantity,
-          price: impact.avgPrice,
-          total: impact.total,
-          fee: impact.fee,
+          price: avgPrice,
+          total: total,
+          fee: fee,
           timestamp: Date.now(),
           userPnL: realizedPnL,
         };

@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Athlete, Sport } from '@/types';
 import { athleteAvatars } from '@/utils/athleteAvatars';
+import { priceAt } from '@/utils/pricing';
 
 export function useAthletes() {
   return useQuery({
@@ -37,7 +38,7 @@ export function useAthletes() {
         const a = token?.a || 0.0002;
         const b = token?.b || 0.02;
         const c = token?.c || 1;
-        const price = a * supply * supply + b * supply + c;
+        const price = priceAt(supply, { a, b, c });
         const marketCap = price * supply;
 
         // Convert posts to workouts format
