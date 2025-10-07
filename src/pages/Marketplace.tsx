@@ -6,8 +6,6 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { useAthletes } from '@/hooks/useAthletes';
-import { useAthleteMetrics } from '@/hooks/useAthleteMetrics';
-import { useAthleteTradeHistory } from '@/hooks/useAthleteTradeHistory';
 import { Sport } from '@/types';
 import { Sparklines, SparklinesLine } from 'react-sparklines';
 import { DevSeedTrades } from '@/components/DevSeedTrades';
@@ -38,20 +36,21 @@ export default function Marketplace() {
     );
   }
 
-  // Fetch real trade metrics for all athletes
-  const { data: metricsMap } = useAthleteMetrics('24h');
-
-  const getAthleteSparklineData = (athleteId: string, currentPrice: number) => {
-    // Try to get real trade history for this athlete
-    const { data: tradeHistory } = useAthleteTradeHistory(athleteId, '7d');
+  // Simple sparkline data generator - shows trend based on 24h change
+  const generateSparklineData = (basePrice: number, change24h: number) => {
+    // Create a simple trend line based on the 24h change
+    const points = 20;
+    const trend = change24h / 100; // Convert percentage to decimal
     
-    if (tradeHistory?.data && tradeHistory.data.length > 1) {
-      // Use real trade data
-      return tradeHistory.data.slice(-20).map(d => d.price);
-    }
-    
-    // Fallback: show flat line at current price if no trades
-    return Array(20).fill(currentPrice);
+    return Array.from({ length: points }, (_, i) => {
+      const progress = i / (points - 1); // 0 to 1
+      // Start from (basePrice - trend) and end at basePrice
+      const startPrice = basePrice / (1 + trend);
+      const value = startPrice * (1 + trend * progress);
+      // Add small random variance for visual interest
+      const variance = (Math.random() - 0.5) * 0.02 * basePrice;
+      return value + variance;
+    });
   };
 
   return (
@@ -102,7 +101,7 @@ export default function Marketplace() {
       {/* Athletes Grid */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {filteredAthletes.map((athlete) => {
-          const sparklineData = getAthleteSparklineData(athlete.id, athlete.price);
+          const sparklineData = generateSparklineData(athlete.price, athlete.change24h);
           const isPositive = athlete.change24h >= 0;
 
           return (
