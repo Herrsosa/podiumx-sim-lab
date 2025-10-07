@@ -79,12 +79,16 @@ export function DirectMessages() {
   const loadConversations = async () => {
     if (!user) return;
 
+    console.log('[DirectMessages] Loading conversations for user:', user.id);
+
     try {
       // Get conversations where user is a participant
-      const { data: participations } = await supabase
+      const { data: participations, error: partError } = await supabase
         .from('conversation_participants')
         .select('conversation_id, last_read_at')
         .eq('user_id', user.id);
+
+      console.log('[DirectMessages] User participations:', participations, 'Error:', partError);
 
       if (!participations || participations.length === 0) {
         setIsLoading(false);

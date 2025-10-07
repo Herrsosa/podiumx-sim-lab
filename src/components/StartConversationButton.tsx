@@ -36,13 +36,16 @@ export function StartConversationButton({ athleteId, athleteName }: StartConvers
     }
 
     setIsLoading(true);
+    console.log('[StartConversation] Starting conversation between', user.id, 'and', athleteId);
 
     try {
       // Check if conversation already exists between these users
-      const { data: existingParticipations } = await supabase
+      const { data: existingParticipations, error: partError } = await supabase
         .from('conversation_participants')
         .select('conversation_id')
         .eq('user_id', user.id);
+
+      console.log('[StartConversation] Existing participations:', existingParticipations, 'Error:', partError);
 
       let conversationId: string | null = null;
 
@@ -65,12 +68,16 @@ export function StartConversationButton({ athleteId, athleteName }: StartConvers
 
       // If no existing conversation, create a new one
       if (!conversationId) {
+        console.log('[StartConversation] Creating new conversation');
+        
         // Create new conversation
         const { data: newConversation, error: convError } = await supabase
           .from('conversations')
           .insert({})
           .select()
           .single();
+
+        console.log('[StartConversation] New conversation:', newConversation, 'Error:', convError);
 
         if (convError) throw convError;
 
@@ -83,6 +90,8 @@ export function StartConversationButton({ athleteId, athleteName }: StartConvers
             { conversation_id: conversationId, user_id: user.id },
             { conversation_id: conversationId, user_id: athleteId }
           ]);
+
+        console.log('[StartConversation] Participants added, error:', participantsError);
 
         if (participantsError) throw participantsError;
 
