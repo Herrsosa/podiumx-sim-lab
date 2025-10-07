@@ -34,6 +34,7 @@ export default function Onboarding() {
   const { onboardingRole, setOnboardingRole } = useLocalStore();
   const [step, setStep] = useState<OnboardingStep>('ROLE_SELECTION');
   const [submitting, setSubmitting] = useState(false);
+  const [checkingProfile, setCheckingProfile] = useState(true);
 
   // Common profile fields
   const [name, setName] = useState("");
@@ -53,6 +54,31 @@ export default function Onboarding() {
 
   const { data: athletes } = useAthletes();
   const trade = useTrade();
+
+  // Check if user already has a profile and redirect if they do
+  useEffect(() => {
+    async function checkExistingProfile() {
+      if (!user) {
+        setCheckingProfile(false);
+        return;
+      }
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('id', user.id)
+        .maybeSingle();
+
+      if (profile) {
+        // User already has a profile, redirect to marketplace
+        navigate('/marketplace', { replace: true });
+      } else {
+        setCheckingProfile(false);
+      }
+    }
+
+    checkExistingProfile();
+  }, [user, navigate]);
 
   // Initialize wallet on mount
   useEffect(() => {
@@ -214,6 +240,14 @@ export default function Onboarding() {
   };
 
   const topAthletes = athletes?.slice(0, 3) || [];
+
+  if (checkingProfile) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <p>Loading...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
