@@ -1,5 +1,5 @@
 import { useState, useRef, useMemo, useCallback, useEffect } from 'react';
-import { Camera, Upload, Plus, X, Edit2, Save, Link as LinkIcon, TrendingUp, Link2, Edit, Trash2 } from 'lucide-react';
+import { Camera, Upload, Plus, X, Edit2, Save, Link as LinkIcon, TrendingUp, Link2, Edit, Trash2, MessageSquare } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
@@ -19,6 +19,7 @@ import { supabase } from '@/integrations/supabase/client';
 import AddWorkoutModal from '@/components/AddWorkoutModal';
 import EditWorkoutModal from '@/components/EditWorkoutModal';
 import StravaTraining from '@/components/StravaTraining';
+import { DirectMessages } from '@/components/DirectMessages';
 import { useQueryClient } from '@tanstack/react-query';
 import {
   AlertDialog,
@@ -472,36 +473,54 @@ export default function MyAthlete() {
         </Card>
       )}
 
-      {/* Workouts Timeline */}
-      <Card className="glass-card">
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle>Workout Timeline</CardTitle>
-            <Button className="gap-2" onClick={() => setAddWorkoutOpen(true)}>
-              <Plus className="h-4 w-4" />
-              Add Workout
-            </Button>
-          </div>
-        </CardHeader>
-        <CardContent>
-          {!userAthlete?.workouts || userAthlete.workouts.length === 0 ? (
-            <div className="py-16 text-center text-muted-foreground">
-              No workouts yet. Add your first workout to get started!
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {userAthlete.workouts.map((workout) => (
-                <WorkoutCard
-                  key={workout.id}
-                  workout={workout}
-                  onEdit={() => handleEditWorkout(workout)}
-                  onDelete={() => handleDeleteClick(workout.id)}
-                />
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+      {/* Tabs for Workouts and Messages */}
+      <Tabs defaultValue="workouts" className="w-full">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="workouts">Workout Timeline</TabsTrigger>
+          <TabsTrigger value="messages" className="gap-2">
+            <MessageSquare className="h-4 w-4" />
+            Messages
+          </TabsTrigger>
+        </TabsList>
+
+        {/* Workouts Tab */}
+        <TabsContent value="workouts">
+          <Card className="glass-card">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle>Workout Timeline</CardTitle>
+                <Button className="gap-2" onClick={() => setAddWorkoutOpen(true)}>
+                  <Plus className="h-4 w-4" />
+                  Add Workout
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {!userAthlete?.workouts || userAthlete.workouts.length === 0 ? (
+                <div className="py-16 text-center text-muted-foreground">
+                  No workouts yet. Add your first workout to get started!
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {userAthlete.workouts.map((workout) => (
+                    <WorkoutCard
+                      key={workout.id}
+                      workout={workout}
+                      onEdit={() => handleEditWorkout(workout)}
+                      onDelete={() => handleDeleteClick(workout.id)}
+                    />
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Messages Tab */}
+        <TabsContent value="messages">
+          <DirectMessages />
+        </TabsContent>
+      </Tabs>
 
       {/* Add Workout Modal */}
       {user && (
