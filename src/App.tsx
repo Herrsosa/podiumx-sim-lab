@@ -38,7 +38,11 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
       // If no profile at all, they need onboarding
       if (!profile) {
-        setRedirectPath('/onboarding');
+        if (location.pathname !== '/onboarding') {
+          setRedirectPath('/onboarding');
+        } else {
+          setRedirectPath(null); // Already on onboarding, no redirect needed
+        }
         setAuthCheckComplete(true);
         return;
       }
