@@ -1,4 +1,5 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { priceAt } from '@/utils/pricing';
 
@@ -11,6 +12,36 @@ interface BucketedPrice {
 }
 
 export function useAthleteTradeHistory(athleteId: string | undefined, range: TimeRange = '24h') {
+  const queryClient = useQueryClient();
+
+  // Subscribe to real-time trade updates
+  useEffect(() => {
+    if (!athleteId) return;
+
+    const channel = supabase
+      .channel('trade-updates')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'trades',
+          filter: `athlete_id=eq.${athleteId}`
+        },
+        () => {
+          // Invalidate and refetch the trade history when a new trade occurs
+          queryClient.invalidateQueries({ 
+            queryKey: ['athlete-trade-history', athleteId, range] 
+          });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [athleteId, range, queryClient]);
+
   return useQuery({
     queryKey: ['athlete-trade-history', athleteId, range],
     queryFn: async () => {
