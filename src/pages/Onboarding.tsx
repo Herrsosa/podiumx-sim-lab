@@ -35,6 +35,7 @@ export default function Onboarding() {
   const [step, setStep] = useState<OnboardingStep>('ROLE_SELECTION');
   const [submitting, setSubmitting] = useState(false);
   const [checkingProfile, setCheckingProfile] = useState(true);
+  const [hasStartedOnboarding, setHasStartedOnboarding] = useState(false);
 
   // Common profile fields
   const [name, setName] = useState("");
@@ -56,6 +57,7 @@ export default function Onboarding() {
   const trade = useTrade();
 
   // Check if user already has a profile and redirect if they do
+  // Only check once on mount, don't interrupt if user has started onboarding
   useEffect(() => {
     async function checkExistingProfile() {
       if (!user) {
@@ -77,8 +79,11 @@ export default function Onboarding() {
       }
     }
 
-    checkExistingProfile();
-  }, [user, navigate]);
+    // Only check if user hasn't started onboarding
+    if (!hasStartedOnboarding) {
+      checkExistingProfile();
+    }
+  }, [user, navigate, hasStartedOnboarding]);
 
   // Initialize wallet on mount
   useEffect(() => {
@@ -99,6 +104,7 @@ export default function Onboarding() {
   }, [onboardingRole]);
 
   const handleRoleSelection = (role: 'fan' | 'athlete') => {
+    setHasStartedOnboarding(true);
     setOnboardingRole(role);
     if (role === 'fan') {
       setStep('FAN_PROFILE');
