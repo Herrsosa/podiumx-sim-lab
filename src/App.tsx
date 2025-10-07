@@ -22,10 +22,11 @@ const queryClient = new QueryClient();
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
   const location = useLocation();
-  const [needsOnboarding, setNeedsOnboarding] = useState<boolean | null>(null);
+  const [authCheckComplete, setAuthCheckComplete] = useState(false);
+  const [redirectPath, setRedirectPath] = useState<string | null>(null);
 
   useEffect(() => {
-    async function checkOnboarding() {
+    async function checkUserStatus() {
       if (!user) return;
 
       // Check if user has a profile
@@ -35,13 +36,52 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
         .eq('id', user.id)
         .maybeSingle();
 
-      setNeedsOnboarding(!profile);
+      // If no profile at all, they need onboarding
+      if (!profile) {
+        setRedirectPath('/onboarding');
+        setAuthCheckComplete(true);
+        return;
+      }
+
+      // Check if user is an athlete (has athlete_tokens)
+      const { data: athleteToken } = await supabase
+        .from('athlete_tokens')
+        .select('athlete_id')
+        .eq('athlete_id', user.id)
+        .maybeSingle();
+
+      // Check if user has any holdings
+      const { data: holdings } = await supabase
+        .from('holdings')
+        .select('qty')
+        .eq('user_id', user.id)
+        .gt('qty', 0)
+        .limit(1)
+        .maybeSingle();
+
+      // Determine if user needs onboarding (no athlete token AND no holdings)
+      const needsOnboarding = !athleteToken && !holdings;
+
+      if (needsOnboarding && location.pathname !== '/onboarding') {
+        setRedirectPath('/onboarding');
+      } else if (!needsOnboarding && location.pathname === '/onboarding') {
+        // User completed onboarding, redirect to appropriate page
+        if (athleteToken) {
+          setRedirectPath('/me');
+        } else {
+          setRedirectPath('/marketplace');
+        }
+      } else {
+        setRedirectPath(null);
+      }
+
+      setAuthCheckComplete(true);
     }
 
-    checkOnboarding();
-  }, [user]);
+    checkUserStatus();
+  }, [user, location.pathname]);
 
-  if (loading || needsOnboarding === null) {
+  if (loading || !authCheckComplete) {
     return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
   }
 
@@ -49,9 +89,8 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
     return <Navigate to="/auth" replace />;
   }
 
-  // Redirect to onboarding if no profile exists
-  if (needsOnboarding && location.pathname !== '/onboarding') {
-    return <Navigate to="/onboarding" replace />;
+  if (redirectPath) {
+    return <Navigate to={redirectPath} replace />;
   }
 
   return <>{children}</>;

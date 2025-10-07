@@ -56,36 +56,15 @@ export default function Onboarding() {
   const { data: athletes } = useAthletes();
   const trade = useTrade();
 
-  // Check if user already has a profile and redirect if they do
-  // Only check once on mount, don't interrupt if user has started onboarding
+  // Simple initialization - don't check for existing profile here
+  // The ProtectedRoute component handles that logic now
   useEffect(() => {
-    async function checkExistingProfile() {
-      if (!user) {
-        setCheckingProfile(false);
-        return;
-      }
-
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('id', user.id)
-        .maybeSingle();
-
-      if (profile) {
-        // User already has a profile, redirect to marketplace
-        navigate('/marketplace', { replace: true });
-      } else {
-        // Clear any stale localStorage role for new users
-        setOnboardingRole(null);
-        setCheckingProfile(false);
-      }
+    if (!user) {
+      setCheckingProfile(false);
+      return;
     }
-
-    // Only check if user hasn't started onboarding
-    if (!hasStartedOnboarding) {
-      checkExistingProfile();
-    }
-  }, [user, navigate, hasStartedOnboarding, setOnboardingRole]);
+    setCheckingProfile(false);
+  }, [user]);
 
   // Initialize wallet on mount
   useEffect(() => {
@@ -236,6 +215,9 @@ export default function Onboarding() {
         });
 
       if (postError) throw postError;
+
+      // Clear onboarding state from localStorage
+      setOnboardingRole(null);
 
       toast.success("Welcome to PodiumX! 🎉");
       window.location.href = "/me";
