@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { useAthletes } from '@/hooks/useAthletes';
+import { useMarketplaceCharts } from '@/hooks/useMarketplaceCharts';
 import { Sport } from '@/types';
 import { Sparklines, SparklinesLine } from 'react-sparklines';
 import { DevSeedTrades } from '@/components/DevSeedTrades';
@@ -28,6 +29,10 @@ export default function Marketplace() {
     });
   }, [athletes, search, selectedSport]);
 
+  // Get real chart data for filtered athletes
+  const athleteIds = filteredAthletes.map(a => a.id);
+  const { data: chartData } = useMarketplaceCharts(athleteIds);
+
   if (isLoading) {
     return (
       <div className="container mx-auto px-4 py-16 text-center">
@@ -36,22 +41,6 @@ export default function Marketplace() {
     );
   }
 
-  // Simple sparkline data generator - shows trend based on 24h change
-  const generateSparklineData = (basePrice: number, change24h: number) => {
-    // Create a simple trend line based on the 24h change
-    const points = 20;
-    const trend = change24h / 100; // Convert percentage to decimal
-    
-    return Array.from({ length: points }, (_, i) => {
-      const progress = i / (points - 1); // 0 to 1
-      // Start from (basePrice - trend) and end at basePrice
-      const startPrice = basePrice / (1 + trend);
-      const value = startPrice * (1 + trend * progress);
-      // Add small random variance for visual interest
-      const variance = (Math.random() - 0.5) * 0.02 * basePrice;
-      return value + variance;
-    });
-  };
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -101,7 +90,7 @@ export default function Marketplace() {
       {/* Athletes Grid */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {filteredAthletes.map((athlete) => {
-          const sparklineData = generateSparklineData(athlete.price, athlete.change24h);
+          const sparklineData = chartData?.[athlete.id] || [];
           const isPositive = athlete.change24h >= 0;
 
           return (
@@ -155,12 +144,18 @@ export default function Marketplace() {
 
                 {/* Sparkline */}
                 <div className="mb-4 h-12">
-                  <Sparklines data={sparklineData} width={200} height={48}>
-                    <SparklinesLine
-                      color={isPositive ? '#7CFF6B' : '#EF4444'}
-                      style={{ strokeWidth: 2, fill: 'none' }}
-                    />
-                  </Sparklines>
+                  {sparklineData.length > 0 ? (
+                    <Sparklines data={sparklineData} width={200} height={48}>
+                      <SparklinesLine
+                        color={isPositive ? '#7CFF6B' : '#EF4444'}
+                        style={{ strokeWidth: 2, fill: 'none' }}
+                      />
+                    </Sparklines>
+                  ) : (
+                    <div className="flex h-full items-center justify-center text-xs text-muted-foreground">
+                      No trade history
+                    </div>
+                  )}
                 </div>
 
                 {/* Stats */}
