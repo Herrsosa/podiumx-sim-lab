@@ -1,1 +1,10 @@
 project_id = "ssnehmposgsczoadycms"
+
+[functions.strava-oauth-exchange]
+verify_jwt = true
+
+[functions.import-strava-activities]
+verify_jwt = true
+
+[functions.execute-trade]
+verify_jwt = true

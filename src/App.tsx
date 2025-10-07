@@ -16,6 +16,7 @@ import AthleteDetail from "./pages/AthleteDetail";
 import Portfolio from "./pages/Portfolio";
 import MyAthlete from "./pages/MyAthlete";
 import NotFound from "./pages/NotFound";
+import StravaCallback from "./pages/StravaCallback";
 
 const queryClient = new QueryClient();
 
@@ -138,6 +139,11 @@ function AppContent() {
         <ProtectedRoute>
           <Navigation />
           <MyAthlete />
+        </ProtectedRoute>
+      } />
+      <Route path="/strava/callback" element={
+        <ProtectedRoute>
+          <StravaCallback />
         </ProtectedRoute>
       } />
       <Route path="*" element={<NotFound />} />

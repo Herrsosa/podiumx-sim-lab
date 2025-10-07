@@ -18,6 +18,7 @@ import { useUserRole } from '@/hooks/useUserRole';
 import { supabase } from '@/integrations/supabase/client';
 import AddWorkoutModal from '@/components/AddWorkoutModal';
 import EditWorkoutModal from '@/components/EditWorkoutModal';
+import StravaTraining from '@/components/StravaTraining';
 import { useQueryClient } from '@tanstack/react-query';
 import {
   AlertDialog,
@@ -407,6 +408,11 @@ export default function MyAthlete() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Strava Training */}
+      <div className="mb-6">
+        <StravaTraining />
+      </div>
 
       {/* Price Chart - Only for Athletes */}
       {isAthlete && userAthlete && priceHistory.length > 0 && (
