@@ -14,6 +14,63 @@ export type Database = {
   }
   public: {
     Tables: {
+      activities: {
+        Row: {
+          avg_hr: number | null
+          calories: number | null
+          created_at: string
+          distance_m: number | null
+          elapsed_time_s: number | null
+          elev_gain_m: number | null
+          external_id: string | null
+          id: number
+          max_hr: number | null
+          moving_time_s: number | null
+          name: string | null
+          raw: Json | null
+          source: string
+          sport_type: string | null
+          start_time: string | null
+          user_id: string
+        }
+        Insert: {
+          avg_hr?: number | null
+          calories?: number | null
+          created_at?: string
+          distance_m?: number | null
+          elapsed_time_s?: number | null
+          elev_gain_m?: number | null
+          external_id?: string | null
+          id?: number
+          max_hr?: number | null
+          moving_time_s?: number | null
+          name?: string | null
+          raw?: Json | null
+          source: string
+          sport_type?: string | null
+          start_time?: string | null
+          user_id: string
+        }
+        Update: {
+          avg_hr?: number | null
+          calories?: number | null
+          created_at?: string
+          distance_m?: number | null
+          elapsed_time_s?: number | null
+          elev_gain_m?: number | null
+          external_id?: string | null
+          id?: number
+          max_hr?: number | null
+          moving_time_s?: number | null
+          name?: string | null
+          raw?: Json | null
+          source?: string
+          sport_type?: string | null
+          start_time?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       athlete_integrations: {
         Row: {
           access_token: string
@@ -123,6 +180,88 @@ export type Database = {
         }
         Relationships: []
       }
+      conversation_participants: {
+        Row: {
+          conversation_id: string
+          id: string
+          joined_at: string
+          last_read_at: string | null
+          user_id: string
+        }
+        Insert: {
+          conversation_id: string
+          id?: string
+          joined_at?: string
+          last_read_at?: string | null
+          user_id: string
+        }
+        Update: {
+          conversation_id?: string
+          id?: string
+          joined_at?: string
+          last_read_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conversation_participants_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      conversations: {
+        Row: {
+          created_at: string
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      dm_messages: {
+        Row: {
+          content: string
+          conversation_id: string
+          created_at: string
+          id: string
+          sender_id: string
+        }
+        Insert: {
+          content: string
+          conversation_id: string
+          created_at?: string
+          id?: string
+          sender_id: string
+        }
+        Update: {
+          content?: string
+          conversation_id?: string
+          created_at?: string
+          id?: string
+          sender_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dm_messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       holdings: {
         Row: {
           athlete_id: string
@@ -161,6 +300,45 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      oauth_connections: {
+        Row: {
+          access_token: string | null
+          created_at: string
+          expires_at: string | null
+          external_id: string | null
+          id: string
+          provider: string
+          refresh_token: string | null
+          scope: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          access_token?: string | null
+          created_at?: string
+          expires_at?: string | null
+          external_id?: string | null
+          id?: string
+          provider: string
+          refresh_token?: string | null
+          scope?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          access_token?: string | null
+          created_at?: string
+          expires_at?: string | null
+          external_id?: string | null
+          id?: string
+          provider?: string
+          refresh_token?: string | null
+          scope?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       posts: {
         Row: {
