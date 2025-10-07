@@ -18,6 +18,7 @@ import ProofOfSweat from '@/components/ProofOfSweat';
 import TokengatedChat from '@/components/TokengatedChat';
 import WorkoutPosts from '@/components/WorkoutPosts';
 import AddWorkoutModal from '@/components/AddWorkoutModal';
+import { StartConversationButton } from '@/components/StartConversationButton';
 import { useAuth } from '@/hooks/useAuth';
 import { useQueryClient } from '@tanstack/react-query';
 
@@ -219,7 +220,7 @@ export default function AthleteDetail() {
               <Badge>{athlete.sport}</Badge>
             </div>
             <p className="mb-4 text-center text-sm text-muted-foreground">{athlete.bio}</p>
-            <div className="space-y-2 text-sm">
+            <div className="mb-4 space-y-2 text-sm">
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Location</span>
                 <span className="font-medium">{athlete.location}</span>
@@ -231,6 +232,16 @@ export default function AthleteDetail() {
                 </div>
               )}
             </div>
+            
+            {/* Send Message Button */}
+            {user?.id !== athlete.id && (
+              <div className="mt-4">
+                <StartConversationButton 
+                  athleteId={athlete.id} 
+                  athleteName={athlete.name}
+                />
+              </div>
+            )}
           </CardContent>
         </Card>
 
