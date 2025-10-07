@@ -20,6 +20,7 @@ import AddWorkoutModal from '@/components/AddWorkoutModal';
 import EditWorkoutModal from '@/components/EditWorkoutModal';
 import StravaTraining from '@/components/StravaTraining';
 import { DirectMessages } from '@/components/DirectMessages';
+import { TokengatedChat } from '@/components/TokengatedChat';
 import { useQueryClient } from '@tanstack/react-query';
 import {
   AlertDialog,
@@ -473,13 +474,17 @@ export default function MyAthlete() {
         </Card>
       )}
 
-      {/* Tabs for Workouts and Messages */}
+      {/* Tabs for Workouts, Community Chat, and Messages */}
       <Tabs defaultValue="workouts" className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="workouts">Workout Timeline</TabsTrigger>
+          <TabsTrigger value="community" className="gap-2">
+            <MessageSquare className="h-4 w-4" />
+            Community Chat
+          </TabsTrigger>
           <TabsTrigger value="messages" className="gap-2">
             <MessageSquare className="h-4 w-4" />
-            Messages
+            Direct Messages
           </TabsTrigger>
         </TabsList>
 
@@ -514,6 +519,17 @@ export default function MyAthlete() {
               )}
             </CardContent>
           </Card>
+        </TabsContent>
+
+        {/* Community Chat Tab */}
+        <TabsContent value="community">
+          {userAthlete && (
+            <TokengatedChat
+              athleteId={user!.id}
+              athleteName={userAthlete.name}
+              userHoldings={1} // Athlete always has access to their own chat
+            />
+          )}
         </TabsContent>
 
         {/* Messages Tab */}
