@@ -101,18 +101,13 @@ export function StartConversationButton({ athleteId, athleteName }: StartConvers
         });
       }
 
-      // Navigate to messages tab on /me page with conversation selected
-      // For now, just show success
+      // Navigate to messages tab
+      navigate('/me?tab=messages');
+      
       toast({
-        title: 'Opening messages',
-        description: 'Navigate to your Messages tab to continue the conversation'
+        title: 'Conversation ready',
+        description: `You can now message ${athleteName}`
       });
-
-      // If this is the athlete's page, navigate to their /me page messages tab
-      // Otherwise just show the toast
-      if (user.id === athleteId) {
-        navigate('/me?tab=messages');
-      }
     } catch (error: any) {
       console.error('Error starting conversation:', error);
       toast({
