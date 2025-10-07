@@ -75,6 +75,8 @@ export default function Onboarding() {
         // User already has a profile, redirect to marketplace
         navigate('/marketplace', { replace: true });
       } else {
+        // Clear any stale localStorage role for new users
+        setOnboardingRole(null);
         setCheckingProfile(false);
       }
     }
@@ -83,7 +85,7 @@ export default function Onboarding() {
     if (!hasStartedOnboarding) {
       checkExistingProfile();
     }
-  }, [user, navigate, hasStartedOnboarding]);
+  }, [user, navigate, hasStartedOnboarding, setOnboardingRole]);
 
   // Initialize wallet on mount
   useEffect(() => {
@@ -92,16 +94,16 @@ export default function Onboarding() {
     }
   }, [user]);
 
-  // Restore role selection from localStorage
+  // Restore role selection from localStorage only if user has started onboarding
   useEffect(() => {
-    if (onboardingRole && step === 'ROLE_SELECTION') {
+    if (onboardingRole && step === 'ROLE_SELECTION' && hasStartedOnboarding) {
       if (onboardingRole === 'fan') {
         setStep('FAN_PROFILE');
       } else {
         setStep('ATHLETE_PROFILE');
       }
     }
-  }, [onboardingRole]);
+  }, [onboardingRole, hasStartedOnboarding]);
 
   const handleRoleSelection = (role: 'fan' | 'athlete') => {
     setHasStartedOnboarding(true);
