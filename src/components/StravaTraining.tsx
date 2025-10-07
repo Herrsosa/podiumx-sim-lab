@@ -11,7 +11,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { Skeleton } from '@/components/ui/skeleton';
 
-const STRAVA_CLIENT_ID = '138859';
+const STRAVA_CLIENT_ID = 'a09246fcb87f80ac269774e56f4653cd8168a8d2';
 
 export default function StravaTraining() {
   const { toast } = useToast();
