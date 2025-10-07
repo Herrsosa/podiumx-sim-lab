@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Loader2 } from 'lucide-react';
 
-const STRAVA_CLIENT_ID = '138859';
+const STRAVA_CLIENT_ID = 'a09246fcb87f80ac269774e56f4653cd8168a8d2';
 
 export default function StravaCallback() {
   const navigate = useNavigate();
