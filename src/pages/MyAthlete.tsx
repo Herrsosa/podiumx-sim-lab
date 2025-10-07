@@ -20,7 +20,7 @@ import AddWorkoutModal from '@/components/AddWorkoutModal';
 import EditWorkoutModal from '@/components/EditWorkoutModal';
 import StravaTraining from '@/components/StravaTraining';
 import { DirectMessages } from '@/components/DirectMessages';
-import { TokengatedChat } from '@/components/TokengatedChat';
+import TokengatedChat from '@/components/TokengatedChat';
 import { useQueryClient } from '@tanstack/react-query';
 import {
   AlertDialog,
@@ -523,11 +523,12 @@ export default function MyAthlete() {
 
         {/* Community Chat Tab */}
         <TabsContent value="community">
-          {userAthlete && (
+          {userAthlete && user && (
             <TokengatedChat
-              athleteId={user!.id}
+              athleteId={user.id}
               athleteName={userAthlete.name}
-              userHoldings={1} // Athlete always has access to their own chat
+              userHoldings={1}
+              onBuyClick={() => {}}
             />
           )}
         </TabsContent>
