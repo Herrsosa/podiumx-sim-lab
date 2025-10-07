@@ -49,9 +49,24 @@ serve(async (req) => {
 
     if (authError || !user) {
       console.error("Auth error:", authError?.message || "No user found");
+      
+      // Check if user exists in database
+      if (authError?.message?.includes("User from sub claim in JWT does not exist")) {
+        return new Response(
+          JSON.stringify({ 
+            error: "Your session is invalid. Please sign out and sign back in to continue trading.",
+            details: "User authentication required" 
+          }),
+          {
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+            status: 401,
+          }
+        );
+      }
+      
       return new Response(
         JSON.stringify({ 
-          error: "Authentication failed. Please sign out and sign back in.",
+          error: "Authentication failed. Please sign in to continue.",
           details: authError?.message 
         }),
         {

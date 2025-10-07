@@ -10,7 +10,7 @@ interface FaucetButtonProps {
 
 export function FaucetButton({ variant = "outline", size = "default" }: FaucetButtonProps) {
   const faucet = useFaucet();
-  const { data: wallet } = useWallet();
+  const { data: wallet, refetch } = useWallet();
   
   // Double safety check: env mode + explicit flag
   const isDevMode = import.meta.env.MODE !== 'production';
@@ -19,6 +19,11 @@ export function FaucetButton({ variant = "outline", size = "default" }: FaucetBu
   if (!isDevMode || !faucetEnabled) {
     return null;
   }
+
+  const handleFaucet = async () => {
+    await faucet.mutateAsync(100);
+    await refetch(); // Force immediate refetch to update UI
+  };
 
   return (
     <div className="space-y-2">
@@ -29,7 +34,7 @@ export function FaucetButton({ variant = "outline", size = "default" }: FaucetBu
       <Button
         variant={variant}
         size={size}
-        onClick={() => faucet.mutate(100)}
+        onClick={handleFaucet}
         disabled={faucet.isPending}
         className="w-full"
       >

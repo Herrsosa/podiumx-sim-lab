@@ -13,13 +13,20 @@ export function useTrade() {
       side: 'BUY' | 'SELL' 
     }) => {
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session) throw new Error('Not authenticated');
+      if (!session) throw new Error('Not authenticated. Please sign in to trade.');
+
+      console.log('Executing trade:', { athleteId, quantity, side });
 
       const { data, error } = await supabase.functions.invoke('execute-trade', {
         body: { athleteId, quantity, side },
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Trade error:', error);
+        throw new Error(error.message || 'Trade execution failed');
+      }
+      
+      console.log('Trade successful:', data);
       return data;
     },
     onSuccess: async (data, variables) => {

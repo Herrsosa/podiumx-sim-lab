@@ -6,6 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { useAthletes } from '@/hooks/useAthletes';
+import { useAthleteMetrics } from '@/hooks/useAthleteMetrics';
+import { useAthleteTradeHistory } from '@/hooks/useAthleteTradeHistory';
 import { Sport } from '@/types';
 import { Sparklines, SparklinesLine } from 'react-sparklines';
 import { DevSeedTrades } from '@/components/DevSeedTrades';
@@ -36,11 +38,20 @@ export default function Marketplace() {
     );
   }
 
-  const generateSparklineData = (basePrice: number) => {
-    return Array.from({ length: 20 }, (_, i) => {
-      const variance = (Math.random() - 0.5) * 0.2;
-      return basePrice * (1 + variance);
-    });
+  // Fetch real trade metrics for all athletes
+  const { data: metricsMap } = useAthleteMetrics('24h');
+
+  const getAthleteSparklineData = (athleteId: string, currentPrice: number) => {
+    // Try to get real trade history for this athlete
+    const { data: tradeHistory } = useAthleteTradeHistory(athleteId, '7d');
+    
+    if (tradeHistory?.data && tradeHistory.data.length > 1) {
+      // Use real trade data
+      return tradeHistory.data.slice(-20).map(d => d.price);
+    }
+    
+    // Fallback: show flat line at current price if no trades
+    return Array(20).fill(currentPrice);
   };
 
   return (
@@ -91,7 +102,7 @@ export default function Marketplace() {
       {/* Athletes Grid */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {filteredAthletes.map((athlete) => {
-          const sparklineData = generateSparklineData(athlete.price);
+          const sparklineData = getAthleteSparklineData(athlete.id, athlete.price);
           const isPositive = athlete.change24h >= 0;
 
           return (
