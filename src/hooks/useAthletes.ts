@@ -13,7 +13,7 @@ export function useAthletes() {
     queryFn: async () => {
       const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
-        .select('*')
+        .select('id, username, display_name, sport, avatar_url, bio, instagram_url, strava_url, created_at')
         .order('created_at', { ascending: false });
 
       if (profilesError) throw profilesError;

@@ -234,12 +234,21 @@ export default function AthleteDetail() {
             </div>
             
             {/* Send Message Button */}
-            {user?.id !== athlete.id && (
+            {user && user.id !== athlete.id && (
               <div className="mt-4">
                 <StartConversationButton 
                   athleteId={athlete.id} 
                   athleteName={athlete.name}
                 />
+              </div>
+            )}
+            
+            {/* Guest Sign Up Prompt */}
+            {!user && (
+              <div className="mt-4">
+                <Button onClick={() => navigate('/auth')} className="w-full gap-2">
+                  Sign Up to Connect
+                </Button>
               </div>
             )}
           </CardContent>
@@ -363,6 +372,15 @@ export default function AthleteDetail() {
             <CardTitle>Trade</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
+            {!user ? (
+              <div className="text-center space-y-4 py-8">
+                <p className="text-muted-foreground">Sign up to start trading</p>
+                <Button onClick={() => navigate('/auth')} className="w-full">
+                  Sign Up to Trade
+                </Button>
+              </div>
+            ) : (
+              <>
             <Tabs value={tradeType} onValueChange={(v) => setTradeType(v as 'buy' | 'sell')}>
               <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="buy">Buy</TabsTrigger>
@@ -601,6 +619,8 @@ export default function AthleteDetail() {
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
+            </>
+            )}
           </CardContent>
         </Card>
 

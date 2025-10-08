@@ -9,12 +9,6 @@ export default function Landing() {
   const navigate = useNavigate();
   const { user, loading } = useAuth();
 
-  useEffect(() => {
-    if (!loading && user) {
-      navigate("/marketplace");
-    }
-  }, [user, loading, navigate]);
-
   if (loading) {
     return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
   }

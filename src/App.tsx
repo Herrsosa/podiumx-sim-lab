@@ -7,16 +7,19 @@ import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-route
 import { useAppStore } from "@/store/useAppStore";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
+import { Suspense, lazy } from "react";
 import Navigation from "@/components/Navigation";
 import Landing from "./pages/Landing";
 import Auth from "./pages/Auth";
-import Onboarding from "./pages/Onboarding";
 import Marketplace from "./pages/Marketplace";
-import AthleteDetail from "./pages/AthleteDetail";
-import Portfolio from "./pages/Portfolio";
-import MyAthlete from "./pages/MyAthlete";
 import NotFound from "./pages/NotFound";
 import StravaCallback from "./pages/StravaCallback";
+
+// Lazy load heavy pages
+const Onboarding = lazy(() => import("./pages/Onboarding"));
+const AthleteDetail = lazy(() => import("./pages/AthleteDetail"));
+const Portfolio = lazy(() => import("./pages/Portfolio"));
+const MyAthlete = lazy(() => import("./pages/MyAthlete"));
 
 const queryClient = new QueryClient();
 
@@ -114,31 +117,39 @@ function AppContent() {
       <Route path="/auth" element={<Auth />} />
       <Route path="/onboarding" element={
         <ProtectedRoute>
-          <Onboarding />
+          <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Loading...</div>}>
+            <Onboarding />
+          </Suspense>
         </ProtectedRoute>
       } />
       <Route path="/marketplace" element={
-        <ProtectedRoute>
+        <>
           <Navigation />
           <Marketplace />
-        </ProtectedRoute>
+        </>
       } />
       <Route path="/athlete/:slug" element={
-        <ProtectedRoute>
+        <>
           <Navigation />
-          <AthleteDetail />
-        </ProtectedRoute>
+          <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Loading...</div>}>
+            <AthleteDetail />
+          </Suspense>
+        </>
       } />
       <Route path="/portfolio" element={
         <ProtectedRoute>
           <Navigation />
-          <Portfolio />
+          <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Loading...</div>}>
+            <Portfolio />
+          </Suspense>
         </ProtectedRoute>
       } />
       <Route path="/me" element={
         <ProtectedRoute>
           <Navigation />
-          <MyAthlete />
+          <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Loading...</div>}>
+            <MyAthlete />
+          </Suspense>
         </ProtectedRoute>
       } />
       <Route path="/strava/callback" element={

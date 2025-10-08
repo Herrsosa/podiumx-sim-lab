@@ -1,7 +1,8 @@
 import { useState, useRef, useMemo, useCallback, useEffect } from 'react';
-import { Camera, Upload, Plus, X, Edit2, Save, Link as LinkIcon, TrendingUp, Link2, Edit, Trash2, MessageSquare } from 'lucide-react';
+import { Camera, Upload, Plus, X, Edit2, Save, Link as LinkIcon, TrendingUp, Link2, Edit, Trash2, MessageSquare, DollarSign } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { EarningsSection } from '@/components/EarningsSection';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -474,9 +475,9 @@ export default function MyAthlete() {
         </Card>
       )}
 
-      {/* Tabs for Workouts, Community Chat, and Messages */}
+      {/* Tabs for Workouts, Community Chat, Messages, and Earnings */}
       <Tabs defaultValue="workouts" className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="workouts">Workout Timeline</TabsTrigger>
           <TabsTrigger value="community" className="gap-2">
             <MessageSquare className="h-4 w-4" />
@@ -485,6 +486,10 @@ export default function MyAthlete() {
           <TabsTrigger value="messages" className="gap-2">
             <MessageSquare className="h-4 w-4" />
             Direct Messages
+          </TabsTrigger>
+          <TabsTrigger value="earnings" className="gap-2">
+            <DollarSign className="h-4 w-4" />
+            Earnings
           </TabsTrigger>
         </TabsList>
 
@@ -536,6 +541,24 @@ export default function MyAthlete() {
         {/* Messages Tab */}
         <TabsContent value="messages">
           <DirectMessages />
+        </TabsContent>
+
+        {/* Earnings Tab */}
+        <TabsContent value="earnings">
+          <Card className="glass-card">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <DollarSign className="h-5 w-5" />
+                Athlete Earnings
+              </CardTitle>
+              <p className="text-sm text-muted-foreground">
+                Track your earnings from trading fees on your PodiumPass
+              </p>
+            </CardHeader>
+            <CardContent>
+              <EarningsSection athleteId={user?.id} />
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
 
