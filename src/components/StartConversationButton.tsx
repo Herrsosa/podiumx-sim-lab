@@ -70,10 +70,10 @@ export function StartConversationButton({ athleteId, athleteName }: StartConvers
       if (!conversationId) {
         console.log('[StartConversation] Creating new conversation');
         
-        // Create new conversation
+        // Create new conversation with creator_id
         const { data: newConversation, error: convError } = await supabase
           .from('conversations')
-          .insert({})
+          .insert({ creator_id: user.id })
           .select()
           .single();
 
