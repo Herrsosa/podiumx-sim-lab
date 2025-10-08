@@ -524,6 +524,10 @@ export type Database = {
         }
         Returns: undefined
       }
+      is_conversation_member: {
+        Args: { conversation_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
       trade_side: "BUY" | "SELL"
