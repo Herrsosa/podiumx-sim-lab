@@ -19,14 +19,16 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import EditWorkoutModal from './EditWorkoutModal';
 import { useQueryClient } from '@tanstack/react-query';
+import { EmptyState } from '@/components/ui/empty-state';
 
 interface ProofOfSweatProps {
   workouts: Workout[];
   athleteId?: string;
   onWorkoutDeleted?: () => void;
+  onConnectStrava?: () => void;
 }
 
-export default function ProofOfSweat({ workouts, athleteId, onWorkoutDeleted }: ProofOfSweatProps) {
+export default function ProofOfSweat({ workouts, athleteId, onWorkoutDeleted, onConnectStrava }: ProofOfSweatProps) {
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -191,6 +193,17 @@ export default function ProofOfSweat({ workouts, athleteId, onWorkoutDeleted }: 
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   };
 
+  const handleConnectStrava = () => {
+    if (onConnectStrava) {
+      onConnectStrava();
+      return;
+    }
+
+    if (typeof window !== 'undefined') {
+      window.open('https://www.strava.com/settings/apps', '_blank', 'noopener,noreferrer');
+    }
+  };
+
   return (
     <>
       <Card className="glass-card">
@@ -202,9 +215,14 @@ export default function ProofOfSweat({ workouts, athleteId, onWorkoutDeleted }: 
         </CardHeader>
         <CardContent>
           {safeWorkouts.length === 0 ? (
-            <div className="py-8 text-center text-muted-foreground">
-              No workouts yet
-            </div>
+            <EmptyState
+              icon={<Activity className="h-10 w-10" />}
+              title="No workouts yet"
+              description="Connect Strava to automatically import training or add workouts manually."
+              ctaLabel="Connect Strava"
+              onCta={handleConnectStrava}
+              className="py-12"
+            />
           ) : (
             <div className="space-y-3">
               {safeWorkouts.map((workout) => (

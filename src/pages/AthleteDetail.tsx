@@ -13,7 +13,7 @@ import { useTrades } from '@/hooks/useTrades';
 import { useTrade } from '@/hooks/useTrade';
 import { useAthleteTradeHistory } from '@/hooks/useAthleteTradeHistory';
 import { priceAt, costToBuy, payoutToSell, FEE, type Curve } from '@/utils/pricing';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, ReferenceDot } from 'recharts';
 import ProofOfSweat from '@/components/ProofOfSweat';
 import TokengatedChat from '@/components/TokengatedChat';
 import WorkoutPosts from '@/components/WorkoutPosts';
@@ -22,13 +22,13 @@ import { StartConversationButton } from '@/components/StartConversationButton';
 import { useAuth } from '@/hooks/useAuth';
 import { useQueryClient } from '@tanstack/react-query';
 import AthleteDetailSkeleton from '@/components/skeletons/AthleteDetailSkeleton';
-import { Skeleton } from '@/components/ui/skeleton';
+import { ChartSkeleton } from '@/components/ui/skeletons';
 import { SectionTitle, Body, Small } from '@/components/ui/typography';
 import { formatMoney, formatNumber } from '@/lib/format';
 import { cn } from '@/lib/utils';
 
 
-type TimeRange = '24h' | '7d' | '30d';
+type TimeRange = '24h' | '7d' | '30d' | 'all';
 
 export default function AthleteDetail() {
   const { slug } = useParams<{ slug: string }>();
@@ -43,6 +43,7 @@ export default function AthleteDetail() {
   const [showTradeModal, setShowTradeModal] = useState(false);
   const [showAddWorkout, setShowAddWorkout] = useState(false);
   const [timeRange, setTimeRange] = useState<TimeRange>('24h');
+  const timeRanges: TimeRange[] = ['24h', '7d', '30d', 'all'];
   
   const { data: athletes, isLoading: athletesLoading } = useAthletes();
   const { data: wallet, isLoading: walletLoading } = useWallet();
@@ -67,7 +68,7 @@ export default function AthleteDetail() {
   // Fetch real trade history data
   const { data: tradeHistory, isLoading: historyLoading } = useAthleteTradeHistory(athlete?.id, timeRange);
 
-  const chartData = useMemo(() => {
+  const rawChartData = useMemo(() => {
     if (!tradeHistory?.data || tradeHistory.data.length === 0) {
       return [];
     }
@@ -75,14 +76,35 @@ export default function AthleteDetail() {
     return tradeHistory.data.map((point) => ({
       timestamp: point.timestamp,
       price: point.price,
-      label: new Date(point.timestamp).toLocaleString('en-US', {
-        month: 'short',
-        day: 'numeric',
-        hour: timeRange === '24h' ? '2-digit' : undefined,
-        minute: timeRange === '24h' ? '2-digit' : undefined,
-      }),
     }));
-  }, [tradeHistory, timeRange]);
+  }, [tradeHistory]);
+
+  const { chartPoints, firstTradePoint } = useMemo(() => {
+    if (rawChartData.length === 0) {
+      return { chartPoints: [], firstTradePoint: null };
+    }
+
+    const sorted = [...rawChartData].sort((a, b) => a.timestamp - b.timestamp);
+    const first = sorted[0];
+
+    if (sorted.length === 1) {
+      const now = Date.now();
+      const duplicateTimestamp = now > first.timestamp ? now : first.timestamp + 60_000;
+      const duplicatePoint = { ...first, timestamp: duplicateTimestamp };
+      return {
+        chartPoints: [first, duplicatePoint],
+        firstTradePoint: first,
+      };
+    }
+
+    return {
+      chartPoints: sorted,
+      firstTradePoint: first,
+    };
+  }, [rawChartData]);
+
+  const hasRealTrades = (tradeHistory?.volume ?? 0) > 0 || rawChartData.length > 1;
+  const displayChartPoints = hasRealTrades ? chartPoints : [];
 
   const formatXAxisTick = useCallback(
     (value: number) => {
@@ -293,7 +315,7 @@ export default function AthleteDetail() {
               <div className="flex items-center gap-4">
                 {/* Time Range Selector */}
                 <div className="flex gap-1 rounded-lg border border-border p-1">
-                  {(['24h', '7d', '30d'] as TimeRange[]).map((range) => (
+                  {timeRanges.map((range) => (
                     <Button
                       key={range}
                       variant={timeRange === range ? 'default' : 'ghost'}
@@ -301,7 +323,7 @@ export default function AthleteDetail() {
                       onClick={() => setTimeRange(range)}
                       className="h-7 text-xs"
                     >
-                      {range}
+                      {range === 'all' ? 'All' : range}
                     </Button>
                   ))}
                 </div>
@@ -344,14 +366,14 @@ export default function AthleteDetail() {
             {/* Chart */}
             <div className="h-64">
               {historyLoading ? (
-                <Skeleton className="h-full w-full rounded-lg" />
-              ) : chartData.length === 0 ? (
-                <div className="flex h-full items-center justify-center text-muted-foreground">
-                  No trade data available for this time range
+                <ChartSkeleton className="h-full" />
+              ) : displayChartPoints.length === 0 ? (
+                <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
+                  No trades yet
                 </div>
               ) : (
                 <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={chartData}>
+                  <LineChart data={displayChartPoints}>
                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                     <XAxis
                       dataKey="timestamp"
@@ -385,6 +407,22 @@ export default function AthleteDetail() {
                       dot={false}
                       connectNulls
                     />
+                    {hasRealTrades && firstTradePoint && rawChartData.length === 1 && (
+                      <ReferenceDot
+                        x={firstTradePoint.timestamp}
+                        y={firstTradePoint.price}
+                        r={5}
+                        stroke="hsl(var(--background))"
+                        strokeWidth={2}
+                        fill="hsl(var(--primary))"
+                        label={{
+                          value: 'First trade',
+                          position: 'top',
+                          fill: 'hsl(var(--muted-foreground))',
+                          fontSize: 12,
+                        }}
+                      />
+                    )}
                   </LineChart>
                 </ResponsiveContainer>
               )}
@@ -659,6 +697,7 @@ export default function AthleteDetail() {
             workouts={athlete.workouts} 
             athleteId={athlete.id}
             onWorkoutDeleted={handleWorkoutSuccess}
+            onConnectStrava={isOwnProfile ? () => navigate('/my-athlete') : undefined}
           />
           
           {/* Workout Posts Section */}
@@ -682,6 +721,7 @@ export default function AthleteDetail() {
                   side: 'BUY',
                 });
               }}
+              onConnectStrava={isOwnProfile ? () => navigate('/my-athlete') : undefined}
             />
           </div>
 

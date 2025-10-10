@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
+import { EmptyState } from '@/components/ui/empty-state';
 
 interface Message {
   id: string;
@@ -39,6 +40,7 @@ export default function TokengatedChat({
   const messagesEndRef = useRef<HTMLDivElement>(null);
   
   const canSend = userHoldings >= 1;
+  const isLocked = !canSend;
 
   useEffect(() => {
     // Fetch initial messages
@@ -163,7 +165,16 @@ export default function TokengatedChat({
       <CardContent className="space-y-4">
         {/* Messages */}
         <div className="h-[400px] space-y-3 overflow-y-auto rounded-lg border border-border/50 bg-muted/20 p-4">
-          {messages.length === 0 ? (
+          {isLocked ? (
+            <EmptyState
+              icon={<Lock className="h-6 w-6" />}
+              title="Community chat locked"
+              description={`Buy at least 1 ${athleteName} token to unlock the conversation.`}
+              ctaLabel="Buy 1 token to unlock"
+              onCta={onBuyClick}
+              className="h-full border-none bg-transparent"
+            />
+          ) : messages.length === 0 ? (
             <div className="flex h-full items-center justify-center text-center text-sm text-muted-foreground">
               No messages yet. Be the first to start the conversation!
             </div>
@@ -193,17 +204,7 @@ export default function TokengatedChat({
         </div>
 
         {/* Input */}
-        {!canSend ? (
-          <div className="rounded-lg border border-border bg-muted/30 p-4 text-center">
-            <Lock className="mx-auto mb-2 h-6 w-6 text-muted-foreground" />
-            <p className="mb-3 text-sm text-muted-foreground">
-              Hold at least 1 {athleteName} token to unlock chat
-            </p>
-            <Button onClick={onBuyClick} size="sm">
-              Buy 1 Token to Unlock
-            </Button>
-          </div>
-        ) : (
+        {!isLocked ? (
           <div className="flex gap-2">
             <Input
               placeholder="Type a message..."
@@ -220,7 +221,7 @@ export default function TokengatedChat({
               <Send className="h-4 w-4" />
             </Button>
           </div>
-        )}
+        ) : null}
       </CardContent>
     </Card>
   );

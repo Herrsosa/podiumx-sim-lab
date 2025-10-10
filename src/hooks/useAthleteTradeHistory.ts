@@ -3,7 +3,7 @@ import { useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { priceAt } from '@/utils/pricing';
 
-type TimeRange = '24h' | '7d' | '30d';
+type TimeRange = '24h' | '7d' | '30d' | 'all';
 
 interface TradePoint {
   timestamp: number;
@@ -47,22 +47,26 @@ export function useAthleteTradeHistory(athleteId: string | undefined, range: Tim
       if (!athleteId) return { data: [], changePct: 0, volume: 0 };
 
       const now = new Date();
-      const rangeHours: Record<TimeRange, number> = {
+      const rangeHours: Record<Exclude<TimeRange, 'all'>, number> = {
         '24h': 24,
         '7d': 168,
         '30d': 720,
       };
 
-      const hoursAgo = rangeHours[range];
-      const startTime = new Date(now.getTime() - hoursAgo * 60 * 60 * 1000);
-
-      // Fetch all trades for this athlete in the time range
-      const { data: trades, error } = await supabase
+      let query = supabase
         .from('trades')
         .select('created_at, price_after')
         .eq('athlete_id', athleteId)
-        .gte('created_at', startTime.toISOString())
         .order('created_at', { ascending: true });
+
+      if (range !== 'all') {
+        const hoursAgo = rangeHours[range];
+        const startTime = new Date(now.getTime() - hoursAgo * 60 * 60 * 1000);
+        query = query.gte('created_at', startTime.toISOString());
+      }
+
+      // Fetch all trades for this athlete in the time range
+      const { data: trades, error } = await query;
 
       if (error) {
         console.error('Error fetching trade history:', error);

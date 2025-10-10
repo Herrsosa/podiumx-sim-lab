@@ -10,7 +10,16 @@ const smallNumberFormatter = new Intl.NumberFormat("en-US", {
 });
 
 function isInvalid(value: unknown): value is null | undefined {
-  return value === null || value === undefined || Number.isNaN(value as number);
+  return (
+    value === null ||
+    value === undefined ||
+    Number.isNaN(value as number) ||
+    !Number.isFinite(value as number)
+  );
+}
+
+export function safeNumber(value: number | null | undefined): value is number {
+  return !isInvalid(value);
 }
 
 function toCompactString(value: number): string {

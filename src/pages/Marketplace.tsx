@@ -9,8 +9,9 @@ import { useAuth } from '@/hooks/useAuth';
 import { Sport } from '@/types';
 import { DevSeedTrades } from '@/components/DevSeedTrades';
 import { AthleteCard } from '@/components/AthleteCard';
-import MarketplaceSkeleton from '@/components/skeletons/MarketplaceSkeleton';
 import { H1, Body } from '@/components/ui/typography';
+import { EmptyState } from '@/components/ui/empty-state';
+import { CardSkeleton } from '@/components/ui/skeletons';
 
 const SPORTS: Sport[] = ['Running', 'HYROX', 'Cycling', 'Triathlon', 'CrossFit', 'Swimming', 'Trail Run', 'Rowing'];
 const PAGE_SIZE = 12;
@@ -23,7 +24,7 @@ export default function Marketplace() {
   const [pendingSlug, setPendingSlug] = useState<string | null>(null);
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   
-  const { data: athletes, isLoading } = useAthletes();
+  const { data: athletes, isLoading, isFetching } = useAthletes();
 
   const handleAthleteClick = useCallback((slug: string) => {
     if (!slug) {
@@ -78,18 +79,19 @@ export default function Marketplace() {
 
   const athleteIds = useMemo(() => displayedAthletes.map((athlete) => athlete.id), [displayedAthletes]);
 
-  const { data: chartData } = useMarketplaceCharts(athleteIds);
+  const {
+    data: chartData,
+    isLoading: chartsLoading,
+    isFetching: chartsFetching,
+  } = useMarketplaceCharts(athleteIds);
+
+  const showGridSkeleton = isLoading || isFetching || chartsLoading || chartsFetching;
 
   const canLoadMore = displayedAthletes.length < filteredAthletes.length;
 
   const handleLoadMore = useCallback(() => {
     setVisibleCount((prev) => Math.min(prev + PAGE_SIZE, filteredAthletes.length));
   }, [filteredAthletes.length]);
-
-  if (isLoading) {
-    return <MarketplaceSkeleton />;
-  }
-
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -137,27 +139,41 @@ export default function Marketplace() {
       </div>
 
       {/* Athletes Grid */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-        {displayedAthletes.map((athlete) => {
-          const sparklineData = chartData?.[athlete.id] || [];
-          return (
-            <AthleteCard
-              key={athlete.id}
-              athlete={athlete}
-              chartData={sparklineData}
-              onClick={() => handleAthleteClick(athlete.slug)}
-            />
-          );
-        })}
-      </div>
-
-      {filteredAthletes.length === 0 && (
-        <div className="py-16 text-center text-muted-foreground">
-          No athletes found. Try adjusting your filters.
+      {showGridSkeleton ? (
+        <CardSkeleton
+          count={Math.max(visibleCount, PAGE_SIZE)}
+          className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+        />
+      ) : (
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          {displayedAthletes.map((athlete) => {
+            const sparklineData = chartData?.[athlete.id] || [];
+            return (
+              <AthleteCard
+                key={athlete.id}
+                athlete={athlete}
+                chartData={sparklineData}
+                onClick={() => handleAthleteClick(athlete.slug)}
+              />
+            );
+          })}
         </div>
       )}
 
-      {canLoadMore && (
+      {filteredAthletes.length === 0 && !showGridSkeleton && (
+        <EmptyState
+          title="No athletes match your filters"
+          description="Try changing the sport or adjusting your search to discover more athletes."
+          ctaLabel="Reset filters"
+          onCta={() => {
+            setSelectedSport('All');
+            setSearch('');
+          }}
+          className="mt-16"
+        />
+      )}
+
+      {canLoadMore && !showGridSkeleton && (
         <div className="flex justify-center py-10">
           <Button variant="outline" onClick={handleLoadMore}>
             Load more athletes

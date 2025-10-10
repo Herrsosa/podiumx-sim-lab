@@ -2,12 +2,22 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { useAthleteEarnings } from '@/hooks/useAthleteEarnings';
+import { formatMoney, formatNumber, safeNumber } from '@/lib/format';
 
 type TimeRange = '24h' | '7d' | '30d' | 'all';
 
 export function EarningsSection({ athleteId }: { athleteId?: string }) {
   const [range, setRange] = useState<TimeRange>('all');
   const { data, isLoading } = useAthleteEarnings(athleteId, range);
+
+  const earnings = data?.earnings ?? null;
+  const tradeCount = data?.tradeCount ?? null;
+  const earningsClass = safeNumber(earnings)
+    ? 'text-2xl font-bold text-success'
+    : 'text-2xl font-bold text-muted-foreground';
+  const tradeCountDisplay = safeNumber(tradeCount)
+    ? formatNumber(tradeCount)
+    : <span title="No data yet">—</span>;
 
   if (isLoading) {
     return (
@@ -35,8 +45,8 @@ export function EarningsSection({ athleteId }: { athleteId?: string }) {
       <div className="grid gap-4 md:grid-cols-2">
         <Card>
           <CardContent className="pt-6">
-            <div className="text-2xl font-bold text-success">
-              ${data?.earnings.toFixed(2) || '0.00'}
+            <div className={earningsClass}>
+              {safeNumber(earnings) ? formatMoney(earnings) : <span title="No data yet">—</span>}
             </div>
             <div className="text-sm text-muted-foreground">
               Total Earnings ({range === 'all' ? 'Lifetime' : range})
@@ -47,7 +57,7 @@ export function EarningsSection({ athleteId }: { athleteId?: string }) {
         <Card>
           <CardContent className="pt-6">
             <div className="text-2xl font-bold">
-              {data?.tradeCount || 0}
+              {tradeCountDisplay}
             </div>
             <div className="text-sm text-muted-foreground">
               Trades ({range === 'all' ? 'Lifetime' : range})
