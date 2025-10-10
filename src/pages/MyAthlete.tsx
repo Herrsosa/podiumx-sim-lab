@@ -19,7 +19,7 @@ import { useUserRole } from '@/hooks/useUserRole';
 import { supabase } from '@/integrations/supabase/client';
 import AddWorkoutModal from '@/components/AddWorkoutModal';
 import EditWorkoutModal from '@/components/EditWorkoutModal';
-import StravaTraining from '@/components/StravaTraining';
+import { StravaCard } from '@/components/strava/StravaCard';
 import { DirectMessages } from '@/components/DirectMessages';
 import TokengatedChat from '@/components/TokengatedChat';
 import { useQueryClient } from '@tanstack/react-query';
@@ -519,6 +519,7 @@ export default function MyAthlete() {
               )}
             </CardContent>
           </Card>
+          <StravaCard className="mt-4" />
         </TabsContent>
 
         {/* Community Chat Tab */}
@@ -556,11 +557,6 @@ export default function MyAthlete() {
           </Card>
         </TabsContent>
       </Tabs>
-
-      {/* Strava Integration */}
-      <div className="mt-6 mb-6">
-        <StravaTraining />
-      </div>
 
       {/* Add Workout Modal */}
       {user && (
