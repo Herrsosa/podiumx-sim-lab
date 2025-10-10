@@ -23,6 +23,9 @@ import { useAuth } from '@/hooks/useAuth';
 import { useQueryClient } from '@tanstack/react-query';
 import AthleteDetailSkeleton from '@/components/skeletons/AthleteDetailSkeleton';
 import { Skeleton } from '@/components/ui/skeleton';
+import { SectionTitle, Body, Small } from '@/components/ui/typography';
+import { formatMoney, formatNumber } from '@/lib/format';
+import { cn } from '@/lib/utils';
 
 
 type TimeRange = '24h' | '7d' | '30d';
@@ -254,11 +257,11 @@ export default function AthleteDetail() {
                 </div>
               </div>
             </div>
-            <h1 className="mb-2 text-center text-2xl font-bold">{athlete.name}</h1>
+            <SectionTitle className="mb-2 text-center text-2xl">{athlete.name}</SectionTitle>
             <div className="mb-4 flex justify-center">
               <Badge>{athlete.sport}</Badge>
             </div>
-            <p className="mb-4 text-center text-sm text-muted-foreground">{athlete.bio}</p>
+            <Body className="mb-4 text-center text-sm text-muted-foreground">{athlete.bio}</Body>
             <div className="mb-4 space-y-2 text-sm">
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Location</span>
@@ -272,24 +275,13 @@ export default function AthleteDetail() {
               )}
             </div>
             
-            {/* Send Message Button */}
-            {user && user.id !== athlete.id && (
-              <div className="mt-4">
-                <StartConversationButton 
-                  athleteId={athlete.id} 
-                  athleteName={athlete.name}
-                />
-              </div>
-            )}
-            
-            {/* Guest Sign Up Prompt */}
-            {!user && (
-              <div className="mt-4">
-                <Button onClick={() => navigate('/auth')} className="w-full gap-2">
-                  Sign Up to Connect
-                </Button>
-              </div>
-            )}
+            <div className="mt-4">
+              <StartConversationButton
+                athleteId={athlete.id}
+                athleteName={athlete.name}
+                athleteHandle={athlete.slug ? '@' + athlete.slug : undefined}
+              />
+            </div>
           </CardContent>
         </Card>
 
@@ -314,15 +306,16 @@ export default function AthleteDetail() {
                   ))}
                 </div>
                 <div className="text-right">
-                  <div className="text-3xl font-bold">${athlete.price.toFixed(2)}</div>
-                  <div
-                    className={`text-sm ${
+                  <SectionTitle className="text-3xl">{formatMoney(athlete.price)}</SectionTitle>
+                  <Small
+                    className={cn(
+                      'font-semibold',
                       athlete.change24h >= 0 ? 'text-success' : 'text-destructive'
-                    }`}
+                    )}
                   >
                     {athlete.change24h >= 0 ? '+' : ''}
-                    {athlete.change24h.toFixed(2)}% 24h
-                  </div>
+                    {formatNumber(athlete.change24h)}% 24h
+                  </Small>
                 </div>
               </div>
             </div>
@@ -331,26 +324,20 @@ export default function AthleteDetail() {
             {/* Stats */}
             <div className="mb-6 grid grid-cols-4 gap-4">
               <div className="stat-card">
-                <div className="text-xs text-muted-foreground">Supply</div>
-                <div className="text-lg font-bold">{athlete.supply.toFixed(0)}</div>
+                <Small>Supply</Small>
+                <SectionTitle className="text-xl">{formatNumber(athlete.supply)}</SectionTitle>
               </div>
               <div className="stat-card">
-                <div className="text-xs text-muted-foreground">Market Cap</div>
-                <div className="text-lg font-bold">
-                  ${(athlete.marketCap / 1000).toFixed(1)}k
-                </div>
+                <Small>Market Cap</Small>
+                <SectionTitle className="text-xl">{formatMoney(athlete.marketCap)}</SectionTitle>
               </div>
               <div className="stat-card">
-                <div className="text-xs text-muted-foreground">24h Vol</div>
-                <div className="text-lg font-bold">
-                  ${(athlete.volume24h / 1000).toFixed(1)}k
-                </div>
+                <Small>24h Vol</Small>
+                <SectionTitle className="text-xl">{formatMoney(athlete.volume24h)}</SectionTitle>
               </div>
               <div className="stat-card">
-                <div className="text-xs text-muted-foreground">Reserve</div>
-                <div className="text-lg font-bold">
-                  ${(athlete.reserve / 1000).toFixed(1)}k
-                </div>
+                <Small>Reserve</Small>
+                <SectionTitle className="text-xl">{formatMoney(athlete.reserve)}</SectionTitle>
               </div>
             </div>
 

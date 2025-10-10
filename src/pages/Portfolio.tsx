@@ -10,6 +10,8 @@ import { useFaucet } from '@/hooks/useTrade';
 import { useNavigate } from 'react-router-dom';
 import { exportPositionsToCSV, exportTradesToCSV } from '@/utils/csvExport';
 import { useMemo } from 'react';
+import { H1, Body } from '@/components/ui/typography';
+import { formatMoney, formatNumber } from '@/lib/format';
 
 export default function Portfolio() {
   const navigate = useNavigate();
@@ -58,8 +60,8 @@ export default function Portfolio() {
   if (!wallet) {
     return (
       <div className="container mx-auto px-4 py-16 text-center">
-        <h1 className="mb-4 text-2xl font-bold">Wallet not found</h1>
-        <p className="mb-4 text-muted-foreground">Initialize your wallet to get started</p>
+        <H1 className="mb-4 text-2xl">Wallet not found</H1>
+        <Body className="mb-4">Initialize your wallet to get started</Body>
       </div>
     );
   }
@@ -109,8 +111,8 @@ export default function Portfolio() {
     <div className="container mx-auto px-4 py-8">
       <div className="mb-8 flex items-center justify-between">
         <div>
-          <h1 className="mb-2 text-4xl font-bold">Portfolio</h1>
-          <p className="text-muted-foreground">Track your positions and performance</p>
+          <H1 className="mb-2 text-4xl">Portfolio</H1>
+          <Body>Track your positions and performance</Body>
         </div>
         <Button onClick={handleFaucet} disabled={faucetMutation.isPending} className="gap-2">
           <DollarSign className="h-4 w-4" />
@@ -126,7 +128,7 @@ export default function Portfolio() {
               <span className="text-sm text-muted-foreground">USDC Balance</span>
               <DollarSign className="h-4 w-4 text-primary" />
             </div>
-            <div className="text-3xl font-bold">${wallet.usdc.toFixed(2)}</div>
+            <div className="text-3xl font-bold">{formatMoney(wallet.usdc)}</div>
           </CardContent>
         </Card>
 
@@ -136,7 +138,7 @@ export default function Portfolio() {
               <span className="text-sm text-muted-foreground">Token Value</span>
               <Coins className="h-4 w-4 text-primary" />
             </div>
-            <div className="text-3xl font-bold">${totalValue.toFixed(2)}</div>
+            <div className="text-3xl font-bold">{formatMoney(totalValue)}</div>
           </CardContent>
         </Card>
 
@@ -155,7 +157,7 @@ export default function Portfolio() {
                 unrealizedPnL >= 0 ? 'text-success' : 'text-destructive'
               }`}
             >
-              ${unrealizedPnL.toFixed(2)}
+              {formatMoney(unrealizedPnL)}
             </div>
             <div className="text-xs text-muted-foreground mt-1">
               Open positions
@@ -178,7 +180,7 @@ export default function Portfolio() {
                 realizedPnL >= 0 ? 'text-success' : 'text-destructive'
               }`}
             >
-              ${realizedPnL.toFixed(2)}
+              {formatMoney(realizedPnL)}
             </div>
             <div className="text-xs text-muted-foreground mt-1">
               From closed trades
@@ -192,14 +194,14 @@ export default function Portfolio() {
         <Card className="glass-card">
           <CardContent className="p-6">
             <div className="mb-2 text-sm text-muted-foreground">Total Cost Basis</div>
-            <div className="text-2xl font-bold">${totalCostBasis.toFixed(2)}</div>
+            <div className="text-2xl font-bold">{formatMoney(totalCostBasis)}</div>
           </CardContent>
         </Card>
 
         <Card className="glass-card">
           <CardContent className="p-6">
             <div className="mb-2 text-sm text-muted-foreground">Current Value</div>
-            <div className="text-2xl font-bold">${totalValue.toFixed(2)}</div>
+            <div className="text-2xl font-bold">{formatMoney(totalValue)}</div>
           </CardContent>
         </Card>
 
@@ -207,7 +209,7 @@ export default function Portfolio() {
           <CardContent className="p-6">
             <div className="mb-2 text-sm text-muted-foreground">Total P&L</div>
             <div className={`text-2xl font-bold ${totalPnL >= 0 ? 'text-success' : 'text-destructive'}`}>
-              ${totalPnL.toFixed(2)}
+              {formatMoney(totalPnL)}
             </div>
             <div className={`text-sm ${totalPnL >= 0 ? 'text-success' : 'text-destructive'}`}>
               {totalPnL >= 0 ? '+' : ''}
@@ -219,7 +221,7 @@ export default function Portfolio() {
         <Card className="glass-card">
           <CardContent className="p-6">
             <div className="mb-2 text-sm text-muted-foreground">Positions</div>
-            <div className="text-3xl font-bold">{positions.length}</div>
+            <div className="text-3xl font-bold">{formatNumber(positions.length)}</div>
           </CardContent>
         </Card>
       </div>
@@ -270,6 +272,8 @@ export default function Portfolio() {
                   const costBasis = position.avgCost * position.quantity;
                   const currentValue = position.currentPrice * position.quantity;
                   const isPositive = position.pnl >= 0;
+                  const pnlDisplay = formatMoney(Math.abs(position.pnl));
+                  const signedPnl = (isPositive ? '+' : '-') + pnlDisplay;
 
                   return (
                     <TableRow
@@ -292,20 +296,20 @@ export default function Portfolio() {
                           </div>
                         </div>
                       </TableCell>
-                      <TableCell className="text-right font-medium">
-                        {position.quantity.toFixed(2)}
+                     <TableCell className="text-right font-medium">
+                        {formatNumber(position.quantity)}
                       </TableCell>
                       <TableCell className="text-right">
-                        ${position.avgCost.toFixed(4)}
+                        {formatMoney(position.avgCost)}
                       </TableCell>
                       <TableCell className="text-right">
-                        ${position.currentPrice.toFixed(4)}
+                        {formatMoney(position.currentPrice)}
                       </TableCell>
                       <TableCell className="text-right font-medium">
-                        ${costBasis.toFixed(2)}
+                        {formatMoney(costBasis)}
                       </TableCell>
                       <TableCell className="text-right font-medium">
-                        ${currentValue.toFixed(2)}
+                        {formatMoney(currentValue)}
                       </TableCell>
                       <TableCell className="text-right">
                         <div
@@ -313,7 +317,7 @@ export default function Portfolio() {
                             isPositive ? 'text-success' : 'text-destructive'
                           }`}
                         >
-                          ${position.pnl.toFixed(2)}
+                          {signedPnl}
                           <div className="text-xs">
                             {isPositive ? '+' : ''}
                             {position.pnlPercent.toFixed(2)}%

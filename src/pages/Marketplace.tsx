@@ -10,6 +10,7 @@ import { Sport } from '@/types';
 import { DevSeedTrades } from '@/components/DevSeedTrades';
 import { AthleteCard } from '@/components/AthleteCard';
 import MarketplaceSkeleton from '@/components/skeletons/MarketplaceSkeleton';
+import { H1, Body } from '@/components/ui/typography';
 
 const SPORTS: Sport[] = ['Running', 'HYROX', 'Cycling', 'Triathlon', 'CrossFit', 'Swimming', 'Trail Run', 'Rowing'];
 const PAGE_SIZE = 12;
@@ -95,12 +96,12 @@ export default function Marketplace() {
       {/* Header */}
       <div className="mb-8">
         <div className="flex items-center justify-between mb-2">
-          <h1 className="text-4xl font-bold">Athlete Marketplace</h1>
+          <H1 className="text-4xl">Athlete Marketplace</H1>
           {user && <DevSeedTrades />}
         </div>
-        <p className="text-muted-foreground">
+        <Body className="text-muted-foreground">
           {user ? 'Trade simulated athlete tokens with bonding curve mechanics' : 'Explore athlete profiles and performance metrics'}
-        </p>
+        </Body>
       </div>
 
       {/* Filters */}

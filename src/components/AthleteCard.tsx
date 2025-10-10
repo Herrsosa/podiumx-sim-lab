@@ -4,6 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Sparklines, SparklinesLine } from 'react-sparklines';
 import { Athlete } from '@/types';
+import { formatMoney, formatNumber } from '@/lib/format';
 
 interface AthleteCardProps {
   athlete: Athlete;
@@ -46,7 +47,7 @@ export const AthleteCard = memo(({ athlete, chartData, onClick }: AthleteCardPro
         {/* Price */}
         <div className="mb-2">
           <div className="text-2xl font-bold">
-            ${athlete.price.toFixed(2)}
+            {formatMoney(athlete.price)}
           </div>
           <div
             className={`flex items-center gap-1 text-sm ${
@@ -59,7 +60,7 @@ export const AthleteCard = memo(({ athlete, chartData, onClick }: AthleteCardPro
               <TrendingDown className="h-3 w-3" />
             )}
             {isPositive ? '+' : ''}
-            {athlete.change24h.toFixed(2)}% 24h
+            {formatNumber(athlete.change24h)}% 24h
           </div>
         </div>
 
@@ -83,13 +84,11 @@ export const AthleteCard = memo(({ athlete, chartData, onClick }: AthleteCardPro
         <div className="grid grid-cols-2 gap-2 text-sm">
           <div>
             <div className="text-muted-foreground">Supply</div>
-            <div className="font-medium">{athlete.supply.toFixed(0)}</div>
+            <div className="font-medium">{formatNumber(athlete.supply)}</div>
           </div>
           <div>
             <div className="text-muted-foreground">Market Cap</div>
-            <div className="font-medium">
-              ${(athlete.marketCap / 1000).toFixed(1)}k
-            </div>
+            <div className="font-medium">{formatMoney(athlete.marketCap)}</div>
           </div>
         </div>
       </CardContent>
