@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { priceAt } from '@/utils/pricing';
@@ -8,13 +9,17 @@ interface SparklineData {
 }
 
 export function useMarketplaceCharts(athleteIds: string[]) {
+  const dedupedIds = useMemo(() => {
+    return Array.from(new Set(athleteIds)).filter(Boolean);
+  }, [athleteIds]);
+
   return useQuery({
-    queryKey: ['marketplace-charts', athleteIds],
+    queryKey: ['marketplace-charts', dedupedIds],
     queryFn: async () => {
       const charts: Record<string, number[]> = {};
 
       await Promise.all(
-        athleteIds.map(async (athleteId) => {
+        dedupedIds.map(async (athleteId) => {
           // Get last 24 hours of trades
           const now = new Date();
           const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000);
@@ -71,7 +76,7 @@ export function useMarketplaceCharts(athleteIds: string[]) {
 
       return charts;
     },
-    enabled: athleteIds.length > 0,
+    enabled: dedupedIds.length > 0,
     staleTime: 30000, // Cache for 30 seconds
   });
 }

@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Athlete, Sport } from '@/types';
@@ -6,10 +7,10 @@ import { priceAt } from '@/utils/pricing';
 import { useAthleteMetrics } from './useAthleteMetrics';
 
 export function useAthletes() {
-  const { data: metricsMap } = useAthleteMetrics('24h');
+  const { data: metricsMap, isLoading: metricsLoading, isFetching: metricsFetching } = useAthleteMetrics('24h');
 
-  return useQuery({
-    queryKey: ['athletes', metricsMap],
+  const queryResult = useQuery({
+    queryKey: ['athletes'],
     queryFn: async () => {
       const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
@@ -52,9 +53,6 @@ export function useAthletes() {
             ...(p.workout_json as any),
           }));
 
-        // Get metrics from the bulk metrics map
-        const metrics = metricsMap?.get(profile.id);
-
         return {
           id: profile.id,
           slug: profile.username,
@@ -72,8 +70,8 @@ export function useAthletes() {
           price,
           marketCap,
           athleteRevenue: token?.athlete_earnings || 0,
-          change24h: metrics?.changePct || 0,
-          volume24h: metrics?.volume || 0,
+          change24h: 0,
+          volume24h: 0,
           workouts,
         };
       });
@@ -81,4 +79,31 @@ export function useAthletes() {
       return athletes;
     },
   });
+
+  const athletesWithMetrics = useMemo(() => {
+    if (!queryResult.data) return undefined;
+
+    if (!metricsMap || metricsMap.size === 0) {
+      return queryResult.data;
+    }
+
+    return queryResult.data.map((athlete) => {
+      const metrics = metricsMap.get(athlete.id);
+      if (!metrics) return athlete;
+
+      return {
+        ...athlete,
+        change24h: metrics.changePct,
+        volume24h: metrics.volume,
+      };
+    });
+  }, [queryResult.data, metricsMap]);
+
+  return {
+    ...queryResult,
+    data: athletesWithMetrics,
+    isLoading: queryResult.isLoading || metricsLoading,
+    isFetching: queryResult.isFetching || metricsFetching,
+    isPending: queryResult.isPending || metricsLoading,
+  };
 }

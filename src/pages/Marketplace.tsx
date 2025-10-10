@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search } from 'lucide-react';
 import { Input } from '@/components/ui/input';
@@ -9,44 +9,84 @@ import { useAuth } from '@/hooks/useAuth';
 import { Sport } from '@/types';
 import { DevSeedTrades } from '@/components/DevSeedTrades';
 import { AthleteCard } from '@/components/AthleteCard';
+import MarketplaceSkeleton from '@/components/skeletons/MarketplaceSkeleton';
 
 const SPORTS: Sport[] = ['Running', 'HYROX', 'Cycling', 'Triathlon', 'CrossFit', 'Swimming', 'Trail Run', 'Rowing'];
+const PAGE_SIZE = 12;
 
 export default function Marketplace() {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
   const [search, setSearch] = useState('');
   const [selectedSport, setSelectedSport] = useState<Sport | 'All'>('All');
+  const [pendingSlug, setPendingSlug] = useState<string | null>(null);
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   
   const { data: athletes, isLoading } = useAthletes();
 
   const handleAthleteClick = useCallback((slug: string) => {
+    if (!slug) {
+      return;
+    }
+
+    if (loading) {
+      setPendingSlug(slug);
+      return;
+    }
+
     if (!user) {
       navigate('/auth');
       return;
     }
+
     navigate(`/athlete/${slug}`);
-  }, [user, navigate]);
+  }, [user, loading, navigate]);
+
+  useEffect(() => {
+    if (!pendingSlug || loading) {
+      return;
+    }
+
+    if (!user) {
+      navigate('/auth');
+      setPendingSlug(null);
+      return;
+    }
+
+    navigate(`/athlete/${pendingSlug}`);
+    setPendingSlug(null);
+  }, [pendingSlug, loading, user, navigate]);
+
+  useEffect(() => {
+    setVisibleCount(PAGE_SIZE);
+  }, [search, selectedSport, athletes?.length]);
 
   const filteredAthletes = useMemo(() => {
     if (!athletes) return [];
+    const lowered = search.trim().toLowerCase();
     return athletes.filter((athlete) => {
-      const matchesSearch = athlete.name.toLowerCase().includes(search.toLowerCase());
+      const matchesSearch = athlete.name.toLowerCase().includes(lowered);
       const matchesSport = selectedSport === 'All' || athlete.sport === selectedSport;
       return matchesSearch && matchesSport;
     });
   }, [athletes, search, selectedSport]);
 
-  // Get real chart data for filtered athletes
-  const athleteIds = filteredAthletes.map(a => a.id);
+  const displayedAthletes = useMemo(() => {
+    return filteredAthletes.slice(0, visibleCount);
+  }, [filteredAthletes, visibleCount]);
+
+  const athleteIds = useMemo(() => displayedAthletes.map((athlete) => athlete.id), [displayedAthletes]);
+
   const { data: chartData } = useMarketplaceCharts(athleteIds);
 
+  const canLoadMore = displayedAthletes.length < filteredAthletes.length;
+
+  const handleLoadMore = useCallback(() => {
+    setVisibleCount((prev) => Math.min(prev + PAGE_SIZE, filteredAthletes.length));
+  }, [filteredAthletes.length]);
+
   if (isLoading) {
-    return (
-      <div className="container mx-auto px-4 py-16 text-center">
-        <div className="text-muted-foreground">Loading athletes...</div>
-      </div>
-    );
+    return <MarketplaceSkeleton />;
   }
 
 
@@ -97,7 +137,7 @@ export default function Marketplace() {
 
       {/* Athletes Grid */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-        {filteredAthletes.map((athlete) => {
+        {displayedAthletes.map((athlete) => {
           const sparklineData = chartData?.[athlete.id] || [];
           return (
             <AthleteCard
@@ -113,6 +153,14 @@ export default function Marketplace() {
       {filteredAthletes.length === 0 && (
         <div className="py-16 text-center text-muted-foreground">
           No athletes found. Try adjusting your filters.
+        </div>
+      )}
+
+      {canLoadMore && (
+        <div className="flex justify-center py-10">
+          <Button variant="outline" onClick={handleLoadMore}>
+            Load more athletes
+          </Button>
         </div>
       )}
     </div>

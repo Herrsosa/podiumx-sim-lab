@@ -11,15 +11,17 @@ import { Suspense, lazy } from "react";
 import Navigation from "@/components/Navigation";
 import Landing from "./pages/Landing";
 import Auth from "./pages/Auth";
-import Marketplace from "./pages/Marketplace";
 import NotFound from "./pages/NotFound";
 import StravaCallback from "./pages/StravaCallback";
+import MarketplaceSkeleton from "@/components/skeletons/MarketplaceSkeleton";
+import AthleteDetailSkeleton from "@/components/skeletons/AthleteDetailSkeleton";
 
 // Lazy load heavy pages
 const Onboarding = lazy(() => import("./pages/Onboarding"));
 const AthleteDetail = lazy(() => import("./pages/AthleteDetail"));
 const Portfolio = lazy(() => import("./pages/Portfolio"));
 const MyAthlete = lazy(() => import("./pages/MyAthlete"));
+const Marketplace = lazy(() => import("./pages/Marketplace"));
 
 const queryClient = new QueryClient();
 
@@ -125,13 +127,15 @@ function AppContent() {
       <Route path="/marketplace" element={
         <>
           <Navigation />
-          <Marketplace />
+          <Suspense fallback={<MarketplaceSkeleton />}>
+            <Marketplace />
+          </Suspense>
         </>
       } />
       <Route path="/athlete/:slug" element={
         <>
           <Navigation />
-          <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Loading...</div>}>
+          <Suspense fallback={<AthleteDetailSkeleton />}>
             <AthleteDetail />
           </Suspense>
         </>

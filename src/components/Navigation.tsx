@@ -9,7 +9,7 @@ import { useEffect, useState } from 'react';
 export default function Navigation() {
   const location = useLocation();
   const resetDemo = useAppStore((state) => state.resetDemo);
-  const { signOut } = useAuth();
+  const { user, signOut } = useAuth();
   const { toast } = useToast();
   const [theme, setTheme] = useState<'light' | 'dark'>('dark');
 
@@ -65,26 +65,30 @@ export default function Navigation() {
                 <span className="hidden sm:inline">Marketplace</span>
               </Button>
             </Link>
-            <Link to="/portfolio">
-              <Button
-                variant={isActive('/portfolio') ? 'secondary' : 'ghost'}
-                size="sm"
-                className="gap-2"
-              >
-                <Wallet className="h-4 w-4" />
-                <span className="hidden sm:inline">Portfolio</span>
-              </Button>
-            </Link>
-            <Link to="/me">
-              <Button
-                variant={isActive('/me') ? 'secondary' : 'ghost'}
-                size="sm"
-                className="gap-2"
-              >
-                <User className="h-4 w-4" />
-                <span className="hidden sm:inline">My Page</span>
-              </Button>
-            </Link>
+            {user && (
+              <>
+                <Link to="/portfolio">
+                  <Button
+                    variant={isActive('/portfolio') ? 'secondary' : 'ghost'}
+                    size="sm"
+                    className="gap-2"
+                  >
+                    <Wallet className="h-4 w-4" />
+                    <span className="hidden sm:inline">Portfolio</span>
+                  </Button>
+                </Link>
+                <Link to="/me">
+                  <Button
+                    variant={isActive('/me') ? 'secondary' : 'ghost'}
+                    size="sm"
+                    className="gap-2"
+                  >
+                    <User className="h-4 w-4" />
+                    <span className="hidden sm:inline">My Page</span>
+                  </Button>
+                </Link>
+              </>
+            )}
           </div>
 
           {/* Actions */}
@@ -101,24 +105,28 @@ export default function Navigation() {
                 <Moon className="h-4 w-4" />
               )}
             </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleReset}
-              className="gap-2"
-            >
-              <RotateCcw className="h-4 w-4" />
-              <span className="hidden sm:inline">Reset</span>
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleSignOut}
-              className="gap-2"
-            >
-              <LogOut className="h-4 w-4" />
-              <span className="hidden sm:inline">Sign Out</span>
-            </Button>
+            {user && (
+              <>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleReset}
+                  className="gap-2"
+                >
+                  <RotateCcw className="h-4 w-4" />
+                  <span className="hidden sm:inline">Reset</span>
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleSignOut}
+                  className="gap-2"
+                >
+                  <LogOut className="h-4 w-4" />
+                  <span className="hidden sm:inline">Sign Out</span>
+                </Button>
+              </>
+            )}
           </div>
         </div>
       </div>

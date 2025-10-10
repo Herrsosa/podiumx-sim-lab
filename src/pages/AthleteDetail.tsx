@@ -21,6 +21,8 @@ import AddWorkoutModal from '@/components/AddWorkoutModal';
 import { StartConversationButton } from '@/components/StartConversationButton';
 import { useAuth } from '@/hooks/useAuth';
 import { useQueryClient } from '@tanstack/react-query';
+import AthleteDetailSkeleton from '@/components/skeletons/AthleteDetailSkeleton';
+import { Skeleton } from '@/components/ui/skeleton';
 
 
 type TimeRange = '24h' | '7d' | '30d';
@@ -44,9 +46,20 @@ export default function AthleteDetail() {
   const { data: trades, isLoading: tradesLoading } = useTrades();
   const tradeMutation = useTrade();
   
-  const athlete = athletes?.find((a) => a.slug === slug);
-  const position = athlete && wallet ? wallet.positions[athlete.id] : null;
-  const athleteTrades = trades?.filter((t) => t.athleteId === athlete?.id).slice(0, 100) || [];
+  const athlete = useMemo(() => {
+    if (!athletes || !slug) return undefined;
+    return athletes.find((a) => a.slug === slug);
+  }, [athletes, slug]);
+
+  const position = useMemo(() => {
+    if (!athlete?.id || !wallet) return null;
+    return wallet.positions[athlete.id] || null;
+  }, [athlete?.id, wallet]);
+
+  const athleteTrades = useMemo(() => {
+    if (!trades || !athlete?.id) return [];
+    return trades.filter((t) => t.athleteId === athlete.id).slice(0, 100);
+  }, [trades, athlete?.id]);
 
   // Fetch real trade history data
   const { data: tradeHistory, isLoading: historyLoading } = useAthleteTradeHistory(athlete?.id, timeRange);
@@ -56,10 +69,10 @@ export default function AthleteDetail() {
       return [];
     }
 
-    return tradeHistory.data.map((bucket) => ({
-      timestamp: bucket.timestamp,
-      price: bucket.price,
-      time: new Date(bucket.timestamp).toLocaleString('en-US', {
+    return tradeHistory.data.map((point) => ({
+      timestamp: point.timestamp,
+      price: point.price,
+      label: new Date(point.timestamp).toLocaleString('en-US', {
         month: 'short',
         day: 'numeric',
         hour: timeRange === '24h' ? '2-digit' : undefined,
@@ -67,6 +80,34 @@ export default function AthleteDetail() {
       }),
     }));
   }, [tradeHistory, timeRange]);
+
+  const formatXAxisTick = useCallback(
+    (value: number) => {
+      const date = new Date(value);
+      if (timeRange === '24h') {
+        return date.toLocaleTimeString('en-US', {
+          hour: 'numeric',
+          minute: '2-digit',
+        });
+      }
+
+      return date.toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+      });
+    },
+    [timeRange]
+  );
+
+  const formatTooltipLabel = useCallback((value: number) => {
+    const date = new Date(value);
+    return date.toLocaleString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  }, []);
 
   const impact = useMemo(() => {
     if (!athlete || quantity <= 0) return null;
@@ -169,13 +210,11 @@ export default function AthleteDetail() {
 
   const isOwnProfile = user?.id === athlete?.id;
 
+  const isBootstrapping = athletesLoading || walletLoading || tradesLoading;
+
   // Now check loading and not found states
-  if (athletesLoading || walletLoading || tradesLoading) {
-    return (
-      <div className="container mx-auto px-4 py-16 text-center">
-        <div className="text-muted-foreground">Loading...</div>
-      </div>
-    );
+  if (isBootstrapping) {
+    return <AthleteDetailSkeleton />;
   }
 
   if (!athlete) {
@@ -318,9 +357,7 @@ export default function AthleteDetail() {
             {/* Chart */}
             <div className="h-64">
               {historyLoading ? (
-                <div className="flex h-full items-center justify-center text-muted-foreground">
-                  Loading chart data...
-                </div>
+                <Skeleton className="h-full w-full rounded-lg" />
               ) : chartData.length === 0 ? (
                 <div className="flex h-full items-center justify-center text-muted-foreground">
                   No trade data available for this time range
@@ -329,16 +366,19 @@ export default function AthleteDetail() {
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={chartData}>
                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                    <XAxis 
-                      dataKey="time" 
-                      tick={{ fontSize: 12 }}
-                      angle={timeRange === '24h' ? -45 : 0}
-                      textAnchor={timeRange === '24h' ? 'end' : 'middle'}
-                      height={timeRange === '24h' ? 60 : 30}
+                    <XAxis
+                      dataKey="timestamp"
+                      type="number"
+                      scale="time"
+                      domain={['auto', 'auto']}
+                      tickFormatter={formatXAxisTick}
+                      tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }}
+                      stroke="hsl(var(--muted-foreground))"
                     />
-                    <YAxis 
-                      domain={['auto', 'auto']} 
-                      tick={{ fontSize: 12 }}
+                    <YAxis
+                      domain={['auto', 'auto']}
+                      tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }}
+                      stroke="hsl(var(--muted-foreground))"
                       tickFormatter={(value) => `$${value.toFixed(2)}`}
                     />
                     <RechartsTooltip
@@ -348,6 +388,7 @@ export default function AthleteDetail() {
                         borderRadius: '0.5rem',
                       }}
                       formatter={(value: number) => [`$${value.toFixed(4)}`, 'Price']}
+                      labelFormatter={formatTooltipLabel}
                     />
                     <Line
                       type="monotone"
@@ -355,6 +396,7 @@ export default function AthleteDetail() {
                       stroke="hsl(var(--primary))"
                       strokeWidth={2}
                       dot={false}
+                      connectNulls
                     />
                   </LineChart>
                 </ResponsiveContainer>

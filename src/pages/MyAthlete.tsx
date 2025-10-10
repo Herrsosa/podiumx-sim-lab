@@ -412,11 +412,6 @@ export default function MyAthlete() {
         </CardContent>
       </Card>
 
-      {/* Strava Training */}
-      <div className="mb-6">
-        <StravaTraining />
-      </div>
-
       {/* Price Chart - Only for Athletes */}
       {isAthlete && userAthlete && priceHistory.length > 0 && (
         <Card className="glass-card mb-6">
@@ -561,6 +556,11 @@ export default function MyAthlete() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Strava Integration */}
+      <div className="mt-6 mb-6">
+        <StravaTraining />
+      </div>
 
       {/* Add Workout Modal */}
       {user && (
