@@ -1,19 +1,53 @@
-import { memo } from 'react';
+import { memo, useMemo } from 'react';
 import { TrendingUp, TrendingDown } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
-import { Sparklines, SparklinesLine } from 'react-sparklines';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { Athlete } from '@/types';
+import type { MarketplaceChartPoint } from '@/hooks/useMarketplaceCharts';
 import { formatMoney, formatNumber } from '@/lib/format';
+import { format } from 'date-fns';
 
 interface AthleteCardProps {
   athlete: Athlete;
-  chartData: number[];
+  chartData: MarketplaceChartPoint[];
   onClick: () => void;
 }
 
 export const AthleteCard = memo(({ athlete, chartData, onClick }: AthleteCardProps) => {
   const isPositive = athlete.change24h >= 0;
+  const lineColor = isPositive ? '#7CFF6B' : '#EF4444';
+
+  const sortedChartData = useMemo(
+    () => chartData.slice().sort((a, b) => a.timestamp - b.timestamp),
+    [chartData]
+  );
+
+  const hasChartData = sortedChartData.length > 0;
+
+  const priceDomain = useMemo<[number, number] | undefined>(() => {
+    if (!hasChartData) {
+      return undefined;
+    }
+
+    const prices = sortedChartData.map((point) => point.price);
+    const min = Math.min(...prices);
+    const max = Math.max(...prices);
+
+    if (!Number.isFinite(min) || !Number.isFinite(max)) {
+      return undefined;
+    }
+
+    if (min === max) {
+      const padding = min === 0 ? 0.5 : Math.abs(min) * 0.05;
+      const lower = Math.max(0, min - padding);
+      return [lower, max + padding];
+    }
+
+    const padding = (max - min) * 0.1 || 0.5;
+    const lower = Math.max(0, min - padding);
+    return [lower, max + padding];
+  }, [hasChartData, sortedChartData]);
 
   return (
     <Card
@@ -64,20 +98,49 @@ export const AthleteCard = memo(({ athlete, chartData, onClick }: AthleteCardPro
           </div>
         </div>
 
-        {/* Sparkline */}
-        <div className="mb-4 h-12">
-          {chartData.length > 0 ? (
-            <Sparklines data={chartData} width={200} height={48}>
-              <SparklinesLine
-                color={isPositive ? '#7CFF6B' : '#EF4444'}
-                style={{ strokeWidth: 2, fill: 'none' }}
-              />
-            </Sparklines>
-          ) : (
-            <div className="flex h-full items-center justify-center text-xs text-muted-foreground">
-              No trade history
-            </div>
-          )}
+        {/* Price Trend */}
+        <div className="mb-4">
+          <div className="mb-2 flex items-center justify-between text-[0.65rem] uppercase tracking-wide text-muted-foreground">
+            <span>Price (7d)</span>
+          </div>
+          <div className="h-20">
+            {hasChartData ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart
+                  data={sortedChartData}
+                  margin={{ top: 4, right: 8, left: -8, bottom: 0 }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                  <XAxis
+                    dataKey="timestamp"
+                    axisLine={false}
+                    tickLine={false}
+                    tickFormatter={(value) => format(new Date(value), 'MMM d')}
+                    minTickGap={16}
+                    tick={{ fontSize: 10 }}
+                  />
+                  <YAxis
+                    axisLine={false}
+                    tickLine={false}
+                    tickFormatter={(value) => `$${Number(value).toFixed(2)}`}
+                    width={42}
+                    domain={priceDomain ?? ['auto', 'auto']}
+                    tick={{ fontSize: 10 }}
+                  />
+                  <Tooltip
+                    cursor={{ stroke: lineColor, strokeWidth: 1, opacity: 0.2 }}
+                    formatter={(value: number) => [`$${Number(value).toFixed(2)}`, 'Price']}
+                    labelFormatter={(value) => format(new Date(value), 'PPP p')}
+                  />
+                  <Line type="monotone" dataKey="price" stroke={lineColor} strokeWidth={2} dot={false} />
+                </LineChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="flex h-full items-center justify-center text-xs text-muted-foreground">
+                No trade history
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Stats */}
@@ -95,9 +158,22 @@ export const AthleteCard = memo(({ athlete, chartData, onClick }: AthleteCardPro
     </Card>
   );
 }, (prev, next) => {
-  return prev.athlete.id === next.athlete.id && 
-         prev.athlete.price === next.athlete.price &&
-         prev.chartData.length === next.chartData.length;
+  if (prev.athlete.id !== next.athlete.id) return false;
+  if (prev.athlete.price !== next.athlete.price) return false;
+  if (prev.athlete.change24h !== next.athlete.change24h) return false;
+  if (prev.chartData.length !== next.chartData.length) return false;
+
+  if (prev.chartData.length === 0) {
+    return true;
+  }
+
+  const prevLast = prev.chartData[prev.chartData.length - 1];
+  const nextLast = next.chartData[next.chartData.length - 1];
+
+  return (
+    prevLast.price === nextLast.price &&
+    prevLast.timestamp === nextLast.timestamp
+  );
 });
 
 AthleteCard.displayName = 'AthleteCard';

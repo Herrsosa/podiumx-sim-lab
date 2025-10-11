@@ -77,14 +77,14 @@ export default function Navigation() {
                     <span className="hidden sm:inline">Portfolio</span>
                   </Button>
                 </Link>
-                <Link to="/me">
+                <Link to="/my-athlete-profile">
                   <Button
-                    variant={isActive('/me') ? 'secondary' : 'ghost'}
+                    variant={isActive('/my-athlete-profile') ? 'secondary' : 'ghost'}
                     size="sm"
                     className="gap-2"
                   >
                     <User className="h-4 w-4" />
-                    <span className="hidden sm:inline">My Page</span>
+                    <span className="hidden sm:inline">My Athlete Profile</span>
                   </Button>
                 </Link>
               </>

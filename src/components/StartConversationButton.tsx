@@ -4,9 +4,8 @@ import { MessageSquare } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import Auth from '@/pages/Auth';
 import { MessageComposerModal } from '@/components/messages/MessageComposerModal';
+import { useAuthPrompt } from '@/hooks/useAuthPrompt';
 
 interface StartConversationButtonProps {
   athleteId: string;
@@ -19,12 +18,15 @@ export function StartConversationButton({ athleteId, athleteName, athleteHandle 
   const { toast } = useToast();
   const navigate = useNavigate();
   const [composerOpen, setComposerOpen] = useState(false);
-  const [authOpen, setAuthOpen] = useState(false);
+  const { requireAuth, authDialog } = useAuthPrompt({
+    description: 'Create an account to send direct messages to athletes.',
+    ctaLabel: 'Create account',
+  });
 
   // Modal composer keeps conversations inline; auth dialog handles guests without routing away.
   const handleStartConversation = () => {
     if (!user) {
-      setAuthOpen(true);
+      requireAuth();
       return;
     }
 
@@ -54,19 +56,9 @@ export function StartConversationButton({ athleteId, athleteName, athleteHandle 
         targetHandle={displayHandle}
         open={composerOpen}
         onOpenChange={setComposerOpen}
-        onOpenInbox={() => navigate('/me?tab=messages')}
+        onOpenInbox={() => navigate('/my-athlete-profile?tab=messages')}
       />
-
-      <Dialog open={authOpen} onOpenChange={setAuthOpen}>
-        <DialogContent className="sm:max-w-lg overflow-hidden p-0">
-          <DialogHeader className="px-6 pt-6">
-            <DialogTitle className="text-lg">Sign in to message athletes</DialogTitle>
-          </DialogHeader>
-          <div className="max-h-[75vh] overflow-auto px-6 pb-6">
-            <Auth />
-          </div>
-        </DialogContent>
-      </Dialog>
+      {authDialog}
     </>
   );
 }

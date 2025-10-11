@@ -66,13 +66,18 @@ export default function Marketplace() {
   const filteredAthletes = useMemo(() => {
     if (!athletes) return [];
     const lowered = search.trim().toLowerCase();
+    const userId = user?.id;
+
     return athletes.filter((athlete) => {
+      if (userId && athlete.id === userId) {
+        return false;
+      }
+
       const matchesSearch = athlete.name.toLowerCase().includes(lowered);
       const matchesSport = selectedSport === 'All' || athlete.sport === selectedSport;
       return matchesSearch && matchesSport;
     });
-  }, [athletes, search, selectedSport]);
-
+  }, [athletes, search, selectedSport, user?.id]);
   const displayedAthletes = useMemo(() => {
     return filteredAthletes.slice(0, visibleCount);
   }, [filteredAthletes, visibleCount]);

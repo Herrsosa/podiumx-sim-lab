@@ -193,7 +193,10 @@ export default function AthleteDetail() {
     }
   }, [tradeType, quantity, athlete]);
 
+  const isSelfBuy = user?.id === athlete?.id && tradeType === 'buy';
+
   const canTrade = 
+    !isSelfBuy &&
     quantity > 0 && 
     !quantityError &&
     impact && 
@@ -204,6 +207,9 @@ export default function AthleteDetail() {
   const userHoldings = position?.quantity || 0;
 
   const handleTrade = async () => {
+    if (isSelfBuy) {
+      return;
+    }
     if (!canTrade || !athlete || !impact) return;
     
     // Optimistic update - immediately update local state
@@ -534,13 +540,17 @@ export default function AthleteDetail() {
               {/* Validation error or helper text */}
               {quantityError ? (
                 <p className="mb-2 text-xs text-destructive">{quantityError}</p>
+              ) : isSelfBuy ? (
+                <p className="mb-2 text-xs text-muted-foreground">
+                  Athletes cannot buy their own tokens.
+                </p>
               ) : impact && wallet && (
                 <p className="mb-2 text-xs text-muted-foreground">
                   {tradeType === 'buy' 
                     ? `You can buy up to ${Math.floor(wallet.usdc / impact.avgPrice)} tokens with your balance`
                     : position 
                       ? `You have ${position.quantity} token${position.quantity !== 1 ? 's' : ''}`
-                      : 'You don\'t own any tokens'}
+                      : "You don't own any tokens"}
                 </p>
               )}
               
@@ -660,13 +670,16 @@ export default function AthleteDetail() {
                 ? 'Enter Quantity'
                 : quantityError
                 ? 'Invalid Quantity'
+                : isSelfBuy
+                ? 'Self-purchase not allowed'
                 : tradeType === 'buy'
                 ? wallet.usdc < impact.total
                   ? `Need $${(impact.total - wallet.usdc).toFixed(2)} more USDC`
                   : `Buy for $${impact.total.toFixed(2)}`
                 : !position || position.quantity < quantity
                 ? `Need ${quantity - (position?.quantity || 0)} more token${quantity - (position?.quantity || 0) !== 1 ? 's' : ''}`
-                : `Sell for $${impact.total.toFixed(2)}`}
+                : `Sell for $${impact.total.toFixed(2)}`
+              }
             </Button>
 
             <TooltipProvider>

@@ -3,10 +3,15 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { priceAt } from '@/utils/pricing';
 
-interface SparklineData {
-  athleteId: string;
-  data: number[];
-}
+export type MarketplaceChartPoint = {
+  timestamp: number;
+  price: number;
+};
+
+type MarketplaceCharts = Record<string, MarketplaceChartPoint[]>;
+
+const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
+const MAX_POINTS = 30;
 
 export function useMarketplaceCharts(athleteIds: string[]) {
   const dedupedIds = useMemo(() => {
@@ -16,67 +21,109 @@ export function useMarketplaceCharts(athleteIds: string[]) {
   return useQuery({
     queryKey: ['marketplace-charts', dedupedIds],
     queryFn: async () => {
-      const charts: Record<string, number[]> = {};
+      const charts: MarketplaceCharts = {};
+      const now = new Date();
+      const since = new Date(now.getTime() - SEVEN_DAYS_MS);
 
       await Promise.all(
         dedupedIds.map(async (athleteId) => {
-          // Get last 24 hours of trades
-          const now = new Date();
-          const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-
-          const { data: trades } = await supabase
+          const { data: trades, error: tradesError } = await supabase
             .from('trades')
             .select('created_at, price_after, supply_after')
             .eq('athlete_id', athleteId)
-            .gte('created_at', yesterday.toISOString())
+            .gte('created_at', since.toISOString())
             .order('created_at', { ascending: true });
 
-          if (!trades || trades.length === 0) {
-            // If no trades, get current price from token data
-            const { data: token } = await supabase
+          if (tradesError) {
+            console.error('Failed to load marketplace trades', athleteId, tradesError);
+            charts[athleteId] = [];
+            return;
+          }
+
+          let points: MarketplaceChartPoint[] = [];
+
+          if (trades && trades.length > 0) {
+            points = trades.map((trade) => ({
+              timestamp: new Date(trade.created_at).getTime(),
+              price: Number(trade.price_after),
+            }));
+          } else {
+            const { data: token, error: tokenError } = await supabase
               .from('athlete_tokens')
               .select('supply, a, b, c')
               .eq('athlete_id', athleteId)
               .single();
 
-            if (token) {
-              const curve = {
-                a: token.a || 0.0002,
-                b: token.b || 0.02,
-                c: token.c || 1,
-              };
-              const currentPrice = priceAt(token.supply || 0, curve);
-              // Return flat line with current price
-              charts[athleteId] = Array(20).fill(currentPrice);
-            } else {
+            if (tokenError || !token) {
+              console.error('Failed to load token data for chart', athleteId, tokenError);
               charts[athleteId] = [];
+              return;
             }
+
+            const curve = {
+              a: token.a || 0.0002,
+              b: token.b || 0.02,
+              c: token.c || 1,
+            };
+            const currentPrice = priceAt(token.supply || 0, curve);
+
+            points = Array.from({ length: 7 }, (_, index) => {
+              const ts = now.getTime() - (6 - index) * 24 * 60 * 60 * 1000;
+              return { timestamp: ts, price: currentPrice };
+            });
+          }
+
+          if (!points.length) {
+            charts[athleteId] = [];
             return;
           }
 
-          // Sample trades to get ~20 data points for sparkline
-          const sampleSize = Math.min(20, trades.length);
-          const step = Math.max(1, Math.floor(trades.length / sampleSize));
-          
-          const sampledPrices = [];
-          for (let i = 0; i < trades.length; i += step) {
-            if (sampledPrices.length < 20) {
-              sampledPrices.push(Number(trades[i].price_after));
-            }
+          const sampled = samplePoints(points, MAX_POINTS);
+          const lastPoint = sampled[sampled.length - 1];
+
+          if (now.getTime() - lastPoint.timestamp > 60 * 60 * 1000) {
+            sampled.push({ timestamp: now.getTime(), price: lastPoint.price });
           }
 
-          // If we have fewer than 20 points, pad with the last price
-          while (sampledPrices.length < 20) {
-            sampledPrices.push(sampledPrices[sampledPrices.length - 1]);
-          }
+          const trimmed =
+            sampled.length > MAX_POINTS
+              ? sampled.slice(sampled.length - MAX_POINTS)
+              : sampled;
 
-          charts[athleteId] = sampledPrices.slice(0, 20);
+          charts[athleteId] = trimmed;
         })
       );
 
       return charts;
     },
     enabled: dedupedIds.length > 0,
-    staleTime: 30000, // Cache for 30 seconds
+    staleTime: 30000,
   });
 }
+
+function samplePoints(points: MarketplaceChartPoint[], target: number) {
+  if (points.length <= target) {
+    return [...points];
+  }
+
+  const step = Math.ceil(points.length / target);
+  const sampled: MarketplaceChartPoint[] = [];
+
+  for (let i = 0; i < points.length; i += step) {
+    sampled.push(points[i]);
+  }
+
+  const last = points[points.length - 1];
+  if (sampled[sampled.length - 1]?.timestamp !== last.timestamp) {
+    sampled.push(last);
+  }
+
+  if (sampled.length > target) {
+    return sampled.slice(sampled.length - target);
+  }
+
+  return sampled;
+}
+
+
+

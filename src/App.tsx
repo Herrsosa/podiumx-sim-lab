@@ -77,7 +77,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
       } else if (!needsOnboarding && location.pathname === '/onboarding') {
         // User completed onboarding, redirect to appropriate page
         if (athleteToken) {
-          setRedirectPath('/me');
+          setRedirectPath('/my-athlete-profile');
         } else {
           setRedirectPath('/marketplace');
         }
@@ -148,7 +148,7 @@ function AppContent() {
           </Suspense>
         </ProtectedRoute>
       } />
-      <Route path="/me" element={
+      <Route path="/my-athlete-profile" element={
         <ProtectedRoute>
           <Navigation />
           <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Loading...</div>}>

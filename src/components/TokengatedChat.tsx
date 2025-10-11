@@ -150,8 +150,8 @@ export default function TokengatedChat({
   };
 
   return (
-    <Card className="glass-card">
-      <CardHeader>
+    <Card className="glass-card flex max-h-[var(--card-h)] flex-col overflow-hidden">
+      <CardHeader className="px-5 py-4">
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-2">
             Community Chat
@@ -162,9 +162,9 @@ export default function TokengatedChat({
           </Badge>
         </div>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="flex flex-1 flex-col gap-3 px-5 pb-4 pt-0">
         {/* Messages */}
-        <div className="h-[400px] space-y-3 overflow-y-auto rounded-lg border border-border/50 bg-muted/20 p-4">
+        <div className="flex-1 space-y-3 overflow-y-auto rounded-lg border border-border/50 bg-muted/20 p-4 min-h-[220px]">
           {isLocked ? (
             <EmptyState
               icon={<Lock className="h-6 w-6" />}

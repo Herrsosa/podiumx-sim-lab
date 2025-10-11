@@ -25,30 +25,48 @@ export default function Portfolio() {
 
   // Calculate realized PnL from trades - MUST be before any conditional returns
   const realizedPnL = useMemo(() => {
-    if (!userTrades) return 0;
-    
-    let realized = 0;
+    if (!userTrades || userTrades.length === 0) return 0;
+
+    const sortedTrades = [...userTrades].sort((a, b) => a.timestamp - b.timestamp);
     const holdings: Record<string, { qty: number; cost: number }> = {};
-    
-    userTrades.forEach((trade) => {
+    let realized = 0;
+
+    for (const trade of sortedTrades) {
       if (!holdings[trade.athleteId]) {
         holdings[trade.athleteId] = { qty: 0, cost: 0 };
       }
-      
+
+      const holding = holdings[trade.athleteId];
+
       if (trade.type === 'buy') {
-        holdings[trade.athleteId].qty += trade.quantity;
-        holdings[trade.athleteId].cost += trade.total + trade.fee;
-      } else {
-        // Sell - calculate realized gain/loss
-        const avgCost = holdings[trade.athleteId].cost / holdings[trade.athleteId].qty;
-        const costBasis = avgCost * trade.quantity;
-        realized += trade.total - costBasis;
-        
-        holdings[trade.athleteId].qty -= trade.quantity;
-        holdings[trade.athleteId].cost -= costBasis;
+        holding.qty += trade.quantity;
+        holding.cost += trade.total;
+        continue;
       }
-    });
-    
+
+      if (holding.qty <= 0 || trade.quantity <= 0) {
+        console.warn('Encountered sell trade without holdings. Skipping trade.', trade.id);
+        continue;
+      }
+
+      const quantityToClose = Math.min(trade.quantity, holding.qty);
+      const avgCost = holding.cost / holding.qty;
+      const netProceeds = trade.quantity === quantityToClose
+        ? trade.total
+        : trade.total * (quantityToClose / trade.quantity);
+      const costBasis = avgCost * quantityToClose;
+
+      realized += netProceeds - costBasis;
+
+      holding.qty -= quantityToClose;
+      holding.cost -= costBasis;
+
+      if (holding.qty <= 0 || holding.cost <= 1e-6) {
+        holding.qty = 0;
+        holding.cost = 0;
+      }
+    }
+
     return realized;
   }, [userTrades]);
 
