@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { useFaucet } from "@/hooks/useTrade";
 import { Loader2, Droplet } from "lucide-react";
 import { useWallet } from "@/hooks/useWallet";
+import { safeNumber } from "@/lib/format";
 
 interface FaucetButtonProps {
   variant?: "default" | "outline";
@@ -29,7 +30,14 @@ export function FaucetButton({ variant = "outline", size = "default" }: FaucetBu
     <div className="space-y-2">
       <div className="flex items-center justify-between text-sm">
         <span className="text-muted-foreground">Current Balance:</span>
-        <span className="font-semibold">{wallet?.usdc.toFixed(2) || '0.00'} USDC</span>
+        <span className="font-semibold">
+          {safeNumber(wallet?.usdc)
+            ? `${wallet!.usdc.toLocaleString('en-US', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+              })} USDC`
+            : <span title="No data yet">—</span>}
+        </span>
       </div>
       <Button
         variant={variant}

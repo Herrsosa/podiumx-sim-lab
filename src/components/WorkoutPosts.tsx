@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { EmptyState } from '@/components/ui/empty-state';
 import { Lock, Calendar, Activity, Clock, Zap } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -20,9 +21,10 @@ interface WorkoutPostsProps {
   athleteId: string;
   userHoldings: number;
   onUnlockClick: () => void;
+  onConnectStrava?: () => void;
 }
 
-export default function WorkoutPosts({ athleteId, userHoldings, onUnlockClick }: WorkoutPostsProps) {
+export default function WorkoutPosts({ athleteId, userHoldings, onUnlockClick, onConnectStrava }: WorkoutPostsProps) {
   const { user } = useAuth();
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
@@ -48,6 +50,17 @@ export default function WorkoutPosts({ athleteId, userHoldings, onUnlockClick }:
     }
   };
 
+  const handleConnectStrava = () => {
+    if (onConnectStrava) {
+      onConnectStrava();
+      return;
+    }
+
+    if (typeof window !== 'undefined') {
+      window.open('https://www.strava.com/settings/apps', '_blank', 'noopener,noreferrer');
+    }
+  };
+
   const canViewPost = (post: Post) => {
     // User is the athlete
     if (user?.id === athleteId) return true;
@@ -61,8 +74,12 @@ export default function WorkoutPosts({ athleteId, userHoldings, onUnlockClick }:
   if (loading) {
     return (
       <Card className="glass-card">
-        <CardContent className="p-8 text-center text-muted-foreground">
-          Loading workouts...
+        <CardContent className="space-y-4 p-6">
+          <div className="space-y-3">
+            <div className="h-4 w-32 animate-pulse rounded bg-muted/40" />
+            <div className="h-3 w-48 animate-pulse rounded bg-muted/30" />
+            <div className="h-44 animate-pulse rounded-lg bg-muted/20" />
+          </div>
         </CardContent>
       </Card>
     );
@@ -71,8 +88,14 @@ export default function WorkoutPosts({ athleteId, userHoldings, onUnlockClick }:
   if (posts.length === 0) {
     return (
       <Card className="glass-card">
-        <CardContent className="p-8 text-center text-muted-foreground">
-          No workouts posted yet
+        <CardContent className="p-6">
+          <EmptyState
+            icon={<Activity className="h-8 w-8" />}
+            title="No workouts yet"
+            description="Connect Strava to auto-sync training sessions or add a manual post to kick things off."
+            ctaLabel="Connect Strava"
+            onCta={handleConnectStrava}
+          />
         </CardContent>
       </Card>
     );

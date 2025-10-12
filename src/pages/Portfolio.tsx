@@ -1,18 +1,26 @@
+import { useCallback, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { DollarSign, TrendingUp, TrendingDown, Coins, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Skeleton } from '@/components/ui/skeleton';
+import { CardSkeleton, TableSkeleton } from '@/components/ui/skeletons';
+import { EmptyState } from '@/components/ui/empty-state';
+import { H1, Body } from '@/components/ui/typography';
+import { formatMoney, formatNumber, safeNumber } from '@/lib/format';
 import { useWallet } from '@/hooks/useWallet';
 import { useAthletes } from '@/hooks/useAthletes';
 import { useUserTrades } from '@/hooks/useTrades';
 import { useFaucet } from '@/hooks/useTrade';
-import { useNavigate } from 'react-router-dom';
 import { exportPositionsToCSV, exportTradesToCSV } from '@/utils/csvExport';
-import { useMemo } from 'react';
 
 export default function Portfolio() {
   const navigate = useNavigate();
+  const prefetchAthleteDetail = useCallback(() => {
+    void import('./AthleteDetail');
+  }, []);
   const { data: wallet, isLoading: walletLoading } = useWallet();
   const { data: athletes, isLoading: athletesLoading } = useAthletes();
   const { data: userTrades, isLoading: tradesLoading } = useUserTrades();
@@ -20,37 +28,60 @@ export default function Portfolio() {
 
   // Calculate realized PnL from trades - MUST be before any conditional returns
   const realizedPnL = useMemo(() => {
-    if (!userTrades) return 0;
-    
-    let realized = 0;
+    if (!userTrades || userTrades.length === 0) return 0;
+
+    const sortedTrades = [...userTrades].sort((a, b) => a.timestamp - b.timestamp);
     const holdings: Record<string, { qty: number; cost: number }> = {};
-    
-    userTrades.forEach((trade) => {
+    let realized = 0;
+
+    for (const trade of sortedTrades) {
       if (!holdings[trade.athleteId]) {
         holdings[trade.athleteId] = { qty: 0, cost: 0 };
       }
-      
+
+      const holding = holdings[trade.athleteId];
+
       if (trade.type === 'buy') {
-        holdings[trade.athleteId].qty += trade.quantity;
-        holdings[trade.athleteId].cost += trade.total + trade.fee;
-      } else {
-        // Sell - calculate realized gain/loss
-        const avgCost = holdings[trade.athleteId].cost / holdings[trade.athleteId].qty;
-        const costBasis = avgCost * trade.quantity;
-        realized += trade.total - costBasis;
-        
-        holdings[trade.athleteId].qty -= trade.quantity;
-        holdings[trade.athleteId].cost -= costBasis;
+        holding.qty += trade.quantity;
+        holding.cost += trade.total;
+        continue;
       }
-    });
-    
+
+      if (holding.qty <= 0 || trade.quantity <= 0) {
+        console.warn('Encountered sell trade without holdings. Skipping trade.', trade.id);
+        continue;
+      }
+
+      const quantityToClose = Math.min(trade.quantity, holding.qty);
+      const avgCost = holding.cost / holding.qty;
+      const netProceeds = trade.quantity === quantityToClose
+        ? trade.total
+        : trade.total * (quantityToClose / trade.quantity);
+      const costBasis = avgCost * quantityToClose;
+
+      realized += netProceeds - costBasis;
+
+      holding.qty -= quantityToClose;
+      holding.cost -= costBasis;
+
+      if (holding.qty <= 0 || holding.cost <= 1e-6) {
+        holding.qty = 0;
+        holding.cost = 0;
+      }
+    }
+
     return realized;
   }, [userTrades]);
 
   if (walletLoading || athletesLoading || tradesLoading) {
     return (
-      <div className="container mx-auto px-4 py-16 text-center">
-        <div className="text-muted-foreground">Loading...</div>
+      <div className="container mx-auto px-4 py-8 space-y-8">
+        <div className="flex items-center justify-between">
+          <Skeleton className="h-10 w-48" />
+          <Skeleton className="h-10 w-36" />
+        </div>
+        <CardSkeleton count={4} className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4" />
+        <TableSkeleton rows={5} columns={7} />
       </div>
     );
   }
@@ -58,8 +89,8 @@ export default function Portfolio() {
   if (!wallet) {
     return (
       <div className="container mx-auto px-4 py-16 text-center">
-        <h1 className="mb-4 text-2xl font-bold">Wallet not found</h1>
-        <p className="mb-4 text-muted-foreground">Initialize your wallet to get started</p>
+        <H1 className="mb-4 text-2xl">Wallet not found</H1>
+        <Body className="mb-4">Initialize your wallet to get started</Body>
       </div>
     );
   }
@@ -73,6 +104,57 @@ export default function Portfolio() {
   const unrealizedPnL = positions.reduce((sum, pos) => sum + pos.pnl, 0);
 
   const totalPnL = unrealizedPnL + realizedPnL;
+
+  const renderValue = (value: number | null | undefined, formatter = formatMoney) =>
+    safeNumber(value) ? formatter(value!) : <span title="No data yet">—</span>;
+
+  const renderSignedMoney = (value: number | null | undefined) => {
+    if (!safeNumber(value)) {
+      return <span title="No data yet">—</span>;
+    }
+
+    const absolute = formatMoney(Math.abs(value!));
+    const sanitized = absolute.startsWith('-') ? absolute.slice(1) : absolute;
+    const sign = value! >= 0 ? '+' : '-';
+
+    return (
+      <>
+        {sign}
+        {sanitized}
+      </>
+    );
+  };
+
+  const renderPercent = (value: number | null | undefined) => {
+    if (!safeNumber(value)) {
+      return <span title="No data yet">—</span>;
+    }
+
+    const sign = value! >= 0 ? '+' : '';
+    return (
+      <>
+        {sign}
+        {value!.toFixed(2)}%
+      </>
+    );
+  };
+
+  const hasClosedTrades = Boolean(userTrades?.some((trade) => trade.type === 'sell'));
+  const percentChange = safeNumber(totalCostBasis) && totalCostBasis > 0 ? (totalPnL / totalCostBasis) * 100 : null;
+  const unrealizedClass = safeNumber(unrealizedPnL)
+    ? `text-3xl font-bold ${unrealizedPnL >= 0 ? 'text-success' : 'text-destructive'}`
+    : 'text-3xl font-bold text-muted-foreground';
+  const realizedClass = hasClosedTrades && safeNumber(realizedPnL)
+    ? `text-3xl font-bold ${realizedPnL >= 0 ? 'text-success' : 'text-destructive'}`
+    : 'text-3xl font-bold text-muted-foreground';
+  const totalPnlClass = safeNumber(totalPnL)
+    ? `text-2xl font-bold ${totalPnL >= 0 ? 'text-success' : 'text-destructive'}`
+    : 'text-2xl font-bold text-muted-foreground';
+  const percentClass = safeNumber(percentChange)
+    ? percentChange! >= 0
+      ? 'text-success'
+      : 'text-destructive'
+    : 'text-muted-foreground';
 
   const handleFaucet = () => {
     faucetMutation.mutate(1000);
@@ -109,8 +191,8 @@ export default function Portfolio() {
     <div className="container mx-auto px-4 py-8">
       <div className="mb-8 flex items-center justify-between">
         <div>
-          <h1 className="mb-2 text-4xl font-bold">Portfolio</h1>
-          <p className="text-muted-foreground">Track your positions and performance</p>
+          <H1 className="mb-2 text-4xl">Portfolio</H1>
+          <Body>Track your positions and performance</Body>
         </div>
         <Button onClick={handleFaucet} disabled={faucetMutation.isPending} className="gap-2">
           <DollarSign className="h-4 w-4" />
@@ -126,7 +208,7 @@ export default function Portfolio() {
               <span className="text-sm text-muted-foreground">USDC Balance</span>
               <DollarSign className="h-4 w-4 text-primary" />
             </div>
-            <div className="text-3xl font-bold">${wallet.usdc.toFixed(2)}</div>
+            <div className="text-3xl font-bold">{renderValue(wallet.usdc)}</div>
           </CardContent>
         </Card>
 
@@ -136,7 +218,7 @@ export default function Portfolio() {
               <span className="text-sm text-muted-foreground">Token Value</span>
               <Coins className="h-4 w-4 text-primary" />
             </div>
-            <div className="text-3xl font-bold">${totalValue.toFixed(2)}</div>
+            <div className="text-3xl font-bold">{renderValue(totalValue)}</div>
           </CardContent>
         </Card>
 
@@ -144,19 +226,17 @@ export default function Portfolio() {
           <CardContent className="p-6">
             <div className="mb-2 flex items-center justify-between">
               <span className="text-sm text-muted-foreground">Unrealized P&L</span>
-              {unrealizedPnL >= 0 ? (
-                <TrendingUp className="h-4 w-4 text-success" />
+              {safeNumber(unrealizedPnL) ? (
+                unrealizedPnL >= 0 ? (
+                  <TrendingUp className="h-4 w-4 text-success" />
+                ) : (
+                  <TrendingDown className="h-4 w-4 text-destructive" />
+                )
               ) : (
-                <TrendingDown className="h-4 w-4 text-destructive" />
+                <TrendingUp className="h-4 w-4 text-muted-foreground" />
               )}
             </div>
-            <div
-              className={`text-3xl font-bold ${
-                unrealizedPnL >= 0 ? 'text-success' : 'text-destructive'
-              }`}
-            >
-              ${unrealizedPnL.toFixed(2)}
-            </div>
+            <div className={unrealizedClass}>{renderValue(unrealizedPnL)}</div>
             <div className="text-xs text-muted-foreground mt-1">
               Open positions
             </div>
@@ -167,19 +247,17 @@ export default function Portfolio() {
           <CardContent className="p-6">
             <div className="mb-2 flex items-center justify-between">
               <span className="text-sm text-muted-foreground">Realized P&L</span>
-              {realizedPnL >= 0 ? (
-                <TrendingUp className="h-4 w-4 text-success" />
+              {hasClosedTrades && safeNumber(realizedPnL) ? (
+                realizedPnL >= 0 ? (
+                  <TrendingUp className="h-4 w-4 text-success" />
+                ) : (
+                  <TrendingDown className="h-4 w-4 text-destructive" />
+                )
               ) : (
-                <TrendingDown className="h-4 w-4 text-destructive" />
+                <TrendingUp className="h-4 w-4 text-muted-foreground" />
               )}
             </div>
-            <div
-              className={`text-3xl font-bold ${
-                realizedPnL >= 0 ? 'text-success' : 'text-destructive'
-              }`}
-            >
-              ${realizedPnL.toFixed(2)}
-            </div>
+            <div className={realizedClass}>{renderValue(hasClosedTrades ? realizedPnL : null)}</div>
             <div className="text-xs text-muted-foreground mt-1">
               From closed trades
             </div>
@@ -192,26 +270,23 @@ export default function Portfolio() {
         <Card className="glass-card">
           <CardContent className="p-6">
             <div className="mb-2 text-sm text-muted-foreground">Total Cost Basis</div>
-            <div className="text-2xl font-bold">${totalCostBasis.toFixed(2)}</div>
+            <div className="text-2xl font-bold">{renderValue(totalCostBasis)}</div>
           </CardContent>
         </Card>
 
         <Card className="glass-card">
           <CardContent className="p-6">
             <div className="mb-2 text-sm text-muted-foreground">Current Value</div>
-            <div className="text-2xl font-bold">${totalValue.toFixed(2)}</div>
+            <div className="text-2xl font-bold">{renderValue(totalValue)}</div>
           </CardContent>
         </Card>
 
         <Card className="glass-card">
           <CardContent className="p-6">
             <div className="mb-2 text-sm text-muted-foreground">Total P&L</div>
-            <div className={`text-2xl font-bold ${totalPnL >= 0 ? 'text-success' : 'text-destructive'}`}>
-              ${totalPnL.toFixed(2)}
-            </div>
-            <div className={`text-sm ${totalPnL >= 0 ? 'text-success' : 'text-destructive'}`}>
-              {totalPnL >= 0 ? '+' : ''}
-              {totalCostBasis > 0 ? ((totalPnL / totalCostBasis) * 100).toFixed(2) : '0.00'}%
+            <div className={totalPnlClass}>{renderValue(totalPnL)}</div>
+            <div className={`text-sm ${percentClass}`}>
+              {renderPercent(percentChange)}
             </div>
           </CardContent>
         </Card>
@@ -219,7 +294,7 @@ export default function Portfolio() {
         <Card className="glass-card">
           <CardContent className="p-6">
             <div className="mb-2 text-sm text-muted-foreground">Positions</div>
-            <div className="text-3xl font-bold">{positions.length}</div>
+            <div className="text-3xl font-bold">{formatNumber(positions.length)}</div>
           </CardContent>
         </Card>
       </div>
@@ -243,12 +318,13 @@ export default function Portfolio() {
         </CardHeader>
         <CardContent>
           {positions.length === 0 ? (
-            <div className="py-16 text-center">
-              <div className="mb-4 text-muted-foreground">
-                You don't have any positions yet
-              </div>
-              <Button onClick={() => navigate('/')}>Browse Marketplace</Button>
-            </div>
+            <EmptyState
+              icon={<Coins className="h-6 w-6" />}
+              title="No positions yet"
+              description="Buy athlete tokens to build your portfolio and start tracking performance."
+              ctaLabel="Browse Marketplace"
+              onCta={() => navigate('/')}
+            />
           ) : (
             <Table>
               <TableHeader>
@@ -269,13 +345,22 @@ export default function Portfolio() {
 
                   const costBasis = position.avgCost * position.quantity;
                   const currentValue = position.currentPrice * position.quantity;
-                  const isPositive = position.pnl >= 0;
+                  const pnlColor = safeNumber(position.pnl)
+                    ? position.pnl >= 0
+                      ? 'text-success'
+                      : 'text-destructive'
+                    : 'text-muted-foreground';
+                  const pnlClass = `font-bold ${pnlColor}`;
 
                   return (
                     <TableRow
                       key={position.athleteId}
                       className="cursor-pointer"
-                      onClick={() => navigate(`/athlete/${athlete.slug}`)}
+                      onMouseEnter={prefetchAthleteDetail}
+                      onClick={() => {
+                        prefetchAthleteDetail();
+                        navigate(`/athlete/${athlete.slug}`);
+                      }}
                     >
                       <TableCell>
                         <div className="flex items-center gap-3">
@@ -293,30 +378,25 @@ export default function Portfolio() {
                         </div>
                       </TableCell>
                       <TableCell className="text-right font-medium">
-                        {position.quantity.toFixed(2)}
+                        {renderValue(position.quantity, formatNumber)}
                       </TableCell>
                       <TableCell className="text-right">
-                        ${position.avgCost.toFixed(4)}
+                        {renderValue(position.avgCost)}
                       </TableCell>
                       <TableCell className="text-right">
-                        ${position.currentPrice.toFixed(4)}
+                        {renderValue(position.currentPrice)}
                       </TableCell>
                       <TableCell className="text-right font-medium">
-                        ${costBasis.toFixed(2)}
+                        {renderValue(costBasis)}
                       </TableCell>
                       <TableCell className="text-right font-medium">
-                        ${currentValue.toFixed(2)}
+                        {renderValue(currentValue)}
                       </TableCell>
                       <TableCell className="text-right">
-                        <div
-                          className={`font-bold ${
-                            isPositive ? 'text-success' : 'text-destructive'
-                          }`}
-                        >
-                          ${position.pnl.toFixed(2)}
-                          <div className="text-xs">
-                            {isPositive ? '+' : ''}
-                            {position.pnlPercent.toFixed(2)}%
+                        <div className={pnlClass}>
+                          {renderSignedMoney(position.pnl)}
+                          <div className={`text-xs ${pnlColor}`}>
+                            {renderPercent(position.pnlPercent)}
                           </div>
                         </div>
                       </TableCell>

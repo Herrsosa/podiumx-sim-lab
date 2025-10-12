@@ -16,13 +16,13 @@ export default function StravaCallback() {
 
       if (error) {
         console.error('Strava OAuth error:', error);
-        navigate('/me?strava_error=' + error);
+        navigate('/my-athlete-profile?strava_error=' + error);
         return;
       }
 
       if (!code) {
         console.error('No code in callback');
-        navigate('/me');
+        navigate('/my-athlete-profile');
         return;
       }
 
@@ -54,11 +54,11 @@ export default function StravaCallback() {
           throw new Error(errorData.error || 'Failed to exchange OAuth code');
         }
 
-        // Redirect back to My Page
-        navigate('/me?strava_connected=true');
+        // Redirect back to the athlete profile page
+        navigate('/my-athlete-profile?strava_connected=true');
       } catch (error: any) {
         console.error('Error in Strava callback:', error);
-        navigate('/me?strava_error=' + encodeURIComponent(error.message));
+        navigate('/my-athlete-profile?strava_error=' + encodeURIComponent(error.message));
       }
     };
 

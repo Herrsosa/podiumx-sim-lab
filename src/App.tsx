@@ -11,15 +11,17 @@ import { Suspense, lazy } from "react";
 import Navigation from "@/components/Navigation";
 import Landing from "./pages/Landing";
 import Auth from "./pages/Auth";
-import Marketplace from "./pages/Marketplace";
 import NotFound from "./pages/NotFound";
 import StravaCallback from "./pages/StravaCallback";
+import MarketplaceSkeleton from "@/components/skeletons/MarketplaceSkeleton";
+import AthleteDetailSkeleton from "@/components/skeletons/AthleteDetailSkeleton";
 
 // Lazy load heavy pages
 const Onboarding = lazy(() => import("./pages/Onboarding"));
 const AthleteDetail = lazy(() => import("./pages/AthleteDetail"));
 const Portfolio = lazy(() => import("./pages/Portfolio"));
 const MyAthlete = lazy(() => import("./pages/MyAthlete"));
+const Marketplace = lazy(() => import("./pages/Marketplace"));
 
 const queryClient = new QueryClient();
 
@@ -75,7 +77,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
       } else if (!needsOnboarding && location.pathname === '/onboarding') {
         // User completed onboarding, redirect to appropriate page
         if (athleteToken) {
-          setRedirectPath('/me');
+          setRedirectPath('/my-athlete-profile');
         } else {
           setRedirectPath('/marketplace');
         }
@@ -125,13 +127,15 @@ function AppContent() {
       <Route path="/marketplace" element={
         <>
           <Navigation />
-          <Marketplace />
+          <Suspense fallback={<MarketplaceSkeleton />}>
+            <Marketplace />
+          </Suspense>
         </>
       } />
       <Route path="/athlete/:slug" element={
         <>
           <Navigation />
-          <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Loading...</div>}>
+          <Suspense fallback={<AthleteDetailSkeleton />}>
             <AthleteDetail />
           </Suspense>
         </>
@@ -144,7 +148,7 @@ function AppContent() {
           </Suspense>
         </ProtectedRoute>
       } />
-      <Route path="/me" element={
+      <Route path="/my-athlete-profile" element={
         <ProtectedRoute>
           <Navigation />
           <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Loading...</div>}>

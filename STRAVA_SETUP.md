@@ -26,18 +26,21 @@ This guide explains how to set up the Strava integration for PodiumX.
 
 ## Step 2: Configure Supabase Secrets
 
-The Strava Client Secret must be stored securely in Supabase Secrets:
+The Strava credentials must be stored securely as Supabase Edge Function secrets so that refresh logic can run server-side.
 
 1. Go to your Supabase project dashboard
 2. Navigate to **Settings** > **Edge Functions** > **Secrets**
-3. Click "Add new secret"
-4. Add the secret:
-   - Name: `STRAVA_CLIENT_SECRET`
-   - Value: Your Strava Client Secret from Step 1
+3. Click "Add new secret" and create the following entries:
+   - Name: `STRAVA_CLIENT_ID` → Value: Your Strava Client ID from Step 1
+   - Name: `STRAVA_CLIENT_SECRET` → Value: Your Strava Client Secret from Step 1
+4. Redeploy your edge functions so they pick up the new secrets, for example:
+   ```bash
+   supabase functions deploy --project-ref <your-project-ref>
+   ```
 
 ## Step 3: Update Application Code
 
-Update the Strava Client ID in the following files:
+Update the Strava Client ID used by the frontend OAuth flow in the following files:
 
 ### `src/components/StravaTraining.tsx`
 ```typescript
@@ -48,6 +51,8 @@ const STRAVA_CLIENT_ID = 'YOUR_CLIENT_ID_HERE';
 ```typescript
 const STRAVA_CLIENT_ID = 'YOUR_CLIENT_ID_HERE';
 ```
+
+(If you maintain additional Strava entry points such as the compact Strava card, ensure they use the same Client ID.)
 
 ## Step 4: Configure Redirect URI
 
@@ -73,9 +78,9 @@ The redirect URI must match between your Strava app settings and your applicatio
 
 ## Troubleshooting
 
-### "STRAVA_CLIENT_SECRET not configured" error
-- Make sure you've added the secret to Supabase Secrets
-- Redeploy your edge functions after adding the secret
+### "STRAVA_CLIENT_SECRET not configured" or "Strava client credentials not configured" errors
+- Make sure you've added the `STRAVA_CLIENT_ID` and `STRAVA_CLIENT_SECRET` secrets to Supabase
+- Redeploy your edge functions after adding or changing secrets
 
 ### OAuth redirect errors
 - Check that your Authorization Callback Domain in Strava matches your actual domain
@@ -88,8 +93,7 @@ The redirect URI must match between your Strava app settings and your applicatio
 ## Security Notes
 
 - **NEVER** commit your `STRAVA_CLIENT_SECRET` to version control
-- The Client ID is safe to expose in frontend code
-- The Client Secret should only exist in Supabase Secrets
+- The Client ID is safe to expose in frontend code, but storing it in Supabase secrets keeps the server configuration in sync
 - OAuth tokens are stored encrypted in the database
 
 ## API Rate Limits
@@ -107,3 +111,4 @@ The integration uses these tables:
 - `activities`: Stores imported workout data
 
 All tables have Row Level Security (RLS) enabled - users can only access their own data.
+

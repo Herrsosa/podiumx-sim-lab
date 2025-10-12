@@ -71,7 +71,10 @@ export default function StravaTraining() {
 
       if (error) throw error;
 
-      queryClient.invalidateQueries({ queryKey: ['activities'] });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['activities'] }),
+        queryClient.invalidateQueries({ queryKey: ['strava-connection'] }),
+      ]);
 
       toast({
         title: 'Import Complete',
@@ -79,9 +82,15 @@ export default function StravaTraining() {
       });
     } catch (error: any) {
       console.error('Error importing activities:', error);
+      const message = error?.message || 'Failed to import Strava activities';
+
+      if (message.toLowerCase().includes('strava authorization has expired')) {
+        await queryClient.invalidateQueries({ queryKey: ['strava-connection'] });
+      }
+
       toast({
         title: 'Import Failed',
-        description: error.message || 'Failed to import Strava activities',
+        description: message,
         variant: 'destructive',
       });
     } finally {

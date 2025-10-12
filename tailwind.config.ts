@@ -63,9 +63,22 @@ export default {
         sans: ["Inter", "system-ui", "sans-serif"],
       },
       borderRadius: {
-        lg: "var(--radius)",
-        md: "calc(var(--radius) - 2px)",
-        sm: "calc(var(--radius) - 4px)",
+        sm: "var(--radius-sm, 8px)",
+        DEFAULT: "var(--radius, 12px)",
+        lg: "var(--radius-lg, 16px)",
+        xl: "calc(var(--radius-2xl, 24px) - 4px)",
+        "2xl": "var(--radius-2xl, 24px)",
+      },
+      boxShadow: {
+        sm: "var(--shadow-sm, 0 1px 2px rgba(0,0,0,0.12))",
+        md: "var(--shadow-md, 0 6px 16px rgba(0,0,0,0.18))",
+      },
+      spacing: {
+        2: "var(--gap-2, 0.5rem)",
+        3: "var(--gap-3, 0.75rem)",
+        4: "var(--gap-4, 1rem)",
+        6: "var(--gap-6, 1.5rem)",
+        8: "var(--gap-8, 2rem)",
       },
       keyframes: {
         "accordion-down": {

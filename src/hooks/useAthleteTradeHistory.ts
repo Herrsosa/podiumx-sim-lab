@@ -3,12 +3,11 @@ import { useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { priceAt } from '@/utils/pricing';
 
-type TimeRange = '24h' | '7d' | '30d';
+type TimeRange = '24h' | '7d' | '30d' | 'all';
 
-interface BucketedPrice {
+interface TradePoint {
   timestamp: number;
   price: number;
-  date: string;
 }
 
 export function useAthleteTradeHistory(athleteId: string | undefined, range: TimeRange = '24h') {
@@ -48,22 +47,26 @@ export function useAthleteTradeHistory(athleteId: string | undefined, range: Tim
       if (!athleteId) return { data: [], changePct: 0, volume: 0 };
 
       const now = new Date();
-      const rangeHours: Record<TimeRange, number> = {
+      const rangeHours: Record<Exclude<TimeRange, 'all'>, number> = {
         '24h': 24,
         '7d': 168,
         '30d': 720,
       };
 
-      const hoursAgo = rangeHours[range];
-      const startTime = new Date(now.getTime() - hoursAgo * 60 * 60 * 1000);
-
-      // Fetch all trades for this athlete in the time range
-      const { data: trades, error } = await supabase
+      let query = supabase
         .from('trades')
         .select('created_at, price_after')
         .eq('athlete_id', athleteId)
-        .gte('created_at', startTime.toISOString())
         .order('created_at', { ascending: true });
+
+      if (range !== 'all') {
+        const hoursAgo = rangeHours[range];
+        const startTime = new Date(now.getTime() - hoursAgo * 60 * 60 * 1000);
+        query = query.gte('created_at', startTime.toISOString());
+      }
+
+      // Fetch all trades for this athlete in the time range
+      const { data: trades, error } = await query;
 
       if (error) {
         console.error('Error fetching trade history:', error);
@@ -94,7 +97,6 @@ export function useAthleteTradeHistory(athleteId: string | undefined, range: Tim
             data: [{
               timestamp: now.getTime(),
               price: currentPrice,
-              date: now.toISOString(),
             }],
             changePct: 0,
             volume: 0,
@@ -104,35 +106,36 @@ export function useAthleteTradeHistory(athleteId: string | undefined, range: Tim
         return { data: [], changePct: 0, volume: 0 };
       }
 
-      // Bucket trades into 1-hour intervals
-      const buckets = new Map<number, BucketedPrice>();
-      
-      trades.forEach((trade) => {
-        const tradeTime = new Date(trade.created_at).getTime();
-        // Round down to the nearest hour
-        const bucketTime = Math.floor(tradeTime / (60 * 60 * 1000)) * (60 * 60 * 1000);
-        
-        // Keep the latest price_after in each bucket
-        const existing = buckets.get(bucketTime);
-        if (!existing || tradeTime > new Date(existing.date).getTime()) {
-          buckets.set(bucketTime, {
-            timestamp: bucketTime,
-            price: Number(trade.price_after),
-            date: trade.created_at,
-          });
-        }
-      });
-
-      // Convert to array and sort by timestamp
-      const bucketedData = Array.from(buckets.values())
+      const points: TradePoint[] = (trades || [])
+        .map((trade) => {
+          const timestamp = new Date(trade.created_at).getTime();
+          const price = Number(trade.price_after);
+          if (!Number.isFinite(timestamp) || Number.isNaN(price)) {
+            return null;
+          }
+          return { timestamp, price };
+        })
+        .filter((point): point is TradePoint => Boolean(point))
         .sort((a, b) => a.timestamp - b.timestamp);
 
+      // Down-sample if needed to keep chart performant
+      const MAX_POINTS = 240;
+      let sampledPoints = points;
+      if (points.length > MAX_POINTS) {
+        const step = Math.ceil(points.length / MAX_POINTS);
+        sampledPoints = points.filter((_, index) => index % step === 0);
+        const lastPoint = points[points.length - 1];
+        if (sampledPoints[sampledPoints.length - 1]?.timestamp !== lastPoint.timestamp) {
+          sampledPoints = [...sampledPoints, lastPoint];
+        }
+      }
+
       // Calculate price change percentage
-      const firstPrice = bucketedData[0]?.price || 0;
-      const lastPrice = bucketedData[bucketedData.length - 1]?.price || 0;
+      const firstPrice = sampledPoints[0]?.price || 0;
+      const lastPrice = sampledPoints[sampledPoints.length - 1]?.price || 0;
       const changePct = firstPrice > 0 ? ((lastPrice - firstPrice) / firstPrice) * 100 : 0;
 
-      return { data: bucketedData, changePct, volume };
+      return { data: sampledPoints, changePct, volume };
     },
     enabled: !!athleteId,
   });

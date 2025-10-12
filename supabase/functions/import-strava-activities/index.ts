@@ -6,23 +6,116 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+const STRAVA_TOKEN_ENDPOINT = 'https://www.strava.com/oauth/token';
+const TOKEN_REFRESH_BUFFER_MS = 60 * 1000;
+
+const AUTH_ERROR_KEYWORDS = ['authorization error', 'invalid access_token', 'invalid token', 'token expired', 'access token', 'authorization failed'];
+
+function isAuthorizationError(status: number, errorBody?: string | null) {
+  if (status === 401 || status === 403) {
+    return true;
+  }
+
+  if (!errorBody) {
+    return false;
+  }
+
+  const normalized = errorBody.toLowerCase();
+  return AUTH_ERROR_KEYWORDS.some((keyword) => normalized.includes(keyword));
+}
+
+type OAuthConnection = {
+  id: string;
+  user_id: string;
+  access_token: string | null;
+  refresh_token: string | null;
+  expires_at: string | null;
+  scope?: string | null;
+};
+
+async function refreshStravaToken(connection: OAuthConnection, supabaseClient: any): Promise<OAuthConnection> {
+  const clientId = Deno.env.get('STRAVA_CLIENT_ID');
+  const clientSecret = Deno.env.get('STRAVA_CLIENT_SECRET');
+
+  if (!clientId || !clientSecret) {
+    throw new Error('Strava client credentials not configured');
+  }
+
+  if (!connection.refresh_token) {
+    throw new Error('Strava refresh token not available. Please reconnect Strava.');
+  }
+
+  console.log('Refreshing Strava access token for user:', connection.user_id);
+
+  const refreshResponse = await fetch(STRAVA_TOKEN_ENDPOINT, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      client_id: clientId,
+      client_secret: clientSecret,
+      grant_type: 'refresh_token',
+      refresh_token: connection.refresh_token,
+    }),
+  });
+
+  if (!refreshResponse.ok) {
+    const errorText = await refreshResponse.text();
+    console.error('Failed to refresh Strava token:', errorText);
+    throw new Error(`Failed to refresh Strava token: ${errorText}`);
+  }
+
+  const refreshed = await refreshResponse.json();
+
+  const updates = {
+    access_token: refreshed.access_token as string,
+    refresh_token: (refreshed.refresh_token as string | undefined) ?? connection.refresh_token,
+    expires_at: new Date((refreshed.expires_at as number) * 1000).toISOString(),
+    scope: (refreshed.scope as string | undefined) ?? connection.scope ?? null,
+    updated_at: new Date().toISOString(),
+  };
+
+  const { data: updatedConnection, error: updateError } = await supabaseClient
+    .from('oauth_connections')
+    .update(updates)
+    .eq('id', connection.id)
+    .select('*')
+    .maybeSingle();
+
+  if (updateError) {
+    console.error('Failed to persist refreshed Strava token:', updateError);
+    throw new Error(`Failed to persist refreshed Strava token: ${updateError.message}`);
+  }
+
+  if (!updatedConnection) {
+    return { ...connection, ...updates } as OAuthConnection;
+  }
+
+  console.log('Strava token refreshed successfully for user:', connection.user_id);
+  return updatedConnection as OAuthConnection;
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
+    const authHeader = req.headers.get('Authorization');
+
+    if (!authHeader) {
+      throw new Error('Missing Authorization header');
+    }
+
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_ANON_KEY') ?? '',
       {
         global: {
-          headers: { Authorization: req.headers.get('Authorization')! },
+          headers: { Authorization: authHeader },
         },
       }
     );
 
-    // Get the currently logged-in user
     const {
       data: { user },
       error: userError,
@@ -34,34 +127,83 @@ serve(async (req) => {
 
     console.log('Fetching Strava OAuth connection for user:', user.id);
 
-    // Get user's Strava connection
     const { data: connection, error: connectionError } = await supabaseClient
       .from('oauth_connections')
       .select('*')
       .eq('user_id', user.id)
       .eq('provider', 'strava')
-      .single();
+      .maybeSingle();
 
     if (connectionError || !connection) {
       throw new Error('Strava not connected. Please connect your Strava account first.');
     }
 
-    console.log('Strava connection found, fetching activities...');
+    let stravaConnection = connection as OAuthConnection;
 
-    // Fetch activities from Strava
-    const activitiesResponse = await fetch(
-      'https://www.strava.com/api/v3/athlete/activities?per_page=50',
-      {
+    if (!stravaConnection.access_token) {
+      throw new Error('Strava access token missing. Please reconnect Strava.');
+    }
+
+    const expiresAt = stravaConnection.expires_at ? new Date(stravaConnection.expires_at).getTime() : null;
+    if (expiresAt && expiresAt - TOKEN_REFRESH_BUFFER_MS <= Date.now()) {
+      console.log('Strava access token expired or near expiry, attempting refresh...');
+      stravaConnection = await refreshStravaToken(stravaConnection, supabaseClient);
+    }
+
+    const fetchActivities = async (connectionToUse: OAuthConnection) =>
+      fetch('https://www.strava.com/api/v3/athlete/activities?per_page=50', {
         headers: {
-          Authorization: `Bearer ${connection.access_token}`,
+          Authorization: `Bearer ${connectionToUse.access_token}`,
         },
-      }
-    );
+      });
+
+    let activitiesResponse = await fetchActivities(stravaConnection);
 
     if (!activitiesResponse.ok) {
       const errorText = await activitiesResponse.text();
-      console.error('Failed to fetch Strava activities:', errorText);
-      throw new Error(`Failed to fetch Strava activities: ${errorText}`);
+
+      if (isAuthorizationError(activitiesResponse.status, errorText)) {
+        console.warn('Strava returned an authorization error. Attempting token refresh.');
+
+        try {
+          stravaConnection = await refreshStravaToken(stravaConnection, supabaseClient);
+        } catch (refreshError) {
+          console.error('Strava token refresh failed:', refreshError);
+          const message = refreshError instanceof Error ? refreshError.message : 'Failed to refresh Strava token';
+
+          if (message.toLowerCase().includes('invalid_grant') || message.toLowerCase().includes('refresh token')) {
+            await supabaseClient
+              .from('oauth_connections')
+              .delete()
+              .eq('id', stravaConnection.id);
+
+            throw new Error('Strava authorization has expired or been revoked. Please reconnect your Strava account.');
+          }
+
+          throw new Error(message);
+        }
+
+        activitiesResponse = await fetchActivities(stravaConnection);
+
+        if (!activitiesResponse.ok) {
+          const retryErrorText = await activitiesResponse.text();
+          if (isAuthorizationError(activitiesResponse.status, retryErrorText)) {
+            console.error('Strava activities fetch still unauthorized after refresh:', retryErrorText);
+            await supabaseClient
+              .from('oauth_connections')
+              .delete()
+              .eq('id', stravaConnection.id);
+
+            throw new Error('Strava authorization has expired or been revoked. Please reconnect your Strava account.');
+          }
+
+          console.error('Failed to fetch Strava activities after refreshing token:', retryErrorText);
+          throw new Error(`Failed to fetch Strava activities: ${retryErrorText}`);
+        }
+      } else {
+        console.error('Failed to fetch Strava activities:', errorText);
+        throw new Error(`Failed to fetch Strava activities: ${errorText}`);
+      }
     }
 
     const activities = await activitiesResponse.json();
@@ -70,7 +212,6 @@ serve(async (req) => {
     let insertedCount = 0;
     let updatedCount = 0;
 
-    // Insert/update activities
     for (const activity of activities) {
       const activityData = {
         user_id: user.id,
@@ -89,7 +230,6 @@ serve(async (req) => {
         raw: activity,
       };
 
-      // Check if activity already exists
       const { data: existing } = await supabaseClient
         .from('activities')
         .select('id')
@@ -98,7 +238,6 @@ serve(async (req) => {
         .maybeSingle();
 
       if (existing) {
-        // Update existing
         const { error: updateError } = await supabaseClient
           .from('activities')
           .update(activityData)
@@ -108,7 +247,6 @@ serve(async (req) => {
           updatedCount++;
         }
       } else {
-        // Insert new
         const { error: insertError } = await supabaseClient
           .from('activities')
           .insert(activityData);

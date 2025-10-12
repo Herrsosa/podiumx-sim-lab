@@ -13,7 +13,7 @@ import { useTrades } from '@/hooks/useTrades';
 import { useTrade } from '@/hooks/useTrade';
 import { useAthleteTradeHistory } from '@/hooks/useAthleteTradeHistory';
 import { priceAt, costToBuy, payoutToSell, FEE, type Curve } from '@/utils/pricing';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, ReferenceDot } from 'recharts';
 import ProofOfSweat from '@/components/ProofOfSweat';
 import TokengatedChat from '@/components/TokengatedChat';
 import WorkoutPosts from '@/components/WorkoutPosts';
@@ -21,9 +21,14 @@ import AddWorkoutModal from '@/components/AddWorkoutModal';
 import { StartConversationButton } from '@/components/StartConversationButton';
 import { useAuth } from '@/hooks/useAuth';
 import { useQueryClient } from '@tanstack/react-query';
+import AthleteDetailSkeleton from '@/components/skeletons/AthleteDetailSkeleton';
+import { ChartSkeleton } from '@/components/ui/skeletons';
+import { SectionTitle, Body, Small } from '@/components/ui/typography';
+import { formatMoney, formatNumber } from '@/lib/format';
+import { cn } from '@/lib/utils';
 
 
-type TimeRange = '24h' | '7d' | '30d';
+type TimeRange = '24h' | '7d' | '30d' | 'all';
 
 export default function AthleteDetail() {
   const { slug } = useParams<{ slug: string }>();
@@ -38,35 +43,96 @@ export default function AthleteDetail() {
   const [showTradeModal, setShowTradeModal] = useState(false);
   const [showAddWorkout, setShowAddWorkout] = useState(false);
   const [timeRange, setTimeRange] = useState<TimeRange>('24h');
+  const timeRanges: TimeRange[] = ['24h', '7d', '30d', 'all'];
   
   const { data: athletes, isLoading: athletesLoading } = useAthletes();
   const { data: wallet, isLoading: walletLoading } = useWallet();
   const { data: trades, isLoading: tradesLoading } = useTrades();
   const tradeMutation = useTrade();
   
-  const athlete = athletes?.find((a) => a.slug === slug);
-  const position = athlete && wallet ? wallet.positions[athlete.id] : null;
-  const athleteTrades = trades?.filter((t) => t.athleteId === athlete?.id).slice(0, 100) || [];
+  const athlete = useMemo(() => {
+    if (!athletes || !slug) return undefined;
+    return athletes.find((a) => a.slug === slug);
+  }, [athletes, slug]);
+
+  const position = useMemo(() => {
+    if (!athlete?.id || !wallet) return null;
+    return wallet.positions[athlete.id] || null;
+  }, [athlete?.id, wallet]);
+
+  const athleteTrades = useMemo(() => {
+    if (!trades || !athlete?.id) return [];
+    return trades.filter((t) => t.athleteId === athlete.id).slice(0, 100);
+  }, [trades, athlete?.id]);
 
   // Fetch real trade history data
   const { data: tradeHistory, isLoading: historyLoading } = useAthleteTradeHistory(athlete?.id, timeRange);
 
-  const chartData = useMemo(() => {
+  const rawChartData = useMemo(() => {
     if (!tradeHistory?.data || tradeHistory.data.length === 0) {
       return [];
     }
 
-    return tradeHistory.data.map((bucket) => ({
-      timestamp: bucket.timestamp,
-      price: bucket.price,
-      time: new Date(bucket.timestamp).toLocaleString('en-US', {
+    return tradeHistory.data.map((point) => ({
+      timestamp: point.timestamp,
+      price: point.price,
+    }));
+  }, [tradeHistory]);
+
+  const { chartPoints, firstTradePoint } = useMemo(() => {
+    if (rawChartData.length === 0) {
+      return { chartPoints: [], firstTradePoint: null };
+    }
+
+    const sorted = [...rawChartData].sort((a, b) => a.timestamp - b.timestamp);
+    const first = sorted[0];
+
+    if (sorted.length === 1) {
+      const now = Date.now();
+      const duplicateTimestamp = now > first.timestamp ? now : first.timestamp + 60_000;
+      const duplicatePoint = { ...first, timestamp: duplicateTimestamp };
+      return {
+        chartPoints: [first, duplicatePoint],
+        firstTradePoint: first,
+      };
+    }
+
+    return {
+      chartPoints: sorted,
+      firstTradePoint: first,
+    };
+  }, [rawChartData]);
+
+  const hasRealTrades = (tradeHistory?.volume ?? 0) > 0 || rawChartData.length > 1;
+  const displayChartPoints = hasRealTrades ? chartPoints : [];
+
+  const formatXAxisTick = useCallback(
+    (value: number) => {
+      const date = new Date(value);
+      if (timeRange === '24h') {
+        return date.toLocaleTimeString('en-US', {
+          hour: 'numeric',
+          minute: '2-digit',
+        });
+      }
+
+      return date.toLocaleDateString('en-US', {
         month: 'short',
         day: 'numeric',
-        hour: timeRange === '24h' ? '2-digit' : undefined,
-        minute: timeRange === '24h' ? '2-digit' : undefined,
-      }),
-    }));
-  }, [tradeHistory, timeRange]);
+      });
+    },
+    [timeRange]
+  );
+
+  const formatTooltipLabel = useCallback((value: number) => {
+    const date = new Date(value);
+    return date.toLocaleString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  }, []);
 
   const impact = useMemo(() => {
     if (!athlete || quantity <= 0) return null;
@@ -127,7 +193,10 @@ export default function AthleteDetail() {
     }
   }, [tradeType, quantity, athlete]);
 
+  const isSelfBuy = user?.id === athlete?.id && tradeType === 'buy';
+
   const canTrade = 
+    !isSelfBuy &&
     quantity > 0 && 
     !quantityError &&
     impact && 
@@ -138,6 +207,9 @@ export default function AthleteDetail() {
   const userHoldings = position?.quantity || 0;
 
   const handleTrade = async () => {
+    if (isSelfBuy) {
+      return;
+    }
     if (!canTrade || !athlete || !impact) return;
     
     // Optimistic update - immediately update local state
@@ -169,13 +241,11 @@ export default function AthleteDetail() {
 
   const isOwnProfile = user?.id === athlete?.id;
 
+  const isBootstrapping = athletesLoading || walletLoading || tradesLoading;
+
   // Now check loading and not found states
-  if (athletesLoading || walletLoading || tradesLoading) {
-    return (
-      <div className="container mx-auto px-4 py-16 text-center">
-        <div className="text-muted-foreground">Loading...</div>
-      </div>
-    );
+  if (isBootstrapping) {
+    return <AthleteDetailSkeleton />;
   }
 
   if (!athlete) {
@@ -215,11 +285,11 @@ export default function AthleteDetail() {
                 </div>
               </div>
             </div>
-            <h1 className="mb-2 text-center text-2xl font-bold">{athlete.name}</h1>
+            <SectionTitle className="mb-2 text-center text-2xl">{athlete.name}</SectionTitle>
             <div className="mb-4 flex justify-center">
               <Badge>{athlete.sport}</Badge>
             </div>
-            <p className="mb-4 text-center text-sm text-muted-foreground">{athlete.bio}</p>
+            <Body className="mb-4 text-center text-sm text-muted-foreground">{athlete.bio}</Body>
             <div className="mb-4 space-y-2 text-sm">
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Location</span>
@@ -233,24 +303,13 @@ export default function AthleteDetail() {
               )}
             </div>
             
-            {/* Send Message Button */}
-            {user && user.id !== athlete.id && (
-              <div className="mt-4">
-                <StartConversationButton 
-                  athleteId={athlete.id} 
-                  athleteName={athlete.name}
-                />
-              </div>
-            )}
-            
-            {/* Guest Sign Up Prompt */}
-            {!user && (
-              <div className="mt-4">
-                <Button onClick={() => navigate('/auth')} className="w-full gap-2">
-                  Sign Up to Connect
-                </Button>
-              </div>
-            )}
+            <div className="mt-4">
+              <StartConversationButton
+                athleteId={athlete.id}
+                athleteName={athlete.name}
+                athleteHandle={athlete.slug ? '@' + athlete.slug : undefined}
+              />
+            </div>
           </CardContent>
         </Card>
 
@@ -262,7 +321,7 @@ export default function AthleteDetail() {
               <div className="flex items-center gap-4">
                 {/* Time Range Selector */}
                 <div className="flex gap-1 rounded-lg border border-border p-1">
-                  {(['24h', '7d', '30d'] as TimeRange[]).map((range) => (
+                  {timeRanges.map((range) => (
                     <Button
                       key={range}
                       variant={timeRange === range ? 'default' : 'ghost'}
@@ -270,20 +329,21 @@ export default function AthleteDetail() {
                       onClick={() => setTimeRange(range)}
                       className="h-7 text-xs"
                     >
-                      {range}
+                      {range === 'all' ? 'All' : range}
                     </Button>
                   ))}
                 </div>
                 <div className="text-right">
-                  <div className="text-3xl font-bold">${athlete.price.toFixed(2)}</div>
-                  <div
-                    className={`text-sm ${
+                  <SectionTitle className="text-3xl">{formatMoney(athlete.price)}</SectionTitle>
+                  <Small
+                    className={cn(
+                      'font-semibold',
                       athlete.change24h >= 0 ? 'text-success' : 'text-destructive'
-                    }`}
+                    )}
                   >
                     {athlete.change24h >= 0 ? '+' : ''}
-                    {athlete.change24h.toFixed(2)}% 24h
-                  </div>
+                    {formatNumber(athlete.change24h)}% 24h
+                  </Small>
                 </div>
               </div>
             </div>
@@ -292,53 +352,48 @@ export default function AthleteDetail() {
             {/* Stats */}
             <div className="mb-6 grid grid-cols-4 gap-4">
               <div className="stat-card">
-                <div className="text-xs text-muted-foreground">Supply</div>
-                <div className="text-lg font-bold">{athlete.supply.toFixed(0)}</div>
+                <Small>Supply</Small>
+                <SectionTitle className="text-xl">{formatNumber(athlete.supply)}</SectionTitle>
               </div>
               <div className="stat-card">
-                <div className="text-xs text-muted-foreground">Market Cap</div>
-                <div className="text-lg font-bold">
-                  ${(athlete.marketCap / 1000).toFixed(1)}k
-                </div>
+                <Small>Market Cap</Small>
+                <SectionTitle className="text-xl">{formatMoney(athlete.marketCap)}</SectionTitle>
               </div>
               <div className="stat-card">
-                <div className="text-xs text-muted-foreground">24h Vol</div>
-                <div className="text-lg font-bold">
-                  ${(athlete.volume24h / 1000).toFixed(1)}k
-                </div>
+                <Small>24h Vol</Small>
+                <SectionTitle className="text-xl">{formatMoney(athlete.volume24h)}</SectionTitle>
               </div>
               <div className="stat-card">
-                <div className="text-xs text-muted-foreground">Reserve</div>
-                <div className="text-lg font-bold">
-                  ${(athlete.reserve / 1000).toFixed(1)}k
-                </div>
+                <Small>Reserve</Small>
+                <SectionTitle className="text-xl">{formatMoney(athlete.reserve)}</SectionTitle>
               </div>
             </div>
 
             {/* Chart */}
             <div className="h-64">
               {historyLoading ? (
-                <div className="flex h-full items-center justify-center text-muted-foreground">
-                  Loading chart data...
-                </div>
-              ) : chartData.length === 0 ? (
-                <div className="flex h-full items-center justify-center text-muted-foreground">
-                  No trade data available for this time range
+                <ChartSkeleton className="h-full" />
+              ) : displayChartPoints.length === 0 ? (
+                <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
+                  No trades yet
                 </div>
               ) : (
                 <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={chartData}>
+                  <LineChart data={displayChartPoints}>
                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                    <XAxis 
-                      dataKey="time" 
-                      tick={{ fontSize: 12 }}
-                      angle={timeRange === '24h' ? -45 : 0}
-                      textAnchor={timeRange === '24h' ? 'end' : 'middle'}
-                      height={timeRange === '24h' ? 60 : 30}
+                    <XAxis
+                      dataKey="timestamp"
+                      type="number"
+                      scale="time"
+                      domain={['auto', 'auto']}
+                      tickFormatter={formatXAxisTick}
+                      tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }}
+                      stroke="hsl(var(--muted-foreground))"
                     />
-                    <YAxis 
-                      domain={['auto', 'auto']} 
-                      tick={{ fontSize: 12 }}
+                    <YAxis
+                      domain={['auto', 'auto']}
+                      tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }}
+                      stroke="hsl(var(--muted-foreground))"
                       tickFormatter={(value) => `$${value.toFixed(2)}`}
                     />
                     <RechartsTooltip
@@ -348,6 +403,7 @@ export default function AthleteDetail() {
                         borderRadius: '0.5rem',
                       }}
                       formatter={(value: number) => [`$${value.toFixed(4)}`, 'Price']}
+                      labelFormatter={formatTooltipLabel}
                     />
                     <Line
                       type="monotone"
@@ -355,7 +411,24 @@ export default function AthleteDetail() {
                       stroke="hsl(var(--primary))"
                       strokeWidth={2}
                       dot={false}
+                      connectNulls
                     />
+                    {hasRealTrades && firstTradePoint && rawChartData.length === 1 && (
+                      <ReferenceDot
+                        x={firstTradePoint.timestamp}
+                        y={firstTradePoint.price}
+                        r={5}
+                        stroke="hsl(var(--background))"
+                        strokeWidth={2}
+                        fill="hsl(var(--primary))"
+                        label={{
+                          value: 'First trade',
+                          position: 'top',
+                          fill: 'hsl(var(--muted-foreground))',
+                          fontSize: 12,
+                        }}
+                      />
+                    )}
                   </LineChart>
                 </ResponsiveContainer>
               )}
@@ -467,13 +540,17 @@ export default function AthleteDetail() {
               {/* Validation error or helper text */}
               {quantityError ? (
                 <p className="mb-2 text-xs text-destructive">{quantityError}</p>
+              ) : isSelfBuy ? (
+                <p className="mb-2 text-xs text-muted-foreground">
+                  Athletes cannot buy their own tokens.
+                </p>
               ) : impact && wallet && (
                 <p className="mb-2 text-xs text-muted-foreground">
                   {tradeType === 'buy' 
                     ? `You can buy up to ${Math.floor(wallet.usdc / impact.avgPrice)} tokens with your balance`
                     : position 
                       ? `You have ${position.quantity} token${position.quantity !== 1 ? 's' : ''}`
-                      : 'You don\'t own any tokens'}
+                      : "You don't own any tokens"}
                 </p>
               )}
               
@@ -593,13 +670,16 @@ export default function AthleteDetail() {
                 ? 'Enter Quantity'
                 : quantityError
                 ? 'Invalid Quantity'
+                : isSelfBuy
+                ? 'Self-purchase not allowed'
                 : tradeType === 'buy'
                 ? wallet.usdc < impact.total
                   ? `Need $${(impact.total - wallet.usdc).toFixed(2)} more USDC`
                   : `Buy for $${impact.total.toFixed(2)}`
                 : !position || position.quantity < quantity
                 ? `Need ${quantity - (position?.quantity || 0)} more token${quantity - (position?.quantity || 0) !== 1 ? 's' : ''}`
-                : `Sell for $${impact.total.toFixed(2)}`}
+                : `Sell for $${impact.total.toFixed(2)}`
+              }
             </Button>
 
             <TooltipProvider>
@@ -630,6 +710,7 @@ export default function AthleteDetail() {
             workouts={athlete.workouts} 
             athleteId={athlete.id}
             onWorkoutDeleted={handleWorkoutSuccess}
+            onConnectStrava={isOwnProfile ? () => navigate('/my-athlete') : undefined}
           />
           
           {/* Workout Posts Section */}
@@ -653,6 +734,7 @@ export default function AthleteDetail() {
                   side: 'BUY',
                 });
               }}
+              onConnectStrava={isOwnProfile ? () => navigate('/my-athlete') : undefined}
             />
           </div>
 
