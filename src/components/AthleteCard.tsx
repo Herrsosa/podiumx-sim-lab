@@ -12,9 +12,10 @@ interface AthleteCardProps {
   athlete: Athlete;
   chartData: MarketplaceChartPoint[];
   onClick: () => void;
+  onMouseEnter?: () => void;
 }
 
-export const AthleteCard = memo(({ athlete, chartData, onClick }: AthleteCardProps) => {
+export const AthleteCard = memo(({ athlete, chartData, onClick, onMouseEnter }: AthleteCardProps) => {
   const isPositive = athlete.change24h >= 0;
   const lineColor = isPositive ? '#7CFF6B' : '#EF4444';
 
@@ -53,6 +54,7 @@ export const AthleteCard = memo(({ athlete, chartData, onClick }: AthleteCardPro
     <Card
       className="glass-card group cursor-pointer transition-all hover:scale-[1.02] hover:shadow-lg"
       onClick={onClick}
+      onMouseEnter={onMouseEnter}
     >
       <CardContent className="p-6">
         {/* Avatar & Name */}

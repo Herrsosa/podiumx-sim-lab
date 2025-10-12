@@ -26,6 +26,10 @@ export default function Marketplace() {
   
   const { data: athletes, isLoading, isFetching } = useAthletes();
 
+  const prefetchAthleteDetail = useCallback(() => {
+    void import('./AthleteDetail');
+  }, []);
+
   const handleAthleteClick = useCallback((slug: string) => {
     if (!slug) {
       return;
@@ -41,8 +45,9 @@ export default function Marketplace() {
       return;
     }
 
+    prefetchAthleteDetail();
     navigate(`/athlete/${slug}`);
-  }, [user, loading, navigate]);
+  }, [user, loading, navigate, prefetchAthleteDetail]);
 
   useEffect(() => {
     if (!pendingSlug || loading) {
@@ -55,9 +60,10 @@ export default function Marketplace() {
       return;
     }
 
+    prefetchAthleteDetail();
     navigate(`/athlete/${pendingSlug}`);
     setPendingSlug(null);
-  }, [pendingSlug, loading, user, navigate]);
+  }, [pendingSlug, loading, user, navigate, prefetchAthleteDetail]);
 
   useEffect(() => {
     setVisibleCount(PAGE_SIZE);
@@ -159,6 +165,7 @@ export default function Marketplace() {
                 athlete={athlete}
                 chartData={sparklineData}
                 onClick={() => handleAthleteClick(athlete.slug)}
+                onMouseEnter={prefetchAthleteDetail}
               />
             );
           })}

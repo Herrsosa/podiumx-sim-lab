@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { DollarSign, TrendingUp, TrendingDown, Coins, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -18,6 +18,9 @@ import { exportPositionsToCSV, exportTradesToCSV } from '@/utils/csvExport';
 
 export default function Portfolio() {
   const navigate = useNavigate();
+  const prefetchAthleteDetail = useCallback(() => {
+    void import('./AthleteDetail');
+  }, []);
   const { data: wallet, isLoading: walletLoading } = useWallet();
   const { data: athletes, isLoading: athletesLoading } = useAthletes();
   const { data: userTrades, isLoading: tradesLoading } = useUserTrades();
@@ -353,7 +356,11 @@ export default function Portfolio() {
                     <TableRow
                       key={position.athleteId}
                       className="cursor-pointer"
-                      onClick={() => navigate(`/athlete/${athlete.slug}`)}
+                      onMouseEnter={prefetchAthleteDetail}
+                      onClick={() => {
+                        prefetchAthleteDetail();
+                        navigate(`/athlete/${athlete.slug}`);
+                      }}
                     >
                       <TableCell>
                         <div className="flex items-center gap-3">

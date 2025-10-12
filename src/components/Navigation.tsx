@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { useAppStore } from '@/store/useAppStore';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 export default function Navigation() {
   const location = useLocation();
@@ -41,6 +41,18 @@ export default function Navigation() {
 
   const isActive = (path: string) => location.pathname === path;
 
+  const prefetchMarketplace = useCallback(() => {
+    void import('../pages/Marketplace');
+  }, []);
+
+  const prefetchPortfolio = useCallback(() => {
+    void import('../pages/Portfolio');
+  }, []);
+
+  const prefetchMyAthlete = useCallback(() => {
+    void import('../pages/MyAthlete');
+  }, []);
+
   return (
     <nav className="sticky top-0 z-50 border-b border-border/50 bg-background/80 backdrop-blur-xl">
       <div className="container mx-auto px-4">
@@ -55,7 +67,7 @@ export default function Navigation() {
 
           {/* Nav Links */}
           <div className="flex items-center gap-1">
-            <Link to="/marketplace">
+            <Link to="/marketplace" onMouseEnter={prefetchMarketplace}>
               <Button
                 variant={isActive('/marketplace') ? 'secondary' : 'ghost'}
                 size="sm"
@@ -67,7 +79,7 @@ export default function Navigation() {
             </Link>
             {user && (
               <>
-                <Link to="/portfolio">
+                <Link to="/portfolio" onMouseEnter={prefetchPortfolio}>
                   <Button
                     variant={isActive('/portfolio') ? 'secondary' : 'ghost'}
                     size="sm"
@@ -77,7 +89,7 @@ export default function Navigation() {
                     <span className="hidden sm:inline">Portfolio</span>
                   </Button>
                 </Link>
-                <Link to="/my-athlete-profile">
+                <Link to="/my-athlete-profile" onMouseEnter={prefetchMyAthlete}>
                   <Button
                     variant={isActive('/my-athlete-profile') ? 'secondary' : 'ghost'}
                     size="sm"
