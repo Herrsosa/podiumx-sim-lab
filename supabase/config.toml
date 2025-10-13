@@ -8,3 +8,6 @@ verify_jwt = true
 
 [functions.execute-trade]
 verify_jwt = true
+
+[functions.credit-test-balance]
+verify_jwt = true
