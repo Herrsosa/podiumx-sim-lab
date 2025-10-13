@@ -72,17 +72,14 @@ export default function Onboarding() {
         .maybeSingle();
 
       const fallbackHandleBase = user.email?.split('@')[0]?.replace(/[^a-zA-Z0-9]/g, '') || `user-${user.id.slice(0, 6)}`;
-      const payload: Record<string, unknown> = {
+      const username = existing?.username || `${fallbackHandleBase}-${user.id.slice(0, 4)}`.toLowerCase();
+      
+      const { error } = await supabase.from('profiles').upsert([{
         id: user.id,
+        username,
         role,
         onboarding_completed: false,
-      };
-
-      if (!existing?.username) {
-        payload.username = `${fallbackHandleBase}-${user.id.slice(0, 4)}`.toLowerCase();
-      }
-
-      const { error } = await supabase.from('profiles').upsert(payload);
+      }]);
       if (error) {
         console.error('Failed to persist onboarding role:', error);
       } else {
