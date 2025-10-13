@@ -321,9 +321,12 @@ export default function Portfolio() {
             <EmptyState
               icon={<Coins className="h-6 w-6" />}
               title="No positions yet"
-              description="Buy athlete tokens to build your portfolio and start tracking performance."
-              ctaLabel="Browse Marketplace"
-              onCta={() => navigate('/')}
+              description="Explore the marketplace to discover athletes and pick your first token when you're ready."
+              ctaLabel="Explore Marketplace"
+              onCta={() => navigate('/marketplace')}
+              ctaVariant="outline"
+              secondaryCtaLabel="Buy First Token"
+              onSecondaryCta={() => navigate('/marketplace')}
             />
           ) : (
             <Table>

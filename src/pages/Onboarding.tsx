@@ -1,5 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -17,6 +18,7 @@ import { FaucetButton } from "@/components/FaucetButton";
 import { useTrade } from "@/hooks/useTrade";
 import { useAthletes } from "@/hooks/useAthletes";
 import { initWallet } from "@/hooks/useTrade";
+import { useOnboardingStatus } from "@/hooks/useOnboardingStatus";
 
 type OnboardingStep = 
   | 'ROLE_SELECTION' 
@@ -31,6 +33,8 @@ type OnboardingStep =
 export default function Onboarding() {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const queryClient = useQueryClient();
+  const { data: onboardingStatus } = useOnboardingStatus();
   const { onboardingRole, setOnboardingRole } = useLocalStore();
   const [step, setStep] = useState<OnboardingStep>('ROLE_SELECTION');
   const [submitting, setSubmitting] = useState(false);
@@ -56,6 +60,53 @@ export default function Onboarding() {
   const { data: athletes } = useAthletes();
   const trade = useTrade();
 
+  const profileQueryKey = user ? ['onboarding-status', user.id] : ['onboarding-status'];
+
+  const persistRoleSelection = async (role: 'fan' | 'athlete') => {
+    if (!user) return;
+    try {
+      const { data: existing } = await supabase
+        .from('profiles')
+        .select('username')
+        .eq('id', user.id)
+        .maybeSingle();
+
+      const fallbackHandleBase = user.email?.split('@')[0]?.replace(/[^a-zA-Z0-9]/g, '') || `user-${user.id.slice(0, 6)}`;
+      const payload: Record<string, unknown> = {
+        id: user.id,
+        role,
+        onboarding_completed: false,
+      };
+
+      if (!existing?.username) {
+        payload.username = `${fallbackHandleBase}-${user.id.slice(0, 4)}`.toLowerCase();
+      }
+
+      const { error } = await supabase.from('profiles').upsert(payload);
+      if (error) {
+        console.error('Failed to persist onboarding role:', error);
+      } else {
+        await queryClient.invalidateQueries({ queryKey: profileQueryKey });
+      }
+    } catch (error) {
+      console.error('Failed to persist onboarding role:', error);
+    }
+  };
+
+  const markOnboardingComplete = async () => {
+    if (!user) return;
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ onboarding_completed: true })
+        .eq('id', user.id);
+      if (error) throw error;
+      await queryClient.invalidateQueries({ queryKey: profileQueryKey });
+    } catch (error) {
+      console.error('Failed to update onboarding status:', error);
+    }
+  };
+
   // Simple initialization - don't check for existing profile here
   // The ProtectedRoute component handles that logic now
   useEffect(() => {
@@ -65,6 +116,16 @@ export default function Onboarding() {
     }
     setCheckingProfile(false);
   }, [user]);
+
+  const persistedRole = onboardingStatus?.role;
+
+  useEffect(() => {
+    if (!user || !persistedRole) return;
+    if (step !== 'ROLE_SELECTION') return;
+
+    setOnboardingRole(persistedRole as 'fan' | 'athlete');
+    setStep(persistedRole === 'fan' ? 'FAN_PROFILE' : 'ATHLETE_PROFILE');
+  }, [user, persistedRole, step, setOnboardingRole]);
 
   // Initialize wallet on mount
   useEffect(() => {
@@ -87,6 +148,7 @@ export default function Onboarding() {
   const handleRoleSelection = (role: 'fan' | 'athlete') => {
     setHasStartedOnboarding(true);
     setOnboardingRole(role);
+    void persistRoleSelection(role);
     if (role === 'fan') {
       setStep('FAN_PROFILE');
     } else {
@@ -103,16 +165,22 @@ export default function Onboarding() {
 
     setSubmitting(true);
     try {
+      if (!user) throw new Error('You must be signed in');
+
+      const safeUsername = name.toLowerCase().replace(/\s+/g, '').slice(0, 24);
       const { error } = await supabase
         .from('profiles')
         .upsert({
-          id: user!.id,
+          id: user.id,
           display_name: name,
-          username: name.toLowerCase().replace(/\s+/g, ''),
+          username: safeUsername || `fan-${user.id.slice(0, 6)}`,
           avatar_url: avatar || null,
+          role: 'fan',
+          onboarding_completed: false,
         });
 
       if (error) throw error;
+      await queryClient.invalidateQueries({ queryKey: profileQueryKey });
       setStep('FAN_WALLET');
     } catch (error: any) {
       toast.error(error.message || "Failed to save profile");
@@ -166,6 +234,8 @@ export default function Onboarding() {
           sport,
           bio,
           avatar_url: avatar || null,
+          role: 'athlete',
+          onboarding_completed: false,
         });
 
       if (profileError) throw profileError;
@@ -216,11 +286,13 @@ export default function Onboarding() {
 
       if (postError) throw postError;
 
+      await markOnboardingComplete();
+
       // Clear onboarding state from localStorage
       setOnboardingRole(null);
 
       toast.success("Welcome to PodiumX! 🎉");
-      window.location.href = "/me";
+      navigate('/portfolio', { replace: true });
     } catch (error: any) {
       console.error('Onboarding error:', error);
       toast.error(error.message || "Failed to complete onboarding");
@@ -229,7 +301,11 @@ export default function Onboarding() {
     }
   };
 
-  const topAthletes = athletes?.slice(0, 3) || [];
+  const topAthletes = useMemo(() => {
+    if (!athletes) return [];
+    const filtered = user ? athletes.filter((athlete) => athlete.id !== user.id) : athletes;
+    return filtered.slice(0, 3);
+  }, [athletes, user?.id]);
 
   if (checkingProfile) {
     return (
@@ -459,7 +535,20 @@ export default function Onboarding() {
                 <Button variant="outline" onClick={() => setStep('FAN_WALLET')} className="w-full">
                   Back
                 </Button>
-                <Button onClick={() => navigate('/marketplace')} className="w-full">
+                <Button
+                  onClick={async () => {
+                    setSubmitting(true);
+                    try {
+                      await markOnboardingComplete();
+                      setOnboardingRole(null);
+                      navigate('/portfolio', { replace: true });
+                    } finally {
+                      setSubmitting(false);
+                    }
+                  }}
+                  className="w-full"
+                  disabled={submitting}
+                >
                   {hasBoughtToken ? 'Go to Marketplace' : 'Skip for Now'}
                 </Button>
               </div>

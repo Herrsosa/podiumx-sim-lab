@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Athlete, Sport } from '@/types';
 import { athleteAvatars } from '@/utils/athleteAvatars';
 import { priceAt } from '@/utils/pricing';
+import { resolveAvatarUrl } from '@/utils/avatar';
 import { useAthleteMetrics } from './useAthleteMetrics';
 
 export function useAthletes() {
@@ -53,12 +54,14 @@ export function useAthletes() {
             ...(p.workout_json as any),
           }));
 
+        const avatarSource = athleteAvatars[profile.username] ?? profile.avatar_url;
+
         return {
           id: profile.id,
           slug: profile.username,
           name: profile.display_name || profile.username,
           sport: (profile.sport || 'Other') as Sport,
-          avatar: athleteAvatars[profile.username] || profile.avatar_url || '',
+          avatar: resolveAvatarUrl(avatarSource),
           bio: profile.bio || '',
           location: '',
           socials: {

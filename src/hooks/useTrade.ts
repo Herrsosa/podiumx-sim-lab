@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from './use-toast';
+import { walletService } from '@/services/wallet';
 
 export function useTrade() {
   const queryClient = useQueryClient();
@@ -14,6 +15,8 @@ export function useTrade() {
     }) => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) throw new Error('Not authenticated. Please sign in to trade.');
+
+      await walletService.ensureWallet(session.user.id);
 
       console.log('Executing trade:', { athleteId, quantity, side });
 
@@ -80,35 +83,24 @@ export function useFaucet() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
 
-      // Get current balance
-      const { data: wallet, error: fetchError } = await supabase
-        .from('wallets')
-        .select('balance')
-        .eq('user_id', user.id)
-        .maybeSingle();
+      const { data, error } = await supabase.rpc('faucet_test_usdc', { amount });
 
-      if (fetchError) throw fetchError;
-
-      // If no wallet exists, create one
-      if (!wallet) {
-        const { error: insertError } = await supabase
-          .from('wallets')
-          .insert({ user_id: user.id, balance: amount });
-        if (insertError) throw insertError;
-      } else {
-        // Update with new balance
-        const { error } = await supabase
-          .from('wallets')
-          .update({ balance: (wallet.balance || 0) + amount })
-          .eq('user_id', user.id);
-        if (error) throw error;
+      if (error) {
+        console.warn('faucet_test_usdc RPC failed, falling back to walletService', error);
+        await walletService.addFunds(user.id, amount);
+        return { amount };
       }
+
+      // Some RPC implementations return the updated balance; we ignore for now
+      void data;
+      return { amount };
     },
-    onSuccess: async (_, amount) => {
+    onSuccess: async (result) => {
+      const amount = result?.amount ?? 0;
       await queryClient.invalidateQueries({ queryKey: ['wallet'] });
       toast({
         title: 'Funds Added',
-        description: `${amount} USDC added to your wallet`,
+        description: `$${amount} test USDC added`,
       });
     },
   });
@@ -119,17 +111,5 @@ export async function initWallet() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return;
 
-  // Check if wallet exists
-  const { data: wallet } = await supabase
-    .from('wallets')
-    .select('user_id')
-    .eq('user_id', user.id)
-    .maybeSingle();
-
-  // Create wallet if it doesn't exist
-  if (!wallet) {
-    await supabase
-      .from('wallets')
-      .insert({ user_id: user.id, balance: 0 });
-  }
+  await walletService.ensureWallet(user.id);
 }

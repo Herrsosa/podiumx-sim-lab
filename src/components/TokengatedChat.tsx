@@ -8,6 +8,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { EmptyState } from '@/components/ui/empty-state';
+import { resolveAvatarUrl } from '@/utils/avatar';
 
 interface Message {
   id: string;
@@ -69,7 +70,7 @@ export default function TokengatedChat({
           setMessages((prev) => [...prev, { 
             ...newMsg, 
             display_name: profile?.display_name,
-            avatar_url: profile?.avatar_url 
+            avatar_url: resolveAvatarUrl(profile?.avatar_url) 
           }]);
         }
       )
@@ -108,7 +109,7 @@ export default function TokengatedChat({
       return {
         ...m,
         display_name: profile?.display_name,
-        avatar_url: profile?.avatar_url,
+        avatar_url: resolveAvatarUrl(profile?.avatar_url),
       };
     });
 

@@ -64,7 +64,7 @@ export const AthleteCard = memo(({ athlete, chartData, onClick, onMouseEnter }: 
             <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-yellow-400 via-pink-500 to-purple-600 p-0.5">
               <div className="h-full w-full rounded-full bg-background p-0.5">
                 <img
-                  src={`${athlete.avatar}?width=100`}
+                  src={athlete.avatar}
                   alt={athlete.name}
                   loading="lazy"
                   className="h-full w-full rounded-full object-cover"

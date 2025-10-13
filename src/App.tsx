@@ -1,13 +1,11 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense, lazy } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { useAppStore } from "@/store/useAppStore";
 import { useAuth } from "@/hooks/useAuth";
-import { supabase } from "@/integrations/supabase/client";
-import { Suspense, lazy } from "react";
 import Navigation from "@/components/Navigation";
 import Landing from "./pages/Landing";
 import Auth from "./pages/Auth";
@@ -15,6 +13,8 @@ import NotFound from "./pages/NotFound";
 import StravaCallback from "./pages/StravaCallback";
 import MarketplaceSkeleton from "@/components/skeletons/MarketplaceSkeleton";
 import AthleteDetailSkeleton from "@/components/skeletons/AthleteDetailSkeleton";
+import { queryClient } from "@/lib/queryClient";
+import { useOnboardingStatus } from "@/hooks/useOnboardingStatus";
 
 // Lazy load heavy pages
 const Onboarding = lazy(() => import("./pages/Onboarding"));
@@ -23,84 +23,43 @@ const Portfolio = lazy(() => import("./pages/Portfolio"));
 const MyAthlete = lazy(() => import("./pages/MyAthlete"));
 const Marketplace = lazy(() => import("./pages/Marketplace"));
 
-const queryClient = new QueryClient();
+interface RouteGuardProps {
+  requireAuth?: boolean;
+  children: React.ReactNode;
+}
 
-function ProtectedRoute({ children }: { children: React.ReactNode }) {
+function RouteGuard({ requireAuth = false, children }: RouteGuardProps) {
   const { user, loading } = useAuth();
   const location = useLocation();
-  const [authCheckComplete, setAuthCheckComplete] = useState(false);
-  const [redirectPath, setRedirectPath] = useState<string | null>(null);
+  const onboardingQuery = useOnboardingStatus();
+  const onboardingData = onboardingQuery.data;
+  const onboardingCompleted = onboardingData?.onboardingCompleted ?? false;
+  const needsOnboarding = onboardingData?.needsOnboarding ?? false;
 
-  useEffect(() => {
-    async function checkUserStatus() {
-      if (!user) return;
+  const isOnboardingRoute = location.pathname.startsWith('/onboarding');
+  const isProtected = requireAuth;
 
-      // Check if user has a profile
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('id', user.id)
-        .maybeSingle();
+  if (loading) {
+    return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
+  }
 
-      // If no profile at all, they need onboarding
-      if (!profile) {
-        if (location.pathname !== '/onboarding') {
-          setRedirectPath('/onboarding');
-        } else {
-          setRedirectPath(null); // Already on onboarding, no redirect needed
-        }
-        setAuthCheckComplete(true);
-        return;
-      }
-
-      // Check if user is an athlete (has athlete_tokens)
-      const { data: athleteToken } = await supabase
-        .from('athlete_tokens')
-        .select('athlete_id')
-        .eq('athlete_id', user.id)
-        .maybeSingle();
-
-      // Check if user has any holdings
-      const { data: holdings } = await supabase
-        .from('holdings')
-        .select('qty')
-        .eq('user_id', user.id)
-        .gt('qty', 0)
-        .limit(1)
-        .maybeSingle();
-
-      // Determine if user needs onboarding (no athlete token AND no holdings)
-      const needsOnboarding = !athleteToken && !holdings;
-
-      if (needsOnboarding && location.pathname !== '/onboarding') {
-        setRedirectPath('/onboarding');
-      } else if (!needsOnboarding && location.pathname === '/onboarding') {
-        // User completed onboarding, redirect to appropriate page
-        if (athleteToken) {
-          setRedirectPath('/my-athlete-profile');
-        } else {
-          setRedirectPath('/marketplace');
-        }
-      } else {
-        setRedirectPath(null);
-      }
-
-      setAuthCheckComplete(true);
-    }
-
-    checkUserStatus();
-  }, [user, location.pathname]);
-
-  if (loading || !authCheckComplete) {
+  if (user && onboardingQuery.isLoading) {
     return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
   }
 
   if (!user) {
-    return <Navigate to="/auth" replace />;
+    if (isProtected) {
+      return <Navigate to="/auth" state={{ from: location }} replace />;
+    }
+    return <>{children}</>;
   }
 
-  if (redirectPath) {
-    return <Navigate to={redirectPath} replace />;
+  if (!onboardingCompleted && !isOnboardingRoute) {
+    return <Navigate to="/onboarding" replace />;
+  }
+
+  if (onboardingCompleted && isOnboardingRoute) {
+    return <Navigate to="/portfolio" replace />;
   }
 
   return <>{children}</>;
@@ -118,48 +77,48 @@ function AppContent() {
       <Route path="/" element={<Landing />} />
       <Route path="/auth" element={<Auth />} />
       <Route path="/onboarding" element={
-        <ProtectedRoute>
+        <RouteGuard requireAuth>
           <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Loading...</div>}>
             <Onboarding />
           </Suspense>
-        </ProtectedRoute>
+        </RouteGuard>
       } />
       <Route path="/marketplace" element={
-        <>
+        <RouteGuard>
           <Navigation />
           <Suspense fallback={<MarketplaceSkeleton />}>
             <Marketplace />
           </Suspense>
-        </>
+        </RouteGuard>
       } />
       <Route path="/athlete/:slug" element={
-        <>
+        <RouteGuard>
           <Navigation />
           <Suspense fallback={<AthleteDetailSkeleton />}>
             <AthleteDetail />
           </Suspense>
-        </>
+        </RouteGuard>
       } />
       <Route path="/portfolio" element={
-        <ProtectedRoute>
+        <RouteGuard requireAuth>
           <Navigation />
           <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Loading...</div>}>
             <Portfolio />
           </Suspense>
-        </ProtectedRoute>
+        </RouteGuard>
       } />
       <Route path="/my-athlete-profile" element={
-        <ProtectedRoute>
+        <RouteGuard requireAuth>
           <Navigation />
           <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Loading...</div>}>
             <MyAthlete />
           </Suspense>
-        </ProtectedRoute>
+        </RouteGuard>
       } />
       <Route path="/strava/callback" element={
-        <ProtectedRoute>
+        <RouteGuard requireAuth>
           <StravaCallback />
-        </ProtectedRoute>
+        </RouteGuard>
       } />
       <Route path="*" element={<NotFound />} />
     </Routes>

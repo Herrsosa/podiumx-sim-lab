@@ -9,6 +9,7 @@ import { Avatar } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { MessageSquare, Send, X } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { resolveAvatarUrl } from '@/utils/avatar';
 
 interface Conversation {
   id: string;
@@ -140,7 +141,7 @@ export function DirectMessages() {
             other_participant: {
               id: profile?.id || '',
               display_name: profile?.display_name || 'Unknown',
-              avatar_url: profile?.avatar_url || '/placeholder.svg'
+              avatar_url: resolveAvatarUrl(profile?.avatar_url)
             },
             last_message: lastMsg || { content: '', created_at: '' },
             unread_count: count || 0
@@ -185,7 +186,7 @@ export function DirectMessages() {
           sender_id: msg.sender_id,
           created_at: msg.created_at,
           sender_name: profile?.display_name || 'Unknown',
-          sender_avatar: profile?.avatar_url || '/placeholder.svg'
+          sender_avatar: resolveAvatarUrl(profile?.avatar_url)
         };
       }) || [];
 

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { initWallet } from './useTrade';
+import { queryClient } from '@/lib/queryClient';
 
 export function useAuth() {
   const [user, setUser] = useState<User | null>(null);
@@ -11,7 +12,7 @@ export function useAuth() {
   useEffect(() => {
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
+      (_event, session) => {
         setSession(session);
         setUser(session?.user ?? null);
         setLoading(false);
@@ -40,8 +41,39 @@ export function useAuth() {
     return () => subscription.unsubscribe();
   }, []);
 
+  const clearLocalStorage = () => {
+    if (typeof localStorage === 'undefined') return;
+
+    const keysToRemove: string[] = [];
+
+    for (let i = 0; i < localStorage.length; i += 1) {
+      const key = localStorage.key(i);
+      if (!key) continue;
+
+      if (key.startsWith('sb-') || key.startsWith('supabase') || key.startsWith('podiumx-')) {
+        keysToRemove.push(key);
+      }
+    }
+
+    keysToRemove.forEach((key) => {
+      localStorage.removeItem(key);
+    });
+  };
+
   const signOut = async () => {
-    await supabase.auth.signOut();
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) {
+        console.error('Failed to sign out from Supabase:', error);
+      }
+    } finally {
+      queryClient.clear();
+      clearLocalStorage();
+      setSession(null);
+      setUser(null);
+      setLoading(false);
+      window.location.href = '/auth';
+    }
   };
 
   return { user, session, loading, signOut };

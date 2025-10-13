@@ -414,6 +414,8 @@ export type Database = {
           display_name: string | null
           id: string
           instagram_url: string | null
+          onboarding_completed: boolean
+          role: string | null
           sport: string | null
           strava_url: string | null
           updated_at: string
@@ -426,6 +428,8 @@ export type Database = {
           display_name?: string | null
           id: string
           instagram_url?: string | null
+          onboarding_completed?: boolean
+          role?: string | null
           sport?: string | null
           strava_url?: string | null
           updated_at?: string
@@ -438,6 +442,8 @@ export type Database = {
           display_name?: string | null
           id?: string
           instagram_url?: string | null
+          onboarding_completed?: boolean
+          role?: string | null
           sport?: string | null
           strava_url?: string | null
           updated_at?: string

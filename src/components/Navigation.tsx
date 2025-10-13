@@ -32,11 +32,16 @@ export default function Navigation() {
   };
 
   const handleSignOut = async () => {
-    await signOut();
-    toast({
-      title: "Signed out",
-      description: "You've been successfully signed out.",
-    });
+    try {
+      await signOut();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : undefined;
+      toast({
+        title: "Sign out failed",
+        description: message || "Unable to sign out. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   const isActive = (path: string) => location.pathname === path;
