@@ -13,8 +13,8 @@ import { formatMoney, formatNumber, safeNumber } from '@/lib/format';
 import { useWallet } from '@/hooks/useWallet';
 import { useAthletes } from '@/hooks/useAthletes';
 import { useUserTrades } from '@/hooks/useTrades';
-import { useFaucet } from '@/hooks/useTrade';
 import { exportPositionsToCSV, exportTradesToCSV } from '@/utils/csvExport';
+import { AddFundsDialog } from '@/components/funding/AddFundsDialog';
 
 export default function Portfolio() {
   const navigate = useNavigate();
@@ -24,7 +24,6 @@ export default function Portfolio() {
   const { data: wallet, isLoading: walletLoading } = useWallet();
   const { data: athletes, isLoading: athletesLoading } = useAthletes();
   const { data: userTrades, isLoading: tradesLoading } = useUserTrades();
-  const faucetMutation = useFaucet();
 
   // Calculate realized PnL from trades - MUST be before any conditional returns
   const realizedPnL = useMemo(() => {
@@ -156,10 +155,6 @@ export default function Portfolio() {
       : 'text-destructive'
     : 'text-muted-foreground';
 
-  const handleFaucet = () => {
-    faucetMutation.mutate(1000);
-  };
-
   const getAthlete = (athleteId: string) => {
     return athletes?.find((a) => a.id === athleteId);
   };
@@ -194,10 +189,7 @@ export default function Portfolio() {
           <H1 className="mb-2 text-4xl">Portfolio</H1>
           <Body>Track your positions and performance</Body>
         </div>
-        <Button onClick={handleFaucet} disabled={faucetMutation.isPending} className="gap-2">
-          <DollarSign className="h-4 w-4" />
-          {faucetMutation.isPending ? 'Adding...' : 'Get Test USDC'}
-        </Button>
+        <AddFundsDialog />
       </div>
 
       {/* Summary Cards */}
