@@ -83,7 +83,16 @@ export function useFaucet() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
 
-      await walletService.addFunds(user.id, amount);
+      const { data, error } = await supabase.rpc('faucet_test_usdc', { amount });
+
+      if (error) {
+        console.warn('faucet_test_usdc RPC failed, falling back to walletService', error);
+        await walletService.addFunds(user.id, amount);
+        return { amount };
+      }
+
+      // Some RPC implementations return the updated balance; we ignore for now
+      void data;
       return { amount };
     },
     onSuccess: async (result) => {

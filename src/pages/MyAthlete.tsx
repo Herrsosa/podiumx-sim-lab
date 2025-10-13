@@ -3,8 +3,6 @@ import { Camera, Upload, Plus, X, Edit2, Save, Link as LinkIcon, TrendingUp, Lin
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { EarningsSection } from '@/components/EarningsSection';
-import { BalancesCard } from '@/components/funding/BalancesCard';
-import { AddFundsButton } from '@/components/funding/AddFundsButton';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -542,16 +540,7 @@ export default function MyAthlete() {
         </TabsContent>
 
         {/* Earnings Tab */}
-        <TabsContent value="earnings" className="space-y-4">
-          {/* Test Balances Card */}
-          <BalancesCard />
-
-          {/* Add Test Funds Button */}
-          <div className="flex justify-end">
-            <AddFundsButton variant="outline" />
-          </div>
-
-          {/* Athlete Earnings */}
+        <TabsContent value="earnings">
           <Card className="glass-card">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">

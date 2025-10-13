@@ -156,30 +156,6 @@ export type Database = {
           },
         ]
       }
-      balances: {
-        Row: {
-          test_fiat_cents: number
-          test_usdc: number
-          test_usdt: number
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          test_fiat_cents?: number
-          test_usdc?: number
-          test_usdt?: number
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          test_fiat_cents?: number
-          test_usdc?: number
-          test_usdt?: number
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
       chat_messages: {
         Row: {
           athlete_id: string
@@ -271,36 +247,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
-      }
-      deposit_intents: {
-        Row: {
-          amount: number
-          asset: string
-          created_at: string
-          id: string
-          status: string
-          type: string
-          user_id: string
-        }
-        Insert: {
-          amount: number
-          asset: string
-          created_at?: string
-          id?: string
-          status?: string
-          type: string
-          user_id: string
-        }
-        Update: {
-          amount?: number
-          asset?: string
-          created_at?: string
-          id?: string
-          status?: string
-          type?: string
-          user_id?: string
-        }
-        Relationships: []
       }
       dm_messages: {
         Row: {
