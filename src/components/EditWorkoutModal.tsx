@@ -37,6 +37,9 @@ export default function EditWorkoutModal({ open, onOpenChange, workoutPost, onSu
     tokenGated: workoutPost.token_gated || false,
   });
 
+  const distanceApplicableTypes = ['Run', 'Bike', 'Swim'];
+  const showDistanceField = distanceApplicableTypes.includes(formData.type);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -122,18 +125,20 @@ export default function EditWorkoutModal({ open, onOpenChange, workoutPost, onSu
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="edit-distance">Distance (km)</Label>
-              <Input
-                id="edit-distance"
-                type="number"
-                step="0.1"
-                placeholder="10.5"
-                value={formData.distance}
-                onChange={(e) => setFormData({ ...formData, distance: e.target.value })}
-              />
-            </div>
+          <div className={showDistanceField ? "grid grid-cols-2 gap-4" : ""}>
+            {showDistanceField && (
+              <div>
+                <Label htmlFor="edit-distance">Distance (km)</Label>
+                <Input
+                  id="edit-distance"
+                  type="number"
+                  step="0.1"
+                  placeholder="10.5"
+                  value={formData.distance}
+                  onChange={(e) => setFormData({ ...formData, distance: e.target.value })}
+                />
+              </div>
+            )}
 
             <div>
               <Label htmlFor="edit-duration">Duration (minutes)</Label>
@@ -143,6 +148,7 @@ export default function EditWorkoutModal({ open, onOpenChange, workoutPost, onSu
                 placeholder="45"
                 value={formData.duration}
                 onChange={(e) => setFormData({ ...formData, duration: e.target.value })}
+                required
               />
             </div>
           </div>
