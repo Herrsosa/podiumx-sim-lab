@@ -46,13 +46,24 @@ export default function MyAthlete() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [workoutToEdit, setWorkoutToEdit] = useState<any>(null);
   const [workoutToDelete, setWorkoutToDelete] = useState<string | null>(null);
-  const [workoutPosts, setWorkoutPosts] = useState<any[]>([]);
+  const [newAvatarFile, setNewAvatarFile] = useState<File | null>(null);
   const avatarInputRef = useRef<HTMLInputElement>(null);
 
   const userAthlete = useMemo(() => 
     athletes?.find(a => a.id === user?.id),
     [athletes, user?.id]
   );
+
+  const workouts = useMemo(() => {
+    if (!userAthlete?.posts) return [];
+    return userAthlete.posts.map(post => ({
+      id: post.id,
+      ...(post.workout_json as any),
+      mediaUrl: post.image_url,
+      // Assuming mediaType is image for now, can be enhanced later
+      mediaType: post.image_url ? 'image' : undefined,
+    }));
+  }, [userAthlete?.posts]);
 
   const [editedProfile, setEditedProfile] = useState({
     displayName: userAthlete?.name || '',
@@ -91,11 +102,8 @@ export default function MyAthlete() {
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setEditedProfile({ ...editedProfile, avatar: reader.result as string });
-      };
-      reader.readAsDataURL(file);
+      setNewAvatarFile(file);
+      setEditedProfile({ ...editedProfile, avatar: URL.createObjectURL(file) });
     }
   };
 
@@ -103,19 +111,51 @@ export default function MyAthlete() {
     if (!user) return;
 
     try {
+      let avatarUrl = editedProfile.avatar;
+
+      if (newAvatarFile) {
+        // If there was an old avatar, delete it
+        if (userAthlete?.avatar && userAthlete.avatar.includes('avatars')) {
+          const oldImageKey = userAthlete.avatar.split('/avatars/').pop();
+          if (oldImageKey) {
+            await supabase.storage.from('avatars').remove([oldImageKey]);
+          }
+        }
+
+        const fileExt = newAvatarFile.name.split('.').pop();
+        const fileName = `${user.id}/${Date.now()}.${fileExt}`;
+        
+        const { error: uploadError } = await supabase.storage
+          .from('avatars')
+          .upload(fileName, newAvatarFile);
+
+        if (uploadError) throw uploadError;
+
+        const { data: urlData } = supabase.storage
+          .from('avatars')
+          .getPublicUrl(fileName);
+        
+        avatarUrl = urlData.publicUrl;
+      }
+
       const { error } = await supabase
         .from('profiles')
         .update({
           display_name: editedProfile.displayName,
           sport: editedProfile.sport,
           bio: editedProfile.bio,
-          avatar_url: editedProfile.avatar || null,
+          avatar_url: avatarUrl || null,
           instagram_url: editedProfile.socials.instagram || null,
           strava_url: editedProfile.socials.strava || null,
         })
         .eq('id', user.id);
 
       if (error) throw error;
+
+      // After saving, reset the new avatar file state
+      setNewAvatarFile(null);
+      // Also, invalidate queries to refetch the user data with the new avatar URL
+      queryClient.invalidateQueries({ queryKey: ['athletes'] });
 
       setIsEditing(false);
       toast.success('Profile updated!');
@@ -124,39 +164,13 @@ export default function MyAthlete() {
     }
   };
 
-  // Fetch workout posts with full data
-  useEffect(() => {
-    if (user?.id) {
-      fetchWorkoutPosts();
-    }
-  }, [user?.id]);
-
-  const fetchWorkoutPosts = async () => {
-    if (!user?.id) return;
-    
-    try {
-      const { data, error } = await supabase
-        .from('posts')
-        .select('*')
-        .eq('author_id', user.id)
-        .not('workout_json', 'is', null)
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-      setWorkoutPosts(data || []);
-    } catch (error) {
-      console.error('Error fetching workout posts:', error);
-    }
-  };
-
-  const handleWorkoutSuccess = useCallback(async () => {
-    await queryClient.invalidateQueries({ queryKey: ['athletes'] });
-    await fetchWorkoutPosts();
+  const handleWorkoutSuccess = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: ['athletes'] });
     setAddWorkoutOpen(false);
   }, [queryClient]);
 
   const handleEditWorkout = (workout: Workout) => {
-    const post = workoutPosts.find(p => p.id === workout.id);
+    const post = userAthlete?.posts.find(p => p.id === workout.id);
     if (post) {
       setWorkoutToEdit(post);
       setEditWorkoutOpen(true);
@@ -182,8 +196,7 @@ export default function MyAthlete() {
       toast.success('Workout deleted');
       
       // Refresh data
-      await queryClient.invalidateQueries({ queryKey: ['athletes'] });
-      await fetchWorkoutPosts();
+      queryClient.invalidateQueries({ queryKey: ['athletes'] });
     } catch (error: any) {
       toast.error(error.message || 'Failed to delete workout');
     } finally {
@@ -501,13 +514,13 @@ export default function MyAthlete() {
               </div>
             </CardHeader>
             <CardContent>
-              {!userAthlete?.workouts || userAthlete.workouts.length === 0 ? (
+              {!workouts || workouts.length === 0 ? (
                 <div className="py-16 text-center text-muted-foreground">
                   No workouts yet. Add your first workout to get started!
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {userAthlete.workouts.map((workout) => (
+                  {workouts.map((workout) => (
                     <WorkoutCard
                       key={workout.id}
                       workout={workout}
@@ -574,9 +587,8 @@ export default function MyAthlete() {
           open={editWorkoutOpen}
           onOpenChange={setEditWorkoutOpen}
           workoutPost={workoutToEdit}
-          onSuccess={async () => {
-            await queryClient.invalidateQueries({ queryKey: ['athletes'] });
-            await fetchWorkoutPosts();
+          onSuccess={() => {
+            queryClient.invalidateQueries({ queryKey: ['athletes'] });
             setEditWorkoutOpen(false);
           }}
         />

@@ -234,9 +234,8 @@ export default function AthleteDetail() {
     setShowTradeModal(false);
   };
 
-  const handleWorkoutSuccess = useCallback(() => {
-    queryClient.invalidateQueries({ queryKey: ['athletes'] });
-    queryClient.invalidateQueries({ queryKey: ['posts'] });
+  const handleWorkoutSuccess = useCallback(async () => {
+    await queryClient.refetchQueries({ queryKey: ['athletes'] });
   }, [queryClient]);
 
   const isOwnProfile = user?.id === athlete?.id;
@@ -727,6 +726,8 @@ export default function AthleteDetail() {
             <WorkoutPosts
               athleteId={athlete.id}
               userHoldings={userHoldings}
+              posts={athlete.posts || []}
+              isLoading={isBootstrapping}
               onUnlockClick={async () => {
                 await tradeMutation.mutateAsync({
                   athleteId: athlete.id,

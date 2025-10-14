@@ -76,6 +76,7 @@ export function useAthletes() {
           change24h: 0,
           volume24h: 0,
           workouts,
+          posts: athletePosts,
         };
       });
 

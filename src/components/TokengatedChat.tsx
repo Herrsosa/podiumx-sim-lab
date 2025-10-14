@@ -18,6 +18,7 @@ interface Message {
   created_at: string;
   display_name?: string;
   avatar_url?: string;
+  bio?: string;
 }
 
 interface TokengatedChatProps {
@@ -63,14 +64,15 @@ export default function TokengatedChat({
           // Fetch the profile data for the new message
           const { data: profile } = await supabase
             .from('profiles')
-            .select('display_name, avatar_url')
+            .select('display_name, avatar_url, bio')
             .eq('id', newMsg.user_id)
             .single();
           
           setMessages((prev) => [...prev, { 
             ...newMsg, 
             display_name: profile?.display_name,
-            avatar_url: resolveAvatarUrl(profile?.avatar_url) 
+            avatar_url: resolveAvatarUrl(profile?.avatar_url), 
+            bio: profile?.bio 
           }]);
         }
       )
@@ -99,7 +101,7 @@ export default function TokengatedChat({
     const userIds = [...new Set(msgs.map((m: any) => m.user_id))];
     const { data: profiles } = await supabase
       .from('profiles')
-      .select('id, display_name, avatar_url')
+      .select('id, display_name, avatar_url, bio')
       .in('id', userIds);
 
     const profileMap = new Map(profiles?.map(p => [p.id, p]) || []);
@@ -110,6 +112,7 @@ export default function TokengatedChat({
         ...m,
         display_name: profile?.display_name,
         avatar_url: resolveAvatarUrl(profile?.avatar_url),
+        bio: profile?.bio,
       };
     });
 
@@ -197,6 +200,11 @@ export default function TokengatedChat({
                     </span>
                   </div>
                   <p className="text-sm">{message.content}</p>
+                  {message.bio && (
+                    <p className="text-xs text-muted-foreground italic mt-1">
+                      {message.bio}
+                    </p>
+                  )}
                 </div>
               </div>
             ))

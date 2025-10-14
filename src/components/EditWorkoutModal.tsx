@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -6,9 +6,10 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Upload } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/useAuth';
 
 interface EditWorkoutModalProps {
   open: boolean;
@@ -24,7 +25,10 @@ interface EditWorkoutModalProps {
 
 export default function EditWorkoutModal({ open, onOpenChange, workoutPost, onSuccess }: EditWorkoutModalProps) {
   const { toast } = useToast();
+  const { user } = useAuth();
   const [loading, setLoading] = useState(false);
+  const [newMediaFile, setNewMediaFile] = useState<File | null>(null);
+  const [mediaPreviewUrl, setMediaPreviewUrl] = useState<string | null>(workoutPost.image_url || null);
   
   const workout = workoutPost.workout_json || {};
   const [formData, setFormData] = useState({
@@ -37,17 +41,82 @@ export default function EditWorkoutModal({ open, onOpenChange, workoutPost, onSu
     tokenGated: workoutPost.token_gated || false,
   });
 
+  useEffect(() => {
+    setMediaPreviewUrl(workoutPost.image_url || null);
+    setNewMediaFile(null);
+    setFormData({
+      date: workout.date || new Date().toISOString().split('T')[0],
+      type: workout.type || 'Run',
+      distance: workout.distance?.toString() || '',
+      duration: workout.duration?.toString() || '',
+      rpe: workout.rpe?.toString() || '5',
+      notes: workout.notes || '',
+      tokenGated: workoutPost.token_gated || false,
+    });
+  }, [workoutPost]);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setNewMediaFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setMediaPreviewUrl(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   const distanceApplicableTypes = ['Run', 'Bike', 'Swim'];
   const showDistanceField = distanceApplicableTypes.includes(formData.type);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!user) {
+      toast({ title: 'Error', description: 'You must be logged in to edit a workout.', variant: 'destructive' });
+      return;
+    }
     setLoading(true);
 
     try {
+      let imageUrl = workoutPost.image_url;
+
+      // Handle media file changes
+      if (newMediaFile) {
+        // If there was an old image, delete it
+        if (workoutPost.image_url) {
+          const oldImageKey = workoutPost.image_url.split('/workout-media/').pop();
+          if (oldImageKey) {
+            await supabase.storage.from('workout-media').remove([oldImageKey]);
+          }
+        }
+
+        // Upload new file
+        const fileExt = newMediaFile.name.split('.').pop();
+        const fileName = `${user.id}/${Date.now()}.${fileExt}`;
+        
+        const { error: uploadError } = await supabase.storage
+          .from('workout-media')
+          .upload(fileName, newMediaFile);
+
+        if (uploadError) throw uploadError;
+
+        const { data: urlData } = supabase.storage
+          .from('workout-media')
+          .getPublicUrl(fileName);
+        
+        imageUrl = urlData.publicUrl;
+      } else if (workoutPost.image_url && !mediaPreviewUrl) {
+        // If media was removed, delete from storage and set URL to null
+        const oldImageKey = workoutPost.image_url.split('/workout-media/').pop();
+        if (oldImageKey) {
+          await supabase.storage.from('workout-media').remove([oldImageKey]);
+        }
+        imageUrl = undefined;
+      }
+
       // Update workout JSON
-      const updatedWorkout = {
-        id: workoutPost.id,
+      const updatedWorkoutJson = {
         date: formData.date,
         type: formData.type,
         distance: formData.distance ? parseFloat(formData.distance) : undefined,
@@ -56,13 +125,14 @@ export default function EditWorkoutModal({ open, onOpenChange, workoutPost, onSu
         notes: formData.notes,
       };
 
-      // Update post
+      // Update post in DB
       const { error } = await supabase
         .from('posts')
         .update({
-          workout_json: updatedWorkout,
+          workout_json: updatedWorkoutJson,
           text: formData.notes,
           token_gated: formData.tokenGated,
+          image_url: imageUrl,
         })
         .eq('id', workoutPost.id);
 
@@ -175,6 +245,48 @@ export default function EditWorkoutModal({ open, onOpenChange, workoutPost, onSu
               onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
               rows={3}
             />
+          </div>
+
+          <div>
+            <Label>Media</Label>
+            <div className="mt-2 flex items-center gap-4">
+              {mediaPreviewUrl && (
+                <img 
+                  src={mediaPreviewUrl} 
+                  alt="Workout media preview" 
+                  className="h-24 w-24 rounded-lg object-cover"
+                />
+              )}
+              <div className="flex-1">
+                <label
+                  htmlFor="media-upload-edit"
+                  className="flex cursor-pointer items-center gap-2 text-sm text-primary hover:underline"
+                >
+                  <Upload className="h-4 w-4" />
+                  <span>{mediaPreviewUrl ? 'Change' : 'Upload'} photo or video</span>
+                </label>
+                <input
+                  id="media-upload-edit"
+                  type="file"
+                  accept="image/*,video/*"
+                  className="hidden"
+                  onChange={handleFileChange}
+                />
+                {mediaPreviewUrl && (
+                  <Button 
+                    variant="link"
+                    size="sm"
+                    className="h-auto p-0 text-xs text-destructive"
+                    onClick={() => {
+                      setNewMediaFile(null);
+                      setMediaPreviewUrl(null);
+                    }}
+                  >
+                    Remove media
+                  </Button>
+                )}
+              </div>
+            </div>
           </div>
 
           <div className="flex items-center justify-between p-4 rounded-lg bg-muted/50">
