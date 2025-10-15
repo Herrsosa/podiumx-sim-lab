@@ -29,13 +29,14 @@ export function useMyAthlete() {
 
       if (profileError) throw profileError;
 
-      const { data: token, error: tokenError } = await supabase
+      const { data: tokens, error: tokenError } = await supabase
         .from('athlete_tokens')
         .select('*')
-        .eq('athlete_id', user.id)
-        .single();
+        .eq('athlete_id', user.id);
 
       if (tokenError) throw tokenError;
+
+      const token = tokens?.[0];
 
       const { data: posts, error: postsError } = await supabase
         .from('posts')
