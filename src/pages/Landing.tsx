@@ -1,12 +1,18 @@
+import { useMemo } from "react";
+import { Link } from "react-router-dom";
 import { ArrowRight, Shield, Users, TrendingUp, Dumbbell } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { H1, SectionTitle, Body } from "@/components/ui/typography";
 import { usePaginatedAthletes } from "@/hooks/usePaginatedAthletes";
+import { useMarketplaceCharts } from "@/hooks/useMarketplaceCharts";
 import { AthleteCard } from "@/components/AthleteCard";
 
 export default function Landing() {
   const { data: athletes, isLoading } = usePaginatedAthletes();
+  const topAthletes = useMemo(() => athletes?.slice(0, 8) || [], [athletes]);
+  const athleteIds = useMemo(() => topAthletes.map((athlete) => athlete.id), [topAthletes]);
+  const { data: chartData } = useMarketplaceCharts(athleteIds);
 
   const handleScrollToExplore = () => {
     const element = document.getElementById('explore');
@@ -27,9 +33,11 @@ export default function Landing() {
             Log workouts, grow your market cap, and join a new layer of sports culture.
           </Body>
           <div className="flex justify-center lg:justify-start gap-4">
-            <Button size="lg" className="gap-2">
-              Get Started <ArrowRight className="w-5 h-5" />
-            </Button>
+            <Link to="/auth">
+              <Button size="lg" className="gap-2">
+                Get Started <ArrowRight className="w-5 h-5" />
+              </Button>
+            </Link>
             <Button size="lg" variant="outline" className="gap-2" onClick={handleScrollToExplore}>
               Explore Athletes
             </Button>
@@ -38,7 +46,16 @@ export default function Landing() {
         <div className="hidden lg:block lg:w-1/2 mt-12 lg:mt-0">
           {/* Placeholder for data-driven visual */}
           <div className="w-full h-96 bg-muted rounded-lg flex items-center justify-center">
-            <p className="text-muted-foreground">Data-driven visual coming soon</p>
+            <div className="text-center text-muted-foreground">
+              <h3 className="text-lg font-semibold">Data-Driven Visual Coming Soon</h3>
+              <p className="text-sm">To implement this, we need real-time data such as:</p>
+              <ul className="text-xs list-disc list-inside mt-2">
+                <li>Total trading volume</li>
+                <li>Number of active users</li>
+                <li>Top-performing athletes</li>
+                <li>Market trends</li>
+              </ul>
+            </div>
           </div>
         </div>
       </section>
@@ -121,8 +138,8 @@ export default function Landing() {
           </div>
         ) : (
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {athletes?.slice(0, 8).map((athlete) => (
-              <AthleteCard key={athlete.id} athlete={athlete} chartData={[]} />
+            {topAthletes.map((athlete) => (
+              <AthleteCard key={athlete.id} athlete={athlete} chartData={chartData?.[athlete.id] || []} />
             ))}
           </div>
         )}
