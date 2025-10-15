@@ -107,7 +107,7 @@ export default function AddWorkoutModal({ open, onOpenChange, athleteId, onSucce
         tokenGated: false,
       });
       setMediaFile(null);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error posting workout:', error);
       toast({
         title: 'Error',

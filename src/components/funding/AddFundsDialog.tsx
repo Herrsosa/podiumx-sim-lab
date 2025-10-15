@@ -57,9 +57,7 @@ export function AddFundsDialog() {
         description: `$${amount.toFixed(2)} test fiat credited`,
       });
       
-      setFiatAmount('');
-      setOpen(false);
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         title: 'Deposit Failed',
         description: error.message || 'Failed to process deposit',
@@ -104,7 +102,7 @@ export function AddFundsDialog() {
       
       setUsdcAmount('');
       setOpen(false);
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         title: 'Deposit Failed',
         description: error.message || 'Failed to process deposit',

@@ -253,7 +253,7 @@ serve(async (req) => {
         status: 200,
       }
     );
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Trade error:', error);
     return new Response(
       JSON.stringify({ error: error.message }),

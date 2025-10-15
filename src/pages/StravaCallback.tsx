@@ -56,7 +56,7 @@ export default function StravaCallback() {
 
         // Redirect back to the athlete profile page
         navigate('/my-athlete-profile?strava_connected=true');
-      } catch (error: any) {
+      } catch (error: unknown) {
         console.error('Error in Strava callback:', error);
         navigate('/my-athlete-profile?strava_error=' + encodeURIComponent(error.message));
       }

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Send, Lock } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -44,14 +44,48 @@ export default function TokengatedChat({
   const canSend = userHoldings >= 1;
   const isLocked = !canSend;
 
+  const fetchMessages = useCallback(async () => {
+    const { data: msgs } = await supabase
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .from('chat_messages' as any)
+      .select('*')
+      .eq('athlete_id', athleteId)
+      .order('created_at', { ascending: true })
+      .limit(100);
+
+    if (!msgs) return;
+
+    // Fetch profiles for all messages
+    const userIds = [...new Set(msgs.map((m: Message) => m.user_id))];
+    const { data: profiles } = await supabase
+      .from('profiles')
+      .select('id, display_name, avatar_url, bio')
+      .in('id', userIds);
+
+    const profileMap = new Map(profiles?.map(p => [p.id, p]) || []);
+    
+    const enrichedMessages = msgs.map((m: Message) => {
+      const profile = profileMap.get(m.user_id);
+      return {
+        ...m,
+        display_name: profile?.display_name,
+        avatar_url: resolveAvatarUrl(profile?.avatar_url),
+        bio: profile?.bio,
+      };
+    });
+
+    setMessages(enrichedMessages);
+  }, [athleteId]);
+
   useEffect(() => {
     // Fetch initial messages
-    fetchMessages();
+    void fetchMessages();
 
     // Subscribe to new messages
     const channel = supabase
       .channel(`chat:${athleteId}`)
       .on(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         'postgres_changes' as any,
         {
           event: 'INSERT',
@@ -59,7 +93,7 @@ export default function TokengatedChat({
           table: 'chat_messages',
           filter: `athlete_id=eq.${athleteId}`,
         },
-        async (payload: any) => {
+        async (payload: { new: Message }) => {
           const newMsg = payload.new;
           // Fetch the profile data for the new message
           const { data: profile } = await supabase
@@ -81,43 +115,11 @@ export default function TokengatedChat({
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [athleteId]);
+  }, [athleteId, fetchMessages]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
-
-  const fetchMessages = async () => {
-    const { data: msgs } = await supabase
-      .from('chat_messages' as any)
-      .select('*')
-      .eq('athlete_id', athleteId)
-      .order('created_at', { ascending: true })
-      .limit(100);
-
-    if (!msgs) return;
-
-    // Fetch profiles for all messages
-    const userIds = [...new Set(msgs.map((m: any) => m.user_id))];
-    const { data: profiles } = await supabase
-      .from('profiles')
-      .select('id, display_name, avatar_url, bio')
-      .in('id', userIds);
-
-    const profileMap = new Map(profiles?.map(p => [p.id, p]) || []);
-    
-    const enrichedMessages = msgs.map((m: any) => {
-      const profile = profileMap.get(m.user_id);
-      return {
-        ...m,
-        display_name: profile?.display_name,
-        avatar_url: resolveAvatarUrl(profile?.avatar_url),
-        bio: profile?.bio,
-      };
-    });
-
-    setMessages(enrichedMessages);
-  };
 
   const handleSend = async () => {
     if (!newMessage.trim() || !user || !canSend) return;
@@ -125,6 +127,7 @@ export default function TokengatedChat({
     setSending(true);
     try {
       const { error } = await supabase
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         .from('chat_messages' as any)
         .insert({
           athlete_id: athleteId,
@@ -135,10 +138,10 @@ export default function TokengatedChat({
       if (error) throw error;
 
       setNewMessage('');
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         title: 'Error',
-        description: error.message || 'Failed to send message',
+        description: (error as Error).message || 'Failed to send message',
         variant: 'destructive',
       });
     } finally {

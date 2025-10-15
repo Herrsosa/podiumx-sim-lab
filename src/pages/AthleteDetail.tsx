@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from 'react';
+import { lazy, Suspense, useState, useMemo, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Info, Plus, Minus, Edit } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -7,13 +7,12 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { useAthletes } from '@/hooks/useAthletes';
+import { useAthlete } from '@/hooks/useAthlete';
 import { useWallet } from '@/hooks/useWallet';
 import { useTrades } from '@/hooks/useTrades';
 import { useTrade } from '@/hooks/useTrade';
 import { useAthleteTradeHistory } from '@/hooks/useAthleteTradeHistory';
 import { priceAt, costToBuy, payoutToSell, FEE, type Curve } from '@/utils/pricing';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, ReferenceDot } from 'recharts';
 import ProofOfSweat from '@/components/ProofOfSweat';
 import TokengatedChat from '@/components/TokengatedChat';
 import WorkoutPosts from '@/components/WorkoutPosts';
@@ -26,6 +25,8 @@ import { ChartSkeleton } from '@/components/ui/skeletons';
 import { SectionTitle, Body, Small } from '@/components/ui/typography';
 import { formatMoney, formatNumber } from '@/lib/format';
 import { cn } from '@/lib/utils';
+
+const AthletePriceChart = lazy(() => import('@/components/charts/AthletePriceChart'));
 
 
 type TimeRange = '24h' | '7d' | '30d' | 'all';
@@ -45,15 +46,10 @@ export default function AthleteDetail() {
   const [timeRange, setTimeRange] = useState<TimeRange>('24h');
   const timeRanges: TimeRange[] = ['24h', '7d', '30d', 'all'];
   
-  const { data: athletes, isLoading: athletesLoading } = useAthletes();
+  const { data: athlete, isLoading: athleteLoading } = useAthlete(slug!);
   const { data: wallet, isLoading: walletLoading } = useWallet();
   const { data: trades, isLoading: tradesLoading } = useTrades();
   const tradeMutation = useTrade();
-  
-  const athlete = useMemo(() => {
-    if (!athletes || !slug) return undefined;
-    return athletes.find((a) => a.slug === slug);
-  }, [athletes, slug]);
 
   const position = useMemo(() => {
     if (!athlete?.id || !wallet) return null;
@@ -235,12 +231,12 @@ export default function AthleteDetail() {
   };
 
   const handleWorkoutSuccess = useCallback(async () => {
-    await queryClient.refetchQueries({ queryKey: ['athletes'] });
-  }, [queryClient]);
+    await queryClient.refetchQueries({ queryKey: ['athlete', slug] });
+  }, [queryClient, slug]);
 
   const isOwnProfile = user?.id === athlete?.id;
 
-  const isBootstrapping = athletesLoading || walletLoading || tradesLoading;
+  const isBootstrapping = athleteLoading || walletLoading || tradesLoading;
 
   // Now check loading and not found states
   if (isBootstrapping) {
@@ -370,67 +366,17 @@ export default function AthleteDetail() {
 
             {/* Chart */}
             <div className="h-64">
-              {historyLoading ? (
-                <ChartSkeleton className="h-full" />
-              ) : displayChartPoints.length === 0 ? (
-                <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
-                  No trades yet
-                </div>
-              ) : (
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={displayChartPoints}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                    <XAxis
-                      dataKey="timestamp"
-                      type="number"
-                      scale="time"
-                      domain={['auto', 'auto']}
-                      tickFormatter={formatXAxisTick}
-                      tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }}
-                      stroke="hsl(var(--muted-foreground))"
-                    />
-                    <YAxis
-                      domain={['auto', 'auto']}
-                      tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }}
-                      stroke="hsl(var(--muted-foreground))"
-                      tickFormatter={(value) => `$${value.toFixed(2)}`}
-                    />
-                    <RechartsTooltip
-                      contentStyle={{
-                        backgroundColor: 'hsl(var(--card))',
-                        border: '1px solid hsl(var(--border))',
-                        borderRadius: '0.5rem',
-                      }}
-                      formatter={(value: number) => [`$${value.toFixed(4)}`, 'Price']}
-                      labelFormatter={formatTooltipLabel}
-                    />
-                    <Line
-                      type="monotone"
-                      dataKey="price"
-                      stroke="hsl(var(--primary))"
-                      strokeWidth={2}
-                      dot={false}
-                      connectNulls
-                    />
-                    {hasRealTrades && firstTradePoint && rawChartData.length === 1 && (
-                      <ReferenceDot
-                        x={firstTradePoint.timestamp}
-                        y={firstTradePoint.price}
-                        r={5}
-                        stroke="hsl(var(--background))"
-                        strokeWidth={2}
-                        fill="hsl(var(--primary))"
-                        label={{
-                          value: 'First trade',
-                          position: 'top',
-                          fill: 'hsl(var(--muted-foreground))',
-                          fontSize: 12,
-                        }}
-                      />
-                    )}
-                  </LineChart>
-                </ResponsiveContainer>
-              )}
+              <Suspense fallback={<ChartSkeleton className="h-full" />}>
+                <AthletePriceChart
+                  chartPoints={displayChartPoints}
+                  firstTradePoint={firstTradePoint}
+                  hasRealTrades={hasRealTrades}
+                  timeRange={timeRange}
+                  formatXAxisTick={formatXAxisTick}
+                  formatTooltipLabel={formatTooltipLabel}
+                  isLoading={historyLoading}
+                />
+              </Suspense>
             </div>
           </CardContent>
         </Card>

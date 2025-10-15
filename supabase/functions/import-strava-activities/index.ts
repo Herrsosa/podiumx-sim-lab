@@ -1,5 +1,5 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { createClient, SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -33,7 +33,7 @@ type OAuthConnection = {
   scope?: string | null;
 };
 
-async function refreshStravaToken(connection: OAuthConnection, supabaseClient: any): Promise<OAuthConnection> {
+async function refreshStravaToken(connection: OAuthConnection, supabaseClient: SupabaseClient): Promise<OAuthConnection> {
   const clientId = Deno.env.get('STRAVA_CLIENT_ID');
   const clientSecret = Deno.env.get('STRAVA_CLIENT_SECRET');
 

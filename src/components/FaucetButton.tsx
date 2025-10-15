@@ -21,30 +21,11 @@ export function FaucetButton({ variant = "outline", size = "default" }: FaucetBu
   const faucetFlag = import.meta.env.VITE_ENABLE_FAUCET;
   const faucetEnabled = faucetFlag ? faucetFlag === 'true' : true;
   
+  const canClaim = useMemo(() => cooldownMs <= 0, [cooldownMs]);
+
   if (!isDevMode || !faucetEnabled) {
     return null;
   }
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-
-    const updateCooldown = () => {
-      const lastClaim = window.localStorage.getItem('px:last-faucet');
-      if (!lastClaim) {
-        setCooldownMs(0);
-        return;
-      }
-      const elapsed = Date.now() - Number(lastClaim);
-      const remaining = Math.max(0, COOLDOWN_MS - elapsed);
-      setCooldownMs(remaining);
-    };
-
-    updateCooldown();
-    const interval = window.setInterval(updateCooldown, 1_000);
-    return () => window.clearInterval(interval);
-  }, []);
-
-  const canClaim = useMemo(() => cooldownMs <= 0, [cooldownMs]);
 
   const handleFaucet = async () => {
     if (!canClaim) return;

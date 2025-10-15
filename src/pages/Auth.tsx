@@ -55,7 +55,7 @@ export default function Auth() {
         title: "Success!",
         description: "Check your email to confirm your account.",
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         title: "Error",
         description: error.message,
@@ -82,7 +82,7 @@ export default function Auth() {
         title: "Welcome back!",
         description: "You've successfully signed in.",
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         title: "Error",
         description: error.message,

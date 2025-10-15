@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -47,7 +47,7 @@ export function DirectMessages() {
   useEffect(() => {
     if (!user) return;
     loadConversations();
-  }, [user]);
+  }, [user, loadConversations]);
 
   useEffect(() => {
     if (!selectedConversation || !user) return;
@@ -75,9 +75,9 @@ export function DirectMessages() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [selectedConversation, user]);
+  }, [selectedConversation, user, loadMessages, markAsRead]);
 
-  const loadConversations = async () => {
+  const loadConversations = useCallback(async () => {
     if (!user) return;
 
     console.log('[DirectMessages] Loading conversations for user:', user.id);
@@ -157,9 +157,9 @@ export function DirectMessages() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [user]);
 
-  const loadMessages = async (conversationId: string) => {
+  const loadMessages = useCallback(async (conversationId: string) => {
     try {
       const { data: messagesData, error } = await supabase
         .from('dm_messages')
@@ -194,9 +194,9 @@ export function DirectMessages() {
     } catch (error) {
       console.error('Error loading messages:', error);
     }
-  };
+  }, []);
 
-  const markAsRead = async (conversationId: string) => {
+  const markAsRead = useCallback(async (conversationId: string) => {
     if (!user) return;
 
     await supabase
@@ -204,7 +204,7 @@ export function DirectMessages() {
       .update({ last_read_at: new Date().toISOString() })
       .eq('conversation_id', conversationId)
       .eq('user_id', user.id);
-  };
+  }, [user]);
 
   const sendMessage = async () => {
     if (!user || !selectedConversation || !newMessage.trim()) return;

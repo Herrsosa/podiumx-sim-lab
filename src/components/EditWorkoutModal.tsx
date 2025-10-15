@@ -10,13 +10,14 @@ import { Loader2, Upload } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
+import { Workout } from '@/types';
 
 interface EditWorkoutModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   workoutPost: {
     id: string;
-    workout_json: any;
+    workout_json: Workout;
     token_gated: boolean;
     image_url?: string;
   };
@@ -53,7 +54,7 @@ export default function EditWorkoutModal({ open, onOpenChange, workoutPost, onSu
       notes: workout.notes || '',
       tokenGated: workoutPost.token_gated || false,
     });
-  }, [workoutPost]);
+  }, [workoutPost, workout.date, workout.distance, workout.duration, workout.notes, workout.rpe, workout.type]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -145,7 +146,7 @@ export default function EditWorkoutModal({ open, onOpenChange, workoutPost, onSu
 
       onSuccess();
       onOpenChange(false);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error updating workout:', error);
       toast({
         title: 'Error',
