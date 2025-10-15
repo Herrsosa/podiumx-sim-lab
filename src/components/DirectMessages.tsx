@@ -44,39 +44,6 @@ export function DirectMessages() {
   const [newMessage, setNewMessage] = useState('');
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    if (!user) return;
-    loadConversations();
-  }, [user, loadConversations]);
-
-  useEffect(() => {
-    if (!selectedConversation || !user) return;
-    
-    loadMessages(selectedConversation);
-    markAsRead(selectedConversation);
-
-    // Subscribe to new messages in this conversation
-    const channel = supabase
-      .channel(`dm-${selectedConversation}`)
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'dm_messages',
-          filter: `conversation_id=eq.${selectedConversation}`
-        },
-        (payload) => {
-          loadMessages(selectedConversation);
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [selectedConversation, user, loadMessages, markAsRead]);
-
   const loadConversations = useCallback(async () => {
     if (!user) return;
 
@@ -205,6 +172,39 @@ export function DirectMessages() {
       .eq('conversation_id', conversationId)
       .eq('user_id', user.id);
   }, [user]);
+
+  useEffect(() => {
+    if (!user) return;
+    loadConversations();
+  }, [user, loadConversations]);
+
+  useEffect(() => {
+    if (!selectedConversation || !user) return;
+    
+    loadMessages(selectedConversation);
+    markAsRead(selectedConversation);
+
+    // Subscribe to new messages in this conversation
+    const channel = supabase
+      .channel(`dm-${selectedConversation}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'dm_messages',
+          filter: `conversation_id=eq.${selectedConversation}`
+        },
+        (payload) => {
+          loadMessages(selectedConversation);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [selectedConversation, user, loadMessages, markAsRead]);
 
   const sendMessage = async () => {
     if (!user || !selectedConversation || !newMessage.trim()) return;

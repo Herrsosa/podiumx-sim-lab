@@ -62,7 +62,7 @@ export function usePaginatedAthletes() {
           .filter((p) => p.workout_json)
           .map((p) => ({
             id: p.id,
-            ...(p.workout_json as Workout),
+            ...(p.workout_json as unknown as Workout),
           }));
 
         const avatarSource = athleteAvatars[profile.username] ?? profile.avatar_url;
@@ -87,7 +87,7 @@ export function usePaginatedAthletes() {
           change24h: 0,
           volume24h: 0,
           workouts,
-          posts: athletePosts,
+          posts: athletePosts as any,
         };
       });
 

@@ -51,7 +51,7 @@ export function useAthlete(slug: string) {
         .filter((p) => p.workout_json)
         .map((p) => ({
           id: p.id,
-          ...(p.workout_json as Workout),
+          ...(p.workout_json as unknown as Workout),
         }));
 
       const avatarSource = athleteAvatars[profile.username] ?? profile.avatar_url;
@@ -76,7 +76,7 @@ export function useAthlete(slug: string) {
         change24h: 0,
         volume24h: 0,
         workouts,
-        posts,
+        posts: posts as any,
       };
 
       return athlete;

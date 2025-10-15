@@ -109,7 +109,7 @@ export default function AddWorkoutModal({ open, onOpenChange, athleteId, onSucce
       console.error('Error posting workout:', error);
       toast({
         title: 'Error',
-        description: error.message || 'Failed to post workout',
+        description: error instanceof Error ? error.message : 'Failed to post workout',
         variant: 'destructive',
       });
     } finally {

@@ -56,7 +56,7 @@ export default function TokengatedChat({
     if (!msgs) return;
 
     // Fetch profiles for all messages
-    const userIds = [...new Set(msgs.map((m: Message) => m.user_id))];
+    const userIds = [...new Set(msgs.map((m: any) => m.user_id))];
     const { data: profiles } = await supabase
       .from('profiles')
       .select('id, display_name, avatar_url, bio')
@@ -64,7 +64,7 @@ export default function TokengatedChat({
 
     const profileMap = new Map(profiles?.map(p => [p.id, p]) || []);
     
-    const enrichedMessages = msgs.map((m: Message) => {
+    const enrichedMessages = msgs.map((m: any) => {
       const profile = profileMap.get(m.user_id);
       return {
         ...m,

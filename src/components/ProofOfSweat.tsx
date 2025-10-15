@@ -56,7 +56,7 @@ export default function ProofOfSweat({ workouts, athleteId, onWorkoutDeleted, on
         .not('workout_json', 'is', null);
 
       if (error) throw error;
-      setWorkoutPosts(data || []);
+      setWorkoutPosts((data as any[]) || []);
     } catch (error) {
       console.error('Error fetching workout posts:', error);
     }
@@ -78,7 +78,7 @@ export default function ProofOfSweat({ workouts, athleteId, onWorkoutDeleted, on
   const handleEditClick = (workout: Workout) => {
     const post = workoutPosts.find(p => p.id === workout.id);
     if (post) {
-      setWorkoutToEdit(post);
+      setWorkoutToEdit(post as any);
       setEditModalOpen(true);
     }
   };
@@ -153,7 +153,7 @@ export default function ProofOfSweat({ workouts, athleteId, onWorkoutDeleted, on
 
       toast({
         title: 'Error',
-        description: error.message || 'Failed to delete workout',
+        description: error instanceof Error ? error.message : 'Failed to delete workout',
         variant: 'destructive',
       });
     } finally {
@@ -334,7 +334,7 @@ export default function ProofOfSweat({ workouts, athleteId, onWorkoutDeleted, on
         <EditWorkoutModal
           open={editModalOpen}
           onOpenChange={setEditModalOpen}
-          workoutPost={workoutToEdit}
+          workoutPost={workoutToEdit as any}
           onSuccess={async () => {
             await Promise.all([
               queryClient.invalidateQueries({ queryKey: ['athletes'] }),

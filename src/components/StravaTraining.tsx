@@ -82,7 +82,7 @@ export default function StravaTraining() {
       });
     } catch (error: unknown) {
       console.error('Error importing activities:', error);
-      const message = error?.message || 'Failed to import Strava activities';
+      const message = (error instanceof Error ? error.message : null) || 'Failed to import Strava activities';
 
       if (message.toLowerCase().includes('strava authorization has expired')) {
         await queryClient.invalidateQueries({ queryKey: ['strava-connection'] });
