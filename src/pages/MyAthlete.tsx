@@ -125,7 +125,7 @@ export default function MyAthlete() {
   }, [userAthlete]);
 
   const priceHistory = useMemo(() => {
-    if (!user?.id || !athleteTrades) return [];
+    if (!user?.id || !athleteTrades || !userAthlete?.pages || userAthlete.pages.length === 0) return [];
     
     // Generate price history from trades
     const history = athleteTrades.map(trade => ({
@@ -135,10 +135,10 @@ export default function MyAthlete() {
     })).reverse();
 
     // Add current price
-    if (userAthlete) {
+    if (userAthlete.pages[0].athlete) {
       history.push({
         timestamp: Date.now(),
-        price: userAthlete.price,
+        price: userAthlete.pages[0].athlete.price,
         date: 'Now',
       });
     }
@@ -162,8 +162,8 @@ export default function MyAthlete() {
 
       if (newAvatarFile) {
         // If there was an old avatar, delete it
-        if (userAthlete?.avatar && userAthlete.avatar.includes('avatars')) {
-          const oldImageKey = userAthlete.avatar.split('/avatars/').pop();
+        if (userAthlete?.pages[0]?.athlete?.avatar && userAthlete.pages[0].athlete.avatar.includes('avatars')) {
+          const oldImageKey = userAthlete.pages[0].athlete.avatar.split('/avatars/').pop();
           if (oldImageKey) {
             await supabase.storage.from('avatars').remove([oldImageKey]);
           }
@@ -265,9 +265,9 @@ export default function MyAthlete() {
             {/* Avatar */}
             <div className="relative">
               <div className="h-24 w-24 overflow-hidden rounded-full ring-4 ring-primary/20">
-                {(editedProfile.avatar || userAthlete?.avatar) ? (
+                {(editedProfile.avatar || userAthlete?.pages[0]?.athlete?.avatar) ? (
                   <img
-                    src={editedProfile.avatar || userAthlete?.avatar}
+                    src={editedProfile.avatar || userAthlete?.pages[0]?.athlete?.avatar}
                     alt={editedProfile.displayName}
                     className="h-full w-full object-cover"
                     onError={(e) => {
@@ -408,25 +408,25 @@ export default function MyAthlete() {
               ) : (
                 <>
                   <div>
-                    <h2 className="text-2xl font-bold">{userAthlete?.name || 'No name'}</h2>
+                    <h2 className="text-2xl font-bold">{userAthlete?.pages[0]?.athlete?.name || 'No name'}</h2>
                     <div className="mt-2 flex gap-2">
-                      <Badge>{userAthlete?.sport || 'Sport'}</Badge>
-                      {userAthlete?.location && <Badge variant="outline">{userAthlete.location}</Badge>}
+                      <Badge>{userAthlete?.pages[0]?.athlete?.sport || 'Sport'}</Badge>
+                      {userAthlete?.pages[0]?.athlete?.location && <Badge variant="outline">{userAthlete.pages[0].athlete.location}</Badge>}
                     </div>
                   </div>
-                  <p className="text-muted-foreground">{userAthlete?.bio || 'No bio'}</p>
-                  {(userAthlete?.socials.instagram || userAthlete?.socials.strava) && (
+                  <p className="text-muted-foreground">{userAthlete?.pages[0]?.athlete?.bio || 'No bio'}</p>
+                  {(userAthlete?.pages[0]?.athlete?.socials.instagram || userAthlete?.pages[0]?.athlete?.socials.strava) && (
                     <div className="flex gap-4 text-sm">
-                      {userAthlete?.socials.instagram && (
+                      {userAthlete?.pages[0]?.athlete?.socials.instagram && (
                         <span className="flex items-center gap-1">
                           <LinkIcon className="h-3 w-3" />
-                          {userAthlete.socials.instagram}
+                          {userAthlete.pages[0].athlete.socials.instagram}
                         </span>
                       )}
-                      {userAthlete?.socials.strava && (
+                      {userAthlete?.pages[0]?.athlete?.socials.strava && (
                         <span className="flex items-center gap-1">
                           <LinkIcon className="h-3 w-3" />
-                          {userAthlete.socials.strava}
+                          {userAthlete.pages[0].athlete.socials.strava}
                         </span>
                       )}
                     </div>
@@ -446,12 +446,12 @@ export default function MyAthlete() {
                       variant="outline"
                       onClick={() => {
                         setEditedProfile({
-                          displayName: userAthlete?.name || '',
-                          sport: userAthlete?.sport || 'Running',
-                          location: userAthlete?.location || '',
-                          bio: userAthlete?.bio || '',
-                          avatar: userAthlete?.avatar || '',
-                          socials: userAthlete?.socials || {},
+                          displayName: userAthlete?.pages[0]?.athlete?.name || '',
+                          sport: userAthlete?.pages[0]?.athlete?.sport || 'Running',
+                          location: userAthlete?.pages[0]?.athlete?.location || '',
+                          bio: userAthlete?.pages[0]?.athlete?.bio || '',
+                          avatar: userAthlete?.pages[0]?.athlete?.avatar || '',
+                          socials: userAthlete?.pages[0]?.athlete?.socials || {},
                         });
                         setIsEditing(false);
                       }}
@@ -484,15 +484,15 @@ export default function MyAthlete() {
             <div className="grid gap-4 sm:grid-cols-3 mb-6">
               <div>
                 <p className="text-sm text-muted-foreground">Current Price</p>
-                <p className="text-2xl font-bold">${userAthlete.price.toFixed(4)}</p>
+                <p className="text-2xl font-bold">${userAthlete.pages[0].athlete.price.toFixed(4)}</p>
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Market Cap</p>
-                <p className="text-2xl font-bold">${userAthlete.marketCap.toFixed(2)}</p>
+                <p className="text-2xl font-bold">${userAthlete.pages[0].athlete.marketCap.toFixed(2)}</p>
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">24h Volume</p>
-                <p className="text-2xl font-bold">${userAthlete.volume24h.toFixed(2)}</p>
+                <p className="text-2xl font-bold">${userAthlete.pages[0].athlete.volume24h.toFixed(2)}</p>
               </div>
             </div>
             <ResponsiveContainer width="100%" height={300}>
@@ -593,7 +593,7 @@ export default function MyAthlete() {
           {userAthlete && user && (
             <TokengatedChat
               athleteId={user.id}
-              athleteName={userAthlete.name}
+              athleteName={userAthlete.pages[0].athlete.name}
               userHoldings={1}
               onBuyClick={() => {}}
             />
