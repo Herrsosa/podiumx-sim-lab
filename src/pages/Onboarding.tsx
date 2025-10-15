@@ -68,9 +68,9 @@ export default function Onboarding() {
 
   useEffect(() => {
     const handler = setTimeout(async () => {
-      if (name.length > 2) {
-        setNameValidationStatus('checking');
-        const safeUsername = name.toLowerCase().replace(/\s+/g, '').slice(0, 24);
+      if (handle.length > 2) {
+        setHandleValidationStatus('checking');
+        const safeUsername = handle.toLowerCase().replace(/\s+/g, '').slice(0, 24);
         try {
           const { data, error } = await supabase
             .from('profiles')
@@ -81,26 +81,26 @@ export default function Onboarding() {
           if (error) throw error;
 
           if (data) {
-            setNameValidationStatus('taken');
-            setNameValidationError('This name is already taken or very similar to another.');
+            setHandleValidationStatus('taken');
+            setHandleValidationError('This handle is already taken or very similar to another.');
           } else {
-            setNameValidationStatus('available');
-            setNameValidationError(null);
+            setHandleValidationStatus('available');
+            setHandleValidationError(null);
           }
         } catch (error) {
-          setNameValidationStatus('idle');
-          console.error('Error checking name', error);
+          setHandleValidationStatus('idle');
+          console.error('Error checking handle', error);
         }
       } else {
-        setNameValidationStatus('idle');
-        setNameValidationError(null);
+        setHandleValidationStatus('idle');
+        setHandleValidationError(null);
       }
     }, 500);
 
     return () => {
       clearTimeout(handler);
     };
-  }, [name]);
+  }, [handle]);
 
   const { data: athletes } = usePaginatedAthletes();
   const trade = useTrade();
