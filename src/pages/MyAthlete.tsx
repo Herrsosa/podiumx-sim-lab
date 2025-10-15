@@ -38,9 +38,9 @@ import { Skeleton } from '@/components/ui/skeleton';
 
 export default function MyAthlete() {
   const { user } = useAuth();
-  const { data: userAthlete, fetchNextPage, hasNextPage, isFetchingNextPage } = useMyAthlete();
+  const { data: userAthlete, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading } = useMyAthlete();
   const { data: athleteTrades } = useAthleteTrades(user?.id || '');
-  if (!userAthlete) {
+  if (isLoading) {
     return (
       <div className="container mx-auto px-4 py-8">
         <div className="mb-8">
@@ -103,13 +103,26 @@ export default function MyAthlete() {
   }, [userAthlete?.pages]);
 
   const [editedProfile, setEditedProfile] = useState({
-    displayName: userAthlete?.pages[0].athlete.name || '',
-    sport: userAthlete?.pages[0].athlete.sport || 'Running',
-    location: userAthlete?.pages[0].athlete.location || '',
-    bio: userAthlete?.pages[0].athlete.bio || '',
-    avatar: userAthlete?.pages[0].athlete.avatar || '',
-    socials: userAthlete?.pages[0].athlete.socials || {},
+    displayName: '',
+    sport: 'Running',
+    location: '',
+    bio: '',
+    avatar: '',
+    socials: {},
   });
+
+  useEffect(() => {
+    if (userAthlete?.pages) {
+      setEditedProfile({
+        displayName: userAthlete.pages[0].athlete.name || '',
+        sport: userAthlete.pages[0].athlete.sport || 'Running',
+        location: userAthlete.pages[0].athlete.location || '',
+        bio: userAthlete.pages[0].athlete.bio || '',
+        avatar: userAthlete.pages[0].athlete.avatar || '',
+        socials: userAthlete.pages[0].athlete.socials || {},
+      });
+    }
+  }, [userAthlete]);
 
   const priceHistory = useMemo(() => {
     if (!user?.id || !athleteTrades) return [];
@@ -459,7 +472,7 @@ export default function MyAthlete() {
       </Card>
 
       {/* Price Chart - Only for Athletes */}
-      {userAthlete?.pages[0].athlete.role === 'athlete' && userAthlete && priceHistory.length > 0 && (
+      {userAthlete?.pages[0]?.athlete?.role === 'athlete' && priceHistory.length > 0 && (
         <Card className="glass-card mb-6">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
