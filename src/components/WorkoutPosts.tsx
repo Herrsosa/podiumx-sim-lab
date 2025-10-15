@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Lock, Calendar, Activity, Clock, Zap } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
-import { Post } from '@/types';
+import { Post, Workout } from '@/types';
 
 interface WorkoutPostsProps {
   athleteId: string;
@@ -80,7 +80,9 @@ export default function WorkoutPosts({
     <div className="space-y-4">
       {posts.map((post) => {
         const canView = canViewPost(post);
-        const workout = post.workout_json || {};
+        const workout = (post.workout_json && typeof post.workout_json === 'object' && !Array.isArray(post.workout_json)) 
+          ? post.workout_json as Partial<Workout>
+          : {} as Partial<Workout>;
 
         return (
           <Card key={post.id} className="glass-card overflow-hidden">

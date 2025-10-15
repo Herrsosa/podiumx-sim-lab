@@ -1,16 +1,17 @@
 import { useMemo } from "react";
 import { Link } from "react-router-dom";
-import { ArrowRight, Shield, Users, TrendingUp, Dumbbell } from "lucide-react";
+import { ArrowRight, Shield, Users, TrendingUp, Dumbbell, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { H1, SectionTitle, Body } from "@/components/ui/typography";
 import { usePaginatedAthletes } from "@/hooks/usePaginatedAthletes";
 import { useMarketplaceCharts } from "@/hooks/useMarketplaceCharts";
-import { AthleteCard } from "@/components/AthleteCard";
+import { AthleteCardNew } from "@/components/AthleteCardNew";
+import { HeroAthleteCard } from "@/components/landing/HeroAthleteCard";
 
 export default function Landing() {
   const { data: athletes, isLoading } = usePaginatedAthletes();
   const topAthletes = useMemo(() => athletes?.slice(0, 8) || [], [athletes]);
+  const heroAthletes = useMemo(() => athletes?.slice(0, 4) || [], [athletes]);
   const athleteIds = useMemo(() => topAthletes.map((athlete) => athlete.id), [topAthletes]);
   const { data: chartData } = useMarketplaceCharts(athleteIds);
 
@@ -22,39 +23,57 @@ export default function Landing() {
   };
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div className="min-h-screen bg-background">
       {/* Hero Section */}
-      <section className="container mx-auto px-4 py-20 text-center lg:text-left lg:flex lg:items-center lg:justify-between">
-        <div className="lg:w-1/2">
-          <H1 className="mb-6 text-5xl md:text-7xl font-bold">
-            Build Your Athlete Aura.
-          </H1>
-          <Body className="mb-8 mx-auto max-w-2xl text-xl md:text-2xl text-muted-foreground lg:mx-0">
-            Log workouts, grow your market cap, and join a new layer of sports culture.
-          </Body>
-          <div className="flex justify-center lg:justify-start gap-4">
-            <Link to="/auth">
-              <Button size="lg" className="gap-2">
-                Get Started <ArrowRight className="w-5 h-5" />
-              </Button>
-            </Link>
-            <Button size="lg" variant="outline" className="gap-2" onClick={handleScrollToExplore}>
-              Explore Athletes
-            </Button>
-          </div>
-        </div>
-        <div className="hidden lg:block lg:w-1/2 mt-12 lg:mt-0">
-          {/* Placeholder for data-driven visual */}
-          <div className="w-full h-96 bg-muted rounded-lg flex items-center justify-center">
-            <div className="text-center text-muted-foreground">
-              <h3 className="text-lg font-semibold">Data-Driven Visual Coming Soon</h3>
-              <p className="text-sm">To implement this, we need real-time data such as:</p>
-              <ul className="text-xs list-disc list-inside mt-2">
-                <li>Total trading volume</li>
-                <li>Number of active users</li>
-                <li>Top-performing athletes</li>
-                <li>Market trends</li>
-              </ul>
+      <section className="relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-b from-primary/5 to-transparent" />
+        
+        <div className="container relative mx-auto px-4 py-16 lg:py-24">
+          <div className="grid lg:grid-cols-2 gap-12 items-center">
+            {/* Left: Text Content */}
+            <div className="space-y-8 text-center lg:text-left">
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 text-sm font-medium">
+                <Sparkles className="w-4 h-4 text-primary" />
+                Build Your Athlete Aura
+              </div>
+              
+              <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight">
+                Train Hard.
+                <br />
+                <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+                  Build Aura.
+                </span>
+              </h1>
+              
+              <p className="text-lg md:text-xl text-muted-foreground max-w-xl mx-auto lg:mx-0">
+                Log workouts, grow your market cap, and join a new layer of sports culture where dedication meets value.
+              </p>
+              
+              <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
+                <Button size="lg" className="gap-2 text-base" asChild>
+                  <Link to="/auth">
+                    Get Started <ArrowRight className="w-5 h-5" />
+                  </Link>
+                </Button>
+                <Button size="lg" variant="outline" onClick={handleScrollToExplore} className="text-base">
+                  Explore Athletes
+                </Button>
+              </div>
+            </div>
+
+            {/* Right: Floating Athlete Cards */}
+            <div className="hidden lg:block">
+              <div className="grid grid-cols-1 gap-4">
+                {isLoading ? (
+                  [...Array(4)].map((_, i) => (
+                    <div key={i} className="h-40 rounded-xl bg-muted/20 animate-pulse" />
+                  ))
+                ) : (
+                  heroAthletes.map((athlete, index) => (
+                    <HeroAthleteCard key={athlete.id} athlete={athlete} index={index} />
+                  ))
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -62,90 +81,135 @@ export default function Landing() {
 
       {/* Value Props Section */}
       <section className="container mx-auto px-4 py-16">
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <Card className="border-primary/20 hover:border-primary/40 transition-colors">
+        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <Card className="group hover:border-primary/40 transition-all duration-300 hover:shadow-lg hover:shadow-primary/5">
             <CardContent className="pt-6">
-              <Dumbbell className="w-12 h-12 text-primary mb-4" />
-              <SectionTitle className="text-xl">Proof of Sweat</SectionTitle>
-              <Body className="text-sm text-muted-foreground">
+              <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                <Dumbbell className="w-6 h-6 text-primary" />
+              </div>
+              <h3 className="text-lg font-semibold mb-2">Proof of Sweat</h3>
+              <p className="text-sm text-muted-foreground leading-relaxed">
                 Athletes log workouts, providing tangible proof of their dedication and progress.
-              </Body>
+              </p>
             </CardContent>
           </Card>
 
-          <Card className="border-primary/20 hover:border-primary/40 transition-colors">
+          <Card className="group hover:border-primary/40 transition-all duration-300 hover:shadow-lg hover:shadow-primary/5">
             <CardContent className="pt-6">
-              <TrendingUp className="w-12 h-12 text-primary mb-4" />
-              <SectionTitle className="text-xl">Market Cap Signal</SectionTitle>
-              <Body className="text-sm text-muted-foreground">
+              <div className="w-12 h-12 rounded-xl bg-accent/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                <TrendingUp className="w-6 h-6 text-accent" />
+              </div>
+              <h3 className="text-lg font-semibold mb-2">Market Cap Signal</h3>
+              <p className="text-sm text-muted-foreground leading-relaxed">
                 An athlete's market cap reflects their community's belief in their potential.
-              </Body>
+              </p>
             </CardContent>
           </Card>
 
-          <Card className="border-primary/20 hover:border-primary/40 transition-colors">
+          <Card className="group hover:border-primary/40 transition-all duration-300 hover:shadow-lg hover:shadow-primary/5">
             <CardContent className="pt-6">
-              <Shield className="w-12 h-12 text-primary mb-4" />
-              <SectionTitle className="text-xl">Token-Gated Access</SectionTitle>
-              <Body className="text-sm text-muted-foreground">
+              <div className="w-12 h-12 rounded-xl bg-success/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                <Shield className="w-6 h-6 text-success" />
+              </div>
+              <h3 className="text-lg font-semibold mb-2">Token-Gated Access</h3>
+              <p className="text-sm text-muted-foreground leading-relaxed">
                 Unlock exclusive content and communities by holding an athlete's token.
-              </Body>
+              </p>
             </CardContent>
           </Card>
 
-          <Card className="border-primary/20 hover:border-primary/40 transition-colors">
+          <Card className="group hover:border-primary/40 transition-all duration-300 hover:shadow-lg hover:shadow-primary/5">
             <CardContent className="pt-6">
-              <Users className="w-12 h-12 text-primary mb-4" />
-              <SectionTitle className="text-xl">Clean UX</SectionTitle>
-              <Body className="text-sm text-muted-foreground">
+              <div className="w-12 h-12 rounded-xl bg-chart-3/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                <Users className="w-6 h-6" style={{ color: 'hsl(var(--chart-3))' }} />
+              </div>
+              <h3 className="text-lg font-semibold mb-2">Clean UX</h3>
+              <p className="text-sm text-muted-foreground leading-relaxed">
                 A beautifully designed, intuitive interface for a seamless experience.
-              </Body>
+              </p>
             </CardContent>
           </Card>
         </div>
       </section>
 
       {/* How It Works Section */}
-      <section className="container mx-auto px-4 py-16">
-        <SectionTitle className="mb-12 text-center text-3xl md:text-4xl">How It Works</SectionTitle>
-        <div className="grid md:grid-cols-3 gap-8">
-          <div className="text-center">
-            <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center text-2xl font-bold text-primary mx-auto mb-4">1</div>
-            <SectionTitle className="text-xl">Create Profile & Verify</SectionTitle>
-            <Body className="text-sm text-muted-foreground">Create your account and complete your athlete profile.</Body>
+      <section className="container mx-auto px-4 py-16 lg:py-24">
+        <div className="text-center mb-12">
+          <h2 className="text-3xl md:text-4xl font-bold mb-4">How It Works</h2>
+          <p className="text-muted-foreground max-w-2xl mx-auto">
+            Three simple steps to start building your athlete aura
+          </p>
+        </div>
+        
+        <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+          <div className="relative">
+            <div className="text-center space-y-4">
+              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center text-2xl font-bold text-primary-foreground mx-auto shadow-lg shadow-primary/20">
+                1
+              </div>
+              <h3 className="text-xl font-semibold">Create Profile & Verify</h3>
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                Create your account and complete your athlete profile to get started.
+              </p>
+            </div>
           </div>
-          <div className="text-center">
-            <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center text-2xl font-bold text-primary mx-auto mb-4">2</div>
-            <SectionTitle className="text-xl">Log Proof of Sweat</SectionTitle>
-            <Body className="text-sm text-muted-foreground">Log your workouts and share your progress with your supporters.</Body>
+          
+          <div className="relative">
+            <div className="text-center space-y-4">
+              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-accent to-accent/60 flex items-center justify-center text-2xl font-bold text-accent-foreground mx-auto shadow-lg shadow-accent/20">
+                2
+              </div>
+              <h3 className="text-xl font-semibold">Log Proof of Sweat</h3>
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                Log your workouts and share your progress with your supporters.
+              </p>
+            </div>
           </div>
-          <div className="text-center">
-            <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center text-2xl font-bold text-primary mx-auto mb-4">3</div>
-            <SectionTitle className="text-xl">Grow Your Athlete Aura & Community</SectionTitle>
-            <Body className="text-sm text-muted-foreground">Grow your market cap and build a strong community around you.</Body>
+          
+          <div className="relative">
+            <div className="text-center space-y-4">
+              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-success to-success/60 flex items-center justify-center text-2xl font-bold text-success-foreground mx-auto shadow-lg shadow-success/20">
+                3
+              </div>
+              <h3 className="text-xl font-semibold">Grow Your Aura</h3>
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                Build your market cap and grow a strong community around you.
+              </p>
+            </div>
           </div>
         </div>
       </section>
 
       {/* Top Athletes Section */}
-      <section id="explore" className="container mx-auto px-4 py-16">
-        <SectionTitle className="mb-12 text-center text-3xl md:text-4xl">Top Athletes</SectionTitle>
+      <section id="explore" className="container mx-auto px-4 py-16 lg:py-24 bg-muted/30 -mx-4">
+        <div className="text-center mb-12">
+          <h2 className="text-3xl md:text-4xl font-bold mb-4">Top Athletes</h2>
+          <p className="text-muted-foreground max-w-2xl mx-auto">
+            Discover and invest in the most dedicated athletes
+          </p>
+        </div>
+        
         {isLoading ? (
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 max-w-7xl mx-auto px-4">
             {[...Array(8)].map((_, i) => (
-              <Card key={i} className="h-96 animate-pulse bg-muted" />
+              <div key={i} className="h-96 rounded-xl bg-muted/40 animate-pulse" />
             ))}
           </div>
         ) : (
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 max-w-7xl mx-auto px-4">
             {topAthletes.map((athlete) => (
-              <AthleteCard key={athlete.id} athlete={athlete} chartData={chartData?.[athlete.id] || []} />
+              <AthleteCardNew
+                key={athlete.id} 
+                athlete={athlete} 
+                chartData={chartData?.[athlete.id] || []} 
+              />
             ))}
           </div>
         )}
+        
         <div className="text-center mt-12">
           <Button size="lg" variant="outline" asChild>
-            <a href="/marketplace">View All Athletes</a>
+            <Link to="/marketplace">View All Athletes</Link>
           </Button>
         </div>
       </section>

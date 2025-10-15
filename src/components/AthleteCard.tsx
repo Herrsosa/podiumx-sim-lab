@@ -11,7 +11,7 @@ import { format } from 'date-fns';
 interface AthleteCardProps {
   athlete: Athlete;
   chartData: MarketplaceChartPoint[];
-  onClick: () => void;
+  onClick?: () => void;
   onMouseEnter?: () => void;
 }
 
