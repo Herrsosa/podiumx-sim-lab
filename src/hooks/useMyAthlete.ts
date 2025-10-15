@@ -1,5 +1,4 @@
-
-import { useQuery } from '@tanstack/react-query';
+import { useInfiniteQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Athlete, Sport, Workout } from '@/types';
 import { athleteAvatars } from '@/utils/athleteAvatars';
@@ -8,14 +7,19 @@ import { resolveAvatarUrl } from '@/utils/avatar';
 import { useAuth } from './useAuth';
 import { useAthleteMetrics } from './useAthleteMetrics';
 
+const POSTS_PAGE_SIZE = 10;
+
 export function useMyAthlete() {
   const { user } = useAuth();
   const { data: metricsMap, isLoading: metricsLoading, isFetching: metricsFetching } = useAthleteMetrics('24h');
 
-  const queryResult = useQuery({
+  const queryResult = useInfiniteQuery({
     queryKey: ['my-athlete', user?.id],
-    queryFn: async () => {
+    queryFn: async ({ pageParam = 0 }) => {
       if (!user?.id) return null;
+
+      const from = pageParam * POSTS_PAGE_SIZE;
+      const to = from + POSTS_PAGE_SIZE - 1;
 
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
@@ -37,7 +41,8 @@ export function useMyAthlete() {
         .from('posts')
         .select('*')
         .eq('author_id', user.id)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .range(from, to);
 
       if (postsError) throw postsError;
 
@@ -88,13 +93,22 @@ export function useMyAthlete() {
         athlete.volume24h = metrics.volume;
       }
 
-      return athlete;
+      return {
+        athlete,
+        nextPage: posts.length === POSTS_PAGE_SIZE ? pageParam + 1 : undefined,
+      };
     },
     enabled: !!user?.id,
+    getNextPageParam: (lastPage) => lastPage?.nextPage,
+    select: (data) => ({
+      ...data,
+      pages: data.pages.flatMap(page => page.athlete)
+    })
   });
 
   return {
     ...queryResult,
+    data: queryResult.data?.pages[0],
     isLoading: queryResult.isLoading || metricsLoading,
     isFetching: queryResult.isFetching || metricsFetching,
     isPending: queryResult.isPending || metricsLoading,

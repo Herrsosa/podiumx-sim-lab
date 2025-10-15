@@ -14,7 +14,7 @@ import { Workout, Sport } from '@/types';
 import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
 import { useMyAthlete } from '@/hooks/useMyAthlete';
-import { useTrades } from '@/hooks/useTrades';
+import { useAthleteTrades } from '@/hooks/useAthleteTrades';
 import { useUserRole } from '@/hooks/useUserRole';
 import { supabase } from '@/integrations/supabase/client';
 import AddWorkoutModal from '@/components/AddWorkoutModal';
@@ -34,11 +34,54 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 
+import { Skeleton } from '@/components/ui/skeleton';
+
 export default function MyAthlete() {
   const { user } = useAuth();
-  const { data: userAthlete } = useMyAthlete();
-  const { data: allTrades } = useTrades();
-  const { isAthlete, loading: roleLoading } = useUserRole();
+  const { data: userAthlete, fetchNextPage, hasNextPage, isFetchingNextPage } = useMyAthlete();
+  const { data: athleteTrades } = useAthleteTrades(user?.id || '');
+  if (!userAthlete) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="mb-8">
+          <Skeleton className="h-10 w-48" />
+          <Skeleton className="h-4 w-64 mt-2" />
+        </div>
+        <Card className="glass-card mb-6">
+          <CardContent className="p-6">
+            <div className="flex items-start gap-6">
+              <Skeleton className="h-24 w-24 rounded-full" />
+              <div className="flex-1 space-y-4">
+                <Skeleton className="h-8 w-48" />
+                <Skeleton className="h-4 w-64" />
+                <Skeleton className="h-10 w-32" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="glass-card mb-6">
+          <CardHeader>
+            <Skeleton className="h-8 w-48" />
+          </CardHeader>
+          <CardContent>
+            <Skeleton className="h-72 w-full" />
+          </CardContent>
+        </Card>
+        <Card className="glass-card">
+          <CardHeader>
+            <Skeleton className="h-8 w-48" />
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <Skeleton className="h-24 w-full" />
+              <Skeleton className="h-24 w-full" />
+              <Skeleton className="h-24 w-full" />
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
   const queryClient = useQueryClient();
   const [isEditing, setIsEditing] = useState(false);
   const [addWorkoutOpen, setAddWorkoutOpen] = useState(false);
@@ -50,15 +93,14 @@ export default function MyAthlete() {
   const avatarInputRef = useRef<HTMLInputElement>(null);
 
   const workouts = useMemo(() => {
-    if (!userAthlete?.posts) return [];
-    return userAthlete.posts.map(post => ({
+    if (!userAthlete?.pages) return [];
+    return userAthlete.pages.flatMap(page => page.posts.map(post => ({
       id: post.id,
       ...(post.workout_json as Workout),
       mediaUrl: post.image_url,
-      // Assuming mediaType is image for now, can be enhanced later
       mediaType: post.image_url ? 'image' : undefined,
-    }));
-  }, [userAthlete?.posts]);
+    })));
+  }, [userAthlete?.pages]);
 
   const [editedProfile, setEditedProfile] = useState({
     displayName: userAthlete?.name || '',
@@ -70,10 +112,7 @@ export default function MyAthlete() {
   });
 
   const priceHistory = useMemo(() => {
-    if (!user?.id || !allTrades) return [];
-    
-    // Get trades for this athlete
-    const athleteTrades = allTrades.filter(t => t.athleteId === user.id);
+    if (!user?.id || !athleteTrades) return [];
     
     // Generate price history from trades
     const history = athleteTrades.map(trade => ({
@@ -92,7 +131,7 @@ export default function MyAthlete() {
     }
 
     return history;
-  }, [user?.id, allTrades, userAthlete]);
+  }, [user?.id, athleteTrades, userAthlete]);
 
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -522,6 +561,13 @@ export default function MyAthlete() {
                       onDelete={() => handleDeleteClick(workout.id)}
                     />
                   ))}
+                </div>
+              )}
+              {hasNextPage && (
+                <div className="flex justify-center py-6">
+                  <Button onClick={() => fetchNextPage()} disabled={isFetchingNextPage}>
+                    {isFetchingNextPage ? 'Loading...' : 'Load More'}
+                  </Button>
                 </div>
               )}
             </CardContent>
