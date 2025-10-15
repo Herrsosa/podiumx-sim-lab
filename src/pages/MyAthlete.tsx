@@ -40,6 +40,16 @@ export default function MyAthlete() {
   const { user } = useAuth();
   const { data: userAthlete, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading } = useMyAthlete();
   const { data: athleteTrades } = useAthleteTrades(user?.id || '');
+  const queryClient = useQueryClient();
+  const [isEditing, setIsEditing] = useState(false);
+  const [addWorkoutOpen, setAddWorkoutOpen] = useState(false);
+  const [editWorkoutOpen, setEditWorkoutOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [workoutToEdit, setWorkoutToEdit] = useState<Workout | null>(null);
+  const [workoutToDelete, setWorkoutToDelete] = useState<string | null>(null);
+  const [newAvatarFile, setNewAvatarFile] = useState<File | null>(null);
+  const avatarInputRef = useRef<HTMLInputElement>(null);
+
   if (isLoading) {
     return (
       <div className="container mx-auto px-4 py-8">
@@ -82,15 +92,6 @@ export default function MyAthlete() {
       </div>
     );
   }
-  const queryClient = useQueryClient();
-  const [isEditing, setIsEditing] = useState(false);
-  const [addWorkoutOpen, setAddWorkoutOpen] = useState(false);
-  const [editWorkoutOpen, setEditWorkoutOpen] = useState(false);
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [workoutToEdit, setWorkoutToEdit] = useState<Workout | null>(null);
-  const [workoutToDelete, setWorkoutToDelete] = useState<string | null>(null);
-  const [newAvatarFile, setNewAvatarFile] = useState<File | null>(null);
-  const avatarInputRef = useRef<HTMLInputElement>(null);
 
   const workouts = useMemo(() => {
     if (!userAthlete?.pages) return [];
