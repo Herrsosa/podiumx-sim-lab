@@ -15,7 +15,7 @@ import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
 import { useMyAthlete } from '@/hooks/useMyAthlete';
 import { useAthleteTrades } from '@/hooks/useAthleteTrades';
-import { useUserRole } from '@/hooks/useUserRole';
+
 import { supabase } from '@/integrations/supabase/client';
 import AddWorkoutModal from '@/components/AddWorkoutModal';
 import EditWorkoutModal from '@/components/EditWorkoutModal';
@@ -94,7 +94,7 @@ export default function MyAthlete() {
 
   const workouts = useMemo(() => {
     if (!userAthlete?.pages) return [];
-    return userAthlete.pages.flatMap(page => page.posts.map(post => ({
+    return userAthlete.pages.flatMap(page => page.athlete.posts.map(post => ({
       id: post.id,
       ...(post.workout_json as Workout),
       mediaUrl: post.image_url,
@@ -103,12 +103,12 @@ export default function MyAthlete() {
   }, [userAthlete?.pages]);
 
   const [editedProfile, setEditedProfile] = useState({
-    displayName: userAthlete?.name || '',
-    sport: userAthlete?.sport || 'Running',
-    location: userAthlete?.location || '',
-    bio: userAthlete?.bio || '',
-    avatar: userAthlete?.avatar || '',
-    socials: userAthlete?.socials || {},
+    displayName: userAthlete?.pages[0].athlete.name || '',
+    sport: userAthlete?.pages[0].athlete.sport || 'Running',
+    location: userAthlete?.pages[0].athlete.location || '',
+    bio: userAthlete?.pages[0].athlete.bio || '',
+    avatar: userAthlete?.pages[0].athlete.avatar || '',
+    socials: userAthlete?.pages[0].athlete.socials || {},
   });
 
   const priceHistory = useMemo(() => {
@@ -203,7 +203,7 @@ export default function MyAthlete() {
   }, [queryClient]);
 
   const handleEditWorkout = (workout: Workout) => {
-    const post = userAthlete?.posts.find(p => p.id === workout.id);
+    const post = userAthlete?.pages.flatMap(page => page.athlete.posts).find(p => p.id === workout.id);
     if (post) {
       setWorkoutToEdit(post);
       setEditWorkoutOpen(true);
@@ -459,7 +459,7 @@ export default function MyAthlete() {
       </Card>
 
       {/* Price Chart - Only for Athletes */}
-      {isAthlete && userAthlete && priceHistory.length > 0 && (
+      {userAthlete?.pages[0].athlete.role === 'athlete' && userAthlete && priceHistory.length > 0 && (
         <Card className="glass-card mb-6">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">

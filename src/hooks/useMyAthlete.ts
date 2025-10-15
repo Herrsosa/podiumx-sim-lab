@@ -100,10 +100,7 @@ export function useMyAthlete() {
     },
     enabled: !!user?.id,
     getNextPageParam: (lastPage) => lastPage?.nextPage,
-    select: (data) => ({
-      ...data,
-      pages: data.pages.flatMap(page => page.athlete)
-    })
+
   });
 
   return {
