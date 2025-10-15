@@ -50,6 +50,68 @@ export default function MyAthlete() {
   const [newAvatarFile, setNewAvatarFile] = useState<File | null>(null);
   const avatarInputRef = useRef<HTMLInputElement>(null);
 
+  const [editedProfile, setEditedProfile] = useState({
+    displayName: '',
+    sport: 'Running',
+    location: '',
+    bio: '',
+    avatar: '',
+    socials: {},
+  });
+
+  useEffect(() => {
+    if (userAthlete?.pages && userAthlete.pages.length > 0 && userAthlete.pages[0].athlete) {
+      setEditedProfile({
+        displayName: userAthlete.pages[0].athlete.name || '',
+        sport: userAthlete.pages[0].athlete.sport || 'Running',
+        location: userAthlete.pages[0].athlete.location || '',
+        bio: userAthlete.pages[0].athlete.bio || '',
+        avatar: userAthlete.pages[0].athlete.avatar || '',
+        socials: userAthlete.pages[0].athlete.socials || {},
+      });
+    }
+  }, [userAthlete]);
+
+  const workouts = useMemo(() => {
+    if (!userAthlete?.pages) return [];
+    return userAthlete.pages.flatMap(page => page.athlete ? page.athlete.posts.map(post => ({
+      id: post.id,
+      ...(post.workout_json as Workout),
+      mediaUrl: post.image_url,
+      mediaType: post.image_url ? 'image' : undefined,
+    })) : []);
+  }, [userAthlete?.pages]);
+
+  const handleEditWorkout = (workout: Workout) => {
+    const post = userAthlete?.pages.flatMap(page => page.athlete ? page.athlete.posts : []).find(p => p.id === workout.id);
+    if (post) {
+      setWorkoutToEdit(post);
+      setEditWorkoutOpen(true);
+    }
+  };
+
+  const priceHistory = useMemo(() => {
+    if (!user?.id || !athleteTrades || !userAthlete?.pages || userAthlete.pages.length === 0) return [];
+    
+    // Generate price history from trades
+    const history = athleteTrades.map(trade => ({
+      timestamp: trade.timestamp,
+      price: trade.price,
+      date: new Date(trade.timestamp).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+    })).reverse();
+
+    // Add current price
+    if (userAthlete.pages[0].athlete) {
+      history.push({
+        timestamp: Date.now(),
+        price: userAthlete.pages[0].athlete.price,
+        date: 'Now',
+      });
+    }
+
+    return history;
+  }, [user?.id, athleteTrades, userAthlete]);
+
   if (isLoading) {
     return (
       <div className="container mx-auto px-4 py-8">
@@ -92,60 +154,6 @@ export default function MyAthlete() {
       </div>
     );
   }
-
-  const workouts = useMemo(() => {
-    if (!userAthlete?.pages) return [];
-    return userAthlete.pages.flatMap(page => page.athlete.posts.map(post => ({
-      id: post.id,
-      ...(post.workout_json as Workout),
-      mediaUrl: post.image_url,
-      mediaType: post.image_url ? 'image' : undefined,
-    })));
-  }, [userAthlete?.pages]);
-
-  const [editedProfile, setEditedProfile] = useState({
-    displayName: '',
-    sport: 'Running',
-    location: '',
-    bio: '',
-    avatar: '',
-    socials: {},
-  });
-
-  useEffect(() => {
-    if (userAthlete?.pages) {
-      setEditedProfile({
-        displayName: userAthlete.pages[0].athlete.name || '',
-        sport: userAthlete.pages[0].athlete.sport || 'Running',
-        location: userAthlete.pages[0].athlete.location || '',
-        bio: userAthlete.pages[0].athlete.bio || '',
-        avatar: userAthlete.pages[0].athlete.avatar || '',
-        socials: userAthlete.pages[0].athlete.socials || {},
-      });
-    }
-  }, [userAthlete]);
-
-  const priceHistory = useMemo(() => {
-    if (!user?.id || !athleteTrades || !userAthlete?.pages || userAthlete.pages.length === 0) return [];
-    
-    // Generate price history from trades
-    const history = athleteTrades.map(trade => ({
-      timestamp: trade.timestamp,
-      price: trade.price,
-      date: new Date(trade.timestamp).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-    })).reverse();
-
-    // Add current price
-    if (userAthlete.pages[0].athlete) {
-      history.push({
-        timestamp: Date.now(),
-        price: userAthlete.pages[0].athlete.price,
-        date: 'Now',
-      });
-    }
-
-    return history;
-  }, [user?.id, athleteTrades, userAthlete]);
 
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
