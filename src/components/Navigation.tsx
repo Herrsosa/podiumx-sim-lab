@@ -55,7 +55,7 @@ export default function Navigation() {
   }, []);
 
   const prefetchMyAthlete = useCallback(() => {
-    void import('../pages/MyAthlete');
+    void import('../pages/MyAthletePage');
   }, []);
 
   return (

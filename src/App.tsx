@@ -20,7 +20,7 @@ import { useOnboardingStatus } from "@/hooks/useOnboardingStatus";
 const Onboarding = lazy(() => import("./pages/Onboarding"));
 const AthleteDetail = lazy(() => import("./pages/AthleteDetail"));
 const Portfolio = lazy(() => import("./pages/Portfolio"));
-const MyAthlete = lazy(() => import("./pages/MyAthlete"));
+const MyAthlete = lazy(() => import("./pages/MyAthletePage"));
 const Marketplace = lazy(() => import("./pages/Marketplace"));
 
 interface RouteGuardProps {
@@ -31,10 +31,7 @@ interface RouteGuardProps {
 function RouteGuard({ requireAuth = false, children }: RouteGuardProps) {
   const { user, loading } = useAuth();
   const location = useLocation();
-  const onboardingQuery = useOnboardingStatus();
-  const onboardingData = onboardingQuery.data;
-  const onboardingCompleted = onboardingData?.onboardingCompleted ?? false;
-  const needsOnboarding = onboardingData?.needsOnboarding ?? false;
+  const { onboardingCompleted, needsOnboarding, isLoading: onboardingIsLoading } = useOnboardingStatus();
 
   const isOnboardingRoute = location.pathname.startsWith('/onboarding');
   const isProtected = requireAuth;
@@ -43,7 +40,7 @@ function RouteGuard({ requireAuth = false, children }: RouteGuardProps) {
     return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
   }
 
-  if (user && onboardingQuery.isLoading) {
+  if (user && onboardingIsLoading) {
     return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
   }
 
