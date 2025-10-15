@@ -153,6 +153,7 @@ export const AthleteCard = memo(({ athlete, chartData, onClick, onMouseEnter }: 
             </div>
           </div>
         </div>
+      </CardContent>
     </Card>
   );
 }, (prev, next) => {
