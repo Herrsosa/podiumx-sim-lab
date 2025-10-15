@@ -10,11 +10,12 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Workout, Sport } from '@/types';
+import { Workout, Sport, Post } from '@/types';
 import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
 import { useMyAthlete } from '@/hooks/useMyAthlete';
 import { useAthleteTrades } from '@/hooks/useAthleteTrades';
+import { useWorkoutEditor } from '@/hooks/useWorkoutEditor';
 
 import { supabase } from '@/integrations/supabase/client';
 import AddWorkoutModal from '@/components/AddWorkoutModal';
@@ -34,25 +35,28 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 
-import { Skeleton } from '@/components/ui/skeleton';
-
-export default function MyAthlete() {
+export default function MyAthletePage() {
   const { user } = useAuth();
-  const { data: userAthlete, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading } = useMyAthlete();
+  const { data: myAthletePage, pages, fetchNextPage, hasNextPage, isFetchingNextPage } = useMyAthlete();
   const { data: athleteTrades } = useAthleteTrades(user?.id || '');
   const queryClient = useQueryClient();
   const [isEditing, setIsEditing] = useState(false);
   const [addWorkoutOpen, setAddWorkoutOpen] = useState(false);
-  const [editWorkoutOpen, setEditWorkoutOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [workoutToEdit, setWorkoutToEdit] = useState<Workout | null>(null);
   const [workoutToDelete, setWorkoutToDelete] = useState<string | null>(null);
   const [newAvatarFile, setNewAvatarFile] = useState<File | null>(null);
   const avatarInputRef = useRef<HTMLInputElement>(null);
 
-  const [editedProfile, setEditedProfile] = useState({
+  const [editedProfile, setEditedProfile] = useState<{
+    displayName: string;
+    sport: Sport;
+    location: string;
+    bio: string;
+    avatar: string;
+    socials: { instagram?: string; strava?: string; twitter?: string };
+  }>({
     displayName: '',
-    sport: 'Running',
+    sport: 'Running' as Sport,
     location: '',
     bio: '',
     avatar: '',
@@ -60,100 +64,51 @@ export default function MyAthlete() {
   });
 
   useEffect(() => {
-    if (userAthlete?.pages && userAthlete.pages.length > 0 && userAthlete.pages[0].athlete) {
+    const athlete = myAthletePage?.athlete;
+    if (athlete) {
       setEditedProfile({
-        displayName: userAthlete.pages[0].athlete.name || '',
-        sport: userAthlete.pages[0].athlete.sport || 'Running',
-        location: userAthlete.pages[0].athlete.location || '',
-        bio: userAthlete.pages[0].athlete.bio || '',
-        avatar: userAthlete.pages[0].athlete.avatar || '',
-        socials: userAthlete.pages[0].athlete.socials || {},
+        displayName: athlete.name || '',
+        sport: athlete.sport || 'Running',
+        location: athlete.location || '',
+        bio: athlete.bio || '',
+        avatar: athlete.avatar || '',
+        socials: athlete.socials || {},
       });
     }
-  }, [userAthlete]);
+  }, [myAthletePage]);
 
   const workouts = useMemo(() => {
-    if (!userAthlete?.pages) return [];
-    return userAthlete.pages.flatMap(page => page.athlete ? page.athlete.posts.map(post => ({
+    const allPosts = pages.flatMap(p => p?.athlete?.posts ?? []);
+    return allPosts.map(post => ({
       id: post.id,
       ...(post.workout_json as Workout),
-      mediaUrl: post.image_url,
-      mediaType: post.image_url ? 'image' : undefined,
-    })) : []);
-  }, [userAthlete?.pages]);
+      mediaUrl: post.image_url ?? undefined,
+      mediaType: post.image_url ? ('image' as const) : undefined,
+    }));
+  }, [pages]);
 
-  const handleEditWorkout = (workout: Workout) => {
-    const post = userAthlete?.pages.flatMap(page => page.athlete ? page.athlete.posts : []).find(p => p.id === workout.id);
-    if (post) {
-      setWorkoutToEdit(post);
-      setEditWorkoutOpen(true);
-    }
-  };
+  const findPostById = useCallback<(id: string) => Post | undefined>((id) => {
+    const posts = pages.flatMap(p => p?.athlete?.posts ?? []);
+    return posts.find((p) => p.id === id);
+  }, [pages]);
+
+  const { editingWorkout, setEditingWorkout, open, setOpen, handleEditWorkout } = useWorkoutEditor(findPostById);
 
   const priceHistory = useMemo(() => {
-    if (!user?.id || !athleteTrades || !userAthlete?.pages || userAthlete.pages.length === 0) return [];
-    
-    // Generate price history from trades
-    const history = athleteTrades.map(trade => ({
+    const athlete = myAthletePage?.athlete;
+    if (!user?.id || !athleteTrades || !athlete) return [];
+    const history = athleteTrades.map((trade: any) => ({
       timestamp: trade.timestamp,
-      price: trade.price,
+      price: trade.price_after as number,
       date: new Date(trade.timestamp).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
     })).reverse();
-
-    // Add current price
-    if (userAthlete.pages[0].athlete) {
-      history.push({
-        timestamp: Date.now(),
-        price: userAthlete.pages[0].athlete.price,
-        date: 'Now',
-      });
-    }
-
+    history.push({
+      timestamp: Date.now(),
+      price: athlete.price,
+      date: 'Now',
+    });
     return history;
-  }, [user?.id, athleteTrades, userAthlete]);
-
-  if (isLoading) {
-    return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="mb-8">
-          <Skeleton className="h-10 w-48" />
-          <Skeleton className="h-4 w-64 mt-2" />
-        </div>
-        <Card className="glass-card mb-6">
-          <CardContent className="p-6">
-            <div className="flex items-start gap-6">
-              <Skeleton className="h-24 w-24 rounded-full" />
-              <div className="flex-1 space-y-4">
-                <Skeleton className="h-8 w-48" />
-                <Skeleton className="h-4 w-64" />
-                <Skeleton className="h-10 w-32" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="glass-card mb-6">
-          <CardHeader>
-            <Skeleton className="h-8 w-48" />
-          </CardHeader>
-          <CardContent>
-            <Skeleton className="h-72 w-full" />
-          </CardContent>
-        </Card>
-        <Card className="glass-card">
-          <CardHeader>
-            <Skeleton className="h-8 w-48" />
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <Skeleton className="h-24 w-full" />
-              <Skeleton className="h-24 w-full" />
-              <Skeleton className="h-24 w-full" />
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
+  }, [user?.id, athleteTrades, myAthletePage]);
 
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -171,8 +126,8 @@ export default function MyAthlete() {
 
       if (newAvatarFile) {
         // If there was an old avatar, delete it
-        if (userAthlete?.pages[0]?.athlete?.avatar && userAthlete.pages[0].athlete.avatar.includes('avatars')) {
-          const oldImageKey = userAthlete.pages[0].athlete.avatar.split('/avatars/').pop();
+        if (myAthletePage?.athlete?.avatar && myAthletePage.athlete.avatar.includes('avatars')) {
+          const oldImageKey = myAthletePage.athlete.avatar.split('/avatars/').pop();
           if (oldImageKey) {
             await supabase.storage.from('avatars').remove([oldImageKey]);
           }
@@ -220,17 +175,9 @@ export default function MyAthlete() {
   };
 
   const handleWorkoutSuccess = useCallback(() => {
-    queryClient.invalidateQueries({ queryKey: ['athletes'] });
+    queryClient.invalidateQueries({ queryKey: ['my-athlete', user?.id] });
     setAddWorkoutOpen(false);
-  }, [queryClient]);
-
-  const handleEditWorkout = (workout: Workout) => {
-    const post = userAthlete?.pages.flatMap(page => page.athlete.posts).find(p => p.id === workout.id);
-    if (post) {
-      setWorkoutToEdit(post);
-      setEditWorkoutOpen(true);
-    }
-  };
+  }, [queryClient, user?.id]);
 
   const handleDeleteClick = (workoutId: string) => {
     setWorkoutToDelete(workoutId);
@@ -251,7 +198,7 @@ export default function MyAthlete() {
       toast.success('Workout deleted');
       
       // Refresh data
-      queryClient.invalidateQueries({ queryKey: ['athletes'] });
+      queryClient.invalidateQueries({ queryKey: ['my-athlete', user?.id] });
     } catch (error: unknown) {
       toast.error((error as Error).message || 'Failed to delete workout');
     } finally {
@@ -274,9 +221,9 @@ export default function MyAthlete() {
             {/* Avatar */}
             <div className="relative">
               <div className="h-24 w-24 overflow-hidden rounded-full ring-4 ring-primary/20">
-                {(editedProfile.avatar || userAthlete?.pages[0]?.athlete?.avatar) ? (
+                {(editedProfile.avatar || myAthletePage?.athlete?.avatar) ? (
                   <img
-                    src={editedProfile.avatar || userAthlete?.pages[0]?.athlete?.avatar}
+                    src={editedProfile.avatar || myAthletePage?.athlete?.avatar}
                     alt={editedProfile.displayName}
                     className="h-full w-full object-cover"
                     onError={(e) => {
@@ -417,25 +364,25 @@ export default function MyAthlete() {
               ) : (
                 <>
                   <div>
-                    <h2 className="text-2xl font-bold">{userAthlete?.pages[0]?.athlete?.name || 'No name'}</h2>
+                    <h2 className="text-2xl font-bold">{myAthletePage?.athlete?.name || 'No name'}</h2>
                     <div className="mt-2 flex gap-2">
-                      <Badge>{userAthlete?.pages[0]?.athlete?.sport || 'Sport'}</Badge>
-                      {userAthlete?.pages[0]?.athlete?.location && <Badge variant="outline">{userAthlete.pages[0].athlete.location}</Badge>}
+                      <Badge>{myAthletePage?.athlete?.sport || 'Sport'}</Badge>
+                      {myAthletePage?.athlete?.location && <Badge variant="outline">{myAthletePage.athlete.location}</Badge>}
                     </div>
                   </div>
-                  <p className="text-muted-foreground">{userAthlete?.pages[0]?.athlete?.bio || 'No bio'}</p>
-                  {(userAthlete?.pages[0]?.athlete?.socials.instagram || userAthlete?.pages[0]?.athlete?.socials.strava) && (
+                  <p className="text-muted-foreground">{myAthletePage?.athlete?.bio || 'No bio'}</p>
+                  {(myAthletePage?.athlete?.socials?.instagram || myAthletePage?.athlete?.socials?.strava) && (
                     <div className="flex gap-4 text-sm">
-                      {userAthlete?.pages[0]?.athlete?.socials.instagram && (
+                      {myAthletePage?.athlete?.socials?.instagram && (
                         <span className="flex items-center gap-1">
                           <LinkIcon className="h-3 w-3" />
-                          {userAthlete.pages[0].athlete.socials.instagram}
+                          {myAthletePage.athlete.socials.instagram}
                         </span>
                       )}
-                      {userAthlete?.pages[0]?.athlete?.socials.strava && (
+                      {myAthletePage?.athlete?.socials?.strava && (
                         <span className="flex items-center gap-1">
                           <LinkIcon className="h-3 w-3" />
-                          {userAthlete.pages[0].athlete.socials.strava}
+                          {myAthletePage.athlete.socials.strava}
                         </span>
                       )}
                     </div>
@@ -455,12 +402,12 @@ export default function MyAthlete() {
                       variant="outline"
                       onClick={() => {
                         setEditedProfile({
-                          displayName: userAthlete?.pages[0]?.athlete?.name || '',
-                          sport: userAthlete?.pages[0]?.athlete?.sport || 'Running',
-                          location: userAthlete?.pages[0]?.athlete?.location || '',
-                          bio: userAthlete?.pages[0]?.athlete?.bio || '',
-                          avatar: userAthlete?.pages[0]?.athlete?.avatar || '',
-                          socials: userAthlete?.pages[0]?.athlete?.socials || {},
+                          displayName: myAthletePage?.athlete?.name || '',
+                          sport: (myAthletePage?.athlete?.sport || 'Running') as Sport,
+                          location: myAthletePage?.athlete?.location || '',
+                          bio: myAthletePage?.athlete?.bio || '',
+                          avatar: myAthletePage?.athlete?.avatar || '',
+                          socials: myAthletePage?.athlete?.socials || {},
                         });
                         setIsEditing(false);
                       }}
@@ -481,7 +428,7 @@ export default function MyAthlete() {
       </Card>
 
       {/* Price Chart - Only for Athletes */}
-      {userAthlete?.pages[0]?.athlete?.role === 'athlete' && priceHistory.length > 0 && (
+      {myAthletePage?.athlete && priceHistory.length > 0 && (
         <Card className="glass-card mb-6">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -493,15 +440,15 @@ export default function MyAthlete() {
             <div className="grid gap-4 sm:grid-cols-3 mb-6">
               <div>
                 <p className="text-sm text-muted-foreground">Current Price</p>
-                <p className="text-2xl font-bold">${userAthlete.pages[0].athlete.price.toFixed(4)}</p>
+                <p className="text-2xl font-bold">${myAthletePage?.athlete?.price.toFixed(4)}</p>
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Market Cap</p>
-                <p className="text-2xl font-bold">${userAthlete.pages[0].athlete.marketCap.toFixed(2)}</p>
+                <p className="text-2xl font-bold">${myAthletePage?.athlete?.marketCap.toFixed(2)}</p>
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">24h Volume</p>
-                <p className="text-2xl font-bold">${userAthlete.pages[0].athlete.volume24h.toFixed(2)}</p>
+                <p className="text-2xl font-bold">${myAthletePage?.athlete?.volume24h.toFixed(2)}</p>
               </div>
             </div>
             <ResponsiveContainer width="100%" height={300}>
@@ -599,10 +546,10 @@ export default function MyAthlete() {
 
         {/* Community Chat Tab */}
         <TabsContent value="community">
-          {userAthlete && user && (
+          {myAthletePage && user && (
             <TokengatedChat
               athleteId={user.id}
-              athleteName={userAthlete.pages[0].athlete.name}
+              athleteName={myAthletePage?.athlete?.name || ''}
               userHoldings={1}
               onBuyClick={() => {}}
             />
@@ -644,14 +591,14 @@ export default function MyAthlete() {
       )}
 
       {/* Edit Workout Modal */}
-      {workoutToEdit && (
+      {editingWorkout && (
         <EditWorkoutModal
-          open={editWorkoutOpen}
-          onOpenChange={setEditWorkoutOpen}
-          workoutPost={workoutToEdit}
+          open={open}
+          onOpenChange={setOpen}
+          workoutPost={editingWorkout}
           onSuccess={() => {
-            queryClient.invalidateQueries({ queryKey: ['athletes'] });
-            setEditWorkoutOpen(false);
+            queryClient.invalidateQueries({ queryKey: ['my-athlete', user?.id] });
+            setOpen(false);
           }}
         />
       )}

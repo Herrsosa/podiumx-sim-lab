@@ -1,11 +1,16 @@
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { Athlete, Sport, Workout } from '@/types';
+import { Athlete, Sport, Workout, Post } from '@/types';
 import { athleteAvatars } from '@/utils/athleteAvatars';
 import { priceAt } from '@/utils/pricing';
 import { resolveAvatarUrl } from '@/utils/avatar';
 import { useAuth } from './useAuth';
 import { useAthleteMetrics } from './useAthleteMetrics';
+
+type MyAthletePageResult = {
+  athlete: Athlete;
+  nextPage?: number;
+};
 
 const POSTS_PAGE_SIZE = 10;
 
@@ -13,12 +18,13 @@ export function useMyAthlete() {
   const { user } = useAuth();
   const { data: metricsMap, isLoading: metricsLoading, isFetching: metricsFetching } = useAthleteMetrics('24h');
 
-  const queryResult = useInfiniteQuery({
+  const queryResult = useInfiniteQuery<MyAthletePageResult>({
     queryKey: ['my-athlete', user?.id],
     queryFn: async ({ pageParam = 0 }) => {
       if (!user?.id) return null;
 
-      const from = pageParam * POSTS_PAGE_SIZE;
+      const currentPage = Number(pageParam) || 0;
+      const from = currentPage * POSTS_PAGE_SIZE;
       const to = from + POSTS_PAGE_SIZE - 1;
 
       const { data: profile, error: profileError } = await supabase
@@ -38,7 +44,7 @@ export function useMyAthlete() {
 
       const token = tokens?.[0];
 
-      const { data: posts, error: postsError } = await supabase
+      const { data: rawPosts, error: postsError } = await supabase
         .from('posts')
         .select('*')
         .eq('author_id', user.id)
@@ -55,8 +61,19 @@ export function useMyAthlete() {
       const price = priceAt(supply, { a, b, c });
       const marketCap = price * supply;
 
-      // Convert posts to workouts format
-      const workouts = (posts || [])
+      // Convert posts to typed objects and workouts format
+      const posts: Post[] = (rawPosts || []).map((p: any) => ({
+        id: p.id,
+        created_at: p.created_at,
+        workout_json: p.workout_json as unknown as Workout,
+        image_url: p.image_url,
+        text: p.text,
+        token_gated: p.token_gated,
+        strava_activity_id: p.strava_activity_id,
+        author_id: p.author_id,
+      }));
+
+      const workouts = posts
         .filter((p) => p.workout_json)
         .map((p) => ({
           id: p.id,
@@ -85,7 +102,7 @@ export function useMyAthlete() {
         change24h: 0,
         volume24h: 0,
         workouts,
-        posts: posts || [],
+        posts,
       };
 
       const metrics = metricsMap?.get(athlete.id);
@@ -96,17 +113,19 @@ export function useMyAthlete() {
 
       return {
         athlete,
-        nextPage: posts.length === POSTS_PAGE_SIZE ? pageParam + 1 : undefined,
+        nextPage: posts.length === POSTS_PAGE_SIZE ? currentPage + 1 : undefined,
       };
     },
     enabled: !!user?.id,
+    initialPageParam: 0,
     getNextPageParam: (lastPage) => lastPage?.nextPage,
 
   });
 
   return {
     ...queryResult,
-    data: queryResult.data?.pages[0],
+    data: queryResult.data?.pages?.[0],
+    pages: queryResult.data?.pages ?? [],
     isLoading: queryResult.isLoading || metricsLoading,
     isFetching: queryResult.isFetching || metricsFetching,
     isPending: queryResult.isPending || metricsLoading,
