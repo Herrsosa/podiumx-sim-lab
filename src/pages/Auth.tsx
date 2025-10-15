@@ -58,7 +58,7 @@ export default function Auth() {
     } catch (error: unknown) {
       toast({
         title: "Error",
-        description: error.message,
+        description: error instanceof Error ? error.message : 'Sign up failed',
         variant: "destructive",
       });
     } finally {
@@ -85,7 +85,7 @@ export default function Auth() {
     } catch (error: unknown) {
       toast({
         title: "Error",
-        description: error.message,
+        description: error instanceof Error ? error.message : 'Sign in failed',
         variant: "destructive",
       });
     } finally {

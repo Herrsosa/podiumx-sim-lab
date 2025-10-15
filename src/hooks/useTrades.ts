@@ -35,7 +35,7 @@ export function useTrades(athleteId?: string) {
 
       if (error) throw error;
 
-      const trades: Trade[] = ((data ?? []) as DbTrade[]).map((trade) => {
+      const trades: Trade[] = ((data ?? []) as any).map((trade: any) => {
         const profile = trade.profiles;
         return {
           id: trade.id,
@@ -71,7 +71,7 @@ export function useUserTrades() {
 
       if (error) throw error;
 
-      const trades: Trade[] = (data as DbTrade[]).map((trade) => {
+      const trades: Trade[] = (data as any).map((trade: any) => {
         const profile = trade.profiles;
         return {
           id: trade.id,

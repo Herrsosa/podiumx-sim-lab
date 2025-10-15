@@ -9,7 +9,7 @@ import rioAvatar from '@/assets/athletes/rio.jpg';
 import zaraAvatar from '@/assets/athletes/zara.jpg';
 import maxAvatar from '@/assets/athletes/max.jpg';
 
-const ATHLETE_DATA: Omit<Athlete, 'supply' | 'reserve' | 'price' | 'marketCap' | 'athleteRevenue' | 'change24h' | 'volume24h' | 'workouts'>[] = [
+const ATHLETE_DATA: Omit<Athlete, 'supply' | 'reserve' | 'price' | 'marketCap' | 'athleteRevenue' | 'change24h' | 'volume24h' | 'workouts' | 'posts'>[] = [
   {
     id: '1',
     slug: 'nils',
@@ -169,6 +169,7 @@ export function generateSeedAthletes(): Athlete[] {
       change24h,
       volume24h,
       workouts: generateWorkoutsForAthlete(athlete.id, athlete.sport),
+      posts: [],
     };
   });
 }

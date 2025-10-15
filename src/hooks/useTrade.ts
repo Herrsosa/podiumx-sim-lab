@@ -49,7 +49,7 @@ export function useTrade() {
       });
     },
     onError: (error: unknown) => {
-      const errorMessage = error.message || 'An error occurred while processing your trade';
+      const errorMessage = error instanceof Error ? error.message : 'An error occurred while processing your trade';
       
       // Contextual title based on error content
       let title = 'Trade Failed';
@@ -83,16 +83,8 @@ export function useFaucet() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
 
-      const { data, error } = await supabase.rpc('faucet_test_usdc', { amount });
-
-      if (error) {
-        console.warn('faucet_test_usdc RPC failed, falling back to walletService', error);
-        await walletService.addFunds(user.id, amount);
-        return { amount };
-      }
-
-      // Some RPC implementations return the updated balance; we ignore for now
-      void data;
+      // Use walletService directly since faucet_test_usdc RPC doesn't exist
+      await walletService.addFunds(user.id, amount);
       return { amount };
     },
     onSuccess: async (result) => {

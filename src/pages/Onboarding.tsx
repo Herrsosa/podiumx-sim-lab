@@ -34,7 +34,7 @@ export default function Onboarding() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  const { data: onboardingStatus } = useOnboardingStatus();
+  const onboardingStatus = useOnboardingStatus();
   const { onboardingRole, setOnboardingRole } = useLocalStore();
   const [step, setStep] = useState<OnboardingStep>('ROLE_SELECTION');
   const [submitting, setSubmitting] = useState(false);
@@ -117,7 +117,7 @@ export default function Onboarding() {
         .maybeSingle();
 
       const fallbackHandleBase = user.email?.split('@')[0]?.replace(/[^a-zA-Z0-9]/g, '') || `user-${user.id.slice(0, 6)}`;
-      const payload: Record<string, unknown> = {
+      const payload: any = {
         id: user.id,
         role,
         onboarding_completed: false,
@@ -162,7 +162,7 @@ export default function Onboarding() {
     setCheckingProfile(false);
   }, [user]);
 
-  const persistedRole = onboardingStatus?.role;
+  const persistedRole = onboardingStatus.data?.role;
 
   useEffect(() => {
     if (!user || !persistedRole) return;
@@ -372,7 +372,7 @@ export default function Onboarding() {
       navigate('/portfolio', { replace: true });
     } catch (error: unknown) {
       console.error('Onboarding error:', error);
-      toast.error(error.message || "Failed to complete onboarding");
+      toast.error(error instanceof Error ? error.message : "Failed to complete onboarding");
     } finally {
       setSubmitting(false);
     }

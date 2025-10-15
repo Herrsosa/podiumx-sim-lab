@@ -93,7 +93,7 @@ export function MessageComposerModal({
     } catch (error: unknown) {
       toast({
         title: "Message failed",
-        description: error?.message || "Try again in a moment.",
+        description: error instanceof Error ? error.message : "Try again in a moment.",
         variant: "destructive",
       });
     } finally {

@@ -186,7 +186,7 @@ export default function EditWorkoutModal({ open, onOpenChange, workoutPost, onSu
 
             <div>
               <Label htmlFor="edit-type">Type</Label>
-              <Select value={formData.type} onValueChange={(value) => setFormData({ ...formData, type: value })}>
+              <Select value={formData.type} onValueChange={(value) => setFormData({ ...formData, type: value as Workout['type'] })}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>

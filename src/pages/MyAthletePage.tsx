@@ -595,7 +595,10 @@ export default function MyAthletePage() {
         <EditWorkoutModal
           open={open}
           onOpenChange={setOpen}
-          workoutPost={editingWorkout}
+          workoutPost={{
+            ...editingWorkout,
+            workout_json: editingWorkout.workout_json as any as Workout
+          }}
           onSuccess={() => {
             queryClient.invalidateQueries({ queryKey: ['my-athlete', user?.id] });
             setOpen(false);
