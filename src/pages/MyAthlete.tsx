@@ -10,10 +10,10 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Workout } from '@/types';
+import { Workout, Sport } from '@/types';
 import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
-import { useAthletes } from '@/hooks/useAthletes';
+import { useMyAthlete } from '@/hooks/useMyAthlete';
 import { useTrades } from '@/hooks/useTrades';
 import { useUserRole } from '@/hooks/useUserRole';
 import { supabase } from '@/integrations/supabase/client';
@@ -36,7 +36,7 @@ import {
 
 export default function MyAthlete() {
   const { user } = useAuth();
-  const { data: athletes } = useAthletes();
+  const { data: userAthlete } = useMyAthlete();
   const { data: allTrades } = useTrades();
   const { isAthlete, loading: roleLoading } = useUserRole();
   const queryClient = useQueryClient();
@@ -44,21 +44,16 @@ export default function MyAthlete() {
   const [addWorkoutOpen, setAddWorkoutOpen] = useState(false);
   const [editWorkoutOpen, setEditWorkoutOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [workoutToEdit, setWorkoutToEdit] = useState<any>(null);
+  const [workoutToEdit, setWorkoutToEdit] = useState<Workout | null>(null);
   const [workoutToDelete, setWorkoutToDelete] = useState<string | null>(null);
   const [newAvatarFile, setNewAvatarFile] = useState<File | null>(null);
   const avatarInputRef = useRef<HTMLInputElement>(null);
-
-  const userAthlete = useMemo(() => 
-    athletes?.find(a => a.id === user?.id),
-    [athletes, user?.id]
-  );
 
   const workouts = useMemo(() => {
     if (!userAthlete?.posts) return [];
     return userAthlete.posts.map(post => ({
       id: post.id,
-      ...(post.workout_json as any),
+      ...(post.workout_json as Workout),
       mediaUrl: post.image_url,
       // Assuming mediaType is image for now, can be enhanced later
       mediaType: post.image_url ? 'image' : undefined,
@@ -154,13 +149,12 @@ export default function MyAthlete() {
 
       // After saving, reset the new avatar file state
       setNewAvatarFile(null);
-      // Also, invalidate queries to refetch the user data with the new avatar URL
-      queryClient.invalidateQueries({ queryKey: ['athletes'] });
+      queryClient.invalidateQueries({ queryKey: ['my-athlete', user?.id] });
 
       setIsEditing(false);
       toast.success('Profile updated!');
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to update profile');
+    } catch (error: unknown) {
+      toast.error((error as Error).message || 'Failed to update profile');
     }
   };
 
@@ -197,8 +191,8 @@ export default function MyAthlete() {
       
       // Refresh data
       queryClient.invalidateQueries({ queryKey: ['athletes'] });
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to delete workout');
+    } catch (error: unknown) {
+      toast.error((error as Error).message || 'Failed to delete workout');
     } finally {
       setDeleteDialogOpen(false);
       setWorkoutToDelete(null);
@@ -279,7 +273,7 @@ export default function MyAthlete() {
                       <Select
                         value={editedProfile.sport}
                         onValueChange={(sport) =>
-                          setEditedProfile({ ...editedProfile, sport: sport as any })
+                          setEditedProfile({ ...editedProfile, sport: sport as Sport })
                         }
                       >
                         <SelectTrigger>

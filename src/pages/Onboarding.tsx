@@ -16,7 +16,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useLocalStore } from "@/store/useLocalStore";
 import { FaucetButton } from "@/components/FaucetButton";
 import { useTrade } from "@/hooks/useTrade";
-import { useAthletes } from "@/hooks/useAthletes";
+import { usePaginatedAthletes } from "@/hooks/usePaginatedAthletes";
 import { initWallet } from "@/hooks/useTrade";
 import { useOnboardingStatus } from "@/hooks/useOnboardingStatus";
 
@@ -102,7 +102,7 @@ export default function Onboarding() {
     };
   }, [name]);
 
-  const { data: athletes } = useAthletes();
+  const { data: athletes } = usePaginatedAthletes();
   const trade = useTrade();
 
   const profileQueryKey = user ? ['onboarding-status', user.id] : ['onboarding-status'];
@@ -188,7 +188,7 @@ export default function Onboarding() {
         setStep('ATHLETE_PROFILE');
       }
     }
-  }, [onboardingRole, hasStartedOnboarding]);
+  }, [onboardingRole, hasStartedOnboarding, step]);
 
   const handleRoleSelection = (role: 'fan' | 'athlete') => {
     setHasStartedOnboarding(true);
@@ -243,8 +243,8 @@ export default function Onboarding() {
       if (error) throw error;
       await queryClient.invalidateQueries({ queryKey: profileQueryKey });
       setStep('FAN_WALLET');
-    } catch (error: any) {
-      toast.error(error.message || "Failed to save profile");
+    } catch (error: unknown) {
+      toast.error((error as Error).message || "Failed to save profile");
     } finally {
       setSubmitting(false);
     }
@@ -370,7 +370,7 @@ export default function Onboarding() {
 
       toast.success("Welcome to PodiumX! 🎉");
       navigate('/portfolio', { replace: true });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Onboarding error:', error);
       toast.error(error.message || "Failed to complete onboarding");
     } finally {
@@ -382,7 +382,7 @@ export default function Onboarding() {
     if (!athletes) return [];
     const filtered = user ? athletes.filter((athlete) => athlete.id !== user.id) : athletes;
     return filtered.slice(0, 3);
-  }, [athletes, user?.id]);
+  }, [athletes, user]);
 
   if (checkingProfile) {
     return (

@@ -11,7 +11,7 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { H1, Body } from '@/components/ui/typography';
 import { formatMoney, formatNumber, safeNumber } from '@/lib/format';
 import { useWallet } from '@/hooks/useWallet';
-import { useAthletes } from '@/hooks/useAthletes';
+import { useAthletesByIds } from '@/hooks/useAthletesByIds';
 import { useUserTrades } from '@/hooks/useTrades';
 import { exportPositionsToCSV, exportTradesToCSV } from '@/utils/csvExport';
 import { AddFundsDialog } from '@/components/funding/AddFundsDialog';
@@ -22,7 +22,8 @@ export default function Portfolio() {
     void import('./AthleteDetail');
   }, []);
   const { data: wallet, isLoading: walletLoading } = useWallet();
-  const { data: athletes, isLoading: athletesLoading } = useAthletes();
+  const athleteIds = useMemo(() => Object.keys(wallet?.positions || {}), [wallet]);
+  const { data: athletes, isLoading: athletesLoading } = useAthletesByIds(athleteIds);
   const { data: userTrades, isLoading: tradesLoading } = useUserTrades();
 
   // Calculate realized PnL from trades - MUST be before any conditional returns
@@ -155,14 +156,10 @@ export default function Portfolio() {
       : 'text-destructive'
     : 'text-muted-foreground';
 
-  const getAthlete = (athleteId: string) => {
-    return athletes?.find((a) => a.id === athleteId);
-  };
-
   const handleExportPositions = () => {
     const exportData = positions.map((pos) => ({
       ...pos,
-      athleteName: getAthlete(pos.athleteId)?.name || 'Unknown',
+      athleteName: athletes?.find((a) => a.id === pos.athleteId)?.name || 'Unknown',
       currentPrice: pos.currentPrice,
     }));
     exportPositionsToCSV(exportData);
@@ -335,7 +332,7 @@ export default function Portfolio() {
               </TableHeader>
               <TableBody>
                 {positions.map((position) => {
-                  const athlete = getAthlete(position.athleteId);
+                  const athlete = athletes?.find((a) => a.id === position.athleteId);
                   if (!athlete) return null;
 
                   const costBasis = position.avgCost * position.quantity;
