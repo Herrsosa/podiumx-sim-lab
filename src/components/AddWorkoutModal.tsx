@@ -10,6 +10,8 @@ import { Upload, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
+import { celebrateAura } from "@/lib/celebrate";
+
 interface AddWorkoutModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -87,11 +89,10 @@ export default function AddWorkoutModal({ open, onOpenChange, athleteId, onSucce
       if (postError) throw postError;
 
       toast({
-        title: 'Workout posted!',
-        description: formData.tokenGated 
-          ? 'Only token holders can view this post'
-          : 'Your workout is now visible to everyone',
+        title: "Building that Athlete Aura! ✨",
+        description: "Workout logged — keep stacking Proof of Sweat.",
       });
+      celebrateAura();
 
       onSuccess();
       onOpenChange(false);
