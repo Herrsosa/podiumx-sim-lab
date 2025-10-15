@@ -48,7 +48,7 @@ export function useTrade() {
         description: `Filled ${variables.quantity} @ $${fillPrice.toFixed(2)}`,
       });
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       const errorMessage = error.message || 'An error occurred while processing your trade';
       
       // Contextual title based on error content

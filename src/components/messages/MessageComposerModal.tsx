@@ -13,6 +13,14 @@ import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { getOrCreateConversation, sendMessage } from "@/lib/messages";
 
+interface Message {
+  id: string;
+  conversation_id: string;
+  sender_id: string;
+  content: string;
+  created_at: string;
+}
+
 const MAX_LENGTH = 500;
 
 type MessageComposerModalProps = {
@@ -72,7 +80,7 @@ export function MessageComposerModal({
       const conversationId = await getOrCreateConversation(targetUserId);
       const reply = await sendMessage(conversationId, trimmed);
 
-      queryClient.setQueryData<any[]>(["dm_messages", conversationId], (previous) => {
+      queryClient.setQueryData<Message[]>(["dm_messages", conversationId], (previous) => {
         if (!previous) {
           return previous;
         }
@@ -82,7 +90,7 @@ export function MessageComposerModal({
       setMessage("");
       handleClose();
       toast({ title: "Message sent" });
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         title: "Message failed",
         description: error?.message || "Try again in a moment.",

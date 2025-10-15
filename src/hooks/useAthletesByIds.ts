@@ -1,34 +1,38 @@
-import { useMemo } from 'react';
+
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { Athlete, Sport } from '@/types';
+import { Athlete, Sport, Workout } from '@/types';
 import { athleteAvatars } from '@/utils/athleteAvatars';
 import { priceAt } from '@/utils/pricing';
 import { resolveAvatarUrl } from '@/utils/avatar';
 import { useAthleteMetrics } from './useAthleteMetrics';
 
-export function useAthletes() {
+export function useAthletesByIds(athleteIds: string[]) {
   const { data: metricsMap, isLoading: metricsLoading, isFetching: metricsFetching } = useAthleteMetrics('24h');
 
   const queryResult = useQuery({
-    queryKey: ['athletes'],
+    queryKey: ['athletes-by-ids', athleteIds],
     queryFn: async () => {
+      if (!athleteIds || athleteIds.length === 0) return [];
+
       const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
         .select('id, username, display_name, sport, avatar_url, bio, instagram_url, strava_url, created_at')
-        .order('created_at', { ascending: false });
+        .in('id', athleteIds);
 
       if (profilesError) throw profilesError;
 
       const { data: tokens, error: tokensError } = await supabase
         .from('athlete_tokens')
-        .select('*');
+        .select('*')
+        .in('athlete_id', athleteIds);
 
       if (tokensError) throw tokensError;
 
       const { data: posts, error: postsError } = await supabase
         .from('posts')
         .select('*')
+        .in('author_id', athleteIds)
         .order('created_at', { ascending: false });
 
       if (postsError) throw postsError;
@@ -51,7 +55,7 @@ export function useAthletes() {
           .filter((p) => p.workout_json)
           .map((p) => ({
             id: p.id,
-            ...(p.workout_json as any),
+            ...(p.workout_json as Workout),
           }));
 
         const avatarSource = athleteAvatars[profile.username] ?? profile.avatar_url;
@@ -76,35 +80,26 @@ export function useAthletes() {
           change24h: 0,
           volume24h: 0,
           workouts,
+          posts: athletePosts,
         };
       });
 
-      return athletes;
+      return athletes.map((athlete) => {
+        const metrics = metricsMap?.get(athlete.id);
+        if (!metrics) return athlete;
+
+        return {
+          ...athlete,
+          change24h: metrics.changePct,
+          volume24h: metrics.volume,
+        };
+      });
     },
+    enabled: athleteIds && athleteIds.length > 0,
   });
-
-  const athletesWithMetrics = useMemo(() => {
-    if (!queryResult.data) return undefined;
-
-    if (!metricsMap || metricsMap.size === 0) {
-      return queryResult.data;
-    }
-
-    return queryResult.data.map((athlete) => {
-      const metrics = metricsMap.get(athlete.id);
-      if (!metrics) return athlete;
-
-      return {
-        ...athlete,
-        change24h: metrics.changePct,
-        volume24h: metrics.volume,
-      };
-    });
-  }, [queryResult.data, metricsMap]);
 
   return {
     ...queryResult,
-    data: athletesWithMetrics,
     isLoading: queryResult.isLoading || metricsLoading,
     isFetching: queryResult.isFetching || metricsFetching,
     isPending: queryResult.isPending || metricsLoading,

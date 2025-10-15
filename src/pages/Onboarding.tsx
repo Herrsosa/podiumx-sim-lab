@@ -16,7 +16,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useLocalStore } from "@/store/useLocalStore";
 import { FaucetButton } from "@/components/FaucetButton";
 import { useTrade } from "@/hooks/useTrade";
-import { useAthletes } from "@/hooks/useAthletes";
+import { usePaginatedAthletes } from "@/hooks/usePaginatedAthletes";
 import { initWallet } from "@/hooks/useTrade";
 import { useOnboardingStatus } from "@/hooks/useOnboardingStatus";
 
@@ -44,6 +44,7 @@ export default function Onboarding() {
   // Common profile fields
   const [name, setName] = useState("");
   const [avatar, setAvatar] = useState("");
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
 
   // Fan-specific
   const [hasBoughtToken, setHasBoughtToken] = useState(false);
@@ -57,7 +58,51 @@ export default function Onboarding() {
   const [duration, setDuration] = useState("");
   const [notes, setNotes] = useState("");
 
-  const { data: athletes } = useAthletes();
+  // Handle validation
+  const [handleValidationStatus, setHandleValidationStatus] = useState<'idle' | 'checking' | 'available' | 'taken'>('idle');
+  const [handleValidationError, setHandleValidationError] = useState<string | null>(null);
+
+  // Fan name validation
+  const [nameValidationStatus, setNameValidationStatus] = useState<'idle' | 'checking' | 'available' | 'taken'>('idle');
+  const [nameValidationError, setNameValidationError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const handler = setTimeout(async () => {
+      if (handle.length > 2) {
+        setHandleValidationStatus('checking');
+        const safeUsername = handle.toLowerCase().replace(/\s+/g, '').slice(0, 24);
+        try {
+          const { data, error } = await supabase
+            .from('profiles')
+            .select('username')
+            .eq('username', safeUsername)
+            .maybeSingle();
+
+          if (error) throw error;
+
+          if (data) {
+            setHandleValidationStatus('taken');
+            setHandleValidationError('This handle is already taken or very similar to another.');
+          } else {
+            setHandleValidationStatus('available');
+            setHandleValidationError(null);
+          }
+        } catch (error) {
+          setHandleValidationStatus('idle');
+          console.error('Error checking handle', error);
+        }
+      } else {
+        setHandleValidationStatus('idle');
+        setHandleValidationError(null);
+      }
+    }, 500);
+
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [handle]);
+
+  const { data: athletes } = usePaginatedAthletes();
   const trade = useTrade();
 
   const profileQueryKey = user ? ['onboarding-status', user.id] : ['onboarding-status'];
@@ -143,7 +188,7 @@ export default function Onboarding() {
         setStep('ATHLETE_PROFILE');
       }
     }
-  }, [onboardingRole, hasStartedOnboarding]);
+  }, [onboardingRole, hasStartedOnboarding, step]);
 
   const handleRoleSelection = (role: 'fan' | 'athlete') => {
     setHasStartedOnboarding(true);
@@ -167,6 +212,22 @@ export default function Onboarding() {
     try {
       if (!user) throw new Error('You must be signed in');
 
+      let avatarUrl = avatar;
+      if (avatarFile) {
+        const fileExt = avatarFile.name.split('.').pop();
+        const fileName = `${user.id}/${Date.now()}.${fileExt}`;
+        const { error: uploadError } = await supabase.storage
+          .from('avatars')
+          .upload(fileName, avatarFile);
+
+        if (uploadError) throw uploadError;
+
+        const { data: urlData } = supabase.storage
+          .from('avatars')
+          .getPublicUrl(fileName);
+        avatarUrl = urlData.publicUrl;
+      }
+
       const safeUsername = name.toLowerCase().replace(/\s+/g, '').slice(0, 24);
       const { error } = await supabase
         .from('profiles')
@@ -174,7 +235,7 @@ export default function Onboarding() {
           id: user.id,
           display_name: name,
           username: safeUsername || `fan-${user.id.slice(0, 6)}`,
-          avatar_url: avatar || null,
+          avatar_url: avatarUrl || null,
           role: 'fan',
           onboarding_completed: false,
         });
@@ -182,8 +243,8 @@ export default function Onboarding() {
       if (error) throw error;
       await queryClient.invalidateQueries({ queryKey: profileQueryKey });
       setStep('FAN_WALLET');
-    } catch (error: any) {
-      toast.error(error.message || "Failed to save profile");
+    } catch (error: unknown) {
+      toast.error((error as Error).message || "Failed to save profile");
     } finally {
       setSubmitting(false);
     }
@@ -224,6 +285,22 @@ export default function Onboarding() {
 
     setSubmitting(true);
     try {
+      let avatarUrl = avatar;
+      if (avatarFile) {
+        const fileExt = avatarFile.name.split('.').pop();
+        const fileName = `${user.id}/${Date.now()}.${fileExt}`;
+        const { error: uploadError } = await supabase.storage
+          .from('avatars')
+          .upload(fileName, avatarFile);
+
+        if (uploadError) throw uploadError;
+
+        const { data: urlData } = supabase.storage
+          .from('avatars')
+          .getPublicUrl(fileName);
+        avatarUrl = urlData.publicUrl;
+      }
+
       // 1. Upsert profile
       const { error: profileError } = await supabase
         .from('profiles')
@@ -233,7 +310,7 @@ export default function Onboarding() {
           username: handle.replace('@', ''),
           sport,
           bio,
-          avatar_url: avatar || null,
+          avatar_url: avatarUrl || null,
           role: 'athlete',
           onboarding_completed: false,
         });
@@ -293,7 +370,7 @@ export default function Onboarding() {
 
       toast.success("Welcome to PodiumX! 🎉");
       navigate('/portfolio', { replace: true });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Onboarding error:', error);
       toast.error(error.message || "Failed to complete onboarding");
     } finally {
@@ -305,7 +382,7 @@ export default function Onboarding() {
     if (!athletes) return [];
     const filtered = user ? athletes.filter((athlete) => athlete.id !== user.id) : athletes;
     return filtered.slice(0, 3);
-  }, [athletes, user?.id]);
+  }, [athletes, user]);
 
   if (checkingProfile) {
     return (
@@ -431,11 +508,8 @@ export default function Onboarding() {
                     onChange={(e) => {
                       const file = e.target.files?.[0];
                       if (file) {
-                        const reader = new FileReader();
-                        reader.onloadend = () => {
-                          setAvatar(reader.result as string);
-                        };
-                        reader.readAsDataURL(file);
+                        setAvatarFile(file);
+                        setAvatar(URL.createObjectURL(file));
                       }
                     }}
                   />
@@ -450,9 +524,29 @@ export default function Onboarding() {
                   onChange={(e) => setName(e.target.value)}
                   placeholder="Your name"
                 />
+                <div className="text-xs text-muted-foreground h-4 mt-1">
+                  {nameValidationStatus === 'checking' && 'Checking availability...'}
+                  {nameValidationStatus === 'taken' && <span className="text-destructive">{nameValidationError}</span>}
+                  {nameValidationStatus === 'available' && <span className="text-green-500">Name is available!</span>}
+                </div>
               </div>
 
-              <Button onClick={handleFanProfileNext} disabled={submitting} className="w-full">
+              <div className="space-y-2">
+                <Label htmlFor="fan-bio">Bio</Label>
+                <Textarea
+                  id="fan-bio"
+                  value={bio}
+                  onChange={(e) => setBio(e.target.value)}
+                  placeholder="Tell us a bit about yourself..."
+                  rows={3}
+                />
+              </div>
+
+              <Button 
+                onClick={handleFanProfileNext} 
+                disabled={nameValidationStatus !== 'available' || submitting}
+                className="w-full"
+              >
                 {submitting ? 'Saving...' : 'Continue'}
               </Button>
             </>
@@ -576,11 +670,8 @@ export default function Onboarding() {
                     onChange={(e) => {
                       const file = e.target.files?.[0];
                       if (file) {
-                        const reader = new FileReader();
-                        reader.onloadend = () => {
-                          setAvatar(reader.result as string);
-                        };
-                        reader.readAsDataURL(file);
+                        setAvatarFile(file);
+                        setAvatar(URL.createObjectURL(file));
                       }
                     }}
                   />
@@ -605,6 +696,11 @@ export default function Onboarding() {
                   onChange={(e) => setHandle(e.target.value)}
                   placeholder="@johndoe"
                 />
+                <div className="text-xs text-muted-foreground h-4 mt-1">
+                  {handleValidationStatus === 'checking' && 'Checking availability...'}
+                  {handleValidationStatus === 'taken' && <span className="text-destructive">{handleValidationError}</span>}
+                  {handleValidationStatus === 'available' && <span className="text-green-500">Handle is available!</span>}
+                </div>
               </div>
 
               <div className="space-y-2">
@@ -637,7 +733,11 @@ export default function Onboarding() {
                 />
               </div>
 
-              <Button onClick={handleAthleteProfileNext} className="w-full">
+              <Button 
+                onClick={handleAthleteProfileNext} 
+                className="w-full"
+                disabled={handleValidationStatus !== 'available' || !name || !sport}
+              >
                 Continue
               </Button>
             </>

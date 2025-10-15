@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Send, Lock } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -18,6 +18,7 @@ interface Message {
   created_at: string;
   display_name?: string;
   avatar_url?: string;
+  bio?: string;
 }
 
 interface TokengatedChatProps {
@@ -43,50 +44,9 @@ export default function TokengatedChat({
   const canSend = userHoldings >= 1;
   const isLocked = !canSend;
 
-  useEffect(() => {
-    // Fetch initial messages
-    fetchMessages();
-
-    // Subscribe to new messages
-    const channel = supabase
-      .channel(`chat:${athleteId}`)
-      .on(
-        'postgres_changes' as any,
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'chat_messages',
-          filter: `athlete_id=eq.${athleteId}`,
-        },
-        async (payload: any) => {
-          const newMsg = payload.new;
-          // Fetch the profile data for the new message
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('display_name, avatar_url')
-            .eq('id', newMsg.user_id)
-            .single();
-          
-          setMessages((prev) => [...prev, { 
-            ...newMsg, 
-            display_name: profile?.display_name,
-            avatar_url: resolveAvatarUrl(profile?.avatar_url) 
-          }]);
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [athleteId]);
-
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
-
-  const fetchMessages = async () => {
+  const fetchMessages = useCallback(async () => {
     const { data: msgs } = await supabase
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       .from('chat_messages' as any)
       .select('*')
       .eq('athlete_id', athleteId)
@@ -96,25 +56,70 @@ export default function TokengatedChat({
     if (!msgs) return;
 
     // Fetch profiles for all messages
-    const userIds = [...new Set(msgs.map((m: any) => m.user_id))];
+    const userIds = [...new Set(msgs.map((m: Message) => m.user_id))];
     const { data: profiles } = await supabase
       .from('profiles')
-      .select('id, display_name, avatar_url')
+      .select('id, display_name, avatar_url, bio')
       .in('id', userIds);
 
     const profileMap = new Map(profiles?.map(p => [p.id, p]) || []);
     
-    const enrichedMessages = msgs.map((m: any) => {
+    const enrichedMessages = msgs.map((m: Message) => {
       const profile = profileMap.get(m.user_id);
       return {
         ...m,
         display_name: profile?.display_name,
         avatar_url: resolveAvatarUrl(profile?.avatar_url),
+        bio: profile?.bio,
       };
     });
 
     setMessages(enrichedMessages);
-  };
+  }, [athleteId]);
+
+  useEffect(() => {
+    // Fetch initial messages
+    void fetchMessages();
+
+    // Subscribe to new messages
+    const channel = supabase
+      .channel(`chat:${athleteId}`)
+      .on(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        'postgres_changes' as any,
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'chat_messages',
+          filter: `athlete_id=eq.${athleteId}`,
+        },
+        async (payload: { new: Message }) => {
+          const newMsg = payload.new;
+          // Fetch the profile data for the new message
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('display_name, avatar_url, bio')
+            .eq('id', newMsg.user_id)
+            .single();
+          
+          setMessages((prev) => [...prev, { 
+            ...newMsg, 
+            display_name: profile?.display_name,
+            avatar_url: resolveAvatarUrl(profile?.avatar_url), 
+            bio: profile?.bio 
+          }]);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [athleteId, fetchMessages]);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
 
   const handleSend = async () => {
     if (!newMessage.trim() || !user || !canSend) return;
@@ -122,6 +127,7 @@ export default function TokengatedChat({
     setSending(true);
     try {
       const { error } = await supabase
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         .from('chat_messages' as any)
         .insert({
           athlete_id: athleteId,
@@ -132,10 +138,10 @@ export default function TokengatedChat({
       if (error) throw error;
 
       setNewMessage('');
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         title: 'Error',
-        description: error.message || 'Failed to send message',
+        description: (error as Error).message || 'Failed to send message',
         variant: 'destructive',
       });
     } finally {
@@ -197,6 +203,11 @@ export default function TokengatedChat({
                     </span>
                   </div>
                   <p className="text-sm">{message.content}</p>
+                  {message.bio && (
+                    <p className="text-xs text-muted-foreground italic mt-1">
+                      {message.bio}
+                    </p>
+                  )}
                 </div>
               </div>
             ))

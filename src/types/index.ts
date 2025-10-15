@@ -21,6 +21,18 @@ export interface Athlete {
   change24h: number;
   volume24h: number;
   workouts: Workout[];
+  posts: Post[];
+}
+
+export interface Post {
+  id: string;
+  created_at: string;
+  workout_json: Workout;
+  image_url: string | null;
+  text: string | null;
+  token_gated: boolean;
+  strava_activity_id: number | null;
+  author_id: string;
 }
 
 export interface Trade {

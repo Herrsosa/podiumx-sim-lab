@@ -56,104 +56,101 @@ export const AthleteCard = memo(({ athlete, chartData, onClick, onMouseEnter }: 
       onClick={onClick}
       onMouseEnter={onMouseEnter}
     >
-      <CardContent className="p-6">
-        {/* Avatar & Name */}
-        <div className="mb-4 flex items-center gap-3">
-          {/* Instagram-style avatar */}
-          <div className="relative h-12 w-12 flex-shrink-0">
-            <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-yellow-400 via-pink-500 to-purple-600 p-0.5">
-              <div className="h-full w-full rounded-full bg-background p-0.5">
-                <img
-                  src={athlete.avatar}
-                  alt={athlete.name}
-                  loading="lazy"
-                  className="h-full w-full rounded-full object-cover"
-                />
-              </div>
+      <CardContent className="p-0">
+        <div className="aspect-w-1 aspect-h-1">
+          <img
+            src={athlete.avatar}
+            alt={athlete.name}
+            loading="lazy"
+            className="w-full h-48 object-cover"
+          />
+        </div>
+        <div className="p-6">
+          {/* Avatar & Name */}
+          <div className="mb-4 flex items-center gap-3">
+            <div className="flex-1">
+              <h3 className="font-semibold">{athlete.name}</h3>
+              <Badge variant="secondary" className="text-xs">
+                {athlete.sport}
+              </Badge>
             </div>
           </div>
-          <div className="flex-1">
-            <h3 className="font-semibold">{athlete.name}</h3>
-            <Badge variant="secondary" className="text-xs">
-              {athlete.sport}
-            </Badge>
-          </div>
-        </div>
 
-        {/* Price */}
-        <div className="mb-2">
-          <div className="text-2xl font-bold">
-            {formatMoney(athlete.price)}
+          {/* Price */}
+          <div className="mb-2">
+            <div className="text-2xl font-bold">
+              {formatMoney(athlete.price)}
+            </div>
+            <div
+              className={`flex items-center gap-1 text-sm ${
+                isPositive ? 'text-success' : 'text-destructive'
+              }`}
+            >
+              {isPositive ? (
+                <TrendingUp className="h-3 w-3" />
+              ) : (
+                <TrendingDown className="h-3 w-3" />
+              )}
+              {isPositive ? '+' : ''}
+              {formatNumber(athlete.change24h)}% 24h
+            </div>
           </div>
-          <div
-            className={`flex items-center gap-1 text-sm ${
-              isPositive ? 'text-success' : 'text-destructive'
-            }`}
-          >
-            {isPositive ? (
-              <TrendingUp className="h-3 w-3" />
-            ) : (
-              <TrendingDown className="h-3 w-3" />
-            )}
-            {isPositive ? '+' : ''}
-            {formatNumber(athlete.change24h)}% 24h
-          </div>
-        </div>
 
-        {/* Price Trend */}
-        <div className="mb-4">
-          <div className="mb-2 flex items-center justify-between text-[0.65rem] uppercase tracking-wide text-muted-foreground">
-            <span>Price (7d)</span>
+          {/* Price Trend */}
+          <div className="mb-4">
+            <div className="mb-2 flex items-center justify-between text-[0.65rem] uppercase tracking-wide text-muted-foreground">
+              <span>Price (7d)</span>
+            </div>
+            <div className="h-20">
+              {hasChartData ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart
+                    data={sortedChartData}
+                    margin={{ top: 4, right: 8, left: -8, bottom: 0 }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                    <XAxis
+                      dataKey="timestamp"
+                      axisLine={false}
+                      tickLine={false}
+                      tickFormatter={(value) => format(new Date(value), 'MMM d')}
+                      minTickGap={16}
+                      tick={{ fontSize: 10 }}
+                    />
+                    <YAxis
+                      axisLine={false}
+                      tickLine={false}
+                      tickFormatter={(value) => `$${Number(value).toFixed(2)}`}
+                      width={42}
+                      domain={priceDomain ?? ['auto', 'auto']}
+                      tick={{ fontSize: 10 }}
+                    />
+                    <Tooltip
+                      cursor={{ stroke: lineColor, strokeWidth: 1, opacity: 0.2 }}
+                      formatter={(value: number) => [`$${Number(value).toFixed(2)}`, 'Price']}
+                      labelFormatter={(value) => format(new Date(value), 'PPP p')}
+                    />
+                    <Line type="monotone" dataKey="price" stroke={lineColor} strokeWidth={2} dot={false} />
+                  </LineChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="flex h-full items-center justify-center text-xs text-muted-foreground">
+                  No trade history
+                </div>
+              )}
+            </div>
           </div>
-          <div className="h-20">
-            {hasChartData ? (
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart
-                  data={sortedChartData}
-                  margin={{ top: 4, right: 8, left: -8, bottom: 0 }}
-                >
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                  <XAxis
-                    dataKey="timestamp"
-                    axisLine={false}
-                    tickLine={false}
-                    tickFormatter={(value) => format(new Date(value), 'MMM d')}
-                    minTickGap={16}
-                    tick={{ fontSize: 10 }}
-                  />
-                  <YAxis
-                    axisLine={false}
-                    tickLine={false}
-                    tickFormatter={(value) => `$${Number(value).toFixed(2)}`}
-                    width={42}
-                    domain={priceDomain ?? ['auto', 'auto']}
-                    tick={{ fontSize: 10 }}
-                  />
-                  <Tooltip
-                    cursor={{ stroke: lineColor, strokeWidth: 1, opacity: 0.2 }}
-                    formatter={(value: number) => [`$${Number(value).toFixed(2)}`, 'Price']}
-                    labelFormatter={(value) => format(new Date(value), 'PPP p')}
-                  />
-                  <Line type="monotone" dataKey="price" stroke={lineColor} strokeWidth={2} dot={false} />
-                </LineChart>
-              </ResponsiveContainer>
-            ) : (
-              <div className="flex h-full items-center justify-center text-xs text-muted-foreground">
-                No trade history
-              </div>
-            )}
-          </div>
-        </div>
 
-        {/* Stats */}
-        <div className="grid grid-cols-2 gap-2 text-sm">
-          <div>
-            <div className="text-muted-foreground">Supply</div>
-            <div className="font-medium">{formatNumber(athlete.supply)}</div>
-          </div>
-          <div>
-            <div className="text-muted-foreground">Market Cap</div>
-            <div className="font-medium">{formatMoney(athlete.marketCap)}</div>
+          {/* Stats */}
+          <div className="grid grid-cols-2 gap-2 text-sm">
+            <div>
+              <div className="text-muted-foreground">Supply</div>
+              <div className="font-medium">{formatNumber(athlete.supply)}</div>
+            </div>
+            <div>
+              <div className="text-muted-foreground">Market Cap</div>
+              <div className="font-medium">{formatMoney(athlete.marketCap)}</div>
+            </div>
           </div>
         </div>
       </CardContent>

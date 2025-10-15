@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Activity, Calendar, Clock, Gauge, Zap, Trash2, Edit } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -13,7 +13,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Workout } from '@/types';
+import { Workout, Post } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
@@ -36,8 +36,8 @@ export default function ProofOfSweat({ workouts, athleteId, onWorkoutDeleted, on
   const [workoutToDelete, setWorkoutToDelete] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
-  const [workoutToEdit, setWorkoutToEdit] = useState<any>(null);
-  const [workoutPosts, setWorkoutPosts] = useState<any[]>([]);
+  const [workoutToEdit, setWorkoutToEdit] = useState<Workout | null>(null);
+  const [workoutPosts, setWorkoutPosts] = useState<Post[]>([]);
   const [optimisticWorkouts, setOptimisticWorkouts] = useState<Workout[]>([]);
 
   // Sync optimistic state with actual workouts
@@ -45,14 +45,7 @@ export default function ProofOfSweat({ workouts, athleteId, onWorkoutDeleted, on
     setOptimisticWorkouts(workouts || []);
   }, [workouts]);
 
-  // Fetch workout posts to get full post data including token_gated
-  useEffect(() => {
-    if (athleteId) {
-      fetchWorkoutPosts();
-    }
-  }, [athleteId, workouts]);
-
-  const fetchWorkoutPosts = async () => {
+  const fetchWorkoutPosts = useCallback(async () => {
     if (!athleteId) return;
     
     try {
@@ -67,7 +60,15 @@ export default function ProofOfSweat({ workouts, athleteId, onWorkoutDeleted, on
     } catch (error) {
       console.error('Error fetching workout posts:', error);
     }
-  };
+  }, [athleteId]);
+
+  // Fetch workout posts to get full post data including token_gated
+  useEffect(() => {
+    if (athleteId) {
+      fetchWorkoutPosts();
+    }
+  }, [athleteId, fetchWorkoutPosts]);
+
 
   // Use optimistic workouts for display
   const safeWorkouts = optimisticWorkouts;
@@ -140,7 +141,7 @@ export default function ProofOfSweat({ workouts, athleteId, onWorkoutDeleted, on
       // Refetch workout posts
       await fetchWorkoutPosts();
       onWorkoutDeleted?.();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error deleting workout:', error);
       
       // Restore the workout on error

@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Search } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { useAthletes } from '@/hooks/useAthletes';
+import { usePaginatedAthletes } from '@/hooks/usePaginatedAthletes';
 import { useMarketplaceCharts } from '@/hooks/useMarketplaceCharts';
 import { useAuth } from '@/hooks/useAuth';
 import { Sport } from '@/types';
@@ -14,7 +14,6 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { CardSkeleton } from '@/components/ui/skeletons';
 
 const SPORTS: Sport[] = ['Running', 'HYROX', 'Cycling', 'Triathlon', 'CrossFit', 'Swimming', 'Trail Run', 'Rowing'];
-const PAGE_SIZE = 12;
 
 export default function Marketplace() {
   const navigate = useNavigate();
@@ -22,9 +21,14 @@ export default function Marketplace() {
   const [search, setSearch] = useState('');
   const [selectedSport, setSelectedSport] = useState<Sport | 'All'>('All');
   const [pendingSlug, setPendingSlug] = useState<string | null>(null);
-  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
-  
-  const { data: athletes, isLoading, isFetching } = useAthletes();
+
+  const {
+    data: athletes,
+    isLoading,
+    isFetching,
+    fetchNextPage,
+    hasNextPage,
+  } = usePaginatedAthletes();
 
   const prefetchAthleteDetail = useCallback(() => {
     void import('./AthleteDetail');
@@ -65,10 +69,6 @@ export default function Marketplace() {
     setPendingSlug(null);
   }, [pendingSlug, loading, user, navigate, prefetchAthleteDetail]);
 
-  useEffect(() => {
-    setVisibleCount(PAGE_SIZE);
-  }, [search, selectedSport, athletes?.length]);
-
   const filteredAthletes = useMemo(() => {
     if (!athletes) return [];
     const lowered = search.trim().toLowerCase();
@@ -84,11 +84,8 @@ export default function Marketplace() {
       return matchesSearch && matchesSport;
     });
   }, [athletes, search, selectedSport, user?.id]);
-  const displayedAthletes = useMemo(() => {
-    return filteredAthletes.slice(0, visibleCount);
-  }, [filteredAthletes, visibleCount]);
 
-  const athleteIds = useMemo(() => displayedAthletes.map((athlete) => athlete.id), [displayedAthletes]);
+  const athleteIds = useMemo(() => filteredAthletes.map((athlete) => athlete.id), [filteredAthletes]);
 
   const {
     data: chartData,
@@ -98,11 +95,11 @@ export default function Marketplace() {
 
   const showGridSkeleton = isLoading || isFetching || chartsLoading || chartsFetching;
 
-  const canLoadMore = displayedAthletes.length < filteredAthletes.length;
-
   const handleLoadMore = useCallback(() => {
-    setVisibleCount((prev) => Math.min(prev + PAGE_SIZE, filteredAthletes.length));
-  }, [filteredAthletes.length]);
+    if (hasNextPage) {
+      fetchNextPage();
+    }
+  }, [hasNextPage, fetchNextPage]);
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -150,14 +147,14 @@ export default function Marketplace() {
       </div>
 
       {/* Athletes Grid */}
-      {showGridSkeleton ? (
+      {showGridSkeleton && filteredAthletes.length === 0 ? (
         <CardSkeleton
-          count={Math.max(visibleCount, PAGE_SIZE)}
+          count={12}
           className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
         />
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {displayedAthletes.map((athlete) => {
+          {filteredAthletes.map((athlete) => {
             const sparklineData = chartData?.[athlete.id] || [];
             return (
               <AthleteCard
@@ -185,7 +182,7 @@ export default function Marketplace() {
         />
       )}
 
-      {canLoadMore && !showGridSkeleton && (
+      {hasNextPage && !showGridSkeleton && (
         <div className="flex justify-center py-10">
           <Button variant="outline" onClick={handleLoadMore}>
             Load more athletes

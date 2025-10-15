@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -17,9 +17,9 @@ export default function StravaConnect({ athleteId }: StravaConnectProps) {
 
   useEffect(() => {
     checkConnection();
-  }, [athleteId]);
+  }, [athleteId, checkConnection]);
 
-  const checkConnection = async () => {
+  const checkConnection = useCallback(async () => {
     try {
       const { data } = await supabase
         .from('athlete_integrations')
@@ -32,7 +32,7 @@ export default function StravaConnect({ athleteId }: StravaConnectProps) {
     } catch (error) {
       console.error('Error checking Strava connection:', error);
     }
-  };
+  }, [athleteId]);
 
   const handleConnect = () => {
     // Strava OAuth flow
@@ -67,7 +67,7 @@ export default function StravaConnect({ athleteId }: StravaConnectProps) {
         title: 'Disconnected',
         description: 'Strava has been disconnected from your account',
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error disconnecting Strava:', error);
       toast({
         title: 'Error',

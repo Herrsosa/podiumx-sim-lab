@@ -270,9 +270,7 @@ describe('Onboarding and access guards', () => {
     cy.wait('@updateProfile');
 
     cy.location('pathname').should('eq', '/portfolio');
-    cy.wrap(null).then(() => {
-      expect(state.onboardingCompleted).to.be.true;
-    });
+    cy.wrap(state).its('onboardingCompleted').should('be.true');
   });
 
   it('allows marketplace access when logged out', () => {
@@ -305,7 +303,7 @@ describe('Onboarding and access guards', () => {
     cy.contains('Get Test USDC (+100)').click();
     cy.wait('@faucetRpc');
 
-    cy.contains('$100 test USDC added');
+    cy.contains('$100 test USDC added').should('be.visible');
     cy.wrap(null).then(() => {
       expect(state.walletBalance).to.equal(100);
     });

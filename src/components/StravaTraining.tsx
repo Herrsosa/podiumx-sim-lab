@@ -44,11 +44,11 @@ export default function StravaTraining() {
         title: 'Disconnected',
         description: 'Strava has been disconnected from your account',
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error disconnecting Strava:', error);
       toast({
         title: 'Error',
-        description: error.message || 'Failed to disconnect Strava',
+        description: (error as Error).message || 'Failed to disconnect Strava',
         variant: 'destructive',
       });
     }
@@ -80,7 +80,7 @@ export default function StravaTraining() {
         title: 'Import Complete',
         description: `Imported ${data.inserted} new activities, updated ${data.updated}`,
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error importing activities:', error);
       const message = error?.message || 'Failed to import Strava activities';
 

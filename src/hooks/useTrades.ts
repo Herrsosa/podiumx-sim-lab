@@ -2,6 +2,22 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Trade } from '@/types';
 
+interface DbTrade {
+  id: string;
+  created_at: string;
+  athlete_id: string;
+  user_id: string;
+  side: 'BUY' | 'SELL';
+  qty: number;
+  gross_amount: string;
+  net_amount: string;
+  fee: string;
+  profiles: {
+    display_name: string;
+    username: string;
+  } | null;
+}
+
 export function useTrades(athleteId?: string) {
   return useQuery({
     queryKey: ['trades', athleteId],
@@ -19,8 +35,8 @@ export function useTrades(athleteId?: string) {
 
       if (error) throw error;
 
-      const trades: Trade[] = data.map((trade) => {
-        const profile = (trade as any).profiles;
+      const trades: Trade[] = ((data ?? []) as DbTrade[]).map((trade) => {
+        const profile = trade.profiles;
         return {
           id: trade.id,
           athleteId: trade.athlete_id,
@@ -55,8 +71,8 @@ export function useUserTrades() {
 
       if (error) throw error;
 
-      const trades: Trade[] = data.map((trade) => {
-        const profile = (trade as any).profiles;
+      const trades: Trade[] = (data as DbTrade[]).map((trade) => {
+        const profile = trade.profiles;
         return {
           id: trade.id,
           athleteId: trade.athlete_id,

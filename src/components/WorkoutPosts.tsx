@@ -1,54 +1,29 @@
-import { useEffect, useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Lock, Calendar, Activity, Clock, Zap } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-
-interface Post {
-  id: string;
-  created_at: string;
-  workout_json: any;
-  image_url: string | null;
-  text: string | null;
-  token_gated: boolean;
-  strava_activity_id: number | null;
-}
+import { Post } from '@/types';
 
 interface WorkoutPostsProps {
   athleteId: string;
   userHoldings: number;
+  posts: Post[];
+  isLoading: boolean;
   onUnlockClick: () => void;
   onConnectStrava?: () => void;
 }
 
-export default function WorkoutPosts({ athleteId, userHoldings, onUnlockClick, onConnectStrava }: WorkoutPostsProps) {
+export default function WorkoutPosts({
+  athleteId,
+  userHoldings,
+  posts,
+  isLoading,
+  onUnlockClick,
+  onConnectStrava
+}: WorkoutPostsProps) {
   const { user } = useAuth();
-  const [posts, setPosts] = useState<Post[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    fetchPosts();
-  }, [athleteId]);
-
-  const fetchPosts = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('posts')
-        .select('*')
-        .eq('author_id', athleteId)
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-      setPosts(data || []);
-    } catch (error) {
-      console.error('Error fetching posts:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleConnectStrava = () => {
     if (onConnectStrava) {
@@ -71,7 +46,7 @@ export default function WorkoutPosts({ athleteId, userHoldings, onUnlockClick, o
     return false;
   };
 
-  if (loading) {
+  if (isLoading) {
     return (
       <Card className="glass-card">
         <CardContent className="space-y-4 p-6">

@@ -16,8 +16,8 @@ declare module 'react-sparklines' {
 
   export const Sparklines: ComponentType<SparklinesProps>;
   export const SparklinesLine: ComponentType<SparklinesLineProps>;
-  export const SparklinesBars: ComponentType<any>;
-  export const SparklinesSpots: ComponentType<any>;
-  export const SparklinesReferenceLine: ComponentType<any>;
-  export const SparklinesCurve: ComponentType<any>;
+  export const SparklinesBars: ComponentType<object>;
+  export const SparklinesSpots: ComponentType<object>;
+  export const SparklinesReferenceLine: ComponentType<object>;
+  export const SparklinesCurve: ComponentType<object>;
 }
