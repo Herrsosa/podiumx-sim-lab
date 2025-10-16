@@ -377,6 +377,7 @@ export default function AthleteDetail() {
                   formatXAxisTick={formatXAxisTick}
                   formatTooltipLabel={formatTooltipLabel}
                   isLoading={historyLoading}
+                  athleteId={athlete.id}
                 />
               </Suspense>
             </div>

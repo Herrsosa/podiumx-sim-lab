@@ -16,12 +16,12 @@ export function HeroAthleteCard({ athlete, index }: HeroAthleteCardProps) {
   return (
     <Link to={`/athlete/${athlete.slug}`}>
       <Card 
-        className="group relative overflow-hidden border-border/40 bg-gradient-to-br from-card/90 to-card/60 backdrop-blur-md hover:border-primary/60 transition-all duration-300 hover:scale-[1.03] hover:shadow-2xl hover:shadow-primary/20 animate-fade-in"
+        className="group relative overflow-hidden border-border/40 bg-gradient-to-br from-card/90 to-card/60 backdrop-blur-md hover:border-primary/60 transition-all duration-300 hover:scale-[1.03] hover:shadow-2xl hover:shadow-primary/20 animate-fade-in aspect-square"
         style={{ animationDelay: `${index * 100}ms` }}
       >
         {/* Large Background Image with Overlay */}
-        <div className="relative h-48">
-          <div className="absolute inset-0 bg-gradient-to-b from-transparent via-background/20 to-background/95" />
+        <div className="relative h-[60%]">
+          <div className="absolute inset-0 bg-gradient-to-b from-transparent via-background/30 to-background" />
           <img
             src={athlete.avatar}
             alt={athlete.name}
@@ -47,18 +47,11 @@ export function HeroAthleteCard({ athlete, index }: HeroAthleteCardProps) {
         </div>
 
         {/* Compact Info Section */}
-        <div className="p-4">
+        <div className="p-3 flex flex-col justify-end h-[40%]">
+          <h3 className="font-bold text-sm truncate mb-1">{athlete.name}</h3>
           <div className="flex items-center justify-between">
-            <div className="flex-1 min-w-0">
-              <h3 className="font-bold text-base truncate mb-0.5">{athlete.name}</h3>
-              <p className="text-xs text-muted-foreground">{athlete.sport}</p>
-            </div>
-            
-            {/* Market Cap */}
-            <div className="text-right">
-              <div className="text-xs text-muted-foreground mb-0.5">Market Cap</div>
-              <div className="text-sm font-bold">{formatPrice(athlete.marketCap)}</div>
-            </div>
+            <p className="text-xs text-muted-foreground">{athlete.sport}</p>
+            <div className="text-xs font-semibold">{formatPrice(athlete.marketCap)}</div>
           </div>
         </div>
       </Card>

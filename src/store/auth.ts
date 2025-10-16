@@ -147,6 +147,5 @@ export const useWallet = () =>
       wallet: state.wallet,
       loading: state.walletLoading,
       error: state.walletError,
-    }),
-    shallow
+    })
   );

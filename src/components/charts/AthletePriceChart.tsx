@@ -1,6 +1,7 @@
-import { memo } from 'react';
+import { memo, useState } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, ReferenceDot } from 'recharts';
 import { ChartSkeleton } from '@/components/ui/skeletons';
+import { PoSDotsLayer } from './PoSDotsLayer';
 
 type ChartPoint = {
   timestamp: number;
@@ -15,6 +16,7 @@ interface AthletePriceChartProps {
   formatXAxisTick: (value: number) => string;
   formatTooltipLabel: (value: number) => string;
   isLoading: boolean;
+  athleteId?: string;
 }
 
 const AthletePriceChart = memo(({
@@ -25,7 +27,10 @@ const AthletePriceChart = memo(({
   formatXAxisTick,
   formatTooltipLabel,
   isLoading,
+  athleteId,
 }: AthletePriceChartProps) => {
+  const [chartDimensions, setChartDimensions] = useState({ width: 0, height: 0 });
+
   if (isLoading) {
     return <ChartSkeleton className="h-full" />;
   }
@@ -38,8 +43,15 @@ const AthletePriceChart = memo(({
     );
   }
 
+  const xDomain: [number, number] = [
+    Math.min(...chartPoints.map(p => p.timestamp)),
+    Math.max(...chartPoints.map(p => p.timestamp)),
+  ];
+
   return (
-    <ResponsiveContainer width="100%" height="100%">
+    <ResponsiveContainer width="100%" height="100%" onResize={(width, height) => {
+      setChartDimensions({ width: width || 0, height: height || 0 });
+    }}>
       <LineChart data={chartPoints}>
         <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
         <XAxis
@@ -88,6 +100,18 @@ const AthletePriceChart = memo(({
               fill: 'hsl(var(--muted-foreground))',
               fontSize: 12,
             }}
+          />
+        )}
+        
+        {/* PoS Dots Layer */}
+        {athleteId && chartDimensions.width > 0 && (
+          <PoSDotsLayer
+            athleteId={athleteId}
+            timeRange={timeRange}
+            chartWidth={chartDimensions.width}
+            chartHeight={chartDimensions.height}
+            xDomain={xDomain}
+            yPosition={chartDimensions.height - 30}
           />
         )}
       </LineChart>
