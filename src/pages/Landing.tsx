@@ -63,10 +63,10 @@ export default function Landing() {
 
             {/* Right: Floating Athlete Cards */}
             <div className="hidden lg:block">
-              <div className="grid grid-cols-1 gap-4">
+              <div className="grid grid-cols-2 gap-3 max-w-md ml-auto">
                 {isLoading ? (
                   [...Array(4)].map((_, i) => (
-                    <div key={i} className="h-40 rounded-xl bg-muted/20 animate-pulse" />
+                    <div key={i} className="aspect-square rounded-xl bg-muted/20 animate-pulse" />
                   ))
                 ) : (
                   heroAthletes.map((athlete, index) => (

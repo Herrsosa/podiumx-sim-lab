@@ -83,9 +83,9 @@ export const PoSDotsLayer = memo(({
 
     const [minX, maxX] = xDomain;
     const xRange = maxX - minX;
-    const padding = 40; // Approximate chart padding
+    const padding = 60;
 
-    return groupedPoS.map((group, index) => {
+    return groupedPoS.map((group) => {
       const xPercent = (group.timestamp - minX) / xRange;
       const xPos = padding + xPercent * (chartWidth - padding * 2);
       
@@ -95,27 +95,41 @@ export const PoSDotsLayer = memo(({
       return (
         <g key={group.timestamp}>
           {/* Dots */}
-          {Array.from({ length: displayCount }).map((_, dotIndex) => (
-            <circle
-              key={dotIndex}
-              cx={xPos + (dotIndex - displayCount / 2) * 8}
-              cy={yPosition}
-              r={3}
-              fill="hsl(var(--success))"
-              className="animate-scale-in"
-              style={{ 
-                animationDelay: `${dotIndex * 50}ms`,
-                filter: 'drop-shadow(0 0 4px hsl(var(--success)))',
-              }}
-            />
-          ))}
+          {Array.from({ length: displayCount }).map((_, dotIndex) => {
+            const offset = (dotIndex - (displayCount - 1) / 2) * 10;
+            return (
+              <g key={dotIndex}>
+                <circle
+                  cx={xPos + offset}
+                  cy={yPosition}
+                  r={4}
+                  fill="hsl(var(--success))"
+                  className="animate-scale-in"
+                  style={{ 
+                    animationDelay: `${dotIndex * 50}ms`,
+                  }}
+                />
+                {/* Glow effect */}
+                <circle
+                  cx={xPos + offset}
+                  cy={yPosition}
+                  r={6}
+                  fill="none"
+                  stroke="hsl(var(--success))"
+                  strokeWidth={1}
+                  opacity={0.4}
+                />
+              </g>
+            );
+          })}
           
           {/* Overflow indicator */}
           {hasOverflow && (
             <text
-              x={xPos + (displayCount / 2) * 8 + 8}
-              y={yPosition + 1}
-              fontSize={10}
+              x={xPos + (displayCount * 10) / 2 + 10}
+              y={yPosition + 2}
+              fontSize={11}
+              fontWeight="bold"
               fill="hsl(var(--success))"
               className="animate-fade-in"
             >
@@ -127,7 +141,22 @@ export const PoSDotsLayer = memo(({
     });
   }, [groupedPoS, xDomain, chartWidth, yPosition]);
 
-  return <>{dotElements}</>;
+  if (!dotElements) return null;
+
+  return (
+    <svg
+      style={{
+        position: 'absolute',
+        bottom: 20,
+        left: 0,
+        width: '100%',
+        height: 40,
+        pointerEvents: 'none',
+      }}
+    >
+      {dotElements}
+    </svg>
+  );
 });
 
 PoSDotsLayer.displayName = 'PoSDotsLayer';

@@ -49,10 +49,11 @@ const AthletePriceChart = memo(({
   ];
 
   return (
-    <ResponsiveContainer width="100%" height="100%" onResize={(width, height) => {
-      setChartDimensions({ width: width || 0, height: height || 0 });
-    }}>
-      <LineChart data={chartPoints}>
+    <div style={{ position: 'relative', width: '100%', height: '100%' }}>
+      <ResponsiveContainer width="100%" height="100%" onResize={(width, height) => {
+        setChartDimensions({ width: width || 0, height: height || 0 });
+      }}>
+        <LineChart data={chartPoints}>
         <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
         <XAxis
           dataKey="timestamp"
@@ -102,20 +103,21 @@ const AthletePriceChart = memo(({
             }}
           />
         )}
-        
-        {/* PoS Dots Layer */}
-        {athleteId && chartDimensions.width > 0 && (
-          <PoSDotsLayer
-            athleteId={athleteId}
-            timeRange={timeRange}
-            chartWidth={chartDimensions.width}
-            chartHeight={chartDimensions.height}
-            xDomain={xDomain}
-            yPosition={chartDimensions.height - 30}
-          />
-        )}
-      </LineChart>
-    </ResponsiveContainer>
+        </LineChart>
+      </ResponsiveContainer>
+      
+      {/* PoS Dots Layer */}
+      {athleteId && chartDimensions.width > 0 && (
+        <PoSDotsLayer
+          athleteId={athleteId}
+          timeRange={timeRange}
+          chartWidth={chartDimensions.width}
+          chartHeight={chartDimensions.height}
+          xDomain={xDomain}
+          yPosition={20}
+        />
+      )}
+    </div>
   );
 });
 

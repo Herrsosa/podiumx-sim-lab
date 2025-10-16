@@ -29,29 +29,28 @@ export function HeroAthleteCard({ athlete, index }: HeroAthleteCardProps) {
           />
           
           {/* Price Badge - Top Right */}
-          <div className="absolute top-3 right-3 backdrop-blur-xl bg-background/80 rounded-lg px-3 py-2 border border-border/40">
-            <div className="text-2xl font-bold tracking-tight">{formatPrice(athlete.price)}</div>
-            <div className="text-[10px] text-muted-foreground uppercase tracking-wider">per token</div>
+          <div className="absolute top-2 right-2 backdrop-blur-xl bg-background/80 rounded-md px-2 py-1 border border-border/40">
+            <div className="text-sm font-bold tracking-tight">{formatPrice(athlete.price)}</div>
+            <div className="text-[8px] text-muted-foreground uppercase tracking-wider">per token</div>
           </div>
           
           {/* Change Badge - Top Left */}
           {athlete.change24h !== 0 && (
-            <div className={`absolute top-3 left-3 backdrop-blur-xl ${isPositive ? 'bg-success/20' : 'bg-destructive/20'} rounded-lg px-3 py-2 border ${isPositive ? 'border-success/40' : 'border-destructive/40'}`}>
-              <div className={`flex items-center gap-1.5 ${changeColor} font-bold`}>
-                {isPositive ? <TrendingUp className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />}
-                <span className="text-lg">{isPositive ? '+' : ''}{athlete.change24h.toFixed(1)}%</span>
+            <div className={`absolute top-2 left-2 backdrop-blur-xl ${isPositive ? 'bg-success/20' : 'bg-destructive/20'} rounded-md px-2 py-1 border ${isPositive ? 'border-success/40' : 'border-destructive/40'}`}>
+              <div className={`flex items-center gap-1 ${changeColor} font-bold text-xs`}>
+                {isPositive ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
+                <span>{isPositive ? '+' : ''}{athlete.change24h.toFixed(1)}%</span>
               </div>
-              <div className="text-[10px] text-muted-foreground uppercase tracking-wider">24h</div>
             </div>
           )}
         </div>
 
         {/* Compact Info Section */}
-        <div className="p-3 flex flex-col justify-end h-[40%]">
-          <h3 className="font-bold text-sm truncate mb-1">{athlete.name}</h3>
-          <div className="flex items-center justify-between">
-            <p className="text-xs text-muted-foreground">{athlete.sport}</p>
-            <div className="text-xs font-semibold">{formatPrice(athlete.marketCap)}</div>
+        <div className="p-2 flex flex-col justify-end h-[40%]">
+          <h3 className="font-semibold text-xs truncate mb-0.5">{athlete.name}</h3>
+          <div className="flex items-center justify-between text-[10px]">
+            <p className="text-muted-foreground">{athlete.sport}</p>
+            <div className="font-semibold">{formatPrice(athlete.marketCap)}</div>
           </div>
         </div>
       </Card>
