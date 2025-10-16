@@ -29,6 +29,7 @@ export const PoSDotsLayer = memo(({
   const { data: posData } = useQuery({
     queryKey: ['pos-dots', athleteId, timeRange],
     queryFn: async () => {
+      console.log('[PoS Dots] Fetching for athlete:', athleteId, 'timeRange:', timeRange);
       const now = new Date();
       let startDate = new Date();
       
@@ -54,7 +55,12 @@ export const PoSDotsLayer = memo(({
         .gte('created_at', startDate.toISOString())
         .order('created_at', { ascending: true });
 
-      if (error) throw error;
+      if (error) {
+        console.error('[PoS Dots] Error fetching:', error);
+        throw error;
+      }
+      
+      console.log('[PoS Dots] Fetched', data?.length, 'posts for athlete', athleteId);
       return data || [];
     },
     enabled: !!athleteId,
@@ -63,6 +69,7 @@ export const PoSDotsLayer = memo(({
   const groupedPoS = useMemo<GroupedPoS[]>(() => {
     if (!posData) return [];
 
+    console.log('[PoS Dots] Grouping', posData.length, 'posts by day');
     const dayMap = new Map<string, number>();
     
     posData.forEach((pos) => {
@@ -72,10 +79,13 @@ export const PoSDotsLayer = memo(({
       dayMap.set(dayKey, (dayMap.get(dayKey) || 0) + 1);
     });
 
-    return Array.from(dayMap.entries()).map(([day, count]) => ({
+    const grouped = Array.from(dayMap.entries()).map(([day, count]) => ({
       timestamp: new Date(day).getTime(),
       count,
     }));
+    
+    console.log('[PoS Dots] Grouped into', grouped.length, 'days:', grouped);
+    return grouped;
   }, [posData]);
 
   const dotElements = useMemo(() => {
@@ -141,7 +151,19 @@ export const PoSDotsLayer = memo(({
     });
   }, [groupedPoS, xDomain, chartWidth, yPosition]);
 
-  if (!dotElements) return null;
+  console.log('[PoS Dots] Rendering with:', {
+    hasData: !!dotElements,
+    groupedCount: groupedPoS.length,
+    chartWidth,
+    chartHeight,
+    xDomain,
+    yPosition
+  });
+
+  if (!dotElements) {
+    console.log('[PoS Dots] No dot elements to render');
+    return null;
+  }
 
   return (
     <svg
@@ -153,16 +175,17 @@ export const PoSDotsLayer = memo(({
         height: 50,
         pointerEvents: 'none',
         zIndex: 10,
+        border: '2px solid red', // DEBUG: Make SVG visible
       }}
       viewBox={`0 0 ${chartWidth} 50`}
       preserveAspectRatio="none"
     >
       {/* Debug: Background to see if SVG is rendered */}
-      <rect x="0" y="0" width={chartWidth} height="50" fill="rgba(0,255,0,0.1)" />
+      <rect x="0" y="0" width={chartWidth} height="50" fill="rgba(0,255,0,0.3)" />
       
       {/* Label */}
       <text x="10" y="15" fontSize={10} fill="hsl(var(--muted-foreground))" fontWeight="500">
-        Proof of Sweat
+        Proof of Sweat ({groupedPoS.length} days)
       </text>
       
       {dotElements}
