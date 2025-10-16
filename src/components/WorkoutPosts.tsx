@@ -3,7 +3,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Lock, Calendar, Activity, Clock, Zap } from 'lucide-react';
-import { useAuth } from '@/hooks/useAuth';
+import { useUser } from '@/store/auth';
 import { Post, Workout } from '@/types';
 
 interface WorkoutPostsProps {
@@ -23,7 +23,7 @@ export default function WorkoutPosts({
   onUnlockClick,
   onConnectStrava
 }: WorkoutPostsProps) {
-  const { user } = useAuth();
+  const user = useUser();
 
   const handleConnectStrava = () => {
     if (onConnectStrava) {

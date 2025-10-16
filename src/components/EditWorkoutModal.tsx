@@ -9,7 +9,7 @@ import { Switch } from '@/components/ui/switch';
 import { Loader2, Upload } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { useAuth } from '@/hooks/useAuth';
+import { useUser } from '@/store/auth';
 import { Workout } from '@/types';
 
 interface EditWorkoutModalProps {
@@ -26,7 +26,7 @@ interface EditWorkoutModalProps {
 
 export default function EditWorkoutModal({ open, onOpenChange, workoutPost, onSuccess }: EditWorkoutModalProps) {
   const { toast } = useToast();
-  const { user } = useAuth();
+  const user = useUser();
   const [loading, setLoading] = useState(false);
   const [newMediaFile, setNewMediaFile] = useState<File | null>(null);
   const [mediaPreviewUrl, setMediaPreviewUrl] = useState<string | null>(workoutPost.image_url || null);

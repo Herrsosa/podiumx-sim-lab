@@ -18,13 +18,13 @@ import TokengatedChat from '@/components/TokengatedChat';
 import WorkoutPosts from '@/components/WorkoutPosts';
 import AddWorkoutModal from '@/components/AddWorkoutModal';
 import { StartConversationButton } from '@/components/StartConversationButton';
-import { useAuth } from '@/hooks/useAuth';
 import { useQueryClient } from '@tanstack/react-query';
 import AthleteDetailSkeleton from '@/components/skeletons/AthleteDetailSkeleton';
 import { ChartSkeleton } from '@/components/ui/skeletons';
 import { SectionTitle, Body, Small } from '@/components/ui/typography';
 import { formatMoney, formatNumber } from '@/lib/format';
 import { cn } from '@/lib/utils';
+import { useUser } from '@/store/auth';
 
 const AthletePriceChart = lazy(() => import('@/components/charts/AthletePriceChart'));
 
@@ -34,7 +34,7 @@ type TimeRange = '24h' | '7d' | '30d' | 'all';
 export default function AthleteDetail() {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const user = useUser();
   const queryClient = useQueryClient();
   
   // All hooks must be called before any conditional returns
@@ -48,7 +48,9 @@ export default function AthleteDetail() {
   
   const { data: athlete, isLoading: athleteLoading } = useAthlete(slug!);
   const { data: wallet, isLoading: walletLoading } = useWallet();
-  const { data: trades, isLoading: tradesLoading } = useTrades();
+  const { data: trades, isLoading: tradesLoading } = useTrades(athlete?.id, {
+    enabled: Boolean(athlete?.id),
+  });
   const tradeMutation = useTrade();
 
   const position = useMemo(() => {

@@ -12,13 +12,12 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Upload, Dumbbell, Trophy, Eye, TrendingUp, ShoppingBag } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/hooks/useAuth";
 import { useLocalStore } from "@/store/useLocalStore";
 import { FaucetButton } from "@/components/FaucetButton";
 import { useTrade } from "@/hooks/useTrade";
 import { usePaginatedAthletes } from "@/hooks/usePaginatedAthletes";
-import { initWallet } from "@/hooks/useTrade";
 import { useOnboardingStatus } from "@/hooks/useOnboardingStatus";
+import { useUser } from "@/store/auth";
 
 type OnboardingStep = 
   | 'ROLE_SELECTION' 
@@ -32,7 +31,7 @@ type OnboardingStep =
 
 export default function Onboarding() {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const user = useUser();
   const queryClient = useQueryClient();
   const onboardingStatus = useOnboardingStatus();
   const { onboardingRole, setOnboardingRole } = useLocalStore();
@@ -171,13 +170,6 @@ export default function Onboarding() {
     setOnboardingRole(persistedRole as 'fan' | 'athlete');
     setStep(persistedRole === 'fan' ? 'FAN_PROFILE' : 'ATHLETE_PROFILE');
   }, [user, persistedRole, step, setOnboardingRole]);
-
-  // Initialize wallet on mount
-  useEffect(() => {
-    if (user) {
-      initWallet();
-    }
-  }, [user]);
 
   // Restore role selection from localStorage only if user has started onboarding
   useEffect(() => {

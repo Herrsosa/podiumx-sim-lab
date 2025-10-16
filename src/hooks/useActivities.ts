@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from './useAuth';
+import { useUser } from '@/store/auth';
 
 type UseActivitiesOptions = {
   enabled?: boolean;
@@ -8,7 +8,7 @@ type UseActivitiesOptions = {
 };
 
 export function useActivities(options: UseActivitiesOptions = {}) {
-  const { user } = useAuth();
+  const user = useUser();
   const queryEnabled = options.enabled ?? !!user;
   const resultLimit = options.limit ?? 10;
 

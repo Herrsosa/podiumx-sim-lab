@@ -2,10 +2,10 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MessageSquare } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { MessageComposerModal } from '@/components/messages/MessageComposerModal';
 import { useAuthPrompt } from '@/hooks/useAuthPrompt';
+import { useUser } from '@/store/auth';
 
 interface StartConversationButtonProps {
   athleteId: string;
@@ -14,7 +14,7 @@ interface StartConversationButtonProps {
 }
 
 export function StartConversationButton({ athleteId, athleteName, athleteHandle }: StartConversationButtonProps) {
-  const { user } = useAuth();
+  const user = useUser();
   const { toast } = useToast();
   const navigate = useNavigate();
   const [composerOpen, setComposerOpen] = useState(false);

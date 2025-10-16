@@ -2,14 +2,15 @@ import { Link, useLocation } from 'react-router-dom';
 import { Home, TrendingUp, Wallet, User, RotateCcw, Moon, Sun, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAppStore } from '@/store/useAppStore';
-import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { useCallback, useEffect, useState } from 'react';
+import { useAuthStore, useUser } from '@/store/auth';
 
 export default function Navigation() {
   const location = useLocation();
   const resetDemo = useAppStore((state) => state.resetDemo);
-  const { user, signOut } = useAuth();
+  const user = useUser();
+  const signOut = useAuthStore((s) => s.signOut);
   const { toast } = useToast();
   const [theme, setTheme] = useState<'light' | 'dark'>('dark');
 

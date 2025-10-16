@@ -16,10 +16,10 @@ import {
 import { Workout, Post } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { useAuth } from '@/hooks/useAuth';
 import EditWorkoutModal from './EditWorkoutModal';
 import { useQueryClient } from '@tanstack/react-query';
 import { EmptyState } from '@/components/ui/empty-state';
+import { useUser } from '@/store/auth';
 
 interface ProofOfSweatProps {
   workouts: Workout[];
@@ -29,7 +29,7 @@ interface ProofOfSweatProps {
 }
 
 export default function ProofOfSweat({ workouts, athleteId, onWorkoutDeleted, onConnectStrava }: ProofOfSweatProps) {
-  const { user } = useAuth();
+  const user = useUser();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);

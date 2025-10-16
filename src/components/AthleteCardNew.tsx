@@ -2,7 +2,6 @@ import { memo, useMemo } from 'react';
 import { TrendingUp } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
-import { LineChart, Line, ResponsiveContainer } from 'recharts';
 import { Athlete } from '@/types';
 import type { MarketplaceChartPoint } from '@/hooks/useMarketplaceCharts';
 import { formatMoney, formatNumber } from '@/lib/format';
@@ -17,12 +16,59 @@ export const AthleteCardNew = memo(({ athlete, chartData }: AthleteCardNewProps)
   const isPositive = athlete.change24h >= 0;
   const lineColor = isPositive ? 'hsl(var(--success))' : 'hsl(var(--destructive))';
 
+  const SPARKLINE_WIDTH = 80;
+  const SPARKLINE_HEIGHT = 24;
+  const SPARKLINE_PADDING = 2;
+
   const sortedChartData = useMemo(
     () => chartData.slice().sort((a, b) => a.timestamp - b.timestamp),
     [chartData]
   );
 
   const hasChartData = sortedChartData.length > 0;
+
+  const sparklinePath = useMemo(() => {
+    if (!hasChartData) {
+      return null;
+    }
+
+    const prices = sortedChartData.map((point) => Number(point.price) || 0);
+    const minPrice = Math.min(...prices);
+    const maxPrice = Math.max(...prices);
+    const priceRange = maxPrice - minPrice;
+    const drawableHeight = SPARKLINE_HEIGHT - SPARKLINE_PADDING * 2;
+    const xStep =
+      sortedChartData.length > 1
+        ? (SPARKLINE_WIDTH - SPARKLINE_PADDING * 2) / (sortedChartData.length - 1)
+        : 0;
+
+    let path = '';
+    let lastX = SPARKLINE_PADDING;
+    let lastY = SPARKLINE_HEIGHT / 2;
+
+    sortedChartData.forEach((point, index) => {
+      const x = SPARKLINE_PADDING + index * xStep;
+      const price = prices[index];
+      const y = priceRange === 0
+        ? SPARKLINE_HEIGHT / 2
+        : SPARKLINE_HEIGHT - SPARKLINE_PADDING - ((price - minPrice) / priceRange) * drawableHeight;
+
+      path += `${index === 0 ? 'M' : ' L'}${x.toFixed(2)} ${y.toFixed(2)}`;
+      lastX = x;
+      lastY = y;
+    });
+
+    if (sortedChartData.length === 1) {
+      path = `M${SPARKLINE_PADDING} ${lastY.toFixed(2)} L${SPARKLINE_WIDTH - SPARKLINE_PADDING} ${lastY.toFixed(
+        2
+      )}`;
+      lastX = SPARKLINE_WIDTH - SPARKLINE_PADDING;
+    }
+
+    const baselineY = SPARKLINE_HEIGHT - SPARKLINE_PADDING;
+
+    return { path, lastX, lastY, baselineY };
+  }, [hasChartData, sortedChartData]);
 
   return (
     <Link to={`/athlete/${athlete.slug}`}>
@@ -71,20 +117,31 @@ export const AthleteCardNew = memo(({ athlete, chartData }: AthleteCardNewProps)
             </div>
 
             {/* Mini Chart */}
-            {hasChartData && (
-              <div className="h-12 mb-3 -mx-1">
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={sortedChartData} margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
-                    <Line 
-                      type="monotone" 
-                      dataKey="price" 
-                      stroke={lineColor} 
-                      strokeWidth={1.5} 
-                      dot={false}
-                      isAnimationActive={false}
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
+            {hasChartData && sparklinePath && (
+              <div className="h-12 mb-3 -mx-1 flex items-center">
+                <svg
+                  viewBox={`0 0 ${SPARKLINE_WIDTH} ${SPARKLINE_HEIGHT}`}
+                  className="h-full w-full"
+                  role="presentation"
+                  aria-hidden="true"
+                  preserveAspectRatio="none"
+                >
+                  <path
+                    d={`M${SPARKLINE_PADDING} ${sparklinePath.baselineY.toFixed(2)} L${SPARKLINE_WIDTH - SPARKLINE_PADDING} ${sparklinePath.baselineY.toFixed(2)}`}
+                    stroke="hsl(var(--muted-foreground))"
+                    strokeWidth={0.75}
+                    opacity={0.2}
+                  />
+                  <path
+                    d={sparklinePath.path}
+                    stroke={lineColor}
+                    strokeWidth={1.5}
+                    fill="none"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                  <circle cx={sparklinePath.lastX} cy={sparklinePath.lastY} r={1.5} fill={lineColor} />
+                </svg>
               </div>
             )}
 

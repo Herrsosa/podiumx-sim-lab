@@ -11,8 +11,6 @@ import { useAthleteMetrics } from './useAthleteMetrics';
 const PAGE_SIZE = 12;
 
 export function usePaginatedAthletes() {
-  const { data: metricsMap, isLoading: metricsLoading, isFetching: metricsFetching } = useAthleteMetrics('24h');
-
   const queryResult = useInfiniteQuery({
     queryKey: ['athletes-paginated'],
     queryFn: async ({ pageParam = 0 }) => {
@@ -99,6 +97,20 @@ export function usePaginatedAthletes() {
     getNextPageParam: (lastPage) => lastPage.nextPage,
     initialPageParam: 0,
   });
+
+  const metricsIds = useMemo(() => {
+    if (!queryResult.data) return undefined;
+    const ids = new Set<string>();
+    queryResult.data.pages.forEach((page) => {
+      page.athletes.forEach((athlete) => ids.add(athlete.id));
+    });
+    return ids.size > 0 ? Array.from(ids) : undefined;
+  }, [queryResult.data]);
+
+  const { data: metricsMap, isLoading: metricsLoading, isFetching: metricsFetching } = useAthleteMetrics(
+    '24h',
+    metricsIds
+  );
 
   const athletesWithMetrics = useMemo(() => {
     if (!queryResult.data) return undefined;

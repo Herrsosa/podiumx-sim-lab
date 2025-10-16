@@ -5,10 +5,10 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { EmptyState } from '@/components/ui/empty-state';
 import { resolveAvatarUrl } from '@/utils/avatar';
+import { useUser } from '@/store/auth';
 
 interface Message {
   id: string;
@@ -34,7 +34,7 @@ export default function TokengatedChat({
   userHoldings,
   onBuyClick 
 }: TokengatedChatProps) {
-  const { user } = useAuth();
+  const user = useUser();
   const { toast } = useToast();
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState('');

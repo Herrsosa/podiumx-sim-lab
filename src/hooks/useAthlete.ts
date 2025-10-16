@@ -8,8 +8,6 @@ import { resolveAvatarUrl } from '@/utils/avatar';
 import { useAthleteMetrics } from './useAthleteMetrics';
 
 export function useAthlete(slug: string) {
-  const { data: metricsMap, isLoading: metricsLoading, isFetching: metricsFetching } = useAthleteMetrics('24h');
-
   const queryResult = useQuery({
     queryKey: ['athlete', slug],
     queryFn: async () => {
@@ -83,6 +81,16 @@ export function useAthlete(slug: string) {
     },
     enabled: !!slug,
   });
+
+  const athleteIdForMetrics = useMemo(() => {
+    const id = queryResult.data?.id;
+    return id ? [id] : undefined;
+  }, [queryResult.data?.id]);
+
+  const { data: metricsMap, isLoading: metricsLoading, isFetching: metricsFetching } = useAthleteMetrics(
+    '24h',
+    athleteIdForMetrics
+  );
 
   const athleteWithMetrics = useMemo(() => {
     if (!queryResult.data) return undefined;

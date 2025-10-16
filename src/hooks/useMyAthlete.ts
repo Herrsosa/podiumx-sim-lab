@@ -4,7 +4,7 @@ import { Athlete, Sport, Workout, Post } from '@/types';
 import { athleteAvatars } from '@/utils/athleteAvatars';
 import { priceAt } from '@/utils/pricing';
 import { resolveAvatarUrl } from '@/utils/avatar';
-import { useAuth } from './useAuth';
+import { useUser } from '@/store/auth';
 import { useAthleteMetrics } from './useAthleteMetrics';
 
 type MyAthletePageResult = {
@@ -15,8 +15,12 @@ type MyAthletePageResult = {
 const POSTS_PAGE_SIZE = 10;
 
 export function useMyAthlete() {
-  const { user } = useAuth();
-  const { data: metricsMap, isLoading: metricsLoading, isFetching: metricsFetching } = useAthleteMetrics('24h');
+  const user = useUser();
+  const athleteId = user?.id ? [user.id] : undefined;
+  const { data: metricsMap, isLoading: metricsLoading, isFetching: metricsFetching } = useAthleteMetrics(
+    '24h',
+    athleteId
+  );
 
   const queryResult = useInfiniteQuery<MyAthletePageResult>({
     queryKey: ['my-athlete', user?.id],

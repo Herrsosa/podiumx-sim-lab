@@ -12,10 +12,10 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Workout, Sport, Post } from '@/types';
 import { toast } from 'sonner';
-import { useAuth } from '@/hooks/useAuth';
 import { useMyAthlete } from '@/hooks/useMyAthlete';
 import { useAthleteTrades } from '@/hooks/useAthleteTrades';
 import { useWorkoutEditor } from '@/hooks/useWorkoutEditor';
+import { useUser } from '@/store/auth';
 
 import { supabase } from '@/integrations/supabase/client';
 import AddWorkoutModal from '@/components/AddWorkoutModal';
@@ -36,7 +36,7 @@ import {
 } from '@/components/ui/alert-dialog';
 
 export default function MyAthletePage() {
-  const { user } = useAuth();
+  const user = useUser();
   const { data: myAthletePage, pages, fetchNextPage, hasNextPage, isFetchingNextPage } = useMyAthlete();
   const { data: athleteTrades } = useAthleteTrades(user?.id || '');
   const queryClient = useQueryClient();

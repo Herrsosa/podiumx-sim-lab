@@ -1,71 +1,86 @@
+import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import type { Database } from '@/integrations/supabase/types';
 
 type TimeRange = '24h' | '7d' | '30d';
+type MarketOverviewRow =
+  Database['public']['Functions']['get_market_overview']['Returns'] extends Array<infer R> ? R : never;
 
-interface AthleteMetrics {
+export type AthleteMetrics = {
   changePct: number;
   volume: number;
+  lastPrice: number;
+  quantity: number;
+  sparkline: number[];
+};
+
+function normaliseAthleteIds(athleteIds?: string[]) {
+  if (!athleteIds || athleteIds.length === 0) {
+    return undefined;
+  }
+  const unique = Array.from(new Set(athleteIds.filter(Boolean)));
+  unique.sort();
+  return unique;
 }
 
-export function useAthleteMetrics(range: TimeRange = '24h') {
+export function parseSparkline(row: MarketOverviewRow): number[] {
+  if (!row?.spark7d || row.spark7d.length === 0) {
+    return [];
+  }
+  return row.spark7d.map((value) => Number(value) / 100);
+}
+
+export function mapMarketOverviewRow(row: MarketOverviewRow): AthleteMetrics {
+  const sparkline = parseSparkline(row);
+
+  return {
+    changePct: Number(row.pct_change_24h ?? 0),
+    volume: Number(row.notional_24h ?? 0),
+    lastPrice: Number(row.last_price ?? 0),
+    quantity: Number(row.qty_24h ?? 0),
+    sparkline,
+  };
+}
+
+export function useAthleteMetrics(
+  range: TimeRange = '24h',
+  athleteIds?: string[],
+  options?: { enabled?: boolean }
+) {
+  const normalisedIds = useMemo(() => normaliseAthleteIds(athleteIds), [athleteIds]);
+
   return useQuery({
-    queryKey: ['athlete-metrics', range],
+    queryKey: ['market-overview', range, normalisedIds],
     queryFn: async () => {
-      const now = new Date();
-      const rangeHours: Record<TimeRange, number> = {
-        '24h': 24,
-        '7d': 168,
-        '30d': 720,
-      };
+      if (range !== '24h') {
+        console.warn(`useAthleteMetrics: range "${range}" not supported server-side yet`);
+        return new Map<string, AthleteMetrics>();
+      }
 
-      const hoursAgo = rangeHours[range];
-      const startTime = new Date(now.getTime() - hoursAgo * 60 * 60 * 1000);
+      const payload =
+        normalisedIds && normalisedIds.length > 0
+          ? { athlete_ids: normalisedIds }
+          : { athlete_ids: null };
 
-      // Fetch all trades for all athletes in the time range
-      const { data: trades, error } = await supabase
-        .from('trades')
-        .select('athlete_id, created_at, price_after, net_amount')
-        .gte('created_at', startTime.toISOString())
-        .order('created_at', { ascending: true });
+      const { data, error } = await supabase.rpc('get_market_overview', payload);
 
       if (error) {
-        console.error('Error fetching athlete metrics:', error);
-        return new Map<string, AthleteMetrics>();
+        console.error('Failed to load market overview metrics', error);
+        throw error;
       }
 
-      if (!trades || trades.length === 0) {
-        return new Map<string, AthleteMetrics>();
-      }
-
-      // Group trades by athlete_id and compute metrics
       const metricsMap = new Map<string, AthleteMetrics>();
-      const athleteTradesMap = new Map<string, typeof trades>();
+      (data ?? []).forEach((row) => {
+        if (!row?.athlete_id) {
+          return;
+        }
 
-      // Group trades by athlete
-      trades.forEach((trade) => {
-        const athleteTrades = athleteTradesMap.get(trade.athlete_id) || [];
-        athleteTrades.push(trade);
-        athleteTradesMap.set(trade.athlete_id, athleteTrades);
-      });
-
-      // Compute metrics for each athlete
-      athleteTradesMap.forEach((athleteTrades, athleteId) => {
-        // Calculate volume - sum of absolute net_amount
-        const volume = athleteTrades.reduce(
-          (sum, trade) => sum + Math.abs(Number(trade.net_amount) || 0),
-          0
-        );
-
-        // Calculate price change percentage
-        const firstPrice = Number(athleteTrades[0]?.price_after) || 0;
-        const lastPrice = Number(athleteTrades[athleteTrades.length - 1]?.price_after) || 0;
-        const changePct = firstPrice > 0 ? ((lastPrice - firstPrice) / firstPrice) * 100 : 0;
-
-        metricsMap.set(athleteId, { changePct, volume });
+        metricsMap.set(row.athlete_id, mapMarketOverviewRow(row));
       });
 
       return metricsMap;
     },
+    enabled: options?.enabled ?? true,
   });
 }

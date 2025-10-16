@@ -1,10 +1,10 @@
 import { useMemo } from 'react';
 import { walletService } from '@/services/wallet';
 import type { WalletSigner } from '@/services/wallet/mockSigner';
-import { useAuth } from './useAuth';
+import { useUser } from '@/store/auth';
 
 export function useWalletSigner(): WalletSigner | null {
-  const { user } = useAuth();
+  const user = useUser();
 
   return useMemo(() => {
     try {

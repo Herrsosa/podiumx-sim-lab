@@ -8,7 +8,10 @@ import { resolveAvatarUrl } from '@/utils/avatar';
 import { useAthleteMetrics } from './useAthleteMetrics';
 
 export function useAthletesByIds(athleteIds: string[]) {
-  const { data: metricsMap, isLoading: metricsLoading, isFetching: metricsFetching } = useAthleteMetrics('24h');
+  const { data: metricsMap, isLoading: metricsLoading, isFetching: metricsFetching } = useAthleteMetrics(
+    '24h',
+    athleteIds
+  );
 
   const queryResult = useQuery({
     queryKey: ['athletes-by-ids', athleteIds],
