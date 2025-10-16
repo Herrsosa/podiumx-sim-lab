@@ -71,10 +71,18 @@ export default function AthleteDetail() {
       return [];
     }
 
-    return tradeHistory.data.map((point) => ({
-      timestamp: point.timestamp,
-      price: point.price,
-    }));
+    return tradeHistory.data
+      .map((point) => {
+        const t = new Date(point.timestamp).getTime();
+        if (!Number.isFinite(t)) {
+          return null;
+        }
+        return {
+          t,
+          price: point.price,
+        };
+      })
+      .filter((point): point is { t: number; price: number } => point !== null);
   }, [tradeHistory]);
 
   const { chartPoints, firstTradePoint } = useMemo(() => {
@@ -82,13 +90,13 @@ export default function AthleteDetail() {
       return { chartPoints: [], firstTradePoint: null };
     }
 
-    const sorted = [...rawChartData].sort((a, b) => a.timestamp - b.timestamp);
+    const sorted = [...rawChartData].sort((a, b) => a.t - b.t);
     const first = sorted[0];
 
     if (sorted.length === 1) {
       const now = Date.now();
-      const duplicateTimestamp = now > first.timestamp ? now : first.timestamp + 60_000;
-      const duplicatePoint = { ...first, timestamp: duplicateTimestamp };
+      const duplicateTimestamp = now > first.t ? now : first.t + 60_000;
+      const duplicatePoint = { ...first, t: duplicateTimestamp };
       return {
         chartPoints: [first, duplicatePoint],
         firstTradePoint: first,
@@ -377,7 +385,7 @@ export default function AthleteDetail() {
                   formatXAxisTick={formatXAxisTick}
                   formatTooltipLabel={formatTooltipLabel}
                   isLoading={historyLoading}
-                  athleteId={athlete.id}
+                  posts={athlete.posts}
                 />
               </Suspense>
             </div>

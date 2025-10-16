@@ -1,10 +1,9 @@
-import { create } from 'zustand';
-import { shallow } from 'zustand/shallow';
-import type { Session, User } from '@supabase/supabase-js';
-import { supabase } from '@/integrations/supabase/client';
-import { queryClient } from '@/lib/queryClient';
-import { walletService } from '@/services/wallet';
-import type { Wallet } from '@/types';
+import { create } from "zustand";
+import type { Session, User } from "@supabase/supabase-js";
+import { supabase } from "@/integrations/supabase/client";
+import { queryClient } from "@/lib/queryClient";
+import { walletService } from "@/services/wallet";
+import type { Wallet } from "@/types";
 
 type AuthState = {
   session: Session | null;
@@ -68,9 +67,9 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
         walletInitializedFor: userId,
       });
     } catch (error) {
-      console.error('Failed to initialize wallet', error);
+      console.error("Failed to initialize wallet", error);
       set({
-        walletError: error instanceof Error ? error.message : 'Failed to initialize wallet',
+        walletError: error instanceof Error ? error.message : "Failed to initialize wallet",
         walletLoading: false,
       });
     }
@@ -89,9 +88,9 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
         walletInitializedFor: id,
       });
     } catch (error) {
-      console.error('Failed to refresh wallet', error);
+      console.error("Failed to refresh wallet", error);
       set({
-        walletError: error instanceof Error ? error.message : 'Failed to refresh wallet',
+        walletError: error instanceof Error ? error.message : "Failed to refresh wallet",
         walletLoading: false,
       });
     }
@@ -113,12 +112,12 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
       }
     } finally {
       queryClient.clear();
-      if (typeof localStorage !== 'undefined') {
+      if (typeof localStorage !== "undefined") {
         const keysToRemove: string[] = [];
         for (let i = 0; i < localStorage.length; i += 1) {
           const key = localStorage.key(i);
           if (!key) continue;
-          if (key.startsWith('sb-') || key.startsWith('supabase') || key.startsWith('podiumx-')) {
+          if (key.startsWith("sb-") || key.startsWith("supabase") || key.startsWith("podiumx-")) {
             keysToRemove.push(key);
           }
         }
@@ -131,8 +130,8 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
         walletInitializedFor: null,
       });
       set({ loading: false });
-      if (typeof window !== 'undefined') {
-        window.location.href = '/auth';
+      if (typeof window !== "undefined") {
+        window.location.href = "/auth";
       }
     }
   },
@@ -142,10 +141,8 @@ export const useSession = () => useAuthStore((state) => state.session);
 export const useUser = () => useAuthStore((state) => state.user);
 export const useAuthLoading = () => useAuthStore((state) => state.loading);
 export const useWallet = () =>
-  useAuthStore(
-    (state) => ({
-      wallet: state.wallet,
-      loading: state.walletLoading,
-      error: state.walletError,
-    })
-  );
+  useAuthStore((state) => ({
+    wallet: state.wallet,
+    loading: state.walletLoading,
+    error: state.walletError,
+  }));

@@ -1,10 +1,12 @@
-import { memo, useState } from 'react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, ReferenceDot } from 'recharts';
+import { memo, useMemo, useId, useCallback } from 'react';
+import { ComposedChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, ReferenceDot, Bar, type TooltipProps } from 'recharts';
 import { ChartSkeleton } from '@/components/ui/skeletons';
-import { PoSDotsLayer } from './PoSDotsLayer';
+import type { Post } from '@/types';
+import { StackedCircles, POS_NEON_COLOR } from './StackedCircles';
+import { aggregatePosByDay, startOfUtcDay } from '@/utils/chartData';
 
 type ChartPoint = {
-  timestamp: number;
+  t: number;
   price: number;
 };
 
@@ -16,7 +18,7 @@ interface AthletePriceChartProps {
   formatXAxisTick: (value: number) => string;
   formatTooltipLabel: (value: number) => string;
   isLoading: boolean;
-  athleteId?: string;
+  posts?: Post[];
 }
 
 const AthletePriceChart = memo(({
@@ -27,9 +29,87 @@ const AthletePriceChart = memo(({
   formatXAxisTick,
   formatTooltipLabel,
   isLoading,
-  athleteId,
+  posts,
 }: AthletePriceChartProps) => {
-  const [chartDimensions, setChartDimensions] = useState({ width: 0, height: 0 });
+  const posDailyPoints = useMemo(() => aggregatePosByDay(posts, timeRange), [posts, timeRange]);
+  const posCountByDay = useMemo(
+    () => new Map(posDailyPoints.map((point) => [startOfUtcDay(point.dateMs), point.posCount])),
+    [posDailyPoints],
+  );
+
+  const chartData = useMemo(() => {
+    const dayWithPrice = new Set<number>();
+
+    const baseData = chartPoints
+      .filter((point) => Number.isFinite(point.t))
+      .map((point) => {
+        const dayStart = startOfUtcDay(point.t);
+        dayWithPrice.add(dayStart);
+
+        return {
+          t: point.t,
+          price: point.price,
+          posCount: posCountByDay.get(dayStart) ?? 0,
+        };
+      });
+
+    const posOnlyData = posDailyPoints
+      .filter((posPoint) => Number.isFinite(posPoint.dateMs) && !dayWithPrice.has(posPoint.dateMs))
+      .map((posPoint) => ({
+        t: posPoint.dateMs,
+        price: null,
+        posCount: posPoint.posCount,
+      }));
+
+    return [...baseData, ...posOnlyData].sort((a, b) => a.t - b.t);
+  }, [chartPoints, posCountByDay, posDailyPoints]);
+
+  const posDomain = useMemo<[number, number]>(() => {
+    const maxPos = posDailyPoints.reduce((max, point) => Math.max(max, point.posCount), 0);
+    const upper = maxPos > 0 ? maxPos + 1 : 1;
+    return [0, upper];
+  }, [posDailyPoints]);
+
+  const glowFilterId = useId().replace(/:/g, '');
+
+  const xDomain = useMemo<[number, number]>(() => {
+    if (chartData.length === 0) {
+      const now = Date.now();
+      const dayMs = 24 * 60 * 60 * 1000;
+      return [now - dayMs, now + dayMs];
+    }
+    const dayMs = 24 * 60 * 60 * 1000;
+    const min = chartData[0].t;
+    const max = chartData[chartData.length - 1].t;
+    return [min - dayMs * 0.5, max + dayMs * 0.75];
+  }, [chartData]);
+
+  const renderTooltip = useCallback(({ active, label, payload }: TooltipProps<number, string>) => {
+    if (!active || !payload || payload.length === 0 || typeof label !== 'number') {
+      return null;
+    }
+
+    const priceEntry = payload.find((item) => item && item.dataKey === 'price');
+    const posEntry = payload.find((item) => item && item.dataKey === 'posCount');
+
+    const price = typeof priceEntry?.value === 'number' ? priceEntry.value : undefined;
+    const dateLabel = formatTooltipLabel(label);
+    const dayStart = startOfUtcDay(label);
+    const posCount =
+      typeof posEntry?.value === 'number' ? posEntry.value : posCountByDay.get(dayStart) ?? 0;
+
+    return (
+      <div className="rounded-lg border border-border/60 bg-card/90 px-3 py-2 shadow-lg">
+        <div className="text-xs text-muted-foreground">{dateLabel}</div>
+        {typeof price === 'number' && (
+          <div className="text-sm font-semibold text-foreground">${price.toFixed(4)}</div>
+        )}
+        <div className="mt-1 text-xs text-muted-foreground">
+          PoS: <span className="font-medium text-foreground">{posCount}</span>
+        </div>
+      </div>
+    );
+  }, [formatTooltipLabel, posCountByDay]);
 
   if (isLoading) {
     return <ChartSkeleton className="h-full" />;
@@ -43,80 +123,86 @@ const AthletePriceChart = memo(({
     );
   }
 
-  const xDomain: [number, number] = [
-    Math.min(...chartPoints.map(p => p.timestamp)),
-    Math.max(...chartPoints.map(p => p.timestamp)),
-  ];
-
   return (
     <div style={{ position: 'relative', width: '100%', height: '100%' }}>
-      <ResponsiveContainer width="100%" height="100%" onResize={(width, height) => {
-        setChartDimensions({ width: width || 0, height: height || 0 });
-      }}>
-        <LineChart data={chartPoints}>
-        <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-        <XAxis
-          dataKey="timestamp"
-          type="number"
-          scale="time"
-          domain={['auto', 'auto']}
-          tickFormatter={formatXAxisTick}
-          tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }}
-          stroke="hsl(var(--muted-foreground))"
-        />
-        <YAxis
-          domain={['auto', 'auto']}
-          tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }}
-          stroke="hsl(var(--muted-foreground))"
-          tickFormatter={(value) => `$${value.toFixed(2)}`}
-        />
-        <RechartsTooltip
-          contentStyle={{
-            backgroundColor: 'hsl(var(--card))',
-            border: '1px solid hsl(var(--border))',
-            borderRadius: '0.5rem',
-          }}
-          formatter={(value: number) => [`$${value.toFixed(4)}`, 'Price']}
-          labelFormatter={formatTooltipLabel}
-        />
-        <Line
-          type="monotone"
-          dataKey="price"
-          stroke="hsl(var(--primary))"
-          strokeWidth={2}
-          dot={false}
-          connectNulls
-        />
-        {hasRealTrades && firstTradePoint && chartPoints.length > 0 && (
-          <ReferenceDot
-            x={firstTradePoint.timestamp}
-            y={firstTradePoint.price}
-            r={5}
-            stroke="hsl(var(--background))"
-            strokeWidth={2}
-            fill="hsl(var(--primary))"
-            label={{
-              value: 'First trade',
-              position: 'top',
-              fill: 'hsl(var(--muted-foreground))',
-              fontSize: 12,
-            }}
+      <ResponsiveContainer width="100%" height="100%">
+        <ComposedChart data={chartData} margin={{ top: 24, right: 16, bottom: 56, left: 16 }}>
+          <defs>
+            <filter id={`posGlow-${glowFilterId}`} x="-200%" y="-200%" width="500%" height="500%">
+              <feGaussianBlur stdDeviation="5" result="coloredBlur" />
+              <feMerge>
+                <feMergeNode in="coloredBlur" />
+                <feMergeNode in="SourceGraphic" />
+              </feMerge>
+            </filter>
+          </defs>
+          <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.18} />
+          <XAxis
+            dataKey="t"
+            type="number"
+            scale="time"
+            domain={xDomain}
+            tickFormatter={formatXAxisTick}
+            tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
+            stroke="hsl(var(--muted-foreground))"
+            axisLine={false}
+            tickLine={false}
           />
-        )}
-        </LineChart>
+          <YAxis
+            domain={['auto', 'auto']}
+            tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
+            stroke="hsl(var(--muted-foreground))"
+            tickFormatter={(value) => `$${value.toFixed(2)}`}
+            width={60}
+            axisLine={false}
+            tickLine={false}
+          />
+          <YAxis yAxisId="pos" domain={posDomain} hide />
+          <RechartsTooltip content={renderTooltip} cursor={{ stroke: 'hsl(var(--border))', strokeDasharray: '3 3' }} />
+          <Bar
+            dataKey="posCount"
+            yAxisId="pos"
+            fill="transparent"
+            barSize={48}
+            shape={
+              <StackedCircles
+                color={POS_NEON_COLOR}
+                filterId={`posGlow-${glowFilterId}`}
+                maxCircles={6}
+                gap={7}
+                radius={9}
+                hitboxSize={48}
+              />
+            }
+          />
+          <Line
+            type="monotone"
+            dataKey="price"
+            stroke={POS_NEON_COLOR}
+            strokeWidth={2}
+            strokeOpacity={0.65}
+            dot={false}
+            connectNulls
+            strokeLinecap="round"
+          />
+          {hasRealTrades && firstTradePoint && chartPoints.length > 0 && (
+            <ReferenceDot
+              x={firstTradePoint.t}
+              y={firstTradePoint.price}
+              r={5}
+              stroke="hsl(var(--background))"
+              strokeWidth={2}
+              fill={POS_NEON_COLOR}
+              label={{
+                value: 'First trade',
+                position: 'top',
+                fill: 'hsl(var(--muted-foreground))',
+                fontSize: 12,
+              }}
+            />
+          )}
+        </ComposedChart>
       </ResponsiveContainer>
-      
-      {/* PoS Dots Layer */}
-      {athleteId && chartDimensions.width > 0 && (
-        <PoSDotsLayer
-          athleteId={athleteId}
-          timeRange={timeRange}
-          chartWidth={chartDimensions.width}
-          chartHeight={chartDimensions.height}
-          xDomain={xDomain}
-          yPosition={20}
-        />
-      )}
     </div>
   );
 });

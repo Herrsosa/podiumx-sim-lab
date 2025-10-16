@@ -1,10 +1,9 @@
 if (typeof window !== "undefined") {
-    window.addEventListener("error", (e) => {
-      console.error("window.onerror", e.error || e.message || e);
-    });
-    window.addEventListener("unhandledrejection", (e) => {
-      console.error("unhandledrejection", e.reason);
-    });
-  }
+  window.addEventListener("error", (event) => {
+    console.error("window.onerror", event.error || event.message || event);
+  });
 
-  
+  window.addEventListener("unhandledrejection", (event) => {
+    console.error("unhandledrejection", event.reason);
+  });
+}
