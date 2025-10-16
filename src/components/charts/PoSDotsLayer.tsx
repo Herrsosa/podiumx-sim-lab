@@ -147,13 +147,24 @@ export const PoSDotsLayer = memo(({
     <svg
       style={{
         position: 'absolute',
-        bottom: 20,
+        bottom: 0,
         left: 0,
         width: '100%',
-        height: 40,
+        height: 50,
         pointerEvents: 'none',
+        zIndex: 10,
       }}
+      viewBox={`0 0 ${chartWidth} 50`}
+      preserveAspectRatio="none"
     >
+      {/* Debug: Background to see if SVG is rendered */}
+      <rect x="0" y="0" width={chartWidth} height="50" fill="rgba(0,255,0,0.1)" />
+      
+      {/* Label */}
+      <text x="10" y="15" fontSize={10} fill="hsl(var(--muted-foreground))" fontWeight="500">
+        Proof of Sweat
+      </text>
+      
       {dotElements}
     </svg>
   );
