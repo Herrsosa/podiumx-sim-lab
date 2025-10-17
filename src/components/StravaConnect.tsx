@@ -19,7 +19,7 @@ export default function StravaConnect({ athleteId }: StravaConnectProps) {
     try {
       const { data } = await supabase
         .from('athlete_integrations')
-        .select('*')
+        .select('id')
         .eq('athlete_id', athleteId)
         .eq('service', 'strava')
         .maybeSingle();

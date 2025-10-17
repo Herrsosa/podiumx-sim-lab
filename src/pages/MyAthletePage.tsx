@@ -578,7 +578,7 @@ export default function MyAthletePage() {
               </div>
             </div>
             <ResponsiveContainer width="100%" height={300}>
-              <ComposedChart data={chartData} margin={{ top: 24, right: 16, bottom: 56, left: 16 }}>
+              <ComposedChart data={chartData} margin={{ top: 24, right: 24, bottom: 56, left: 16 }}>
                 <defs>
                   <filter id={`posGlow-${glowFilterId}`} x="-200%" y="-200%" width="500%" height="500%">
                     <feGaussianBlur stdDeviation="5" result="coloredBlur" />
@@ -594,6 +594,7 @@ export default function MyAthletePage() {
                   type="number"
                   scale="time"
                   domain={xDomain}
+                  padding={{ right: 18 }}
                   tickFormatter={formatXAxisTick}
                   tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
                   stroke="hsl(var(--muted-foreground))"
@@ -615,15 +616,15 @@ export default function MyAthletePage() {
                   dataKey="posCount"
                   yAxisId="pos"
                   fill="transparent"
-                  barSize={48}
+                  barSize={56}
                   shape={
                     <StackedCircles
                       color={POS_NEON_COLOR}
                       filterId={`posGlow-${glowFilterId}`}
                       maxCircles={6}
-                      gap={7}
-                      radius={9}
-                      hitboxSize={48}
+                      gap={8}
+                      radius={11}
+                      hitboxSize={56}
                     />
                   }
                 />

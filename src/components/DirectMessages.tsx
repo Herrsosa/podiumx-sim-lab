@@ -97,7 +97,7 @@ export function DirectMessages() {
           // Count unread messages
           const { count } = await supabase
             .from('dm_messages')
-            .select('*', { count: 'exact', head: true })
+            .select('id', { count: 'exact', head: true })
             .eq('conversation_id', convId)
             .neq('sender_id', user.id)
             .gt('created_at', lastRead || '1970-01-01');

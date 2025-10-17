@@ -10,9 +10,10 @@ export function useAthleteTrades(athleteId: string) {
 
       const { data, error } = await supabase
         .from('trades')
-        .select('*')
+        .select('id, created_at, athlete_id, user_id, side, qty, gross_amount, net_amount, fee, price_after')
         .eq('athlete_id', athleteId)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .limit(100);
 
       if (error) throw error;
 

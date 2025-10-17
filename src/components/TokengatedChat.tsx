@@ -59,7 +59,7 @@ export default function TokengatedChat({
     const { data: msgs } = await supabase
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       .from('chat_messages' as any)
-      .select('*')
+      .select('id, user_id, athlete_id, content, created_at')
       .eq('athlete_id', athleteId)
       .order('created_at', { ascending: true })
       .limit(100);

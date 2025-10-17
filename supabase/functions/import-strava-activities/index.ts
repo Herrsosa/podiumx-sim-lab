@@ -78,7 +78,7 @@ async function refreshStravaToken(connection: OAuthConnection, supabaseClient: S
     .from('oauth_connections')
     .update(updates)
     .eq('id', connection.id)
-    .select('*')
+    .select('id, user_id, access_token, refresh_token, expires_at, scope, updated_at')
     .maybeSingle();
 
   if (updateError) {
@@ -129,7 +129,7 @@ serve(async (req) => {
 
     const { data: connection, error: connectionError } = await supabaseClient
       .from('oauth_connections')
-      .select('*')
+      .select('id, user_id, access_token, refresh_token, expires_at, scope, updated_at')
       .eq('user_id', user.id)
       .eq('provider', 'strava')
       .maybeSingle();

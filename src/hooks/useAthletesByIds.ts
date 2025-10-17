@@ -27,16 +27,19 @@ export function useAthletesByIds(athleteIds: string[]) {
 
       const { data: tokens, error: tokensError } = await supabase
         .from('athlete_tokens')
-        .select('*')
+        .select('athlete_id, supply, a, b, c, treasury_balance, athlete_earnings')
         .in('athlete_id', athleteIds);
 
       if (tokensError) throw tokensError;
 
+      const postsLimit = Math.min(Math.max(athleteIds.length * 25, 50), 500);
+
       const { data: posts, error: postsError } = await supabase
         .from('posts')
-        .select('*')
+        .select('id, created_at, author_id, workout_json, image_url, text, token_gated, strava_activity_id')
         .in('author_id', athleteIds)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .limit(postsLimit);
 
       if (postsError) throw postsError;
 

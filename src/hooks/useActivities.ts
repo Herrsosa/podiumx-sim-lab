@@ -19,7 +19,9 @@ export function useActivities(options: UseActivitiesOptions = {}) {
 
       const { data, error } = await supabase
         .from('activities')
-        .select('*')
+        .select(
+          'id, user_id, name, sport_type, start_time, distance_m, moving_time_s, elapsed_time_s, avg_hr, max_hr, elev_gain_m, calories, raw, external_id, source, created_at'
+        )
         .eq('user_id', user.id)
         .order('start_time', { ascending: false })
         .limit(resultLimit);

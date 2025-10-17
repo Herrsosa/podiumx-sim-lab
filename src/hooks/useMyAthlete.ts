@@ -41,7 +41,7 @@ export function useMyAthlete() {
 
       const { data: tokens, error: tokenError } = await supabase
         .from('athlete_tokens')
-        .select('*')
+        .select('athlete_id, supply, a, b, c, treasury_balance, athlete_earnings')
         .eq('athlete_id', user.id);
 
       if (tokenError) throw tokenError;
@@ -50,7 +50,7 @@ export function useMyAthlete() {
 
       const { data: rawPosts, error: postsError } = await supabase
         .from('posts')
-        .select('*')
+        .select('id, created_at, author_id, workout_json, image_url, text, token_gated, strava_activity_id')
         .eq('author_id', user.id)
         .order('created_at', { ascending: false })
         .range(from, to);
