@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback } from 'react';
-import { Activity, Calendar, Clock, Gauge, Zap, Trash2, Edit } from 'lucide-react';
+import { useState, useEffect, useMemo } from 'react';
+import { Activity, Clock, Gauge, Zap, Trash2, Edit } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -23,12 +23,13 @@ import { useUser } from '@/store/auth';
 
 interface ProofOfSweatProps {
   workouts: Workout[];
+  posts: Post[];
   athleteId?: string;
   onWorkoutDeleted?: () => void;
   onConnectStrava?: () => void;
 }
 
-export default function ProofOfSweat({ workouts, athleteId, onWorkoutDeleted, onConnectStrava }: ProofOfSweatProps) {
+export default function ProofOfSweat({ workouts, posts, athleteId, onWorkoutDeleted, onConnectStrava }: ProofOfSweatProps) {
   const user = useUser();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -36,8 +37,7 @@ export default function ProofOfSweat({ workouts, athleteId, onWorkoutDeleted, on
   const [workoutToDelete, setWorkoutToDelete] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
-  const [workoutToEdit, setWorkoutToEdit] = useState<Workout | null>(null);
-  const [workoutPosts, setWorkoutPosts] = useState<Post[]>([]);
+  const [workoutToEdit, setWorkoutToEdit] = useState<Post | null>(null);
   const [optimisticWorkouts, setOptimisticWorkouts] = useState<Workout[]>([]);
 
   // Sync optimistic state with actual workouts
@@ -45,30 +45,15 @@ export default function ProofOfSweat({ workouts, athleteId, onWorkoutDeleted, on
     setOptimisticWorkouts(workouts || []);
   }, [workouts]);
 
-  const fetchWorkoutPosts = useCallback(async () => {
-    if (!athleteId) return;
-    
-    try {
-      const { data, error } = await supabase
-        .from('posts')
-        .select('*')
-        .eq('author_id', athleteId)
-        .not('workout_json', 'is', null);
-
-      if (error) throw error;
-      setWorkoutPosts((data as any[]) || []);
-    } catch (error) {
-      console.error('Error fetching workout posts:', error);
-    }
-  }, [athleteId]);
-
-  // Fetch workout posts to get full post data including token_gated
-  useEffect(() => {
-    if (athleteId) {
-      fetchWorkoutPosts();
-    }
-  }, [athleteId, fetchWorkoutPosts]);
-
+  const workoutPostMap = useMemo(() => {
+    const map = new Map<string, Post>();
+    posts.forEach((post) => {
+      if (post.workout_json && typeof post.workout_json === 'object' && !Array.isArray(post.workout_json)) {
+        map.set(post.id, post);
+      }
+    });
+    return map;
+  }, [posts]);
 
   // Use optimistic workouts for display
   const safeWorkouts = optimisticWorkouts;
@@ -76,10 +61,17 @@ export default function ProofOfSweat({ workouts, athleteId, onWorkoutDeleted, on
   const canDelete = user?.id === athleteId;
 
   const handleEditClick = (workout: Workout) => {
-    const post = workoutPosts.find(p => p.id === workout.id);
+    const post = workoutPostMap.get(workout.id);
     if (post) {
-      setWorkoutToEdit(post as any);
+      setWorkoutToEdit(post);
       setEditModalOpen(true);
+    }
+  };
+
+  const handleEditModalChange = (open: boolean) => {
+    setEditModalOpen(open);
+    if (!open) {
+      setWorkoutToEdit(null);
     }
   };
 
@@ -95,11 +87,16 @@ export default function ProofOfSweat({ workouts, athleteId, onWorkoutDeleted, on
 
     // Store the workout for potential restoration
     const workoutToDeleteData = optimisticWorkouts.find(w => w.id === workoutToDelete);
-    const postToDelete = workoutPosts.find(p => p.id === workoutToDelete);
+    const postToDelete = workoutPostMap.get(workoutToDelete);
 
     // Optimistically remove from UI
     setOptimisticWorkouts(prev => prev.filter(w => w.id !== workoutToDelete));
     setDeleteDialogOpen(false);
+
+    if (workoutToEdit && workoutToEdit.id === workoutToDelete) {
+      setWorkoutToEdit(null);
+      setEditModalOpen(false);
+    }
 
     try {
       // Delete media from storage if it exists
@@ -138,8 +135,6 @@ export default function ProofOfSweat({ workouts, athleteId, onWorkoutDeleted, on
         queryClient.invalidateQueries({ queryKey: ['posts'] }),
       ]);
 
-      // Refetch workout posts
-      await fetchWorkoutPosts();
       onWorkoutDeleted?.();
     } catch (error: unknown) {
       console.error('Error deleting workout:', error);
@@ -333,14 +328,23 @@ export default function ProofOfSweat({ workouts, athleteId, onWorkoutDeleted, on
       {workoutToEdit && (
         <EditWorkoutModal
           open={editModalOpen}
-          onOpenChange={setEditModalOpen}
-          workoutPost={workoutToEdit as any}
+          onOpenChange={handleEditModalChange}
+          workoutPost={{
+            id: workoutToEdit.id,
+            workout_json:
+              (workoutToEdit.workout_json &&
+                typeof workoutToEdit.workout_json === 'object' &&
+                !Array.isArray(workoutToEdit.workout_json)
+                ? (workoutToEdit.workout_json as Workout)
+                : ({} as Workout)),
+            token_gated: Boolean(workoutToEdit.token_gated),
+            image_url: workoutToEdit.image_url ?? undefined,
+          }}
           onSuccess={async () => {
             await Promise.all([
               queryClient.invalidateQueries({ queryKey: ['athletes'] }),
               queryClient.invalidateQueries({ queryKey: ['posts'] }),
             ]);
-            await fetchWorkoutPosts();
             onWorkoutDeleted?.();
           }}
         />

@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect, useMemo } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,30 +11,51 @@ import { Loader2 } from "lucide-react";
 
 export default function Auth() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
+  const redirectTarget = useMemo(() => {
+    const sanitizePath = (value?: string | null) => {
+      if (!value) return null;
+      if (!value.startsWith('/') || value.startsWith('//')) return null;
+      if (value === '/auth') return null;
+      return value;
+    };
+
+    const stateRedirect = sanitizePath(
+      ((location.state as { redirectTo?: string } | null)?.redirectTo) ?? undefined,
+    );
+    const queryRedirect = sanitizePath(new URLSearchParams(location.search).get('redirect'));
+
+    return stateRedirect ?? queryRedirect ?? '/onboarding';
+  }, [location]);
+
   useEffect(() => {
+    let isMounted = true;
+
     // Check if user is already logged in
     supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!isMounted) return;
       if (session) {
-        // Let ProtectedRoute handle onboarding redirect logic
-        navigate("/onboarding");
+        navigate(redirectTarget, { replace: true });
       }
     });
 
     // Listen for auth changes (sign-up or sign-in)
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (session && (event === 'SIGNED_IN' || event === 'INITIAL_SESSION')) {
-        // Let ProtectedRoute handle onboarding redirect logic
-        navigate("/onboarding");
+        navigate(redirectTarget, { replace: true });
       }
     });
 
-    return () => subscription.unsubscribe();
-  }, [navigate]);
+    return () => {
+      isMounted = false;
+      subscription.unsubscribe();
+    };
+  }, [navigate, redirectTarget]);
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -45,7 +66,7 @@ export default function Auth() {
         email,
         password,
         options: {
-          emailRedirectTo: `${window.location.origin}/onboarding`,
+          emailRedirectTo: `${window.location.origin}${redirectTarget}`,
         },
       });
 

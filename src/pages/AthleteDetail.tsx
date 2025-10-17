@@ -664,6 +664,7 @@ export default function AthleteDetail() {
         <div className="lg:col-span-2 space-y-6">
           <ProofOfSweat 
             workouts={athlete.workouts} 
+            posts={athlete.posts || []}
             athleteId={athlete.id}
             onWorkoutDeleted={handleWorkoutSuccess}
             onConnectStrava={isOwnProfile ? () => navigate('/my-athlete') : undefined}

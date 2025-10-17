@@ -39,18 +39,20 @@ export default function Marketplace() {
   const handleAthleteClick = useCallback((slug: string) => {
     if (!slug) return;
 
+    const destination = `/athlete/${slug}`;
+
     if (loading) {
       setPendingSlug(slug);
       return;
     }
 
     if (!user) {
-      navigate('/auth');
+      navigate('/auth', { state: { redirectTo: destination } });
       return;
     }
 
     prefetchAthleteDetail();
-    navigate(`/athlete/${slug}`);
+    navigate(destination);
   }, [user, loading, navigate, prefetchAthleteDetail]);
 
   useEffect(() => {

@@ -1,11 +1,14 @@
 import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { Athlete, Sport, Workout } from '@/types';
+import { Athlete, Sport, Workout, Post } from '@/types';
 import { athleteAvatars } from '@/utils/athleteAvatars';
 import { priceAt } from '@/utils/pricing';
 import { resolveAvatarUrl } from '@/utils/avatar';
 import { useAthleteMetrics } from './useAthleteMetrics';
+import type { Database } from '@/integrations/supabase/types';
+
+type PostRow = Database['public']['Tables']['posts']['Row'];
 
 export function useAthlete(slug: string) {
   const queryResult = useQuery({
@@ -30,7 +33,7 @@ export function useAthlete(slug: string) {
 
       const { data: posts, error: postsError } = await supabase
         .from('posts')
-        .select('*')
+        .select('id, created_at, author_id, workout_json, image_url, text, token_gated, strava_activity_id')
         .eq('author_id', profile.id)
         .order('created_at', { ascending: false });
 
@@ -44,12 +47,23 @@ export function useAthlete(slug: string) {
       const price = priceAt(supply, { a, b, c });
       const marketCap = price * supply;
 
+      const typedPosts: Post[] = (posts ?? []).map((post: PostRow) => ({
+        id: post.id,
+        created_at: post.created_at,
+        workout_json: post.workout_json as Workout | Record<string, unknown> | null,
+        image_url: post.image_url,
+        text: post.text,
+        token_gated: Boolean(post.token_gated),
+        strava_activity_id: post.strava_activity_id,
+        author_id: post.author_id,
+      }));
+
       // Convert posts to workouts format
-      const workouts = posts
-        .filter((p) => p.workout_json)
+      const workouts = typedPosts
+        .filter((p) => p.workout_json && typeof p.workout_json === 'object' && !Array.isArray(p.workout_json))
         .map((p) => ({
           id: p.id,
-          ...(p.workout_json as unknown as Workout),
+          ...(p.workout_json as Workout),
         }));
 
       const avatarSource = athleteAvatars[profile.username] ?? profile.avatar_url;
@@ -74,7 +88,7 @@ export function useAthlete(slug: string) {
         change24h: 0,
         volume24h: 0,
         workouts,
-        posts: posts as any,
+        posts: typedPosts,
       };
 
       return athlete;
