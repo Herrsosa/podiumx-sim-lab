@@ -58,3 +58,5 @@ export function formatMoney(value: number | null | undefined): string {
   const sign = value! < 0 ? "-" : "";
   return sign + "$" + toCompactString(value!);
 }
+
+export const formatPrice = formatMoney;

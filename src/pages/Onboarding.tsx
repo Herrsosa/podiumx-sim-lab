@@ -12,13 +12,12 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Upload, Dumbbell, Trophy, Eye, TrendingUp, ShoppingBag } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/hooks/useAuth";
 import { useLocalStore } from "@/store/useLocalStore";
 import { FaucetButton } from "@/components/FaucetButton";
 import { useTrade } from "@/hooks/useTrade";
 import { usePaginatedAthletes } from "@/hooks/usePaginatedAthletes";
-import { initWallet } from "@/hooks/useTrade";
 import { useOnboardingStatus } from "@/hooks/useOnboardingStatus";
+import { useUser } from "@/store/auth";
 
 type OnboardingStep = 
   | 'ROLE_SELECTION' 
@@ -32,9 +31,9 @@ type OnboardingStep =
 
 export default function Onboarding() {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const user = useUser();
   const queryClient = useQueryClient();
-  const { data: onboardingStatus } = useOnboardingStatus();
+  const onboardingStatus = useOnboardingStatus();
   const { onboardingRole, setOnboardingRole } = useLocalStore();
   const [step, setStep] = useState<OnboardingStep>('ROLE_SELECTION');
   const [submitting, setSubmitting] = useState(false);
@@ -117,7 +116,7 @@ export default function Onboarding() {
         .maybeSingle();
 
       const fallbackHandleBase = user.email?.split('@')[0]?.replace(/[^a-zA-Z0-9]/g, '') || `user-${user.id.slice(0, 6)}`;
-      const payload: Record<string, unknown> = {
+      const payload: any = {
         id: user.id,
         role,
         onboarding_completed: false,
@@ -162,7 +161,7 @@ export default function Onboarding() {
     setCheckingProfile(false);
   }, [user]);
 
-  const persistedRole = onboardingStatus?.role;
+  const persistedRole = onboardingStatus.data?.role;
 
   useEffect(() => {
     if (!user || !persistedRole) return;
@@ -171,13 +170,6 @@ export default function Onboarding() {
     setOnboardingRole(persistedRole as 'fan' | 'athlete');
     setStep(persistedRole === 'fan' ? 'FAN_PROFILE' : 'ATHLETE_PROFILE');
   }, [user, persistedRole, step, setOnboardingRole]);
-
-  // Initialize wallet on mount
-  useEffect(() => {
-    if (user) {
-      initWallet();
-    }
-  }, [user]);
 
   // Restore role selection from localStorage only if user has started onboarding
   useEffect(() => {
@@ -372,7 +364,7 @@ export default function Onboarding() {
       navigate('/portfolio', { replace: true });
     } catch (error: unknown) {
       console.error('Onboarding error:', error);
-      toast.error(error.message || "Failed to complete onboarding");
+      toast.error(error instanceof Error ? error.message : "Failed to complete onboarding");
     } finally {
       setSubmitting(false);
     }

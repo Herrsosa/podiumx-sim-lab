@@ -5,10 +5,10 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { EmptyState } from '@/components/ui/empty-state';
 import { resolveAvatarUrl } from '@/utils/avatar';
+import { useUser } from '@/store/auth';
 
 interface Message {
   id: string;
@@ -34,7 +34,7 @@ export default function TokengatedChat({
   userHoldings,
   onBuyClick 
 }: TokengatedChatProps) {
-  const { user } = useAuth();
+  const user = useUser();
   const { toast } = useToast();
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState('');
@@ -56,7 +56,7 @@ export default function TokengatedChat({
     if (!msgs) return;
 
     // Fetch profiles for all messages
-    const userIds = [...new Set(msgs.map((m: Message) => m.user_id))];
+    const userIds = [...new Set(msgs.map((m: any) => m.user_id))];
     const { data: profiles } = await supabase
       .from('profiles')
       .select('id, display_name, avatar_url, bio')
@@ -64,7 +64,7 @@ export default function TokengatedChat({
 
     const profileMap = new Map(profiles?.map(p => [p.id, p]) || []);
     
-    const enrichedMessages = msgs.map((m: Message) => {
+    const enrichedMessages = msgs.map((m: any) => {
       const profile = profileMap.get(m.user_id);
       return {
         ...m,

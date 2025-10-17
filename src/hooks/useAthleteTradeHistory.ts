@@ -2,6 +2,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { priceAt } from '@/utils/pricing';
+import type { Database } from '@/integrations/supabase/types';
 
 type TimeRange = '24h' | '7d' | '30d' | 'all';
 
@@ -55,7 +56,7 @@ export function useAthleteTradeHistory(athleteId: string | undefined, range: Tim
 
       let query = supabase
         .from('trades')
-        .select('created_at, price_after')
+        .select('created_at, price_after, qty, gross_amount, net_amount')
         .eq('athlete_id', athleteId)
         .order('created_at', { ascending: true });
 
@@ -74,7 +75,32 @@ export function useAthleteTradeHistory(athleteId: string | undefined, range: Tim
       }
 
       // Calculate volume from all trades in range
-      const volume = trades?.reduce((sum, trade) => sum + Math.abs(Number(trade.price_after) || 0), 0) || 0;
+      type TradeRow = Pick<
+        Database['public']['Tables']['trades']['Row'],
+        'created_at' | 'price_after' | 'qty' | 'gross_amount' | 'net_amount'
+      >;
+
+      const tradeRows = (trades ?? []) as TradeRow[];
+
+      const volume = tradeRows.reduce((sum, trade) => {
+        const gross = Number(trade.gross_amount);
+        if (Number.isFinite(gross) && gross > 0) {
+          return sum + Math.abs(gross);
+        }
+
+        const net = Number(trade.net_amount);
+        if (Number.isFinite(net) && net > 0) {
+          return sum + Math.abs(net);
+        }
+
+        const price = Number(trade.price_after);
+        const qty = Number(trade.qty);
+        if (Number.isFinite(price) && Number.isFinite(qty)) {
+          return sum + Math.abs(price * qty);
+        }
+
+        return sum;
+      }, 0);
 
       if (!trades || trades.length === 0) {
         // No trades yet - fetch current token data to show current price
@@ -106,7 +132,7 @@ export function useAthleteTradeHistory(athleteId: string | undefined, range: Tim
         return { data: [], changePct: 0, volume: 0 };
       }
 
-      const points: TradePoint[] = (trades || [])
+      const points: TradePoint[] = tradeRows
         .map((trade) => {
           const timestamp = new Date(trade.created_at).getTime();
           const price = Number(trade.price_after);

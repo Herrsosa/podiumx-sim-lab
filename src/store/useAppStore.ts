@@ -218,6 +218,7 @@ export const useAppStore = create<AppState>()(
           avatar: state.userProfile.avatar || '',
           bio: state.userProfile.bio,
           location: state.userProfile.location,
+          posts: [],
           socials: state.userProfile.socials,
           supply: initialSupply,
           reserve: initialReserve,

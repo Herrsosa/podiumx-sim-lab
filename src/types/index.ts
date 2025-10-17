@@ -27,7 +27,7 @@ export interface Athlete {
 export interface Post {
   id: string;
   created_at: string;
-  workout_json: Workout;
+  workout_json: Workout | Record<string, any> | null;
   image_url: string | null;
   text: string | null;
   token_gated: boolean;

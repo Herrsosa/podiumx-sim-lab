@@ -121,8 +121,8 @@ export function StravaCard({ className }: StravaCardProps) {
       const diff = now.getTime() - start.getTime();
       if (diff >= 0 && diff <= weekMs) {
         distance += activity.distance_m || 0;
-        if (activity.average_heartrate) {
-          hrTotal += activity.average_heartrate;
+        if (activity.avg_hr) {
+          hrTotal += activity.avg_hr;
           hrCount += 1;
         }
         count += 1;

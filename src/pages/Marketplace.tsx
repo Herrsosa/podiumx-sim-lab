@@ -5,19 +5,21 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { usePaginatedAthletes } from '@/hooks/usePaginatedAthletes';
 import { useMarketplaceCharts } from '@/hooks/useMarketplaceCharts';
-import { useAuth } from '@/hooks/useAuth';
+import type { MarketplaceChartPoint } from '@/hooks/useMarketplaceCharts';
 import { Sport } from '@/types';
 import { DevSeedTrades } from '@/components/DevSeedTrades';
 import { AthleteCard } from '@/components/AthleteCard';
 import { H1, Body } from '@/components/ui/typography';
 import { EmptyState } from '@/components/ui/empty-state';
 import { CardSkeleton } from '@/components/ui/skeletons';
+import { useAuthLoading, useUser } from '@/store/auth';
 
 const SPORTS: Sport[] = ['Running', 'HYROX', 'Cycling', 'Triathlon', 'CrossFit', 'Swimming', 'Trail Run', 'Rowing'];
 
 export default function Marketplace() {
   const navigate = useNavigate();
-  const { user, loading } = useAuth();
+  const user = useUser();
+  const loading = useAuthLoading();
   const [search, setSearch] = useState('');
   const [selectedSport, setSelectedSport] = useState<Sport | 'All'>('All');
   const [pendingSlug, setPendingSlug] = useState<string | null>(null);
@@ -35,9 +37,9 @@ export default function Marketplace() {
   }, []);
 
   const handleAthleteClick = useCallback((slug: string) => {
-    if (!slug) {
-      return;
-    }
+    if (!slug) return;
+
+    const destination = `/athlete/${slug}`;
 
     if (loading) {
       setPendingSlug(slug);
@@ -45,18 +47,16 @@ export default function Marketplace() {
     }
 
     if (!user) {
-      navigate('/auth');
+      navigate('/auth', { state: { redirectTo: destination } });
       return;
     }
 
     prefetchAthleteDetail();
-    navigate(`/athlete/${slug}`);
+    navigate(destination);
   }, [user, loading, navigate, prefetchAthleteDetail]);
 
   useEffect(() => {
-    if (!pendingSlug || loading) {
-      return;
-    }
+    if (!pendingSlug || loading) return;
 
     if (!user) {
       navigate('/auth');
@@ -70,22 +70,19 @@ export default function Marketplace() {
   }, [pendingSlug, loading, user, navigate, prefetchAthleteDetail]);
 
   const filteredAthletes = useMemo(() => {
-    if (!athletes) return [];
+    if (!Array.isArray(athletes)) return [];
     const lowered = search.trim().toLowerCase();
     const userId = user?.id;
 
     return athletes.filter((athlete) => {
-      if (userId && athlete.id === userId) {
-        return false;
-      }
-
-      const matchesSearch = athlete.name.toLowerCase().includes(lowered);
+      if (userId && athlete.id === userId) return false;
+      const matchesSearch = (athlete.name || '').toLowerCase().includes(lowered);
       const matchesSport = selectedSport === 'All' || athlete.sport === selectedSport;
       return matchesSearch && matchesSport;
     });
   }, [athletes, search, selectedSport, user?.id]);
 
-  const athleteIds = useMemo(() => filteredAthletes.map((athlete) => athlete.id), [filteredAthletes]);
+  const athleteIds = useMemo(() => filteredAthletes.map((a) => a.id), [filteredAthletes]);
 
   const {
     data: chartData,
@@ -96,9 +93,7 @@ export default function Marketplace() {
   const showGridSkeleton = isLoading || isFetching || chartsLoading || chartsFetching;
 
   const handleLoadMore = useCallback(() => {
-    if (hasNextPage) {
-      fetchNextPage();
-    }
+    if (hasNextPage) fetchNextPage();
   }, [hasNextPage, fetchNextPage]);
 
   return (
@@ -123,6 +118,7 @@ export default function Marketplace() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="pl-9"
+            aria-label="Search athletes"
           />
         </div>
         <div className="flex gap-2 overflow-x-auto pb-2">
@@ -155,13 +151,15 @@ export default function Marketplace() {
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {filteredAthletes.map((athlete) => {
-            const sparklineData = chartData?.[athlete.id] || [];
+            const series =
+              (chartData as Record<string, MarketplaceChartPoint[]> | undefined)?.[athlete.id] ?? [];
+
             return (
               <AthleteCard
                 key={athlete.id}
                 athlete={athlete}
-                chartData={sparklineData}
-                onClick={() => handleAthleteClick(athlete.slug)}
+                chartData={series}
+                onClick={() => athlete.slug && handleAthleteClick(athlete.slug)}
                 onMouseEnter={prefetchAthleteDetail}
               />
             );

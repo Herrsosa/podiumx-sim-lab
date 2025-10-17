@@ -15,10 +15,6 @@ export default function StravaConnect({ athleteId }: StravaConnectProps) {
   const [connected, setConnected] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    checkConnection();
-  }, [athleteId, checkConnection]);
-
   const checkConnection = useCallback(async () => {
     try {
       const { data } = await supabase
@@ -33,6 +29,10 @@ export default function StravaConnect({ athleteId }: StravaConnectProps) {
       console.error('Error checking Strava connection:', error);
     }
   }, [athleteId]);
+
+  useEffect(() => {
+    checkConnection();
+  }, [checkConnection]);
 
   const handleConnect = () => {
     // Strava OAuth flow
@@ -71,7 +71,7 @@ export default function StravaConnect({ athleteId }: StravaConnectProps) {
       console.error('Error disconnecting Strava:', error);
       toast({
         title: 'Error',
-        description: error.message || 'Failed to disconnect Strava',
+        description: error instanceof Error ? error.message : 'Failed to disconnect Strava',
         variant: 'destructive',
       });
     } finally {

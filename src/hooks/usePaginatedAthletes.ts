@@ -2,7 +2,7 @@
 import { useMemo } from 'react';
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { Athlete, Sport, Workout } from '@/types';
+import { Athlete, Sport } from '@/types';
 import { athleteAvatars } from '@/utils/athleteAvatars';
 import { priceAt } from '@/utils/pricing';
 import { resolveAvatarUrl } from '@/utils/avatar';
@@ -11,8 +11,6 @@ import { useAthleteMetrics } from './useAthleteMetrics';
 const PAGE_SIZE = 12;
 
 export function usePaginatedAthletes() {
-  const { data: metricsMap, isLoading: metricsLoading, isFetching: metricsFetching } = useAthleteMetrics('24h');
-
   const queryResult = useInfiniteQuery({
     queryKey: ['athletes-paginated'],
     queryFn: async ({ pageParam = 0 }) => {
@@ -36,18 +34,12 @@ export function usePaginatedAthletes() {
 
       if (tokensError) throw tokensError;
 
-      const { data: posts, error: postsError } = await supabase
-        .from('posts')
-        .select('*')
-        .in('author_id', athleteIds)
-        .order('created_at', { ascending: false });
+      const tokensList = tokens ?? [];
+      const tokenMap = new Map(tokensList.map((token) => [token.athlete_id, token]));
 
-      if (postsError) throw postsError;
-
-      // Combine profile + token data
+      // Combine profile + token data (posts are intentionally omitted for marketplace views)
       const athletes: Athlete[] = profiles.map((profile) => {
-        const token = tokens.find((t) => t.athlete_id === profile.id);
-        const athletePosts = posts.filter((p) => p.author_id === profile.id);
+        const token = tokenMap.get(profile.id);
 
         // Calculate current price from bonding curve
         const supply = token?.supply || 0;
@@ -56,14 +48,6 @@ export function usePaginatedAthletes() {
         const c = token?.c || 1;
         const price = priceAt(supply, { a, b, c });
         const marketCap = price * supply;
-
-        // Convert posts to workouts format
-        const workouts = athletePosts
-          .filter((p) => p.workout_json)
-          .map((p) => ({
-            id: p.id,
-            ...(p.workout_json as Workout),
-          }));
 
         const avatarSource = athleteAvatars[profile.username] ?? profile.avatar_url;
 
@@ -86,8 +70,8 @@ export function usePaginatedAthletes() {
           athleteRevenue: token?.athlete_earnings || 0,
           change24h: 0,
           volume24h: 0,
-          workouts,
-          posts: athletePosts,
+          workouts: [],
+          posts: [],
         };
       });
 
@@ -99,6 +83,20 @@ export function usePaginatedAthletes() {
     getNextPageParam: (lastPage) => lastPage.nextPage,
     initialPageParam: 0,
   });
+
+  const metricsIds = useMemo(() => {
+    if (!queryResult.data) return undefined;
+    const ids = new Set<string>();
+    queryResult.data.pages.forEach((page) => {
+      page.athletes.forEach((athlete) => ids.add(athlete.id));
+    });
+    return ids.size > 0 ? Array.from(ids) : undefined;
+  }, [queryResult.data]);
+
+  const { data: metricsMap, isLoading: metricsLoading, isFetching: metricsFetching } = useAthleteMetrics(
+    '24h',
+    metricsIds
+  );
 
   const athletesWithMetrics = useMemo(() => {
     if (!queryResult.data) return undefined;

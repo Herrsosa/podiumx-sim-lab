@@ -1,16 +1,22 @@
-import { useQuery } from '@tanstack/react-query';
-import { useAuth } from './useAuth';
-import { walletService } from '@/services/wallet';
+import { useCallback } from 'react';
+import { useAuthStore, useUser } from '@/store/auth';
 
 export function useWallet() {
-  const { user } = useAuth();
+  const user = useUser();
+  const wallet = useAuthStore((state) => state.wallet);
+  const loading = useAuthStore((state) => state.walletLoading);
+  const error = useAuthStore((state) => state.walletError);
+  const refreshWallet = useAuthStore((state) => state.refreshWallet);
 
-  return useQuery({
-    queryKey: ['wallet', user?.id],
-    queryFn: async () => {
-      if (!user) return null;
-      return walletService.getWallet(user.id);
-    },
-    enabled: !!user,
-  });
+  const refetch = useCallback(async () => {
+    await refreshWallet(user?.id);
+  }, [refreshWallet, user?.id]);
+
+  return {
+    data: wallet,
+    isLoading: loading,
+    isFetching: loading,
+    error,
+    refetch,
+  };
 }

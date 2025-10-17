@@ -1,9 +1,9 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from './useAuth';
+import { useUser } from '@/store/auth';
 
 export function useStravaConnection() {
-  const { user } = useAuth();
+  const user = useUser();
 
   return useQuery({
     queryKey: ['strava-connection', user?.id],

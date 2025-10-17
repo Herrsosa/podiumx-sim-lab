@@ -2,10 +2,13 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from './use-toast';
 import { walletService } from '@/services/wallet';
+import { useAuthStore, useUser } from '@/store/auth';
 
 export function useTrade() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const user = useUser();
+  const refreshWallet = useAuthStore((state) => state.refreshWallet);
 
   return useMutation({
     mutationFn: async ({ athleteId, quantity, side }: { 
@@ -36,9 +39,9 @@ export function useTrade() {
       // Wait for all invalidations to complete
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ['athletes'] }),
-        queryClient.invalidateQueries({ queryKey: ['wallet'] }),
         queryClient.invalidateQueries({ queryKey: ['trades'] }),
         queryClient.invalidateQueries({ queryKey: ['user-trades'] }),
+        refreshWallet(user?.id),
       ]);
 
       // Show success toast with fill price
@@ -49,7 +52,7 @@ export function useTrade() {
       });
     },
     onError: (error: unknown) => {
-      const errorMessage = error.message || 'An error occurred while processing your trade';
+      const errorMessage = error instanceof Error ? error.message : 'An error occurred while processing your trade';
       
       // Contextual title based on error content
       let title = 'Trade Failed';
@@ -75,29 +78,21 @@ export function useTrade() {
 }
 
 export function useFaucet() {
-  const queryClient = useQueryClient();
   const { toast } = useToast();
+  const user = useUser();
+  const refreshWallet = useAuthStore((state) => state.refreshWallet);
 
   return useMutation({
     mutationFn: async (amount: number) => {
-      const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
 
-      const { data, error } = await supabase.rpc('faucet_test_usdc', { amount });
-
-      if (error) {
-        console.warn('faucet_test_usdc RPC failed, falling back to walletService', error);
-        await walletService.addFunds(user.id, amount);
-        return { amount };
-      }
-
-      // Some RPC implementations return the updated balance; we ignore for now
-      void data;
+      // Use walletService directly since faucet_test_usdc RPC doesn't exist
+      await walletService.addFunds(user.id, amount);
       return { amount };
     },
     onSuccess: async (result) => {
       const amount = result?.amount ?? 0;
-      await queryClient.invalidateQueries({ queryKey: ['wallet'] });
+      await refreshWallet(user?.id);
       toast({
         title: 'Funds Added',
         description: `$${amount} test USDC added`,
@@ -107,9 +102,7 @@ export function useFaucet() {
 }
 
 // Initialize wallet on sign-in
-export async function initWallet() {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return;
-
-  await walletService.ensureWallet(user.id);
+export async function initWallet(userId: string) {
+  if (!userId) return;
+  await walletService.ensureWallet(userId);
 }

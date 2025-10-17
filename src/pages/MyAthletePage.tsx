@@ -1,6 +1,6 @@
-import { useState, useRef, useMemo, useCallback, useEffect } from 'react';
+import { useState, useRef, useMemo, useCallback, useEffect, useId } from 'react';
 import { Camera, Upload, Plus, X, Edit2, Save, Link as LinkIcon, TrendingUp, Link2, Edit, Trash2, MessageSquare, DollarSign } from 'lucide-react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { ComposedChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Bar, type TooltipProps } from 'recharts';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { EarningsSection } from '@/components/EarningsSection';
 import { Button } from '@/components/ui/button';
@@ -12,10 +12,12 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Workout, Sport, Post } from '@/types';
 import { toast } from 'sonner';
-import { useAuth } from '@/hooks/useAuth';
 import { useMyAthlete } from '@/hooks/useMyAthlete';
 import { useAthleteTrades } from '@/hooks/useAthleteTrades';
 import { useWorkoutEditor } from '@/hooks/useWorkoutEditor';
+import { useUser } from '@/store/auth';
+import { StackedCircles, POS_NEON_COLOR } from '@/components/charts/StackedCircles';
+import { aggregatePosByDay, startOfUtcDay } from '@/utils/chartData';
 
 import { supabase } from '@/integrations/supabase/client';
 import AddWorkoutModal from '@/components/AddWorkoutModal';
@@ -36,7 +38,7 @@ import {
 } from '@/components/ui/alert-dialog';
 
 export default function MyAthletePage() {
-  const { user } = useAuth();
+  const user = useUser();
   const { data: myAthletePage, pages, fetchNextPage, hasNextPage, isFetchingNextPage } = useMyAthlete();
   const { data: athleteTrades } = useAthleteTrades(user?.id || '');
   const queryClient = useQueryClient();
@@ -97,18 +99,142 @@ export default function MyAthletePage() {
   const priceHistory = useMemo(() => {
     const athlete = myAthletePage?.athlete;
     if (!user?.id || !athleteTrades || !athlete) return [];
-    const history = athleteTrades.map((trade: any) => ({
-      timestamp: trade.timestamp,
-      price: trade.price_after as number,
-      date: new Date(trade.timestamp).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-    })).reverse();
-    history.push({
-      timestamp: Date.now(),
-      price: athlete.price,
-      date: 'Now',
-    });
-    return history;
+
+    const tradesByDay = new Map<number, { t: number; price: number }>();
+
+    for (const trade of athleteTrades) {
+      const rawTimestamp = trade.timestamp;
+      const t = new Date(rawTimestamp).getTime();
+      if (!Number.isFinite(t)) {
+        continue;
+      }
+
+      const price =
+        typeof trade.price_after === 'number'
+          ? trade.price_after
+          : Number(trade.price_after);
+
+      const resolvedPrice = Number.isFinite(price) ? price : athlete.price;
+      const dayStart = startOfUtcDay(t);
+      const existing = tradesByDay.get(dayStart);
+
+      if (!existing || t > existing.t) {
+        tradesByDay.set(dayStart, {
+          t,
+          price: resolvedPrice,
+        });
+      }
+    }
+
+    const nowMs = Date.now();
+    const nowDay = startOfUtcDay(nowMs);
+    const latestForToday = tradesByDay.get(nowDay);
+    if (!latestForToday || nowMs > latestForToday.t) {
+      tradesByDay.set(nowDay, {
+        t: nowMs,
+        price: athlete.price,
+      });
+    }
+
+    return Array.from(tradesByDay.values()).sort((a, b) => a.t - b.t);
   }, [user?.id, athleteTrades, myAthletePage]);
+
+  const posDailyPoints = useMemo(
+    () => aggregatePosByDay(myAthletePage?.athlete?.posts, 'all'),
+    [myAthletePage?.athlete?.posts],
+  );
+
+  const posCountByDay = useMemo(
+    () => new Map(posDailyPoints.map((point) => [startOfUtcDay(point.dateMs), point.posCount])),
+    [posDailyPoints],
+  );
+
+  const chartData = useMemo(() => {
+    const dayWithPrice = new Set<number>();
+
+    const baseData = priceHistory.map((point) => {
+      const dayStart = startOfUtcDay(point.t);
+      dayWithPrice.add(dayStart);
+
+      return {
+        t: point.t,
+        price: point.price,
+        posCount: posCountByDay.get(dayStart) ?? 0,
+      };
+    });
+
+    const posOnlyData = posDailyPoints
+      .filter((posPoint) => !dayWithPrice.has(posPoint.dateMs))
+      .map((posPoint) => ({
+        t: posPoint.dateMs,
+        price: null,
+        posCount: posPoint.posCount,
+      }));
+
+    return [...baseData, ...posOnlyData].sort((a, b) => a.t - b.t);
+  }, [posCountByDay, posDailyPoints, priceHistory]);
+
+  const posDomain = useMemo<[number, number]>(() => {
+    const maxPos = posDailyPoints.reduce((max, point) => Math.max(max, point.posCount), 0);
+    const upper = maxPos > 0 ? maxPos + 1 : 1;
+    return [0, upper];
+  }, [posDailyPoints]);
+
+  const xDomain = useMemo<[number, number]>(() => {
+    if (chartData.length === 0) {
+      const now = Date.now();
+      const dayMs = 24 * 60 * 60 * 1000;
+      return [now - dayMs, now + dayMs];
+    }
+    const dayMs = 24 * 60 * 60 * 1000;
+    const min = chartData[0].t;
+    const max = chartData[chartData.length - 1].t;
+    return [min - dayMs * 0.5, max + dayMs * 0.75];
+  }, [chartData]);
+
+  const glowFilterId = useId().replace(/:/g, '');
+
+  const formatXAxisTick = useCallback((value: number) => {
+    const date = new Date(value);
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  }, []);
+
+  const formatTooltipLabel = useCallback((value: number) => {
+    const date = new Date(value);
+    return date.toLocaleString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  }, []);
+
+  const renderTooltip = useCallback(({ active, label, payload }: TooltipProps<number, string>) => {
+    if (!active || !payload || payload.length === 0 || typeof label !== 'number') {
+      return null;
+    }
+
+    const priceEntry = payload.find((item) => item && item.dataKey === 'price');
+    const posEntry = payload.find((item) => item && item.dataKey === 'posCount');
+
+    const price = typeof priceEntry?.value === 'number' ? priceEntry.value : undefined;
+    const dateLabel = formatTooltipLabel(label);
+    const dayStart = startOfUtcDay(label);
+    const posCount =
+      typeof posEntry?.value === 'number' ? posEntry.value : posCountByDay.get(dayStart) ?? 0;
+
+    return (
+      <div className="rounded-lg border border-border/60 bg-card/90 px-3 py-2 shadow-lg">
+        <div className="text-xs text-muted-foreground">{dateLabel}</div>
+        {typeof price === 'number' && (
+          <div className="text-sm font-semibold text-foreground">${price.toFixed(4)}</div>
+        )}
+        <div className="mt-1 text-xs text-muted-foreground">
+          PoS: <span className="font-medium text-foreground">{posCount}</span>
+        </div>
+      </div>
+    );
+  }, [formatTooltipLabel, posCountByDay]);
 
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -452,34 +578,66 @@ export default function MyAthletePage() {
               </div>
             </div>
             <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={priceHistory}>
-                <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                <XAxis 
-                  dataKey="date" 
-                  className="text-xs"
+              <ComposedChart data={chartData} margin={{ top: 24, right: 16, bottom: 56, left: 16 }}>
+                <defs>
+                  <filter id={`posGlow-${glowFilterId}`} x="-200%" y="-200%" width="500%" height="500%">
+                    <feGaussianBlur stdDeviation="5" result="coloredBlur" />
+                    <feMerge>
+                      <feMergeNode in="coloredBlur" />
+                      <feMergeNode in="SourceGraphic" />
+                    </feMerge>
+                  </filter>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.18} />
+                <XAxis
+                  dataKey="t"
+                  type="number"
+                  scale="time"
+                  domain={xDomain}
+                  tickFormatter={formatXAxisTick}
+                  tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
                   stroke="hsl(var(--muted-foreground))"
+                  axisLine={false}
+                  tickLine={false}
                 />
-                <YAxis 
-                  className="text-xs"
+                <YAxis
+                  domain={['auto', 'auto']}
+                  tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
                   stroke="hsl(var(--muted-foreground))"
                   tickFormatter={(value) => `$${value.toFixed(2)}`}
+                  width={60}
+                  axisLine={false}
+                  tickLine={false}
                 />
-                <Tooltip 
-                  contentStyle={{ 
-                    backgroundColor: 'hsl(var(--card))',
-                    border: '1px solid hsl(var(--border))',
-                    borderRadius: '8px',
-                  }}
-                  formatter={(value: number) => [`$${value.toFixed(4)}`, 'Price']}
+                <YAxis yAxisId="pos" domain={posDomain} hide />
+                <RechartsTooltip content={renderTooltip} cursor={{ stroke: 'hsl(var(--border))', strokeDasharray: '3 3' }} />
+                <Bar
+                  dataKey="posCount"
+                  yAxisId="pos"
+                  fill="transparent"
+                  barSize={48}
+                  shape={
+                    <StackedCircles
+                      color={POS_NEON_COLOR}
+                      filterId={`posGlow-${glowFilterId}`}
+                      maxCircles={6}
+                      gap={7}
+                      radius={9}
+                      hitboxSize={48}
+                    />
+                  }
                 />
-                <Line 
-                  type="monotone" 
-                  dataKey="price" 
-                  stroke="hsl(var(--primary))" 
+                <Line
+                  type="monotone"
+                  dataKey="price"
+                  stroke={POS_NEON_COLOR}
                   strokeWidth={2}
-                  dot={{ fill: 'hsl(var(--primary))' }}
+                  strokeOpacity={0.65}
+                  dot={false}
+                  connectNulls
+                  strokeLinecap="round"
                 />
-              </LineChart>
+              </ComposedChart>
             </ResponsiveContainer>
           </CardContent>
         </Card>
@@ -595,7 +753,10 @@ export default function MyAthletePage() {
         <EditWorkoutModal
           open={open}
           onOpenChange={setOpen}
-          workoutPost={editingWorkout}
+          workoutPost={{
+            ...editingWorkout,
+            workout_json: editingWorkout.workout_json as any as Workout
+          }}
           onSuccess={() => {
             queryClient.invalidateQueries({ queryKey: ['my-athlete', user?.id] });
             setOpen(false);

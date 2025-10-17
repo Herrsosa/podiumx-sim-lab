@@ -590,7 +590,17 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      athlete_metrics_24h: {
+        Row: {
+          athlete_id: string
+          last_price: number | null
+          pct_change_24h: number | null
+          notional_24h: number | null
+          qty_24h: number | null
+          spark7d: number[] | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       execute_trade_transaction: {
@@ -612,6 +622,19 @@ export type Database = {
       is_conversation_member: {
         Args: { conversation_id: string }
         Returns: boolean
+      }
+      get_market_overview: {
+        Args: {
+          athlete_ids?: string[] | null
+        }
+        Returns: {
+          athlete_id: string
+          last_price: number | null
+          pct_change_24h: number | null
+          notional_24h: number | null
+          qty_24h: number | null
+          spark7d: number[] | null
+        }[]
       }
     }
     Enums: {

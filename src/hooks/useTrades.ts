@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Trade } from '@/types';
+import { useUser } from '@/store/auth';
 
 interface DbTrade {
   id: string;
@@ -18,7 +19,7 @@ interface DbTrade {
   } | null;
 }
 
-export function useTrades(athleteId?: string) {
+export function useTrades(athleteId?: string, options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: ['trades', athleteId],
     queryFn: async () => {
@@ -35,7 +36,7 @@ export function useTrades(athleteId?: string) {
 
       if (error) throw error;
 
-      const trades: Trade[] = ((data ?? []) as DbTrade[]).map((trade) => {
+      const trades: Trade[] = ((data ?? []) as any).map((trade: any) => {
         const profile = trade.profiles;
         return {
           id: trade.id,
@@ -52,11 +53,12 @@ export function useTrades(athleteId?: string) {
 
       return trades;
     },
+    enabled: options?.enabled ?? true,
   });
 }
 
 export function useUserTrades() {
-  const { user } = useAuth();
+  const user = useUser();
 
   return useQuery({
     queryKey: ['user-trades', user?.id],
@@ -71,7 +73,7 @@ export function useUserTrades() {
 
       if (error) throw error;
 
-      const trades: Trade[] = (data as DbTrade[]).map((trade) => {
+      const trades: Trade[] = (data as any).map((trade: any) => {
         const profile = trade.profiles;
         return {
           id: trade.id,
@@ -91,5 +93,3 @@ export function useUserTrades() {
     enabled: !!user,
   });
 }
-
-import { useAuth } from './useAuth';

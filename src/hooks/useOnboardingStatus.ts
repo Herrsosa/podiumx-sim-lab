@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import type { Database } from '@/integrations/supabase/types';
-import { useAuth } from './useAuth';
+import { useUser } from '@/store/auth';
 
 type ProfileRow = Database['public']['Tables']['profiles']['Row'] | null;
 
@@ -14,7 +14,7 @@ interface OnboardingStatusResult {
 }
 
 export function useOnboardingStatus() {
-  const { user } = useAuth();
+  const user = useUser();
 
   const query = useQuery<OnboardingStatusResult>({
     queryKey: ['onboarding-status', user?.id],
@@ -32,7 +32,7 @@ export function useOnboardingStatus() {
       const [{ data: profile, error: profileError }, { data: athleteToken, error: tokenError }] = await Promise.all([
         supabase
           .from('profiles')
-          .select('id, display_name, username, role, onboarding_completed, sport, avatar_url')
+          .select('*')
           .eq('id', user.id)
           .maybeSingle(),
         supabase
@@ -75,7 +75,7 @@ export function useOnboardingStatus() {
   return {
     ...query,
     data,
-    onboardingCompleted: data.onboardingCompleted,
-    needsOnboarding: data.needsOnboarding,
+    onboardingCompleted: data?.onboardingCompleted ?? false,
+    needsOnboarding: data?.needsOnboarding ?? false,
   };
 }

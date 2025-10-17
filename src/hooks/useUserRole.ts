@@ -1,9 +1,9 @@
 import { useQuery } from '@tanstack/react-query';
-import { useAuth } from './useAuth';
 import { supabase } from '@/integrations/supabase/client';
+import { useUser } from '@/store/auth';
 
 export function useUserRole() {
-  const { user } = useAuth();
+  const user = useUser();
 
   const { data: athleteToken, isLoading } = useQuery({
     queryKey: ['user-role', user?.id],

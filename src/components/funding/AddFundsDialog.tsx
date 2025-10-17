@@ -60,10 +60,10 @@ export function AddFundsDialog() {
     } catch (error: unknown) {
       toast({
         title: 'Deposit Failed',
-        description: error.message || 'Failed to process deposit',
+        description: error instanceof Error ? error.message : 'Failed to process deposit',
         variant: 'destructive',
       });
-    } finally {
+    } finally{
       setIsProcessing(false);
     }
   };
@@ -105,7 +105,7 @@ export function AddFundsDialog() {
     } catch (error: unknown) {
       toast({
         title: 'Deposit Failed',
-        description: error.message || 'Failed to process deposit',
+        description: error instanceof Error ? error.message : 'Failed to process deposit',
         variant: 'destructive',
       });
     } finally {

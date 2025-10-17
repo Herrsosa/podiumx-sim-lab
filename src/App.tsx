@@ -5,7 +5,6 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { useAppStore } from "@/store/useAppStore";
-import { useAuth } from "@/hooks/useAuth";
 import Navigation from "@/components/Navigation";
 import Landing from "./pages/Landing";
 import Auth from "./pages/Auth";
@@ -15,6 +14,8 @@ import MarketplaceSkeleton from "@/components/skeletons/MarketplaceSkeleton";
 import AthleteDetailSkeleton from "@/components/skeletons/AthleteDetailSkeleton";
 import { queryClient } from "@/lib/queryClient";
 import { useOnboardingStatus } from "@/hooks/useOnboardingStatus";
+import { AuthProvider } from "@/providers/AuthProvider";
+import { useAuthLoading, useUser } from "@/store/auth";
 
 // Lazy load heavy pages
 const Onboarding = lazy(() => import("./pages/Onboarding"));
@@ -29,7 +30,8 @@ interface RouteGuardProps {
 }
 
 function RouteGuard({ requireAuth = false, children }: RouteGuardProps) {
-  const { user, loading } = useAuth();
+  const user = useUser();
+  const loading = useAuthLoading();
   const location = useLocation();
   const { onboardingCompleted, needsOnboarding, isLoading: onboardingIsLoading } = useOnboardingStatus();
 
@@ -125,11 +127,13 @@ function AppContent() {
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <AppContent />
-      </BrowserRouter>
+      <AuthProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <AppContent />
+        </BrowserRouter>
+      </AuthProvider>
     </TooltipProvider>
   </QueryClientProvider>
 );

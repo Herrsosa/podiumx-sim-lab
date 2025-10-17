@@ -9,7 +9,7 @@ import { Switch } from '@/components/ui/switch';
 import { Loader2, Upload } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { useAuth } from '@/hooks/useAuth';
+import { useUser } from '@/store/auth';
 import { Workout } from '@/types';
 
 interface EditWorkoutModalProps {
@@ -26,15 +26,18 @@ interface EditWorkoutModalProps {
 
 export default function EditWorkoutModal({ open, onOpenChange, workoutPost, onSuccess }: EditWorkoutModalProps) {
   const { toast } = useToast();
-  const { user } = useAuth();
+  const user = useUser();
   const [loading, setLoading] = useState(false);
   const [newMediaFile, setNewMediaFile] = useState<File | null>(null);
   const [mediaPreviewUrl, setMediaPreviewUrl] = useState<string | null>(workoutPost.image_url || null);
   
-  const workout = workoutPost.workout_json || {};
+  const workout = (workoutPost.workout_json && typeof workoutPost.workout_json === 'object' && !Array.isArray(workoutPost.workout_json)) 
+    ? workoutPost.workout_json as Partial<Workout>
+    : {} as Partial<Workout>;
+    
   const [formData, setFormData] = useState({
     date: workout.date || new Date().toISOString().split('T')[0],
-    type: workout.type || 'Run',
+    type: (workout.type as Workout['type']) || 'Run',
     distance: workout.distance?.toString() || '',
     duration: workout.duration?.toString() || '',
     rpe: workout.rpe?.toString() || '5',
@@ -45,16 +48,19 @@ export default function EditWorkoutModal({ open, onOpenChange, workoutPost, onSu
   useEffect(() => {
     setMediaPreviewUrl(workoutPost.image_url || null);
     setNewMediaFile(null);
+    const w = (workoutPost.workout_json && typeof workoutPost.workout_json === 'object' && !Array.isArray(workoutPost.workout_json)) 
+      ? workoutPost.workout_json as Partial<Workout>
+      : {} as Partial<Workout>;
     setFormData({
-      date: workout.date || new Date().toISOString().split('T')[0],
-      type: workout.type || 'Run',
-      distance: workout.distance?.toString() || '',
-      duration: workout.duration?.toString() || '',
-      rpe: workout.rpe?.toString() || '5',
-      notes: workout.notes || '',
+      date: w.date || new Date().toISOString().split('T')[0],
+      type: (w.type as Workout['type']) || 'Run',
+      distance: w.distance?.toString() || '',
+      duration: w.duration?.toString() || '',
+      rpe: w.rpe?.toString() || '5',
+      notes: w.notes || '',
       tokenGated: workoutPost.token_gated || false,
     });
-  }, [workoutPost, workout.date, workout.distance, workout.duration, workout.notes, workout.rpe, workout.type]);
+  }, [workoutPost]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -150,7 +156,7 @@ export default function EditWorkoutModal({ open, onOpenChange, workoutPost, onSu
       console.error('Error updating workout:', error);
       toast({
         title: 'Error',
-        description: error.message || 'Failed to update workout',
+        description: error instanceof Error ? error.message : 'Failed to update workout',
         variant: 'destructive',
       });
     } finally {
@@ -180,7 +186,7 @@ export default function EditWorkoutModal({ open, onOpenChange, workoutPost, onSu
 
             <div>
               <Label htmlFor="edit-type">Type</Label>
-              <Select value={formData.type} onValueChange={(value) => setFormData({ ...formData, type: value })}>
+              <Select value={formData.type} onValueChange={(value) => setFormData({ ...formData, type: value as Workout['type'] })}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
