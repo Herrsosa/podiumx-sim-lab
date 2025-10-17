@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { Link } from "react-router-dom";
-import { ArrowRight, Shield, Users, TrendingUp, Dumbbell, Sparkles } from "lucide-react";
+import { ArrowRight, Shield, TrendingUp, Dumbbell, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { usePaginatedAthletes } from "@/hooks/usePaginatedAthletes";
@@ -45,8 +45,12 @@ export default function Landing() {
                 </span>
               </h1>
               
-              <p className="text-lg md:text-xl text-muted-foreground max-w-xl mx-auto lg:mx-0">
-                Log workouts, grow your market cap, and join a new layer of sports culture where dedication meets value.
+              <p className="text-xl md:text-2xl font-semibold text-foreground/90 max-w-xl mx-auto lg:mx-0 mb-2">
+                The fitness social token marketplace
+              </p>
+              
+              <p className="text-base md:text-lg text-muted-foreground max-w-xl mx-auto lg:mx-0">
+                Athletes log workouts as proof of dedication. Supporters trade their tokens. Everyone builds together.
               </p>
               
               <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
@@ -63,14 +67,20 @@ export default function Landing() {
 
             {/* Right: Floating Athlete Cards */}
             <div className="hidden lg:block">
-              <div className="grid grid-cols-2 gap-3 max-w-md ml-auto">
+              <div className="grid grid-cols-2 gap-3 max-w-md ml-auto animate-in fade-in duration-700">
                 {isLoading ? (
                   [...Array(4)].map((_, i) => (
                     <div key={i} className="aspect-square rounded-xl bg-muted/20 animate-pulse" />
                   ))
                 ) : (
                   heroAthletes.map((athlete, index) => (
-                    <HeroAthleteCard key={athlete.id} athlete={athlete} index={index} />
+                    <div 
+                      key={athlete.id} 
+                      className="transform transition-all duration-300 hover:scale-105 hover:-translate-y-1 hover:shadow-xl hover:shadow-primary/10"
+                      style={{ animationDelay: `${index * 100}ms` }}
+                    >
+                      <HeroAthleteCard athlete={athlete} index={index} />
+                    </div>
                   ))
                 )}
               </div>
@@ -81,7 +91,7 @@ export default function Landing() {
 
       {/* Value Props Section */}
       <section className="container mx-auto px-4 py-16">
-        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
           <Card className="group hover:border-primary/40 transition-all duration-300 hover:shadow-lg hover:shadow-primary/5">
             <CardContent className="pt-6">
               <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
@@ -114,18 +124,6 @@ export default function Landing() {
               <h3 className="text-lg font-semibold mb-2">Token-Gated Access</h3>
               <p className="text-sm text-muted-foreground leading-relaxed">
                 Unlock exclusive content and communities by holding an athlete's token.
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card className="group hover:border-primary/40 transition-all duration-300 hover:shadow-lg hover:shadow-primary/5">
-            <CardContent className="pt-6">
-              <div className="w-12 h-12 rounded-xl bg-chart-3/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                <Users className="w-6 h-6" style={{ color: 'hsl(var(--chart-3))' }} />
-              </div>
-              <h3 className="text-lg font-semibold mb-2">Clean UX</h3>
-              <p className="text-sm text-muted-foreground leading-relaxed">
-                A beautifully designed, intuitive interface for a seamless experience.
               </p>
             </CardContent>
           </Card>
