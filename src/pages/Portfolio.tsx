@@ -190,31 +190,31 @@ export default function Portfolio() {
       </div>
 
       {/* Summary Cards */}
-      <div className="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="mb-8 grid gap-4 grid-cols-2 lg:grid-cols-4">
         <Card className="glass-card">
-          <CardContent className="p-6">
+          <CardContent className="p-4 sm:p-6">
             <div className="mb-2 flex items-center justify-between">
-              <span className="text-sm text-muted-foreground">USDC Balance</span>
+              <span className="text-xs sm:text-sm text-muted-foreground">USDC Balance</span>
               <DollarSign className="h-4 w-4 text-primary" />
             </div>
-            <div className="text-3xl font-bold">{renderValue(wallet.usdc)}</div>
+            <div className="text-xl sm:text-3xl font-bold">{renderValue(wallet.usdc)}</div>
           </CardContent>
         </Card>
 
         <Card className="glass-card">
-          <CardContent className="p-6">
+          <CardContent className="p-4 sm:p-6">
             <div className="mb-2 flex items-center justify-between">
-              <span className="text-sm text-muted-foreground">Token Value</span>
+              <span className="text-xs sm:text-sm text-muted-foreground">Token Value</span>
               <Coins className="h-4 w-4 text-primary" />
             </div>
-            <div className="text-3xl font-bold">{renderValue(totalValue)}</div>
+            <div className="text-xl sm:text-3xl font-bold">{renderValue(totalValue)}</div>
           </CardContent>
         </Card>
 
         <Card className="glass-card">
-          <CardContent className="p-6">
+          <CardContent className="p-4 sm:p-6">
             <div className="mb-2 flex items-center justify-between">
-              <span className="text-sm text-muted-foreground">Unrealized P&L</span>
+              <span className="text-xs sm:text-sm text-muted-foreground">Unrealized P&L</span>
               {safeNumber(unrealizedPnL) ? (
                 unrealizedPnL >= 0 ? (
                   <TrendingUp className="h-4 w-4 text-success" />
@@ -225,7 +225,7 @@ export default function Portfolio() {
                 <TrendingUp className="h-4 w-4 text-muted-foreground" />
               )}
             </div>
-            <div className={unrealizedClass}>{renderValue(unrealizedPnL)}</div>
+            <div className={unrealizedClass.replace('text-3xl', 'text-xl sm:text-3xl')}>{renderValue(unrealizedPnL)}</div>
             <div className="text-xs text-muted-foreground mt-1">
               Open positions
             </div>
@@ -233,9 +233,9 @@ export default function Portfolio() {
         </Card>
 
         <Card className="glass-card">
-          <CardContent className="p-6">
+          <CardContent className="p-4 sm:p-6">
             <div className="mb-2 flex items-center justify-between">
-              <span className="text-sm text-muted-foreground">Realized P&L</span>
+              <span className="text-xs sm:text-sm text-muted-foreground">Realized P&L</span>
               {hasClosedTrades && safeNumber(realizedPnL) ? (
                 realizedPnL >= 0 ? (
                   <TrendingUp className="h-4 w-4 text-success" />
@@ -246,7 +246,7 @@ export default function Portfolio() {
                 <TrendingUp className="h-4 w-4 text-muted-foreground" />
               )}
             </div>
-            <div className={realizedClass}>{renderValue(hasClosedTrades ? realizedPnL : null)}</div>
+            <div className={realizedClass.replace('text-3xl', 'text-xl sm:text-3xl')}>{renderValue(hasClosedTrades ? realizedPnL : null)}</div>
             <div className="text-xs text-muted-foreground mt-1">
               From closed trades
             </div>
@@ -255,35 +255,35 @@ export default function Portfolio() {
       </div>
 
       {/* Summary Stats */}
-      <div className="mb-8 grid gap-4 sm:grid-cols-3">
+      <div className="mb-8 grid gap-4 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4">
         <Card className="glass-card">
-          <CardContent className="p-6">
-            <div className="mb-2 text-sm text-muted-foreground">Total Cost Basis</div>
-            <div className="text-2xl font-bold">{renderValue(totalCostBasis)}</div>
+          <CardContent className="p-4 sm:p-6">
+            <div className="mb-2 text-xs sm:text-sm text-muted-foreground">Total Cost Basis</div>
+            <div className="text-lg sm:text-2xl font-bold">{renderValue(totalCostBasis)}</div>
           </CardContent>
         </Card>
 
         <Card className="glass-card">
-          <CardContent className="p-6">
-            <div className="mb-2 text-sm text-muted-foreground">Current Value</div>
-            <div className="text-2xl font-bold">{renderValue(totalValue)}</div>
+          <CardContent className="p-4 sm:p-6">
+            <div className="mb-2 text-xs sm:text-sm text-muted-foreground">Current Value</div>
+            <div className="text-lg sm:text-2xl font-bold">{renderValue(totalValue)}</div>
           </CardContent>
         </Card>
 
-        <Card className="glass-card">
-          <CardContent className="p-6">
-            <div className="mb-2 text-sm text-muted-foreground">Total P&L</div>
-            <div className={totalPnlClass}>{renderValue(totalPnL)}</div>
+        <Card className="glass-card col-span-2 sm:col-span-1">
+          <CardContent className="p-4 sm:p-6">
+            <div className="mb-2 text-xs sm:text-sm text-muted-foreground">Total P&L</div>
+            <div className={totalPnlClass.replace('text-2xl', 'text-lg sm:text-2xl')}>{renderValue(totalPnL)}</div>
             <div className={`text-sm ${percentClass}`}>
               {renderPercent(percentChange)}
             </div>
           </CardContent>
         </Card>
 
-        <Card className="glass-card">
-          <CardContent className="p-6">
-            <div className="mb-2 text-sm text-muted-foreground">Positions</div>
-            <div className="text-3xl font-bold">{formatNumber(positions.length)}</div>
+        <Card className="glass-card hidden lg:block">
+          <CardContent className="p-4 sm:p-6">
+            <div className="mb-2 text-xs sm:text-sm text-muted-foreground">Positions</div>
+            <div className="text-lg sm:text-3xl font-bold">{formatNumber(positions.length)}</div>
           </CardContent>
         </Card>
       </div>
@@ -322,12 +322,11 @@ export default function Portfolio() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Athlete</TableHead>
-                  <TableHead className="text-right">Quantity</TableHead>
-                  <TableHead className="text-right">Avg Cost</TableHead>
-                  <TableHead className="text-right">Current Price</TableHead>
-                  <TableHead className="text-right">Cost Basis</TableHead>
-                  <TableHead className="text-right">Current Value</TableHead>
-                  <TableHead className="text-right">Unrealized P&L</TableHead>
+                  <TableHead className="text-right hidden sm:table-cell">Qty</TableHead>
+                  <TableHead className="text-right hidden md:table-cell">Avg Cost</TableHead>
+                  <TableHead className="text-right hidden lg:table-cell">Current Price</TableHead>
+                  <TableHead className="text-right hidden md:table-cell">Value</TableHead>
+                  <TableHead className="text-right">P&L</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -369,23 +368,20 @@ export default function Portfolio() {
                           </div>
                         </div>
                       </TableCell>
-                      <TableCell className="text-right font-medium">
+                      <TableCell className="text-right font-medium hidden sm:table-cell">
                         {renderValue(position.quantity, formatNumber)}
                       </TableCell>
-                      <TableCell className="text-right">
+                      <TableCell className="text-right hidden md:table-cell">
                         {renderValue(position.avgCost)}
                       </TableCell>
-                      <TableCell className="text-right">
+                      <TableCell className="text-right hidden lg:table-cell">
                         {renderValue(position.currentPrice)}
                       </TableCell>
-                      <TableCell className="text-right font-medium">
-                        {renderValue(costBasis)}
-                      </TableCell>
-                      <TableCell className="text-right font-medium">
+                      <TableCell className="text-right font-medium hidden md:table-cell">
                         {renderValue(currentValue)}
                       </TableCell>
                       <TableCell className="text-right">
-                        <div className={pnlClass}>
+                        <div className={pnlClass.replace('font-bold', 'font-semibold text-sm sm:text-base')}>
                           {renderSignedMoney(position.pnl)}
                           <div className={`text-xs ${pnlColor}`}>
                             {renderPercent(position.pnlPercent)}

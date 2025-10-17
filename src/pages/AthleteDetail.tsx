@@ -321,25 +321,25 @@ export default function AthleteDetail() {
         {/* Center: Chart & Stats */}
         <Card className="glass-card lg:col-span-2">
           <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle>Price Chart</CardTitle>
-              <div className="flex items-center gap-4">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <CardTitle className="text-lg sm:text-xl">Price Chart</CardTitle>
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4">
                 {/* Time Range Selector */}
-                <div className="flex gap-1 rounded-lg border border-border p-1">
+                <div className="flex gap-1 rounded-lg border border-border p-1 w-full sm:w-auto">
                   {timeRanges.map((range) => (
                     <Button
                       key={range}
                       variant={timeRange === range ? 'default' : 'ghost'}
                       size="sm"
                       onClick={() => setTimeRange(range)}
-                      className="h-7 text-xs"
+                      className="h-7 text-xs flex-1 sm:flex-none"
                     >
                       {range === 'all' ? 'All' : range}
                     </Button>
                   ))}
                 </div>
-                <div className="text-right">
-                  <SectionTitle className="text-3xl">{formatMoney(athlete.price)}</SectionTitle>
+                <div className="text-left sm:text-right w-full sm:w-auto">
+                  <SectionTitle className="text-2xl sm:text-3xl">{formatMoney(athlete.price)}</SectionTitle>
                   <Small
                     className={cn(
                       'font-semibold',
@@ -355,27 +355,27 @@ export default function AthleteDetail() {
           </CardHeader>
           <CardContent>
             {/* Stats */}
-            <div className="mb-6 grid grid-cols-4 gap-4">
+            <div className="mb-6 grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
               <div className="stat-card">
-                <Small>Supply</Small>
-                <SectionTitle className="text-xl">{formatNumber(athlete.supply)}</SectionTitle>
+                <Small className="text-xs">Supply</Small>
+                <SectionTitle className="text-base md:text-xl">{formatNumber(athlete.supply)}</SectionTitle>
               </div>
               <div className="stat-card">
-                <Small>Market Cap</Small>
-                <SectionTitle className="text-xl">{formatMoney(athlete.marketCap)}</SectionTitle>
+                <Small className="text-xs">Market Cap</Small>
+                <SectionTitle className="text-base md:text-xl">{formatMoney(athlete.marketCap)}</SectionTitle>
               </div>
               <div className="stat-card">
-                <Small>24h Vol</Small>
-                <SectionTitle className="text-xl">{formatMoney(athlete.volume24h)}</SectionTitle>
+                <Small className="text-xs">24h Vol</Small>
+                <SectionTitle className="text-base md:text-xl">{formatMoney(athlete.volume24h)}</SectionTitle>
               </div>
               <div className="stat-card">
-                <Small>Reserve</Small>
-                <SectionTitle className="text-xl">{formatMoney(athlete.reserve)}</SectionTitle>
+                <Small className="text-xs">Reserve</Small>
+                <SectionTitle className="text-base md:text-xl">{formatMoney(athlete.reserve)}</SectionTitle>
               </div>
             </div>
 
             {/* Chart */}
-            <div className="h-64">
+            <div className="h-48 sm:h-64">
               <Suspense fallback={<ChartSkeleton className="h-full" />}>
                 <AthletePriceChart
                   chartPoints={displayChartPoints}
