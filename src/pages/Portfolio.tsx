@@ -11,6 +11,7 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { H1, Body } from '@/components/ui/typography';
 import { formatMoney, formatNumber, safeNumber } from '@/lib/format';
 import { useWallet } from '@/hooks/useWallet';
+import { UserAvatar } from '@/components/UserAvatar';
 import { useAthletesByIds } from '@/hooks/useAthletesByIds';
 import { useUserTrades } from '@/hooks/useTrades';
 import { exportPositionsToCSV, exportTradesToCSV } from '@/utils/csvExport';
@@ -355,10 +356,11 @@ export default function Portfolio() {
                     >
                       <TableCell>
                         <div className="flex items-center gap-3">
-                          <img
+                          <UserAvatar
                             src={athlete.avatar}
                             alt={athlete.name}
-                            className="h-10 w-10 rounded-full ring-2 ring-primary/20"
+                            size={40}
+                            className="ring-2 ring-primary/20"
                           />
                           <div>
                             <div className="font-semibold">{athlete.name}</div>

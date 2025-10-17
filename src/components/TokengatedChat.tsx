@@ -8,7 +8,12 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { EmptyState } from '@/components/ui/empty-state';
 import { resolveAvatarUrl } from '@/utils/avatar';
+import type { Database } from '@/integrations/supabase/types';
+import { UserAvatar } from '@/components/UserAvatar';
 import { useUser } from '@/store/auth';
+
+type ChatMessageRow = Database['public']['Tables']['chat_messages']['Row'];
+type ProfileRow = Database['public']['Tables']['profiles']['Row'];
 
 interface Message {
   id: string;
@@ -57,9 +62,8 @@ export default function TokengatedChat({
 
   const fetchMessages = useCallback(async () => {
     const { data: msgs } = await supabase
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      .from('chat_messages' as any)
-      .select('id, user_id, athlete_id, content, created_at')
+      .from('chat_messages')
+      .select<ChatMessageRow[]>('id, user_id, athlete_id, content, created_at')
       .eq('athlete_id', athleteId)
       .order('created_at', { ascending: true })
       .limit(100);
@@ -67,20 +71,20 @@ export default function TokengatedChat({
     if (!msgs) return;
 
     // Fetch profiles for all messages
-    const userIds = [...new Set(msgs.map((m: any) => m.user_id))];
+    const userIds = [...new Set(msgs.map((m) => m.user_id))];
     const { data: profiles } = await supabase
       .from('profiles')
-      .select('id, display_name, avatar_url, bio')
+      .select<ProfileRow[]>('id, display_name, avatar_url, bio')
       .in('id', userIds);
 
     const profileMap = new Map(profiles?.map(p => [p.id, p]) || []);
     
-    const enrichedMessages = msgs.map((m: any) => {
+    const enrichedMessages: Message[] = msgs.map((m) => {
       const profile = profileMap.get(m.user_id);
       return {
         ...m,
         display_name: profile?.display_name,
-        avatar_url: resolveAvatarUrl(profile?.avatar_url),
+        avatar_url: resolveAvatarUrl(profile?.avatar_url, { size: 48 }),
         bio: profile?.bio,
       };
     });
@@ -96,8 +100,7 @@ export default function TokengatedChat({
     const channel = supabase
       .channel(`chat:${athleteId}`)
       .on(
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        'postgres_changes' as any,
+        'postgres_changes',
         {
           event: 'INSERT',
           schema: 'public',
@@ -109,14 +112,14 @@ export default function TokengatedChat({
           // Fetch the profile data for the new message
           const { data: profile } = await supabase
             .from('profiles')
-            .select('display_name, avatar_url, bio')
+            .select<ProfileRow>('display_name, avatar_url, bio')
             .eq('id', newMsg.user_id)
             .single();
           
           setMessages((prev) => [...prev, { 
             ...newMsg, 
             display_name: profile?.display_name,
-            avatar_url: resolveAvatarUrl(profile?.avatar_url), 
+            avatar_url: resolveAvatarUrl(profile?.avatar_url, { size: 48 }), 
             bio: profile?.bio 
           }]);
         }
@@ -148,8 +151,7 @@ export default function TokengatedChat({
     setSending(true);
     try {
       const { error } = await supabase
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        .from('chat_messages' as any)
+        .from('chat_messages')
         .insert({
           athlete_id: athleteId,
           user_id: user.id,
@@ -209,10 +211,11 @@ export default function TokengatedChat({
           ) : (
             messages.map((message) => (
               <div key={message.id} className="flex gap-3">
-                <img
-                  src={message.avatar_url || '/placeholder.svg'}
+                <UserAvatar
+                  src={message.avatar_url}
                   alt={message.display_name || 'User'}
-                  className="h-8 w-8 rounded-full ring-2 ring-primary/20"
+                  size={36}
+                  className="ring-2 ring-primary/20"
                 />
                 <div className="flex-1">
                   <div className="mb-1 flex items-baseline gap-2">

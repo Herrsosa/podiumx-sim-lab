@@ -24,6 +24,7 @@ import { ChartSkeleton } from '@/components/ui/skeletons';
 import { SectionTitle, Body, Small } from '@/components/ui/typography';
 import { formatMoney, formatNumber } from '@/lib/format';
 import { cn } from '@/lib/utils';
+import { resolveAvatarUrl } from '@/utils/avatar';
 import { useUser } from '@/store/auth';
 import { MobileActionBar } from '@/components/MobileActionBar';
 
@@ -296,8 +297,11 @@ export default function AthleteDetail() {
               <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-yellow-400 via-pink-500 to-purple-600 p-1">
                 <div className="h-full w-full rounded-full bg-background p-1">
                   <img
-                    src={athlete.avatar}
+                    src={resolveAvatarUrl(athlete.avatar, { size: 160 })}
                     alt={athlete.name}
+                    width={128}
+                    height={128}
+                    loading="lazy"
                     className="h-full w-full rounded-full object-cover"
                   />
                 </div>

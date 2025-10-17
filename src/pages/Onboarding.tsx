@@ -9,6 +9,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Sport, Workout } from "@/types";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { resolveAvatarUrl } from "@/utils/avatar";
+import type { Database } from '@/integrations/supabase/types';
 import { Upload, Dumbbell, Trophy, Eye, TrendingUp, ShoppingBag } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -18,6 +20,8 @@ import { useTrade } from "@/hooks/useTrade";
 import { usePaginatedAthletes } from "@/hooks/usePaginatedAthletes";
 import { useOnboardingStatus } from "@/hooks/useOnboardingStatus";
 import { useUser } from "@/store/auth";
+
+type ProfileInsert = Database['public']['Tables']['profiles']['Insert'];
 
 type OnboardingStep = 
   | 'ROLE_SELECTION' 
@@ -116,7 +120,7 @@ export default function Onboarding() {
         .maybeSingle();
 
       const fallbackHandleBase = user.email?.split('@')[0]?.replace(/[^a-zA-Z0-9]/g, '') || `user-${user.id.slice(0, 6)}`;
-      const payload: any = {
+      const payload: ProfileInsert = {
         id: user.id,
         role,
         onboarding_completed: false,
@@ -483,8 +487,8 @@ export default function Onboarding() {
           {step === 'FAN_PROFILE' && (
             <>
               <div className="flex items-center gap-4">
-                <Avatar className="w-20 h-20">
-                  <AvatarImage src={avatar} />
+                <Avatar className="h-20 w-20">
+                  <AvatarImage src={resolveAvatarUrl(avatar, { size: 160 })} width={160} height={160} loading="lazy" />
                   <AvatarFallback>{name[0] || "?"}</AvatarFallback>
                 </Avatar>
                 <div>
@@ -591,7 +595,12 @@ export default function Onboarding() {
                       <CardContent className="p-4 flex items-center justify-between">
                         <div className="flex items-center gap-3">
                           <Avatar>
-                            <AvatarImage src={athlete.avatar} />
+                            <AvatarImage
+                              src={resolveAvatarUrl(athlete.avatar, { size: 96 })}
+                              width={96}
+                              height={96}
+                              loading="lazy"
+                            />
                             <AvatarFallback>{athlete.name[0]}</AvatarFallback>
                           </Avatar>
                           <div>
@@ -645,8 +654,8 @@ export default function Onboarding() {
           {step === 'ATHLETE_PROFILE' && (
             <>
               <div className="flex items-center gap-4">
-                <Avatar className="w-20 h-20">
-                  <AvatarImage src={avatar} />
+                <Avatar className="h-20 w-20">
+                  <AvatarImage src={resolveAvatarUrl(avatar, { size: 160 })} width={160} height={160} loading="lazy" />
                   <AvatarFallback>{name[0] || "?"}</AvatarFallback>
                 </Avatar>
                 <div>

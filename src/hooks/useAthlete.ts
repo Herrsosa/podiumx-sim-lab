@@ -74,7 +74,7 @@ export function useAthlete(slug: string) {
         slug: profile.username,
         name: profile.display_name || profile.username,
         sport: (profile.sport || 'Other') as Sport,
-        avatar: resolveAvatarUrl(avatarSource),
+        avatar: resolveAvatarUrl(avatarSource, { size: 192 }),
         bio: profile.bio || '',
         location: '',
         socials: {

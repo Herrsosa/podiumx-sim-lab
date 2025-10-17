@@ -29,25 +29,27 @@ USING (
   AND auth.uid()::text = (storage.foldername(name))[1]
 );
 
--- Add token_gated column to posts if it doesn't exist
-DO $$ 
+DO $$
 BEGIN
-  IF NOT EXISTS (
-    SELECT 1 FROM information_schema.columns 
-    WHERE table_name = 'posts' AND column_name = 'token_gated'
-  ) THEN
-    ALTER TABLE posts ADD COLUMN token_gated BOOLEAN DEFAULT FALSE;
+  IF EXISTS (SELECT 1 FROM pg_tables WHERE schemaname = 'public' AND tablename = 'posts') THEN
+    IF NOT EXISTS (
+      SELECT 1 FROM information_schema.columns
+      WHERE table_name = 'posts' AND column_name = 'token_gated'
+    ) THEN
+      ALTER TABLE public.posts ADD COLUMN token_gated BOOLEAN DEFAULT FALSE;
+    END IF;
   END IF;
 END $$;
 
--- Add strava_activity_id for synced workouts
-DO $$ 
+DO $$
 BEGIN
-  IF NOT EXISTS (
-    SELECT 1 FROM information_schema.columns 
-    WHERE table_name = 'posts' AND column_name = 'strava_activity_id'
-  ) THEN
-    ALTER TABLE posts ADD COLUMN strava_activity_id BIGINT;
+  IF EXISTS (SELECT 1 FROM pg_tables WHERE schemaname = 'public' AND tablename = 'posts') THEN
+    IF NOT EXISTS (
+      SELECT 1 FROM information_schema.columns
+      WHERE table_name = 'posts' AND column_name = 'strava_activity_id'
+    ) THEN
+      ALTER TABLE public.posts ADD COLUMN strava_activity_id BIGINT;
+    END IF;
   END IF;
 END $$;
 

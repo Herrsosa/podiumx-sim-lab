@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { UserAvatar } from '@/components/UserAvatar';
 import { Badge } from '@/components/ui/badge';
 import { MessageSquare, Send, X } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
@@ -70,7 +70,7 @@ export function DirectMessages() {
       other_participant: {
         id: row.other_user_id ?? '',
         display_name: row.other_display_name ?? 'Unknown',
-        avatar_url: resolveAvatarUrl(row.other_avatar_url),
+        avatar_url: resolveAvatarUrl(row.other_avatar_url, { size: 64 }),
       },
       last_message: row.last_message
         ? {
@@ -84,7 +84,12 @@ export function DirectMessages() {
 
   const fetchConversations = useCallback(
     async (targetPage: number, reset = false) => {
-      if (!user) return;
+      if (!user?.id) {
+        setConversations([]);
+        setIsLoading(false);
+        setHasMore(false);
+        return;
+      }
 
       if (reset) {
         setIsLoading(true);
@@ -96,27 +101,20 @@ export function DirectMessages() {
 
       try {
         const { data, error } = await supabase.rpc('get_dm_conversations', {
-          p_user: user.id,
           p_limit: PAGE_SIZE,
           p_offset: targetPage * PAGE_SIZE,
         });
 
-        if (error) {
-          throw error;
-        }
+        if (error) throw error;
 
         const mapped = (data ?? []).map(mapRpcRow);
 
         setConversations((prev) => {
-          if (reset) {
-            return mapped;
-          }
+          if (reset) return mapped;
 
-          const merged = new Map(prev.map((conversation) => [conversation.id, conversation]));
-          mapped.forEach((conversation) => {
-            merged.set(conversation.id, conversation);
-          });
-
+          // merge by id, then sort by updated_at desc
+          const merged = new Map(prev.map((c) => [c.id, c]));
+          mapped.forEach((c) => merged.set(c.id, c));
           return Array.from(merged.values()).sort((a, b) => {
             const aTime = a.updated_at ? new Date(a.updated_at).getTime() : 0;
             const bTime = b.updated_at ? new Date(b.updated_at).getTime() : 0;
@@ -134,31 +132,27 @@ export function DirectMessages() {
           variant: 'destructive',
         });
       } finally {
-        if (reset) {
-          setIsLoading(false);
-        } else {
-          setIsFetchingMore(false);
-        }
+        if (reset) setIsLoading(false);
+        else setIsFetchingMore(false);
       }
     },
-    [mapRpcRow, toast, user],
+    [mapRpcRow, toast, user?.id],
   );
 
   const loadConversations = useCallback(async () => {
-    if (!user) {
+    if (!user?.id) {
       setConversations([]);
       setIsLoading(false);
       setHasMore(false);
       return;
     }
-
     await fetchConversations(0, true);
-  }, [fetchConversations, user]);
+  }, [fetchConversations, user?.id]);
 
   const loadMoreConversations = useCallback(async () => {
-    if (!user || !hasMore || isFetchingMore) return;
+    if (!user?.id || !hasMore || isFetchingMore) return;
     await fetchConversations(page + 1, false);
-  }, [fetchConversations, hasMore, isFetchingMore, page, user]);
+  }, [fetchConversations, hasMore, isFetchingMore, page, user?.id]);
 
   const loadMessages = useCallback(async (conversationId: string) => {
     try {
@@ -170,7 +164,7 @@ export function DirectMessages() {
 
       if (error) throw error;
 
-      const senderIds = [...new Set(messagesData?.map((message) => message.sender_id) || [])];
+      const senderIds = [...new Set(messagesData?.map((m) => m.sender_id) || [])];
 
       const { data: profiles } = await supabase
         .from('profiles')
@@ -179,14 +173,14 @@ export function DirectMessages() {
 
       const formattedMessages: Message[] =
         messagesData?.map((message) => {
-          const profile = profiles?.find((profileRow) => profileRow.id === message.sender_id);
+          const profile = profiles?.find((p) => p.id === message.sender_id);
           return {
             id: message.id,
             content: message.content,
             sender_id: message.sender_id,
             created_at: message.created_at,
             sender_name: profile?.display_name || 'Unknown',
-            sender_avatar: resolveAvatarUrl(profile?.avatar_url),
+            sender_avatar: resolveAvatarUrl(profile?.avatar_url, { size: 40 }),
           };
         }) ?? [];
 
@@ -198,14 +192,12 @@ export function DirectMessages() {
 
   const markAsRead = useCallback(
     async (conversationId: string) => {
-      if (!user) return;
+      if (!user?.id) return;
 
       const timestamp = new Date().toISOString();
 
       setConversations((prev) =>
-        prev.map((conversation) =>
-          conversation.id === conversationId ? { ...conversation, unread_count: 0 } : conversation,
-        ),
+        prev.map((c) => (c.id === conversationId ? { ...c, unread_count: 0 } : c)),
       );
 
       await supabase
@@ -214,20 +206,20 @@ export function DirectMessages() {
         .eq('conversation_id', conversationId)
         .eq('user_id', user.id);
     },
-    [user],
+    [user?.id],
   );
 
   const refreshConversations = useCallback(async () => {
-    if (!user) return;
+    if (!user?.id) return;
     await fetchConversations(0, true);
-  }, [fetchConversations, user]);
+  }, [fetchConversations, user?.id]);
 
   useEffect(() => {
     loadConversations();
   }, [loadConversations]);
 
   useEffect(() => {
-    if (!selectedConversation || !user) return;
+    if (!selectedConversation || !user?.id) return;
 
     loadMessages(selectedConversation);
     void markAsRead(selectedConversation);
@@ -252,10 +244,10 @@ export function DirectMessages() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [loadMessages, markAsRead, refreshConversations, selectedConversation, user]);
+  }, [loadMessages, markAsRead, refreshConversations, selectedConversation, user?.id]);
 
   const sendMessage = async () => {
-    if (!user || !selectedConversation || !newMessage.trim()) return;
+    if (!user?.id || !selectedConversation || !newMessage.trim()) return;
 
     try {
       const { error } = await supabase.from('dm_messages').insert({
@@ -340,13 +332,6 @@ export function DirectMessages() {
                     ? new Date(conversation.updated_at).toLocaleString()
                     : '—';
 
-                  const initials = conversation.other_participant.display_name
-                    .split(' ')
-                    .map((part) => part.charAt(0))
-                    .join('')
-                    .slice(0, 2)
-                    .toUpperCase();
-
                   return (
                     <button
                       key={conversation.id}
@@ -358,13 +343,11 @@ export function DirectMessages() {
                     >
                       <div className="flex items-center justify-between gap-3">
                         <div className="flex items-center gap-3">
-                          <Avatar className="h-10 w-10">
-                            <AvatarImage
-                              src={conversation.other_participant.avatar_url || undefined}
-                              alt={conversation.other_participant.display_name}
-                            />
-                            <AvatarFallback>{initials}</AvatarFallback>
-                          </Avatar>
+                          <UserAvatar
+                            src={conversation.other_participant.avatar_url}
+                            alt={conversation.other_participant.display_name}
+                            size={40}
+                          />
                           <div>
                             <div className="font-medium">
                               {conversation.other_participant.display_name}
@@ -408,7 +391,7 @@ export function DirectMessages() {
                 <div>
                   <div className="font-semibold">
                     {
-                      conversations.find((conversation) => conversation.id === selectedConversation)
+                      conversations.find((c) => c.id === selectedConversation)
                         ?.other_participant.display_name
                     }
                   </div>
@@ -437,7 +420,7 @@ export function DirectMessages() {
                 <Input
                   placeholder="Type your message..."
                   value={newMessage}
-                  onChange={(event) => setNewMessage(event.target.value)}
+                  onChange={(e) => setNewMessage(e.target.value)}
                   onKeyDown={handleKeyPress}
                 />
                 <Button onClick={sendMessage} disabled={!newMessage.trim()}>

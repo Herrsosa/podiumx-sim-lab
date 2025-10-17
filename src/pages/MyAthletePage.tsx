@@ -27,6 +27,7 @@ import { DirectMessages } from '@/components/DirectMessages';
 import TokengatedChat from '@/components/TokengatedChat';
 import { useQueryClient } from '@tanstack/react-query';
 import { MobileActionBar } from '@/components/MobileActionBar';
+import { resolveAvatarUrl, resolveImageUrl } from '@/utils/avatar';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -410,8 +411,11 @@ export default function MyAthletePage() {
               <div className="h-24 w-24 overflow-hidden rounded-full ring-4 ring-primary/20">
                 {(editedProfile.avatar || myAthletePage?.athlete?.avatar) ? (
                   <img
-                    src={editedProfile.avatar || myAthletePage?.athlete?.avatar}
+                    src={resolveAvatarUrl(editedProfile.avatar || myAthletePage?.athlete?.avatar, { size: 192 })}
                     alt={editedProfile.displayName}
+                    width={96}
+                    height={96}
+                    loading="lazy"
                     className="h-full w-full object-cover"
                     onError={(e) => {
                       console.error('Failed to load avatar:', editedProfile.avatar);
@@ -933,8 +937,11 @@ function WorkoutCard({
             <div className="mt-2">
               {workout.mediaType === 'image' ? (
                 <img
-                  src={workout.mediaUrl}
+                  src={resolveImageUrl(workout.mediaUrl, { width: 360 })}
                   alt="Workout"
+                  width={360}
+                  height={240}
+                  loading="lazy"
                   className="h-32 w-48 rounded-lg object-cover"
                 />
               ) : (

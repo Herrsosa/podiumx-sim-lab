@@ -6,6 +6,11 @@ import { priceAt } from '@/utils/pricing';
 import { resolveAvatarUrl } from '@/utils/avatar';
 import { useUser } from '@/store/auth';
 import { useAthleteMetrics } from './useAthleteMetrics';
+import type { Database } from '@/integrations/supabase/types';
+
+type ProfileRow = Database['public']['Tables']['profiles']['Row'];
+type TokenRow = Database['public']['Tables']['athlete_tokens']['Row'];
+type PostRow = Database['public']['Tables']['posts']['Row'];
 
 type MyAthletePageResult = {
   athlete: Athlete;
@@ -33,7 +38,7 @@ export function useMyAthlete() {
 
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
-        .select('id, username, display_name, sport, avatar_url, bio, instagram_url, strava_url, created_at')
+        .select<ProfileRow>('id, username, display_name, sport, avatar_url, bio, instagram_url, strava_url, created_at')
         .eq('id', user.id)
         .single();
 
@@ -41,7 +46,7 @@ export function useMyAthlete() {
 
       const { data: tokens, error: tokenError } = await supabase
         .from('athlete_tokens')
-        .select('athlete_id, supply, a, b, c, treasury_balance, athlete_earnings')
+        .select<TokenRow>('athlete_id, symbol, supply, a, b, c, treasury_balance, athlete_earnings')
         .eq('athlete_id', user.id);
 
       if (tokenError) throw tokenError;
@@ -50,7 +55,7 @@ export function useMyAthlete() {
 
       const { data: rawPosts, error: postsError } = await supabase
         .from('posts')
-        .select('id, created_at, author_id, workout_json, image_url, text, token_gated, strava_activity_id')
+        .select<PostRow>('id, created_at, author_id, workout_json, image_url, text, token_gated, strava_activity_id')
         .eq('author_id', user.id)
         .order('created_at', { ascending: false })
         .range(from, to);
@@ -66,13 +71,13 @@ export function useMyAthlete() {
       const marketCap = price * supply;
 
       // Convert posts to typed objects and workouts format
-      const posts: Post[] = (rawPosts || []).map((p: any) => ({
+      const posts: Post[] = (rawPosts || []).map((p) => ({
         id: p.id,
         created_at: p.created_at,
-        workout_json: p.workout_json as unknown as Workout,
+        workout_json: p.workout_json as Workout | Record<string, unknown> | null,
         image_url: p.image_url,
         text: p.text,
-        token_gated: p.token_gated,
+        token_gated: Boolean(p.token_gated),
         strava_activity_id: p.strava_activity_id,
         author_id: p.author_id,
       }));
@@ -91,7 +96,7 @@ export function useMyAthlete() {
         slug: profile.username,
         name: profile.display_name || profile.username,
         sport: (profile.sport || 'Other') as Sport,
-        avatar: resolveAvatarUrl(avatarSource),
+        avatar: resolveAvatarUrl(avatarSource, { size: 192 }),
         bio: profile.bio || '',
         location: '',
         socials: {

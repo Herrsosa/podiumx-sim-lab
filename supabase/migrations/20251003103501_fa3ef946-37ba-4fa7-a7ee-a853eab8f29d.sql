@@ -1,4 +1,14 @@
 -- Create function for atomic trade execution
+  DO $$
+  BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'trade_side') THEN
+      CREATE TYPE trade_side AS ENUM ('BUY', 'SELL');
+    END IF;
+  END;
+  $$;
+
+
+
 CREATE OR REPLACE FUNCTION execute_trade_transaction(
   p_user_id UUID,
   p_athlete_id UUID,

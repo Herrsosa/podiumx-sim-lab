@@ -56,7 +56,7 @@ export function usePaginatedAthletes() {
           slug: profile.username,
           name: profile.display_name || profile.username,
           sport: (profile.sport || 'Other') as Sport,
-          avatar: resolveAvatarUrl(avatarSource),
+          avatar: resolveAvatarUrl(avatarSource, { size: 160 }),
           bio: profile.bio || '',
           location: '',
           socials: {
