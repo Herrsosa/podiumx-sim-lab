@@ -1,11 +1,11 @@
-import { lazy, Suspense, useState, useMemo, useCallback } from 'react';
+import { lazy, Suspense, useState, useMemo, useCallback, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Info, Plus, Minus, Edit } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useAthlete } from '@/hooks/useAthlete';
 import { useWallet } from '@/hooks/useWallet';
@@ -41,7 +41,7 @@ export default function AthleteDetail() {
   const [tradeType, setTradeType] = useState<'buy' | 'sell'>('buy');
   const [quantity, setQuantity] = useState(1);
   const [quantityError, setQuantityError] = useState<string | null>(null);
-  const [showTradeModal, setShowTradeModal] = useState(false);
+  const [, setShowTradeModal] = useState(false);
   const [showAddWorkout, setShowAddWorkout] = useState(false);
   const [timeRange, setTimeRange] = useState<TimeRange>('24h');
   const timeRanges: TimeRange[] = ['24h', '7d', '30d', 'all'];
@@ -217,19 +217,7 @@ export default function AthleteDetail() {
       return;
     }
     if (!canTrade || !athlete || !impact) return;
-    
-    // Optimistic update - immediately update local state
-    const optimisticAthlete = {
-      ...athlete,
-      price: impact.newPrice,
-      supply: impact.newSupply,
-      reserve: impact.newReserve,
-      marketCap: impact.newPrice * impact.newSupply,
-    };
-    
-    // You could dispatch an optimistic update here if using a state manager
-    // For now, the mutation will handle the refetch
-    
+    // Possible spot for optimistic updates if we wire in a client-side store
     await tradeMutation.mutateAsync({
       athleteId: athlete.id,
       quantity,
@@ -247,6 +235,12 @@ export default function AthleteDetail() {
   const isOwnProfile = user?.id === athlete?.id;
 
   const isBootstrapping = athleteLoading || walletLoading || tradesLoading;
+
+  useEffect(() => {
+    if (!isBootstrapping) {
+      window.scrollTo({ top: 0, behavior: 'auto' });
+    }
+  }, [isBootstrapping]);
 
   // Now check loading and not found states
   if (isBootstrapping) {

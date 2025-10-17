@@ -40,9 +40,20 @@ export default function TokengatedChat({
   const [newMessage, setNewMessage] = useState('');
   const [sending, setSending] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messageContainerRef = useRef<HTMLDivElement>(null);
+  const [userHasScrolledUp, setUserHasScrolledUp] = useState(false);
   
   const canSend = userHoldings >= 1;
   const isLocked = !canSend;
+
+  const handleScroll = () => {
+    const container = messageContainerRef.current;
+    if (container) {
+      const { scrollTop, scrollHeight, clientHeight } = container;
+      const isAtBottom = scrollHeight - scrollTop <= clientHeight + 1; // Add a pixel for tolerance
+      setUserHasScrolledUp(!isAtBottom);
+    }
+  };
 
   const fetchMessages = useCallback(async () => {
     const { data: msgs } = await supabase
@@ -118,8 +129,18 @@ export default function TokengatedChat({
   }, [athleteId, fetchMessages]);
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+    if (!userHasScrolledUp) {
+      const container = messageContainerRef.current;
+      if (container) {
+        container.scrollTo({
+          top: container.scrollHeight,
+          behavior: 'smooth',
+        });
+      } else {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+      }
+    }
+  }, [messages, userHasScrolledUp]);
 
   const handleSend = async () => {
     if (!newMessage.trim() || !user || !canSend) return;
@@ -171,7 +192,7 @@ export default function TokengatedChat({
       </CardHeader>
       <CardContent className="flex flex-1 flex-col gap-3 px-5 pb-4 pt-0">
         {/* Messages */}
-        <div className="flex-1 space-y-3 overflow-y-auto rounded-lg border border-border/50 bg-muted/20 p-4 min-h-[220px]">
+        <div ref={messageContainerRef} onScroll={handleScroll} className="flex-1 space-y-3 overflow-y-auto rounded-lg border border-border/50 bg-muted/20 p-4 min-h-[220px]">
           {isLocked ? (
             <EmptyState
               icon={<Lock className="h-6 w-6" />}
