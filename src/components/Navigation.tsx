@@ -61,14 +61,14 @@ export default function Navigation() {
 
   return (
     <nav className="sticky top-0 z-50 border-b border-border/50 bg-background/80 backdrop-blur-xl">
-      <div className="container mx-auto px-4">
-        <div className="flex h-16 items-center justify-between">
+      <div className="container mx-auto px-2 sm:px-4">
+        <div className="flex h-14 sm:h-16 items-center justify-between">
           {/* Logo */}
-          <Link to="/" className="flex items-center gap-2">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary">
-              <TrendingUp className="h-6 w-6 text-primary-foreground" />
+          <Link to="/" className="flex items-center gap-1.5 sm:gap-2">
+            <div className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-xl bg-primary">
+              <TrendingUp className="h-4 w-4 sm:h-6 sm:w-6 text-primary-foreground" />
             </div>
-            <span className="text-xl font-bold">PodiumX</span>
+            <span className="text-base sm:text-xl font-bold">PodiumX</span>
           </Link>
 
           {/* Nav Links */}
@@ -115,7 +115,8 @@ export default function Navigation() {
               variant="ghost"
               size="sm"
               onClick={toggleTheme}
-              className="h-9 w-9 p-0"
+              className="h-8 w-8 sm:h-9 sm:w-9 p-0"
+              aria-label="Toggle theme"
             >
               {theme === 'dark' ? (
                 <Sun className="h-4 w-4" />
@@ -150,8 +151,9 @@ export default function Navigation() {
       </div>
 
       {/* Disclaimer Banner */}
-      <div className="border-t border-border/50 bg-muted/30 py-2 text-center text-xs text-muted-foreground">
-        🎓 Educational Simulation Only • No Real Trading • Not Financial Advice
+      <div className="border-t border-border/50 bg-muted/30 py-1.5 sm:py-2 text-center text-[10px] sm:text-xs text-muted-foreground px-2">
+        <span className="hidden sm:inline">🎓 Educational Simulation Only • No Real Trading • Not Financial Advice</span>
+        <span className="sm:hidden">🎓 Educational Only • Not Financial Advice</span>
       </div>
     </nav>
   );
