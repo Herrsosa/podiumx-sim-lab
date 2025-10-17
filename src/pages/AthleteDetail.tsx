@@ -1,6 +1,6 @@
-import { lazy, Suspense, useState, useMemo, useCallback, useEffect } from 'react';
+import { lazy, Suspense, useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Info, Plus, Minus, Edit } from 'lucide-react';
+import { ArrowLeft, Info, Plus, Minus, Edit, ShoppingCart, TrendingDown, MessageCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -25,6 +25,7 @@ import { SectionTitle, Body, Small } from '@/components/ui/typography';
 import { formatMoney, formatNumber } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import { useUser } from '@/store/auth';
+import { MobileActionBar } from '@/components/MobileActionBar';
 
 const AthletePriceChart = lazy(() => import('@/components/charts/AthletePriceChart'));
 
@@ -45,6 +46,8 @@ export default function AthleteDetail() {
   const [showAddWorkout, setShowAddWorkout] = useState(false);
   const [timeRange, setTimeRange] = useState<TimeRange>('24h');
   const timeRanges: TimeRange[] = ['24h', '7d', '30d', 'all'];
+  const tradeSectionRef = useRef<HTMLDivElement | null>(null);
+  const chatSectionRef = useRef<HTMLDivElement | null>(null);
   
   const { data: athlete, isLoading: athleteLoading } = useAthlete(slug!);
   const { data: wallet, isLoading: walletLoading } = useWallet();
@@ -236,6 +239,22 @@ export default function AthleteDetail() {
 
   const isBootstrapping = athleteLoading || walletLoading || tradesLoading;
 
+  const scrollToTrade = useCallback(
+    (type: 'buy' | 'sell') => {
+      setTradeType(type);
+      setTimeout(() => {
+        tradeSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 0);
+    },
+    [],
+  );
+
+  const scrollToChat = useCallback(() => {
+    setTimeout(() => {
+      chatSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 0);
+  }, []);
+
   useEffect(() => {
     if (!isBootstrapping) {
       window.scrollTo({ top: 0, behavior: 'auto' });
@@ -257,7 +276,7 @@ export default function AthleteDetail() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="container mx-auto px-4 pb-32 pt-8 md:pb-8">
       {/* Back Button */}
       <Button
         variant="ghost"
@@ -390,7 +409,7 @@ export default function AthleteDetail() {
       {/* Proof of Sweat & Trading */}
       <div className="mt-6 grid gap-6 lg:grid-cols-3">
         {/* Trade Panel */}
-        <Card className="glass-card">
+        <Card className="glass-card" ref={tradeSectionRef}>
           <CardHeader>
             <CardTitle>Trade</CardTitle>
           </CardHeader>
@@ -691,18 +710,20 @@ export default function AthleteDetail() {
             />
           </div>
 
-          <TokengatedChat
-            athleteId={athlete.id}
-            athleteName={athlete.name}
-            userHoldings={userHoldings}
-            onBuyClick={async () => {
-              await tradeMutation.mutateAsync({
-                athleteId: athlete.id,
-                quantity: 1,
-                side: 'BUY',
-              });
-            }}
-          />
+          <div ref={chatSectionRef}>
+            <TokengatedChat
+              athleteId={athlete.id}
+              athleteName={athlete.name}
+              userHoldings={userHoldings}
+              onBuyClick={async () => {
+                await tradeMutation.mutateAsync({
+                  athleteId: athlete.id,
+                  quantity: 1,
+                  side: 'BUY',
+                });
+              }}
+            />
+          </div>
         </div>
       </div>
 
@@ -752,6 +773,34 @@ export default function AthleteDetail() {
         onOpenChange={setShowAddWorkout}
         athleteId={athlete.id}
         onSuccess={handleWorkoutSuccess}
+      />
+      <MobileActionBar
+        actions={[
+          {
+            id: 'athlete-detail-buy',
+            label: 'Buy',
+            icon: <ShoppingCart className="h-4 w-4" aria-hidden="true" />,
+            variant: 'primary',
+            onPress: () => scrollToTrade('buy'),
+            ariaLabel: 'Buy athlete tokens',
+          },
+          {
+            id: 'athlete-detail-sell',
+            label: 'Sell',
+            icon: <TrendingDown className="h-4 w-4" aria-hidden="true" />,
+            variant: 'secondary',
+            onPress: () => scrollToTrade('sell'),
+            ariaLabel: 'Sell athlete tokens',
+          },
+          {
+            id: 'athlete-detail-message',
+            label: 'Message',
+            icon: <MessageCircle className="h-4 w-4" aria-hidden="true" />,
+            variant: 'ghost',
+            onPress: scrollToChat,
+            ariaLabel: 'Open community chat',
+          },
+        ]}
       />
     </div>
   );
