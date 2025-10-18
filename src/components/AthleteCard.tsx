@@ -6,6 +6,7 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { Athlete } from '@/types';
 import type { MarketplaceChartPoint } from '@/hooks/useMarketplaceCharts';
 import { formatMoney, formatNumber } from '@/lib/format';
+import { resolveAvatarUrl } from '@/utils/avatar';
 import { format } from 'date-fns';
 
 interface AthleteCardProps {
@@ -59,10 +60,12 @@ export const AthleteCard = memo(({ athlete, chartData, onClick, onMouseEnter }: 
       <CardContent className="p-0">
         <div className="aspect-w-1 aspect-h-1">
           <img
-            src={athlete.avatar}
+            src={resolveAvatarUrl(athlete.avatar, { size: 320 })}
             alt={athlete.name}
+            width={320}
+            height={192}
             loading="lazy"
-            className="w-full h-48 object-cover"
+            className="h-48 w-full object-cover"
           />
         </div>
         <div className="p-6">

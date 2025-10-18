@@ -3,6 +3,9 @@ import { supabase } from '@/integrations/supabase/client';
 import { Trade } from '@/types';
 import { useUser } from '@/store/auth';
 
+const TRADE_SELECT =
+  'id, athlete_id, user_id, side, qty, gross_amount, net_amount, fee, created_at, price_after';
+
 interface DbTrade {
   id: string;
   created_at: string;
@@ -25,7 +28,9 @@ export function useTrades(athleteId?: string, options?: { enabled?: boolean }) {
     queryFn: async () => {
       let query = supabase
         .from('trades')
-        .select('*, profiles!trades_athlete_id_profiles_id_fk(display_name, username)')
+        .select<DbTrade>(
+          `${TRADE_SELECT}, profiles!trades_athlete_id_profiles_id_fk(display_name, username)`
+        )
         .order('created_at', { ascending: false });
 
       if (athleteId) {
@@ -36,7 +41,7 @@ export function useTrades(athleteId?: string, options?: { enabled?: boolean }) {
 
       if (error) throw error;
 
-      const trades: Trade[] = ((data ?? []) as any).map((trade: any) => {
+      const trades: Trade[] = (data ?? []).map((trade) => {
         const profile = trade.profiles;
         return {
           id: trade.id,
@@ -67,13 +72,15 @@ export function useUserTrades() {
 
       const { data, error } = await supabase
         .from('trades')
-        .select('*, profiles!trades_athlete_id_profiles_id_fk(display_name, username)')
+        .select<DbTrade>(
+          `${TRADE_SELECT}, profiles!trades_athlete_id_profiles_id_fk(display_name, username)`
+        )
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
 
-      const trades: Trade[] = (data as any).map((trade: any) => {
+      const trades: Trade[] = (data ?? []).map((trade) => {
         const profile = trade.profiles;
         return {
           id: trade.id,

@@ -25,7 +25,7 @@ export function useAthlete(slug: string) {
 
       const { data: token, error: tokenError } = await supabase
         .from('athlete_tokens')
-        .select('*')
+        .select('athlete_id, supply, a, b, c, treasury_balance, athlete_earnings')
         .eq('athlete_id', profile.id)
         .single();
 
@@ -35,7 +35,8 @@ export function useAthlete(slug: string) {
         .from('posts')
         .select('id, created_at, author_id, workout_json, image_url, text, token_gated, strava_activity_id')
         .eq('author_id', profile.id)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .limit(100);
 
       if (postsError) throw postsError;
 
@@ -73,7 +74,7 @@ export function useAthlete(slug: string) {
         slug: profile.username,
         name: profile.display_name || profile.username,
         sport: (profile.sport || 'Other') as Sport,
-        avatar: resolveAvatarUrl(avatarSource),
+        avatar: resolveAvatarUrl(avatarSource, { size: 192 }),
         bio: profile.bio || '',
         location: '',
         socials: {

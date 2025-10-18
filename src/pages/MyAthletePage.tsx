@@ -1,5 +1,5 @@
 import { useState, useRef, useMemo, useCallback, useEffect, useId } from 'react';
-import { Camera, Upload, Plus, X, Edit2, Save, Link as LinkIcon, TrendingUp, Link2, Edit, Trash2, MessageSquare, DollarSign } from 'lucide-react';
+import { Camera, Upload, Plus, X, Edit2, Save, Link as LinkIcon, TrendingUp, Link2, Edit, Trash2, MessageSquare, DollarSign, Activity, Share2, MessageCircle } from 'lucide-react';
 import { ComposedChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Bar, type TooltipProps } from 'recharts';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { EarningsSection } from '@/components/EarningsSection';
@@ -26,6 +26,8 @@ import { StravaCard } from '@/components/strava/StravaCard';
 import { DirectMessages } from '@/components/DirectMessages';
 import TokengatedChat from '@/components/TokengatedChat';
 import { useQueryClient } from '@tanstack/react-query';
+import { MobileActionBar } from '@/components/MobileActionBar';
+import { resolveAvatarUrl, resolveImageUrl } from '@/utils/avatar';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -46,8 +48,10 @@ export default function MyAthletePage() {
   const [addWorkoutOpen, setAddWorkoutOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [workoutToDelete, setWorkoutToDelete] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<'workouts' | 'community' | 'messages' | 'earnings'>('workouts');
   const [newAvatarFile, setNewAvatarFile] = useState<File | null>(null);
   const avatarInputRef = useRef<HTMLInputElement>(null);
+  const messagesSectionRef = useRef<HTMLDivElement | null>(null);
 
   const [editedProfile, setEditedProfile] = useState<{
     displayName: string;
@@ -95,6 +99,16 @@ export default function MyAthletePage() {
   }, [pages]);
 
   const { editingWorkout, setEditingWorkout, open, setOpen, handleEditWorkout } = useWorkoutEditor(findPostById);
+  const normalizedEditingWorkout = useMemo(() => {
+    if (!editingWorkout || !editingWorkout.workout_json || Array.isArray(editingWorkout.workout_json)) {
+      return null;
+    }
+
+    return {
+      ...editingWorkout,
+      workout_json: editingWorkout.workout_json as Workout,
+    };
+  }, [editingWorkout]);
 
   const priceHistory = useMemo(() => {
     const athlete = myAthletePage?.athlete;
@@ -333,8 +347,56 @@ export default function MyAthletePage() {
     }
   };
 
+  const handleMobileLogPos = useCallback(() => {
+    setActiveTab('workouts');
+    setAddWorkoutOpen(true);
+  }, []);
+
+  const handleMobileShare = useCallback(async () => {
+    const shareTitle = myAthletePage?.athlete?.name
+      ? `${myAthletePage.athlete.name} | Build Your Athlete Aura`
+      : 'Build Your Athlete Aura';
+    const shareUrl = typeof window !== 'undefined' ? window.location.href : '';
+
+    try {
+      const canShare = typeof navigator !== 'undefined' && typeof navigator.share === 'function';
+      if (canShare && shareUrl) {
+        await navigator.share({
+          title: shareTitle,
+          text: 'Proof-of-Sweat meets markets.',
+          url: shareUrl,
+        });
+        return;
+      }
+    } catch (error) {
+      if ((error as Error)?.name !== 'AbortError') {
+        console.error('Share failed:', error);
+      }
+    }
+
+    const canCopy = typeof navigator !== 'undefined' && navigator.clipboard?.writeText;
+    if (shareUrl && canCopy) {
+      try {
+        await navigator.clipboard.writeText(shareUrl);
+        toast.success('Link copied to clipboard');
+        return;
+      } catch (error) {
+        console.error('Clipboard copy failed:', error);
+      }
+    }
+
+    toast.info('Sharing not supported on this device yet.');
+  }, [myAthletePage?.athlete?.name]);
+
+  const handleMobileMessage = useCallback(() => {
+    setActiveTab('messages');
+    setTimeout(() => {
+      messagesSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 100);
+  }, []);
+
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="container mx-auto px-4 pb-32 pt-8 md:pb-8">
       <div className="mb-8">
         <h1 className="mb-2 text-4xl font-bold">My Athlete Profile</h1>
         <p className="text-muted-foreground">Manage your profile and workout timeline</p>
@@ -349,8 +411,11 @@ export default function MyAthletePage() {
               <div className="h-24 w-24 overflow-hidden rounded-full ring-4 ring-primary/20">
                 {(editedProfile.avatar || myAthletePage?.athlete?.avatar) ? (
                   <img
-                    src={editedProfile.avatar || myAthletePage?.athlete?.avatar}
+                    src={resolveAvatarUrl(editedProfile.avatar || myAthletePage?.athlete?.avatar, { size: 192 })}
                     alt={editedProfile.displayName}
+                    width={96}
+                    height={96}
+                    loading="lazy"
                     className="h-full w-full object-cover"
                     onError={(e) => {
                       console.error('Failed to load avatar:', editedProfile.avatar);
@@ -578,7 +643,7 @@ export default function MyAthletePage() {
               </div>
             </div>
             <ResponsiveContainer width="100%" height={300}>
-              <ComposedChart data={chartData} margin={{ top: 24, right: 16, bottom: 56, left: 16 }}>
+              <ComposedChart data={chartData} margin={{ top: 24, right: 24, bottom: 56, left: 16 }}>
                 <defs>
                   <filter id={`posGlow-${glowFilterId}`} x="-200%" y="-200%" width="500%" height="500%">
                     <feGaussianBlur stdDeviation="5" result="coloredBlur" />
@@ -594,6 +659,7 @@ export default function MyAthletePage() {
                   type="number"
                   scale="time"
                   domain={xDomain}
+                  padding={{ right: 18 }}
                   tickFormatter={formatXAxisTick}
                   tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
                   stroke="hsl(var(--muted-foreground))"
@@ -615,15 +681,15 @@ export default function MyAthletePage() {
                   dataKey="posCount"
                   yAxisId="pos"
                   fill="transparent"
-                  barSize={48}
+                  barSize={56}
                   shape={
                     <StackedCircles
                       color={POS_NEON_COLOR}
                       filterId={`posGlow-${glowFilterId}`}
                       maxCircles={6}
-                      gap={7}
-                      radius={9}
-                      hitboxSize={48}
+                      gap={8}
+                      radius={11}
+                      hitboxSize={56}
                     />
                   }
                 />
@@ -644,7 +710,11 @@ export default function MyAthletePage() {
       )}
 
       {/* Tabs for Workouts, Community Chat, Messages, and Earnings */}
-      <Tabs defaultValue="workouts" className="w-full">
+      <Tabs
+        value={activeTab}
+        onValueChange={(value) => setActiveTab(value as 'workouts' | 'community' | 'messages' | 'earnings')}
+        className="w-full"
+      >
         <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="workouts">Workout Timeline</TabsTrigger>
           <TabsTrigger value="community" className="gap-2">
@@ -716,7 +786,9 @@ export default function MyAthletePage() {
 
         {/* Messages Tab */}
         <TabsContent value="messages">
-          <DirectMessages />
+          <div ref={messagesSectionRef}>
+            <DirectMessages />
+          </div>
         </TabsContent>
 
         {/* Earnings Tab */}
@@ -749,14 +821,11 @@ export default function MyAthletePage() {
       )}
 
       {/* Edit Workout Modal */}
-      {editingWorkout && (
+      {normalizedEditingWorkout && (
         <EditWorkoutModal
           open={open}
           onOpenChange={setOpen}
-          workoutPost={{
-            ...editingWorkout,
-            workout_json: editingWorkout.workout_json as any as Workout
-          }}
+          workoutPost={normalizedEditingWorkout}
           onSuccess={() => {
             queryClient.invalidateQueries({ queryKey: ['my-athlete', user?.id] });
             setOpen(false);
@@ -784,6 +853,35 @@ export default function MyAthletePage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <MobileActionBar
+        actions={[
+          {
+            id: 'my-athlete-log-pos',
+            label: 'Log PoS',
+            icon: <Activity className="h-4 w-4" aria-hidden="true" />,
+            variant: 'primary',
+            onPress: handleMobileLogPos,
+            ariaLabel: 'Log proof-of-sweat workout',
+          },
+          {
+            id: 'my-athlete-share',
+            label: 'Share',
+            icon: <Share2 className="h-4 w-4" aria-hidden="true" />,
+            variant: 'secondary',
+            onPress: handleMobileShare,
+            ariaLabel: 'Share your athlete profile',
+          },
+          {
+            id: 'my-athlete-message',
+            label: 'Message',
+            icon: <MessageCircle className="h-4 w-4" aria-hidden="true" />,
+            variant: 'ghost',
+            onPress: handleMobileMessage,
+            ariaLabel: 'Open messages',
+          },
+        ]}
+      />
     </div>
   );
 }
@@ -839,8 +937,11 @@ function WorkoutCard({
             <div className="mt-2">
               {workout.mediaType === 'image' ? (
                 <img
-                  src={workout.mediaUrl}
+                  src={resolveImageUrl(workout.mediaUrl, { width: 360 })}
                   alt="Workout"
+                  width={360}
+                  height={240}
+                  loading="lazy"
                   className="h-32 w-48 rounded-lg object-cover"
                 />
               ) : (

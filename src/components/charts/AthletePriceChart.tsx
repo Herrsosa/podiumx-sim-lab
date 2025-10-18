@@ -126,7 +126,7 @@ const AthletePriceChart = memo(({
   return (
     <div style={{ position: 'relative', width: '100%', height: '100%' }}>
       <ResponsiveContainer width="100%" height="100%">
-        <ComposedChart data={chartData} margin={{ top: 24, right: 16, bottom: 56, left: 16 }}>
+        <ComposedChart data={chartData} margin={{ top: 24, right: 24, bottom: 56, left: 16 }}>
           <defs>
             <filter id={`posGlow-${glowFilterId}`} x="-200%" y="-200%" width="500%" height="500%">
               <feGaussianBlur stdDeviation="5" result="coloredBlur" />
@@ -142,6 +142,7 @@ const AthletePriceChart = memo(({
             type="number"
             scale="time"
             domain={xDomain}
+            padding={{ right: 18 }}
             tickFormatter={formatXAxisTick}
             tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
             stroke="hsl(var(--muted-foreground))"
@@ -163,15 +164,15 @@ const AthletePriceChart = memo(({
             dataKey="posCount"
             yAxisId="pos"
             fill="transparent"
-            barSize={48}
+            barSize={56}
             shape={
               <StackedCircles
                 color={POS_NEON_COLOR}
                 filterId={`posGlow-${glowFilterId}`}
                 maxCircles={6}
-                gap={7}
-                radius={9}
-                hitboxSize={48}
+                gap={8}
+                radius={11}
+                hitboxSize={56}
               />
             }
           />
@@ -189,7 +190,7 @@ const AthletePriceChart = memo(({
             <ReferenceDot
               x={firstTradePoint.t}
               y={firstTradePoint.price}
-              r={5}
+              r={6}
               stroke="hsl(var(--background))"
               strokeWidth={2}
               fill={POS_NEON_COLOR}

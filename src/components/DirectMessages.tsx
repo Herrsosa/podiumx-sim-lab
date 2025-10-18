@@ -1,19 +1,21 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo, type KeyboardEvent } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useUser } from '@/store/auth';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Avatar } from '@/components/ui/avatar';
+import { UserAvatar } from '@/components/UserAvatar';
 import { Badge } from '@/components/ui/badge';
 import { MessageSquare, Send, X } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { resolveAvatarUrl } from '@/utils/avatar';
 
+const PAGE_SIZE = 20;
+
 interface Conversation {
   id: string;
-  updated_at: string;
+  updated_at: string | null;
   other_participant: {
     id: string;
     display_name: string;
@@ -21,8 +23,8 @@ interface Conversation {
   };
   last_message: {
     content: string;
-    created_at: string;
-  };
+    created_at: string | null;
+  } | null;
   unread_count: number;
 }
 
@@ -35,96 +37,122 @@ interface Message {
   sender_avatar: string;
 }
 
+interface RpcConversationRow {
+  conversation_id: string;
+  updated_at: string | null;
+  other_user_id: string | null;
+  other_display_name: string | null;
+  other_avatar_url: string | null;
+  unread_count: number | null;
+  last_message: string | null;
+  last_message_at: string | null;
+}
+
 export function DirectMessages() {
   const user = useUser();
   const { toast } = useToast();
+
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [selectedConversation, setSelectedConversation] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [isLoading, setIsLoading] = useState(true);
+  const [isFetchingMore, setIsFetchingMore] = useState(false);
+  const [page, setPage] = useState(0);
+  const [hasMore, setHasMore] = useState(false);
 
-  const loadConversations = useCallback(async () => {
-    if (!user) return;
+  const mapRpcRow = useCallback((row: RpcConversationRow): Conversation => {
+    const fallbackTimestamp = row.updated_at ?? row.last_message_at ?? null;
 
-    console.log('[DirectMessages] Loading conversations for user:', user.id);
+    return {
+      id: row.conversation_id,
+      updated_at: fallbackTimestamp,
+      other_participant: {
+        id: row.other_user_id ?? '',
+        display_name: row.other_display_name ?? 'Unknown',
+        avatar_url: resolveAvatarUrl(row.other_avatar_url, { size: 64 }),
+      },
+      last_message: row.last_message
+        ? {
+            content: row.last_message,
+            created_at: row.last_message_at ?? fallbackTimestamp,
+          }
+        : null,
+      unread_count: row.unread_count ?? 0,
+    };
+  }, []);
 
-    try {
-      // Get conversations where user is a participant
-      const { data: participations, error: partError } = await supabase
-        .from('conversation_participants')
-        .select('conversation_id, last_read_at')
-        .eq('user_id', user.id);
-
-      console.log('[DirectMessages] User participations:', participations, 'Error:', partError);
-
-      if (!participations || participations.length === 0) {
+  const fetchConversations = useCallback(
+    async (targetPage: number, reset = false) => {
+      if (!user?.id) {
+        setConversations([]);
         setIsLoading(false);
+        setHasMore(false);
         return;
       }
 
-      const conversationIds = participations.map(p => p.conversation_id);
+      if (reset) {
+        setIsLoading(true);
+        setPage(0);
+        setHasMore(false);
+      } else {
+        setIsFetchingMore(true);
+      }
 
-      // Get other participants for each conversation
-      const { data: otherParticipants } = await supabase
-        .from('conversation_participants')
-        .select('conversation_id, user_id')
-        .in('conversation_id', conversationIds)
-        .neq('user_id', user.id);
+      try {
+        const { data, error } = await supabase.rpc('get_dm_conversations', {
+          p_limit: PAGE_SIZE,
+          p_offset: targetPage * PAGE_SIZE,
+        });
 
-      // Get profiles for other participants
-      const otherUserIds = otherParticipants?.map(p => p.user_id) || [];
-      const { data: profiles } = await supabase
-        .from('profiles')
-        .select('id, display_name, avatar_url')
-        .in('id', otherUserIds);
+        if (error) throw error;
 
-      // Get last message for each conversation
-      const conversationsData = await Promise.all(
-        conversationIds.map(async (convId) => {
-          const { data: lastMsg } = await supabase
-            .from('dm_messages')
-            .select('content, created_at')
-            .eq('conversation_id', convId)
-            .order('created_at', { ascending: false })
-            .limit(1)
-            .single();
+        const mapped = (data ?? []).map(mapRpcRow);
 
-          const otherParticipant = otherParticipants?.find(p => p.conversation_id === convId);
-          const profile = profiles?.find(p => p.id === otherParticipant?.user_id);
-          const lastRead = participations.find(p => p.conversation_id === convId)?.last_read_at;
+        setConversations((prev) => {
+          if (reset) return mapped;
 
-          // Count unread messages
-          const { count } = await supabase
-            .from('dm_messages')
-            .select('*', { count: 'exact', head: true })
-            .eq('conversation_id', convId)
-            .neq('sender_id', user.id)
-            .gt('created_at', lastRead || '1970-01-01');
+          // merge by id, then sort by updated_at desc
+          const merged = new Map(prev.map((c) => [c.id, c]));
+          mapped.forEach((c) => merged.set(c.id, c));
+          return Array.from(merged.values()).sort((a, b) => {
+            const aTime = a.updated_at ? new Date(a.updated_at).getTime() : 0;
+            const bTime = b.updated_at ? new Date(b.updated_at).getTime() : 0;
+            return bTime - aTime;
+          });
+        });
 
-          return {
-            id: convId,
-            updated_at: lastMsg?.created_at || '',
-            other_participant: {
-              id: profile?.id || '',
-              display_name: profile?.display_name || 'Unknown',
-              avatar_url: resolveAvatarUrl(profile?.avatar_url)
-            },
-            last_message: lastMsg || { content: '', created_at: '' },
-            unread_count: count || 0
-          };
-        })
-      );
+        setPage(targetPage);
+        setHasMore((data?.length ?? 0) === PAGE_SIZE);
+      } catch (error) {
+        console.error('Error loading conversations:', error);
+        toast({
+          title: 'Unable to load conversations',
+          description: error instanceof Error ? error.message : 'Something went wrong',
+          variant: 'destructive',
+        });
+      } finally {
+        if (reset) setIsLoading(false);
+        else setIsFetchingMore(false);
+      }
+    },
+    [mapRpcRow, toast, user?.id],
+  );
 
-      setConversations(conversationsData.sort((a, b) => 
-        new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
-      ));
-    } catch (error) {
-      console.error('Error loading conversations:', error);
-    } finally {
+  const loadConversations = useCallback(async () => {
+    if (!user?.id) {
+      setConversations([]);
       setIsLoading(false);
+      setHasMore(false);
+      return;
     }
-  }, [user]);
+    await fetchConversations(0, true);
+  }, [fetchConversations, user?.id]);
+
+  const loadMoreConversations = useCallback(async () => {
+    if (!user?.id || !hasMore || isFetchingMore) return;
+    await fetchConversations(page + 1, false);
+  }, [fetchConversations, hasMore, isFetchingMore, page, user?.id]);
 
   const loadMessages = useCallback(async (conversationId: string) => {
     try {
@@ -136,26 +164,25 @@ export function DirectMessages() {
 
       if (error) throw error;
 
-      // Get unique sender IDs
-      const senderIds = [...new Set(messagesData?.map(m => m.sender_id) || [])];
-      
-      // Fetch profiles for all senders
+      const senderIds = [...new Set(messagesData?.map((m) => m.sender_id) || [])];
+
       const { data: profiles } = await supabase
         .from('profiles')
         .select('id, display_name, avatar_url')
         .in('id', senderIds);
 
-      const formattedMessages = messagesData?.map((msg) => {
-        const profile = profiles?.find(p => p.id === msg.sender_id);
-        return {
-          id: msg.id,
-          content: msg.content,
-          sender_id: msg.sender_id,
-          created_at: msg.created_at,
-          sender_name: profile?.display_name || 'Unknown',
-          sender_avatar: resolveAvatarUrl(profile?.avatar_url)
-        };
-      }) || [];
+      const formattedMessages: Message[] =
+        messagesData?.map((message) => {
+          const profile = profiles?.find((p) => p.id === message.sender_id);
+          return {
+            id: message.id,
+            content: message.content,
+            sender_id: message.sender_id,
+            created_at: message.created_at,
+            sender_name: profile?.display_name || 'Unknown',
+            sender_avatar: resolveAvatarUrl(profile?.avatar_url, { size: 40 }),
+          };
+        }) ?? [];
 
       setMessages(formattedMessages);
     } catch (error) {
@@ -163,28 +190,40 @@ export function DirectMessages() {
     }
   }, []);
 
-  const markAsRead = useCallback(async (conversationId: string) => {
-    if (!user) return;
+  const markAsRead = useCallback(
+    async (conversationId: string) => {
+      if (!user?.id) return;
 
-    await supabase
-      .from('conversation_participants')
-      .update({ last_read_at: new Date().toISOString() })
-      .eq('conversation_id', conversationId)
-      .eq('user_id', user.id);
-  }, [user]);
+      const timestamp = new Date().toISOString();
+
+      setConversations((prev) =>
+        prev.map((c) => (c.id === conversationId ? { ...c, unread_count: 0 } : c)),
+      );
+
+      await supabase
+        .from('conversation_participants')
+        .update({ last_read_at: timestamp })
+        .eq('conversation_id', conversationId)
+        .eq('user_id', user.id);
+    },
+    [user?.id],
+  );
+
+  const refreshConversations = useCallback(async () => {
+    if (!user?.id) return;
+    await fetchConversations(0, true);
+  }, [fetchConversations, user?.id]);
 
   useEffect(() => {
-    if (!user) return;
     loadConversations();
-  }, [user, loadConversations]);
+  }, [loadConversations]);
 
   useEffect(() => {
-    if (!selectedConversation || !user) return;
-    
-    loadMessages(selectedConversation);
-    markAsRead(selectedConversation);
+    if (!selectedConversation || !user?.id) return;
 
-    // Subscribe to new messages in this conversation
+    loadMessages(selectedConversation);
+    void markAsRead(selectedConversation);
+
     const channel = supabase
       .channel(`dm-${selectedConversation}`)
       .on(
@@ -193,215 +232,211 @@ export function DirectMessages() {
           event: 'INSERT',
           schema: 'public',
           table: 'dm_messages',
-          filter: `conversation_id=eq.${selectedConversation}`
+          filter: `conversation_id=eq.${selectedConversation}`,
         },
-        (payload) => {
+        () => {
           loadMessages(selectedConversation);
-        }
+          void refreshConversations();
+        },
       )
       .subscribe();
 
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [selectedConversation, user, loadMessages, markAsRead]);
+  }, [loadMessages, markAsRead, refreshConversations, selectedConversation, user?.id]);
 
   const sendMessage = async () => {
-    if (!user || !selectedConversation || !newMessage.trim()) return;
+    if (!user?.id || !selectedConversation || !newMessage.trim()) return;
 
     try {
-      const { error } = await supabase
-        .from('dm_messages')
-        .insert({
-          conversation_id: selectedConversation,
-          sender_id: user.id,
-          content: newMessage.trim()
-        });
+      const { error } = await supabase.from('dm_messages').insert({
+        conversation_id: selectedConversation,
+        sender_id: user.id,
+        content: newMessage.trim(),
+      });
 
       if (error) throw error;
 
       setNewMessage('');
       loadMessages(selectedConversation);
-      loadConversations(); // Refresh to update last message
+      void refreshConversations();
     } catch (error) {
       console.error('Error sending message:', error);
       toast({
         title: 'Error',
         description: 'Failed to send message',
-        variant: 'destructive'
+        variant: 'destructive',
       });
     }
   };
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
+  const handleKeyPress = (event: KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === 'Enter' && !event.shiftKey) {
+      event.preventDefault();
       sendMessage();
     }
   };
 
-  if (!user) {
-    return (
-      <Card>
-        <CardContent className="p-6 text-center">
-          <p className="text-muted-foreground">Please sign in to view messages</p>
-        </CardContent>
-      </Card>
-    );
-  }
+  const handleSelectConversation = (conversationId: string) => {
+    setSelectedConversation(conversationId);
+    void markAsRead(conversationId);
+  };
 
-  if (isLoading) {
-    return (
-      <Card>
-        <CardContent className="p-6">
-          <p className="text-muted-foreground">Loading conversations...</p>
-        </CardContent>
-      </Card>
-    );
-  }
+  const closeConversation = () => {
+    setSelectedConversation(null);
+    setMessages([]);
+  };
+
+  const conversationSkeletons = useMemo(
+    () =>
+      Array.from({ length: 3 }).map((_, index) => (
+        <div
+          key={`dm-skeleton-${index}`}
+          className="flex items-center justify-between rounded-lg border border-border/50 p-3"
+        >
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 rounded-full bg-muted animate-pulse" />
+            <div className="space-y-2">
+              <div className="h-3 w-28 rounded-full bg-muted animate-pulse" />
+              <div className="h-2 w-36 rounded-full bg-muted/70 animate-pulse" />
+            </div>
+          </div>
+          <div className="h-2 w-16 rounded-full bg-muted/70 animate-pulse" />
+        </div>
+      )),
+    [],
+  );
 
   return (
-    <div className="grid h-[600px] grid-cols-3 gap-4">
-      {/* Conversations List */}
-      <Card className="col-span-1">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <MessageSquare className="h-5 w-5" />
-            Messages
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="p-0">
-          <ScrollArea className="h-[500px]">
-            {conversations.length === 0 ? (
-              <div className="p-6 text-center text-sm text-muted-foreground">
-                No conversations yet
-              </div>
-            ) : (
-              conversations.map((conv) => (
-                <button
-                  key={conv.id}
-                  onClick={() => setSelectedConversation(conv.id)}
-                  className={`w-full border-b p-4 text-left transition-colors hover:bg-muted/50 ${
-                    selectedConversation === conv.id ? 'bg-muted' : ''
-                  }`}
-                >
-                  <div className="flex items-start gap-3">
-                    <Avatar className="h-10 w-10">
-                      <img
-                        src={conv.other_participant.avatar_url}
-                        alt={conv.other_participant.display_name}
-                      />
-                    </Avatar>
-                    <div className="flex-1 overflow-hidden">
-                      <div className="flex items-center justify-between">
-                        <p className="font-medium">{conv.other_participant.display_name}</p>
-                        {conv.unread_count > 0 && (
-                          <Badge variant="default" className="ml-2">
-                            {conv.unread_count}
-                          </Badge>
-                        )}
-                      </div>
-                      <p className="truncate text-sm text-muted-foreground">
-                        {conv.last_message.content || 'No messages yet'}
-                      </p>
-                    </div>
-                  </div>
-                </button>
-              ))
-            )}
-          </ScrollArea>
-        </CardContent>
-      </Card>
+    <Card className="glass-card">
+      <CardHeader className="flex flex-row items-center justify-between">
+        <div className="flex items-center gap-3">
+          <MessageSquare className="h-5 w-5 text-primary" />
+          <CardTitle>Direct Messages</CardTitle>
+        </div>
+      </CardHeader>
+      <CardContent className="flex gap-4 p-4 md:flex-row md:items-start">
+        <div className="w-full md:w-1/3">
+          {isLoading ? (
+            <div className="space-y-3">{conversationSkeletons}</div>
+          ) : conversations.length === 0 ? (
+            <div className="text-center text-sm text-muted-foreground">
+              No conversations yet. Start messaging other athletes or fans!
+            </div>
+          ) : (
+            <ScrollArea className="h-[320px] pr-2">
+              <div className="space-y-2">
+                {conversations.map((conversation) => {
+                  const updatedLabel = conversation.updated_at
+                    ? new Date(conversation.updated_at).toLocaleString()
+                    : '—';
 
-      {/* Chat Window */}
-      <Card className="col-span-2">
-        {selectedConversation ? (
-          <>
-            <CardHeader className="border-b">
-              <div className="flex items-center justify-between">
-                <CardTitle className="flex items-center gap-2">
-                  <Avatar className="h-8 w-8">
-                    <img
-                      src={
-                        conversations.find(c => c.id === selectedConversation)?.other_participant.avatar_url ||
-                        '/placeholder.svg'
-                      }
-                      alt="User"
-                    />
-                  </Avatar>
-                  {conversations.find(c => c.id === selectedConversation)?.other_participant.display_name}
-                </CardTitle>
+                  return (
+                    <button
+                      key={conversation.id}
+                      type="button"
+                      className={`w-full rounded-lg border border-border/50 p-3 text-left transition hover:border-primary/40 ${
+                        selectedConversation === conversation.id ? 'bg-primary/10' : ''
+                      }`}
+                      onClick={() => handleSelectConversation(conversation.id)}
+                    >
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-3">
+                          <UserAvatar
+                            src={conversation.other_participant.avatar_url}
+                            alt={conversation.other_participant.display_name}
+                            size={40}
+                          />
+                          <div>
+                            <div className="font-medium">
+                              {conversation.other_participant.display_name}
+                            </div>
+                            <div className="text-xs text-muted-foreground">
+                              {conversation.last_message?.content || 'No messages yet'}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex flex-col items-end gap-1 text-xs text-muted-foreground">
+                          <span>{updatedLabel}</span>
+                          {conversation.unread_count > 0 ? (
+                            <Badge variant="secondary">{conversation.unread_count} new</Badge>
+                          ) : (
+                            <span className="text-muted-foreground/60">Seen</span>
+                          )}
+                        </div>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+              {hasMore && (
                 <Button
                   variant="ghost"
-                  size="sm"
-                  onClick={() => setSelectedConversation(null)}
+                  className="mt-4 w-full"
+                  onClick={loadMoreConversations}
+                  disabled={isFetchingMore}
                 >
+                  {isFetchingMore ? 'Loading…' : 'Load more'}
+                </Button>
+              )}
+            </ScrollArea>
+          )}
+        </div>
+
+        <div className="w-full md:w-2/3">
+          {selectedConversation ? (
+            <div className="flex h-full flex-col rounded-xl border border-border/60">
+              <div className="flex items-center justify-between border-b border-border/60 p-3">
+                <div>
+                  <div className="font-semibold">
+                    {
+                      conversations.find((c) => c.id === selectedConversation)
+                        ?.other_participant.display_name
+                    }
+                  </div>
+                  <div className="text-xs text-muted-foreground">Direct chat</div>
+                </div>
+                <Button variant="ghost" size="icon" onClick={closeConversation} aria-label="Close DM">
                   <X className="h-4 w-4" />
                 </Button>
               </div>
-            </CardHeader>
-            <CardContent className="flex h-[450px] flex-col p-0">
-              {/* Messages */}
-              <ScrollArea className="flex-1 p-4">
-                <div className="space-y-4">
+
+              <ScrollArea className="flex-1 px-4 py-3">
+                <div className="space-y-3">
                   {messages.map((message) => (
-                    <div
-                      key={message.id}
-                      className={`flex gap-3 ${
-                        message.sender_id === user?.id ? 'flex-row-reverse' : ''
-                      }`}
-                    >
-                      <Avatar className="h-8 w-8">
-                        <img src={message.sender_avatar} alt={message.sender_name} />
-                      </Avatar>
-                      <div
-                        className={`max-w-[70%] rounded-lg p-3 ${
-                          message.sender_id === user?.id
-                            ? 'bg-primary text-primary-foreground'
-                            : 'bg-muted'
-                        }`}
-                      >
-                        <p className="text-sm">{message.content}</p>
-                        <p
-                          className={`mt-1 text-xs ${
-                            message.sender_id === user?.id
-                              ? 'text-primary-foreground/70'
-                              : 'text-muted-foreground'
-                          }`}
-                        >
-                          {new Date(message.created_at).toLocaleTimeString()}
-                        </p>
+                    <div key={message.id} className="flex flex-col gap-1 rounded-lg border border-border/40 p-3">
+                      <div className="flex items-center justify-between text-xs text-muted-foreground">
+                        <span className="font-medium text-foreground">{message.sender_name}</span>
+                        <span>{new Date(message.created_at).toLocaleString()}</span>
                       </div>
+                      <div className="text-sm text-foreground">{message.content}</div>
                     </div>
                   ))}
                 </div>
               </ScrollArea>
 
-              {/* Input */}
-              <div className="border-t p-4">
-                <div className="flex gap-2">
-                  <Input
-                    placeholder="Type a message..."
-                    value={newMessage}
-                    onChange={(e) => setNewMessage(e.target.value)}
-                    onKeyPress={handleKeyPress}
-                  />
-                  <Button onClick={sendMessage} disabled={!newMessage.trim()}>
-                    <Send className="h-4 w-4" />
-                  </Button>
-                </div>
+              <div className="flex items-center gap-2 border-t border-border/60 p-3">
+                <Input
+                  placeholder="Type your message..."
+                  value={newMessage}
+                  onChange={(e) => setNewMessage(e.target.value)}
+                  onKeyDown={handleKeyPress}
+                />
+                <Button onClick={sendMessage} disabled={!newMessage.trim()}>
+                  <Send className="mr-2 h-4 w-4" />
+                  Send
+                </Button>
               </div>
-            </CardContent>
-          </>
-        ) : (
-          <CardContent className="flex h-full items-center justify-center">
-            <div className="text-center text-muted-foreground">
-              <MessageSquare className="mx-auto mb-2 h-12 w-12 opacity-50" />
-              <p>Select a conversation to start messaging</p>
             </div>
-          </CardContent>
-        )}
-      </Card>
-    </div>
+          ) : (
+            <div className="flex h-full min-h-[260px] flex-col items-center justify-center rounded-xl border border-dashed border-border/60 text-sm text-muted-foreground">
+              <MessageSquare className="mb-2 h-6 w-6 text-muted-foreground/70" />
+              Select a conversation to view messages
+            </div>
+          )}
+        </div>
+      </CardContent>
+    </Card>
   );
 }

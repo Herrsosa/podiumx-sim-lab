@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuthStore } from "@/store/auth";
+import { logger } from "@/lib/logger";
 
 interface AuthProviderProps {
   children: React.ReactNode;
@@ -32,14 +33,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
       try {
         const { data, error } = await supabase.auth.getSession();
         if (error) {
-          console.error("Failed to fetch initial session", error);
+          logger.error("Failed to fetch initial session", error?.message ?? error);
           handleSession(null);
           return;
         }
 
         handleSession(data.session ?? null);
       } catch (error) {
-        console.error("Unexpected error checking session", error);
+        logger.error("Unexpected error checking session", error instanceof Error ? error.message : String(error));
         handleSession(null);
       } finally {
         if (isMounted) {

@@ -12,7 +12,7 @@ export function useStravaConnection() {
 
       const { data, error } = await supabase
         .from('oauth_connections')
-        .select('*')
+        .select('id, user_id, provider, access_token, refresh_token, expires_at, scope, updated_at')
         .eq('user_id', user.id)
         .eq('provider', 'strava')
         .maybeSingle();

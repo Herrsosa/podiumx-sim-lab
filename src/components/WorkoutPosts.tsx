@@ -3,6 +3,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Lock, Calendar, Activity, Clock, Zap } from 'lucide-react';
+import { resolveImageUrl } from '@/utils/avatar';
 import { useUser } from '@/store/auth';
 import { Post, Workout } from '@/types';
 
@@ -91,9 +92,12 @@ export default function WorkoutPosts({
               {post.image_url && (
                 <div className="relative">
                   <img
-                    src={post.image_url}
+                    src={resolveImageUrl(post.image_url, { width: 960 })}
                     alt="Workout"
-                    className={`w-full h-64 object-cover ${!canView ? 'blur-lg' : ''}`}
+                    width={960}
+                    height={480}
+                    loading="lazy"
+                    className={`h-64 w-full object-cover ${!canView ? 'blur-lg' : ''}`}
                   />
                   {!canView && (
                     <div className="absolute inset-0 flex items-center justify-center bg-black/50">

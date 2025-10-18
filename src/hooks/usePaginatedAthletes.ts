@@ -29,7 +29,7 @@ export function usePaginatedAthletes() {
 
       const { data: tokens, error: tokensError } = await supabase
         .from('athlete_tokens')
-        .select('*')
+        .select('athlete_id, supply, a, b, c, treasury_balance, athlete_earnings')
         .in('athlete_id', athleteIds);
 
       if (tokensError) throw tokensError;
@@ -56,7 +56,7 @@ export function usePaginatedAthletes() {
           slug: profile.username,
           name: profile.display_name || profile.username,
           sport: (profile.sport || 'Other') as Sport,
-          avatar: resolveAvatarUrl(avatarSource),
+          avatar: resolveAvatarUrl(avatarSource, { size: 160 }),
           bio: profile.bio || '',
           location: '',
           socials: {

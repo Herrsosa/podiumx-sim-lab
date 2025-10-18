@@ -5,6 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import type { Athlete } from "@/types";
 import type { MarketplaceChartPoint } from "@/hooks/useMarketplaceCharts";
 import { formatMoney, formatNumber } from "@/lib/format";
+import { resolveAvatarUrl } from "@/utils/avatar";
 import { Link } from "react-router-dom";
 
 interface AthleteCardNewProps {
@@ -79,9 +80,12 @@ export const AthleteCardNew = memo(({ athlete, chartData }: AthleteCardNewProps)
         <CardContent className="p-0">
           <div className="relative h-40 overflow-hidden">
             <img
-              src={athlete.avatar}
+              src={resolveAvatarUrl(athlete.avatar, { size: 320 })}
               alt={athlete.name}
-              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+              width={320}
+              height={240}
+              loading="lazy"
+              className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-card via-card/60 to-transparent" />
             {athlete.change24h !== 0 && (

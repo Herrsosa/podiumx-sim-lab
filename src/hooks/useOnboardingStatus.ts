@@ -32,7 +32,7 @@ export function useOnboardingStatus() {
       const [{ data: profile, error: profileError }, { data: athleteToken, error: tokenError }] = await Promise.all([
         supabase
           .from('profiles')
-          .select('*')
+          .select('id, role, onboarding_completed')
           .eq('id', user.id)
           .maybeSingle(),
         supabase
@@ -59,7 +59,6 @@ export function useOnboardingStatus() {
       };
     },
     enabled: !!user,
-    staleTime: 30_000,
   });
 
   const fallback: OnboardingStatusResult = {

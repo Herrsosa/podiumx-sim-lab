@@ -1,11 +1,16 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { Athlete, Sport, Workout } from '@/types';
+import { Athlete, Sport, Workout, Post } from '@/types';
 import { athleteAvatars } from '@/utils/athleteAvatars';
 import { priceAt } from '@/utils/pricing';
 import { resolveAvatarUrl } from '@/utils/avatar';
 import { useAthleteMetrics } from './useAthleteMetrics';
+import type { Database } from '@/integrations/supabase/types';
+
+type ProfileRow = Database['public']['Tables']['profiles']['Row'];
+type TokenRow = Database['public']['Tables']['athlete_tokens']['Row'];
+type PostRow = Database['public']['Tables']['posts']['Row'];
 
 export function useAthletesByIds(athleteIds: string[]) {
   const { data: metricsMap, isLoading: metricsLoading, isFetching: metricsFetching } = useAthleteMetrics(
@@ -20,30 +25,44 @@ export function useAthletesByIds(athleteIds: string[]) {
 
       const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
-        .select('id, username, display_name, sport, avatar_url, bio, instagram_url, strava_url, created_at')
+        .select<ProfileRow>('id, username, display_name, sport, avatar_url, bio, instagram_url, strava_url, created_at')
         .in('id', athleteIds);
 
       if (profilesError) throw profilesError;
 
       const { data: tokens, error: tokensError } = await supabase
         .from('athlete_tokens')
-        .select('*')
+        .select<TokenRow>('athlete_id, supply, a, b, c, treasury_balance, athlete_earnings')
         .in('athlete_id', athleteIds);
 
       if (tokensError) throw tokensError;
 
+      const postsLimit = Math.min(Math.max(athleteIds.length * 25, 50), 500);
+
       const { data: posts, error: postsError } = await supabase
         .from('posts')
-        .select('*')
+        .select<PostRow>('id, created_at, author_id, workout_json, image_url, text, token_gated, strava_activity_id')
         .in('author_id', athleteIds)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .limit(postsLimit);
 
       if (postsError) throw postsError;
+
+      const typedPosts: Post[] = (posts ?? []).map((post) => ({
+        id: post.id,
+        created_at: post.created_at,
+        workout_json: post.workout_json as Workout | Record<string, unknown> | null,
+        image_url: post.image_url,
+        text: post.text,
+        token_gated: Boolean(post.token_gated),
+        strava_activity_id: post.strava_activity_id,
+        author_id: post.author_id,
+      }));
 
       // Combine profile + token data
       const athletes: Athlete[] = profiles.map((profile) => {
         const token = tokens.find((t) => t.athlete_id === profile.id);
-        const athletePosts = posts.filter((p) => p.author_id === profile.id);
+        const athletePosts = typedPosts.filter((p) => p.author_id === profile.id);
 
         // Calculate current price from bonding curve
         const supply = token?.supply || 0;
@@ -68,7 +87,7 @@ export function useAthletesByIds(athleteIds: string[]) {
           slug: profile.username,
           name: profile.display_name || profile.username,
           sport: (profile.sport || 'Other') as Sport,
-          avatar: resolveAvatarUrl(avatarSource),
+          avatar: resolveAvatarUrl(avatarSource, { size: 128 }),
           bio: profile.bio || '',
           location: '',
           socials: {
@@ -83,7 +102,7 @@ export function useAthletesByIds(athleteIds: string[]) {
           change24h: 0,
           volume24h: 0,
           workouts,
-          posts: athletePosts as any,
+          posts: athletePosts,
         };
       });
 

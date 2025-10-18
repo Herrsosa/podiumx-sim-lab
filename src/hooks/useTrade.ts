@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from './use-toast';
 import { walletService } from '@/services/wallet';
 import { useAuthStore, useUser } from '@/store/auth';
+import { logger } from '@/lib/logger';
 
 export function useTrade() {
   const queryClient = useQueryClient();
@@ -21,18 +22,18 @@ export function useTrade() {
 
       await walletService.ensureWallet(session.user.id);
 
-      console.log('Executing trade:', { athleteId, quantity, side });
+      logger.info('Executing trade', { athleteId, quantity, side });
 
       const { data, error } = await supabase.functions.invoke('execute-trade', {
         body: { athleteId, quantity, side },
       });
 
       if (error) {
-        console.error('Trade error:', error);
+        logger.error('Trade error', error.message ?? error, { athleteId, quantity, side });
         throw new Error(error.message || 'Trade execution failed');
       }
-      
-      console.log('Trade successful:', data);
+
+      logger.info('Trade successful', { athleteId, quantity, side });
       return data;
     },
     onSuccess: async (data, variables) => {

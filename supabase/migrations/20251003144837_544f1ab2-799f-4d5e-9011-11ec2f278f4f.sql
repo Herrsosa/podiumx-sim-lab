@@ -1,6 +1,10 @@
--- Add INSERT policy for athlete_tokens so users can create their own token during onboarding
-CREATE POLICY "athlete_tokens_insert_self" 
-ON athlete_tokens 
-FOR INSERT 
-TO authenticated
-WITH CHECK (auth.uid() = athlete_id);
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM pg_tables WHERE schemaname = 'public' AND tablename = 'athlete_tokens') THEN
+    CREATE POLICY "athlete_tokens_insert_self"
+    ON public.athlete_tokens
+    FOR INSERT
+    TO authenticated
+    WITH CHECK (auth.uid() = athlete_id);
+  END IF;
+END $$;

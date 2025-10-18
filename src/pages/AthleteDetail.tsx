@@ -1,11 +1,11 @@
-import { lazy, Suspense, useState, useMemo, useCallback } from 'react';
+import { lazy, Suspense, useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Info, Plus, Minus, Edit } from 'lucide-react';
+import { ArrowLeft, Info, Plus, Minus, Edit, ShoppingCart, TrendingDown, MessageCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useAthlete } from '@/hooks/useAthlete';
 import { useWallet } from '@/hooks/useWallet';
@@ -24,7 +24,9 @@ import { ChartSkeleton } from '@/components/ui/skeletons';
 import { SectionTitle, Body, Small } from '@/components/ui/typography';
 import { formatMoney, formatNumber } from '@/lib/format';
 import { cn } from '@/lib/utils';
+import { resolveAvatarUrl } from '@/utils/avatar';
 import { useUser } from '@/store/auth';
+import { MobileActionBar } from '@/components/MobileActionBar';
 
 const AthletePriceChart = lazy(() => import('@/components/charts/AthletePriceChart'));
 
@@ -41,10 +43,12 @@ export default function AthleteDetail() {
   const [tradeType, setTradeType] = useState<'buy' | 'sell'>('buy');
   const [quantity, setQuantity] = useState(1);
   const [quantityError, setQuantityError] = useState<string | null>(null);
-  const [showTradeModal, setShowTradeModal] = useState(false);
+  const [, setShowTradeModal] = useState(false);
   const [showAddWorkout, setShowAddWorkout] = useState(false);
   const [timeRange, setTimeRange] = useState<TimeRange>('24h');
   const timeRanges: TimeRange[] = ['24h', '7d', '30d', 'all'];
+  const tradeSectionRef = useRef<HTMLDivElement | null>(null);
+  const chatSectionRef = useRef<HTMLDivElement | null>(null);
   
   const { data: athlete, isLoading: athleteLoading } = useAthlete(slug!);
   const { data: wallet, isLoading: walletLoading } = useWallet();
@@ -217,19 +221,7 @@ export default function AthleteDetail() {
       return;
     }
     if (!canTrade || !athlete || !impact) return;
-    
-    // Optimistic update - immediately update local state
-    const optimisticAthlete = {
-      ...athlete,
-      price: impact.newPrice,
-      supply: impact.newSupply,
-      reserve: impact.newReserve,
-      marketCap: impact.newPrice * impact.newSupply,
-    };
-    
-    // You could dispatch an optimistic update here if using a state manager
-    // For now, the mutation will handle the refetch
-    
+    // Possible spot for optimistic updates if we wire in a client-side store
     await tradeMutation.mutateAsync({
       athleteId: athlete.id,
       quantity,
@@ -248,6 +240,28 @@ export default function AthleteDetail() {
 
   const isBootstrapping = athleteLoading || walletLoading || tradesLoading;
 
+  const scrollToTrade = useCallback(
+    (type: 'buy' | 'sell') => {
+      setTradeType(type);
+      setTimeout(() => {
+        tradeSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 0);
+    },
+    [],
+  );
+
+  const scrollToChat = useCallback(() => {
+    setTimeout(() => {
+      chatSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 0);
+  }, []);
+
+  useEffect(() => {
+    if (!isBootstrapping) {
+      window.scrollTo({ top: 0, behavior: 'auto' });
+    }
+  }, [isBootstrapping]);
+
   // Now check loading and not found states
   if (isBootstrapping) {
     return <AthleteDetailSkeleton />;
@@ -263,7 +277,7 @@ export default function AthleteDetail() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="container mx-auto px-4 pb-32 pt-8 md:pb-8">
       {/* Back Button */}
       <Button
         variant="ghost"
@@ -283,8 +297,11 @@ export default function AthleteDetail() {
               <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-yellow-400 via-pink-500 to-purple-600 p-1">
                 <div className="h-full w-full rounded-full bg-background p-1">
                   <img
-                    src={athlete.avatar}
+                    src={resolveAvatarUrl(athlete.avatar, { size: 160 })}
                     alt={athlete.name}
+                    width={128}
+                    height={128}
+                    loading="lazy"
                     className="h-full w-full rounded-full object-cover"
                   />
                 </div>
@@ -396,7 +413,7 @@ export default function AthleteDetail() {
       {/* Proof of Sweat & Trading */}
       <div className="mt-6 grid gap-6 lg:grid-cols-3">
         {/* Trade Panel */}
-        <Card className="glass-card">
+        <Card className="glass-card" ref={tradeSectionRef}>
           <CardHeader>
             <CardTitle>Trade</CardTitle>
           </CardHeader>
@@ -697,18 +714,20 @@ export default function AthleteDetail() {
             />
           </div>
 
-          <TokengatedChat
-            athleteId={athlete.id}
-            athleteName={athlete.name}
-            userHoldings={userHoldings}
-            onBuyClick={async () => {
-              await tradeMutation.mutateAsync({
-                athleteId: athlete.id,
-                quantity: 1,
-                side: 'BUY',
-              });
-            }}
-          />
+          <div ref={chatSectionRef}>
+            <TokengatedChat
+              athleteId={athlete.id}
+              athleteName={athlete.name}
+              userHoldings={userHoldings}
+              onBuyClick={async () => {
+                await tradeMutation.mutateAsync({
+                  athleteId: athlete.id,
+                  quantity: 1,
+                  side: 'BUY',
+                });
+              }}
+            />
+          </div>
         </div>
       </div>
 
@@ -758,6 +777,34 @@ export default function AthleteDetail() {
         onOpenChange={setShowAddWorkout}
         athleteId={athlete.id}
         onSuccess={handleWorkoutSuccess}
+      />
+      <MobileActionBar
+        actions={[
+          {
+            id: 'athlete-detail-buy',
+            label: 'Buy',
+            icon: <ShoppingCart className="h-4 w-4" aria-hidden="true" />,
+            variant: 'primary',
+            onPress: () => scrollToTrade('buy'),
+            ariaLabel: 'Buy athlete tokens',
+          },
+          {
+            id: 'athlete-detail-sell',
+            label: 'Sell',
+            icon: <TrendingDown className="h-4 w-4" aria-hidden="true" />,
+            variant: 'secondary',
+            onPress: () => scrollToTrade('sell'),
+            ariaLabel: 'Sell athlete tokens',
+          },
+          {
+            id: 'athlete-detail-message',
+            label: 'Message',
+            icon: <MessageCircle className="h-4 w-4" aria-hidden="true" />,
+            variant: 'ghost',
+            onPress: scrollToChat,
+            ariaLabel: 'Open community chat',
+          },
+        ]}
       />
     </div>
   );

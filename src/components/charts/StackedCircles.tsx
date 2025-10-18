@@ -41,12 +41,11 @@ export const StackedCircles = memo<StackedCirclesProps>(
       return null;
     }
 
-    const targetRadius = typeof radius === 'number' ? radius : 9;
-    const resolvedRadius =
-      typeof window !== 'undefined' && window.innerWidth < 640
-        ? Math.max(2, targetRadius - 1)
-        : targetRadius;
-    const effectiveGap = gap ?? 7;
+    const targetRadius = typeof radius === 'number' ? radius : 11;
+    const isMobile = typeof window !== 'undefined' && window.innerWidth < 640;
+    const resolvedRadius = isMobile ? Math.max(4, targetRadius - 2) : targetRadius;
+    const effectiveGap = typeof gap === 'number' ? gap : 8;
+    const mobileMax = isMobile ? Math.min(maxCircles, 5) : maxCircles;
 
     const resolvedCx =
       typeof cx === 'number'
@@ -66,13 +65,13 @@ export const StackedCircles = memo<StackedCirclesProps>(
       return null;
     }
 
-    const circlesToRender = Math.min(total, maxCircles);
+    const circlesToRender = Math.min(total, mobileMax);
     const overflow = total - circlesToRender;
 
     const step = resolvedRadius * 2 + effectiveGap;
     const highestCircleY = (baseY as number) - (circlesToRender - 1) * step;
 
-    const hitWidth = Math.max(36, Math.min(hitboxSize, 64));
+    const hitWidth = Math.max(36, Math.min(hitboxSize, 72));
     const hitHeight = Math.max(36, circlesToRender * step + resolvedRadius * 2);
     const hitX = (resolvedCx as number) - hitWidth / 2;
     const hitY = highestCircleY - resolvedRadius;

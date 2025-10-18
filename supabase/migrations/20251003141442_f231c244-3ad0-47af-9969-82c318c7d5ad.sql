@@ -22,12 +22,16 @@ CREATE TRIGGER on_auth_user_created
   FOR EACH ROW
   EXECUTE FUNCTION public.handle_new_user();
 
--- Backfill existing users without profiles
-INSERT INTO public.profiles (id, username, display_name)
-SELECT 
-  au.id,
-  split_part(au.email, '@', 1) as username,
-  split_part(au.email, '@', 1) as display_name
-FROM auth.users au
-LEFT JOIN public.profiles p ON au.id = p.id
-WHERE p.id IS NULL;
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM pg_tables WHERE schemaname = 'public' AND tablename = 'profiles') THEN
+    INSERT INTO public.profiles (id, username, display_name)
+    SELECT 
+      au.id,
+      split_part(au.email, '@', 1) as username,
+      split_part(au.email, '@', 1) as display_name
+    FROM auth.users au
+    LEFT JOIN public.profiles p ON au.id = p.id
+    WHERE p.id IS NULL;
+  END IF;
+END $$;
