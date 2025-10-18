@@ -425,9 +425,11 @@ export type Database = {
           created_at: string
           id: string
           image_url: string | null
+          min_tokens_required: number
           strava_activity_id: number | null
           text: string | null
           token_gated: boolean | null
+          visibility: string
           workout_json: Json | null
         }
         Insert: {
@@ -435,9 +437,11 @@ export type Database = {
           created_at?: string
           id?: string
           image_url?: string | null
+          min_tokens_required?: number
           strava_activity_id?: number | null
           text?: string | null
           token_gated?: boolean | null
+          visibility?: string
           workout_json?: Json | null
         }
         Update: {
@@ -445,9 +449,11 @@ export type Database = {
           created_at?: string
           id?: string
           image_url?: string | null
+          min_tokens_required?: number
           strava_activity_id?: number | null
           text?: string | null
           token_gated?: boolean | null
+          visibility?: string
           workout_json?: Json | null
         }
         Relationships: [
@@ -592,14 +598,54 @@ export type Database = {
     Views: {
       athlete_metrics_24h: {
         Row: {
-          athlete_id: string
+          athlete_id: string | null
           last_price: number | null
-          pct_change_24h: number | null
           notional_24h: number | null
+          pct_change_24h: number | null
           qty_24h: number | null
           spark7d: number[] | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "athlete_tokens_athlete_id_profiles_id_fk"
+            columns: ["athlete_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      trades_norm: {
+        Row: {
+          athlete_id: string | null
+          notional: number | null
+          price: number | null
+          qty: number | null
+          ts: string | null
+        }
+        Insert: {
+          athlete_id?: string | null
+          notional?: number | null
+          price?: number | null
+          qty?: never
+          ts?: never
+        }
+        Update: {
+          athlete_id?: string | null
+          notional?: number | null
+          price?: number | null
+          qty?: never
+          ts?: never
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trades_athlete_id_profiles_id_fk"
+            columns: ["athlete_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Functions: {
@@ -619,22 +665,41 @@ export type Database = {
         }
         Returns: undefined
       }
+      get_dm_conversations: {
+        Args: { p_limit?: number; p_offset?: number; p_user?: string }
+        Returns: {
+          conversation_id: string
+          last_message: string
+          last_message_at: string
+          other_avatar_url: string
+          other_display_name: string
+          other_user_id: string
+          unread_count: number
+          updated_at: string
+        }[]
+      }
+      get_market_overview: {
+        Args: { athlete_ids?: string[] }
+        Returns: {
+          athlete_id: string
+          last_price: number
+          notional_24h: number
+          pct_change_24h: number
+          qty_24h: number
+          spark7d: number[]
+        }[]
+      }
+      get_user_balance: {
+        Args: { p_athlete_id: string }
+        Returns: number
+      }
       is_conversation_member: {
         Args: { conversation_id: string }
         Returns: boolean
       }
-      get_market_overview: {
-        Args: {
-          athlete_ids?: string[] | null
-        }
-        Returns: {
-          athlete_id: string
-          last_price: number | null
-          pct_change_24h: number | null
-          notional_24h: number | null
-          qty_24h: number | null
-          spark7d: number[] | null
-        }[]
+      start_or_get_dm: {
+        Args: { p_other_user_id: string }
+        Returns: string
       }
     }
     Enums: {

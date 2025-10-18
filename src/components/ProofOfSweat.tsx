@@ -22,14 +22,14 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { useUser } from '@/store/auth';
 
 interface ProofOfSweatProps {
-  workouts: Workout[];
+  workouts?: Workout[];
   posts: Post[];
   athleteId?: string;
   onWorkoutDeleted?: () => void;
   onConnectStrava?: () => void;
 }
 
-export default function ProofOfSweat({ workouts, posts, athleteId, onWorkoutDeleted, onConnectStrava }: ProofOfSweatProps) {
+export default function ProofOfSweat({ workouts = [], posts, athleteId, onWorkoutDeleted, onConnectStrava }: ProofOfSweatProps) {
   const user = useUser();
   const { toast } = useToast();
   const queryClient = useQueryClient();

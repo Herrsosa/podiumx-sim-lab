@@ -21,8 +21,9 @@ import { useAuthLoading, useUser } from "@/store/auth";
 const Onboarding = lazy(() => import("./pages/Onboarding"));
 const AthleteDetail = lazy(() => import("./pages/AthleteDetail"));
 const Portfolio = lazy(() => import("./pages/Portfolio"));
-const MyAthlete = lazy(() => import("./pages/MyAthletePage"));
 const Marketplace = lazy(() => import("./pages/Marketplace"));
+const MyAthleteOverview = lazy(() => import("./pages/MyAthlete/Overview"));
+const MyAthleteLocker = lazy(() => import("./pages/MyAthlete/Locker"));
 
 interface RouteGuardProps {
   requireAuth?: boolean;
@@ -106,14 +107,24 @@ function AppContent() {
           </Suspense>
         </RouteGuard>
       } />
-      <Route path="/my-athlete-profile" element={
+      <Route path="/my-athlete" element={<Navigate to="/my-athlete/overview" replace />} />
+      <Route path="/my-athlete/overview" element={
         <RouteGuard requireAuth>
           <Navigation />
           <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Loading...</div>}>
-            <MyAthlete />
+            <MyAthleteOverview />
           </Suspense>
         </RouteGuard>
       } />
+      <Route path="/my-athlete/locker" element={
+        <RouteGuard requireAuth>
+          <Navigation />
+          <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Loading...</div>}>
+            <MyAthleteLocker />
+          </Suspense>
+        </RouteGuard>
+      } />
+      <Route path="/my-athlete-profile" element={<Navigate to="/my-athlete/overview" replace />} />
       <Route path="/strava/callback" element={
         <RouteGuard requireAuth>
           <StravaCallback />
