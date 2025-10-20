@@ -10,8 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { Skeleton } from '@/components/ui/skeleton';
-
-const STRAVA_CLIENT_ID = '172877';
+import { prepareStravaAuthorizeUrl } from '@/utils/stravaAuth';
 
 export default function StravaTraining() {
   const { toast } = useToast();
@@ -20,13 +19,29 @@ export default function StravaTraining() {
   const { data: activities, isLoading: activitiesLoading } = useActivities();
   const [importing, setImporting] = useState(false);
 
-  const handleConnect = () => {
-    const redirectUri = `${window.location.origin}/strava/callback`;
-    const scope = 'read,activity:read_all';
-    
-    const authUrl = `https://www.strava.com/oauth/authorize?client_id=${STRAVA_CLIENT_ID}&response_type=code&redirect_uri=${encodeURIComponent(redirectUri)}&approval_prompt=force&scope=${scope}`;
-    
-    window.location.href = authUrl;
+  const handleConnect = async () => {
+    const clientId = import.meta.env.VITE_STRAVA_CLIENT_ID as string | undefined;
+
+    if (!clientId) {
+      toast({
+        title: 'Strava unavailable',
+        description: 'Missing Strava client configuration',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    try {
+      const authorizeUrl = await prepareStravaAuthorizeUrl(clientId);
+      window.location.href = authorizeUrl;
+    } catch (error) {
+      console.error('Failed to start Strava authorization:', error);
+      toast({
+        title: 'Strava unavailable',
+        description: error instanceof Error ? error.message : 'Unable to start Strava authorization',
+        variant: 'destructive',
+      });
+    }
   };
 
   const handleDisconnect = async () => {

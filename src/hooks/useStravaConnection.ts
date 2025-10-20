@@ -11,10 +11,10 @@ export function useStravaConnection() {
       if (!user) return null;
 
       const { data, error } = await supabase
-        .from('oauth_connections')
-        .select('id, user_id, provider, access_token, refresh_token, expires_at, scope, updated_at')
-        .eq('user_id', user.id)
-        .eq('provider', 'strava')
+        .from('athlete_integrations')
+        .select('id, athlete_id, service, created_at, updated_at')
+        .eq('athlete_id', user.id)
+        .eq('service', 'strava')
         .maybeSingle();
 
       if (error) {

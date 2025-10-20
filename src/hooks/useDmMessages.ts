@@ -5,7 +5,8 @@ import { useEffect } from 'react';
 export interface DmMessage {
   id: string;
   sender_id: string;
-  content: string;
+  body: string;
+  media_url: string | null;
   created_at: string;
 }
 
@@ -15,11 +16,9 @@ export function useDmMessages(conversationId: string | undefined) {
     queryFn: async () => {
       if (!conversationId) return [];
 
-      const { data, error } = await supabase
-        .from('dm_messages')
-        .select('id, sender_id, content, created_at')
-        .eq('conversation_id', conversationId)
-        .order('created_at', { ascending: true });
+      const { data, error } = await supabase.rpc('get_dm_messages', {
+        p_conversation_id: conversationId,
+      });
 
       if (error) throw error;
       return (data || []) as DmMessage[];
@@ -41,7 +40,7 @@ export function useDmMessages(conversationId: string | undefined) {
           filter: `conversation_id=eq.${conversationId}`,
         },
         (payload) => {
-          queryResult.refetch();
+          void queryResult.refetch();
         }
       )
       .subscribe();

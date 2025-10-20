@@ -1,5 +1,5 @@
-import { lazy, Suspense } from 'react';
-import { useSearchParams, Link } from 'react-router-dom';
+import { lazy, Suspense, useEffect, useMemo } from 'react';
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -11,12 +11,40 @@ const LockerResources = lazy(() => import('@/components/myathlete/LockerResource
 const LockerChat = lazy(() => import('@/components/myathlete/LockerChat'));
 const LockerMessages = lazy(() => import('@/components/myathlete/LockerMessages'));
 
+const TAB_KEYS = ['workouts', 'resources', 'chat', 'messages'] as const;
+type LockerTab = (typeof TAB_KEYS)[number];
+
+function isLockerTab(value: string | null | undefined): value is LockerTab {
+  return !!value && TAB_KEYS.includes(value as LockerTab);
+}
+
 export default function Locker() {
-  const [searchParams, setSearchParams] = useSearchParams();
-  const activeTab = searchParams.get('tab') || 'workouts';
+  const [searchParams] = useSearchParams();
+  const params = useParams<{ section?: string; conversationId?: string }>();
+  const navigate = useNavigate();
+
+  const sectionFromParams = params.section;
+  const fallbackFromQuery = searchParams.get('tab');
+
+  const activeTab = useMemo<LockerTab>(() => {
+    if (isLockerTab(sectionFromParams)) return sectionFromParams;
+    if (isLockerTab(fallbackFromQuery)) return fallbackFromQuery;
+    return 'workouts';
+  }, [sectionFromParams, fallbackFromQuery]);
+
+  useEffect(() => {
+    if (!sectionFromParams && isLockerTab(fallbackFromQuery)) {
+      navigate(`/my-athlete/locker/${fallbackFromQuery}`, { replace: true });
+    }
+  }, [fallbackFromQuery, navigate, sectionFromParams]);
 
   const handleTabChange = (value: string) => {
-    setSearchParams({ tab: value });
+    const nextTab = isLockerTab(value) ? value : 'workouts';
+    const nextPath =
+      nextTab === 'messages' && params.conversationId
+        ? `/my-athlete/locker/messages/${params.conversationId}`
+        : `/my-athlete/locker/${nextTab}`;
+    navigate(nextPath);
   };
 
   return (

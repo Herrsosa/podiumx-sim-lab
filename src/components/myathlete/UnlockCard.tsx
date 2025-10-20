@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 interface UnlockCardProps {
   tier: 'supporters' | 'backers';
   athleteName: string;
-  onUnlock: () => void;
+  onUnlock?: () => void;
 }
 
 export function UnlockCard({ tier, athleteName, onUnlock }: UnlockCardProps) {
@@ -23,7 +23,7 @@ export function UnlockCard({ tier, athleteName, onUnlock }: UnlockCardProps) {
         <p className="mb-6 max-w-sm text-sm text-muted-foreground">
           This content is locked. Hold at least {minTokens} {athleteName} {minTokens === 1 ? 'token' : 'tokens'} to unlock.
         </p>
-        <Button onClick={onUnlock} size="lg">
+        <Button onClick={onUnlock} size="lg" disabled={!onUnlock}>
           Become a {tier === 'supporters' ? 'Supporter' : 'Backer'}
         </Button>
       </CardContent>

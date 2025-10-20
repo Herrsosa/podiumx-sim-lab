@@ -5,7 +5,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Switch } from '@/components/ui/switch';
 import { Upload, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -32,7 +31,7 @@ export default function AddWorkoutModal({ open, onOpenChange, athleteId, onSucce
     duration: '',
     rpe: '5',
     notes: '',
-    tokenGated: false,
+    visibility: 'public',
   });
 
   const distanceApplicableTypes = ['Run', 'Bike', 'Swim'];
@@ -76,6 +75,10 @@ export default function AddWorkoutModal({ open, onOpenChange, athleteId, onSucce
         notes: formData.notes,
       };
 
+      const visibility = formData.visibility as 'public' | 'supporters' | 'backers';
+      const minTokensRequired =
+        visibility === 'supporters' ? 1 : visibility === 'backers' ? 10 : 0;
+
       // Insert post
       const { error: postError } = await supabase
         .from('posts')
@@ -84,7 +87,9 @@ export default function AddWorkoutModal({ open, onOpenChange, athleteId, onSucce
           workout_json: workoutJson,
           image_url: mediaUrl || null,
           text: formData.notes,
-          token_gated: formData.tokenGated,
+          token_gated: visibility !== 'public',
+          visibility,
+          min_tokens_required: minTokensRequired,
         });
 
       if (postError) throw postError;
@@ -102,7 +107,7 @@ export default function AddWorkoutModal({ open, onOpenChange, athleteId, onSucce
         duration: '',
         rpe: '5',
         notes: '',
-        tokenGated: false,
+        visibility: 'public',
       });
       setMediaFile(null);
     } catch (error: unknown) {
@@ -236,18 +241,26 @@ export default function AddWorkoutModal({ open, onOpenChange, athleteId, onSucce
               </div>
             </div>
 
-            <div className="flex items-center justify-between p-4 rounded-lg bg-muted/50">
-              <div>
-                <Label htmlFor="tokenGated" className="font-semibold">Token Holders Only</Label>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Only users holding your tokens can view this post
-                </p>
-              </div>
-              <Switch
-                id="tokenGated"
-                checked={formData.tokenGated}
-                onCheckedChange={(checked) => setFormData({ ...formData, tokenGated: checked })}
-              />
+            <div>
+              <Label htmlFor="visibility">Visibility</Label>
+              <Select
+                value={formData.visibility}
+                onValueChange={(value) =>
+                  setFormData({ ...formData, visibility: value })
+                }
+              >
+                <SelectTrigger id="visibility" className="mt-1">
+                  <SelectValue placeholder="Select visibility" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="public">Public (everyone)</SelectItem>
+                  <SelectItem value="supporters">Supporters (≥1 token)</SelectItem>
+                  <SelectItem value="backers">Backers (≥10 tokens)</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="mt-2 text-xs text-muted-foreground">
+                Choose who can view this workout. Supporters and backers can be customised later.
+              </p>
             </div>
 
             <div className="flex gap-2 pt-4">

@@ -5,11 +5,11 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useMyAthlete } from '@/hooks/useMyAthlete';
-import { AthletePriceChart } from '@/components/charts/AthletePriceChart';
 import { formatNumber } from '@/lib/format';
-import { StravaConnect } from '@/components/StravaConnect';
+import StravaConnect from '@/components/StravaConnect';
 import { useStravaConnection } from '@/hooks/useStravaConnection';
-import { ProofOfSweat } from '@/components/ProofOfSweat';
+import ProofOfSweat from '@/components/ProofOfSweat';
+import { OverviewPriceChart } from '@/components/myathlete/OverviewPriceChart';
 
 export default function Overview() {
   const { data: athleteData, isLoading } = useMyAthlete();
@@ -157,7 +157,7 @@ export default function Overview() {
           <CardTitle>Price Chart</CardTitle>
         </CardHeader>
         <CardContent>
-          <AthletePriceChart athleteId={athlete.id} athleteName={athlete.name} />
+          <OverviewPriceChart athlete={athlete} />
         </CardContent>
       </Card>
 
@@ -171,7 +171,13 @@ export default function Overview() {
             </Button>
           </CardHeader>
           <CardContent>
-            <ProofOfSweat posts={athlete.posts.slice(0, 3)} />
+            <ProofOfSweat
+              athleteId={athlete.id}
+              athleteName={athlete.name}
+              posts={athlete.posts.slice(0, 3)}
+              workouts={athlete.workouts.slice(0, 3)}
+              viewerHoldings={Number.MAX_SAFE_INTEGER}
+            />
           </CardContent>
         </Card>
       )}
@@ -183,7 +189,7 @@ export default function Overview() {
             <CardTitle>Connect Strava</CardTitle>
           </CardHeader>
           <CardContent>
-            <StravaConnect />
+            <StravaConnect athleteId={athlete.id} />
           </CardContent>
         </Card>
       )}

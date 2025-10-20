@@ -683,6 +683,15 @@ export default function AthleteDetail() {
             workouts={athlete.workouts} 
             posts={athlete.posts || []}
             athleteId={athlete.id}
+            athleteName={athlete.name}
+            viewerHoldings={userHoldings}
+            onUnlock={async () => {
+              await tradeMutation.mutateAsync({
+                athleteId: athlete.id,
+                quantity: 1,
+                side: 'BUY',
+              });
+            }}
             onWorkoutDeleted={handleWorkoutSuccess}
             onConnectStrava={isOwnProfile ? () => navigate('/my-athlete') : undefined}
           />

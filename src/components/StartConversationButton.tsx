@@ -56,7 +56,7 @@ export function StartConversationButton({ athleteId, athleteName, athleteHandle 
         targetHandle={displayHandle}
         open={composerOpen}
         onOpenChange={setComposerOpen}
-        onOpenInbox={() => navigate('/my-athlete-profile?tab=messages')}
+        onOpenInbox={() => navigate('/my-athlete/locker?tab=messages')}
       />
       {authDialog}
     </>

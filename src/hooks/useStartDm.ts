@@ -8,7 +8,7 @@ export function useStartDm() {
 
   return useMutation({
     mutationFn: async (otherUserId: string) => {
-      const { data, error } = await supabase.rpc('start_or_get_dm', {
+      const { data, error } = await supabase.rpc('start_dm', {
         p_other_user_id: otherUserId,
       });
 

@@ -95,9 +95,9 @@ export default function Navigation() {
                     <span className="hidden sm:inline">Portfolio</span>
                   </Button>
                 </Link>
-                <Link to="/my-athlete-profile" onMouseEnter={prefetchMyAthlete}>
+                <Link to="/my-athlete/overview" onMouseEnter={prefetchMyAthlete}>
                   <Button
-                    variant={isActive('/my-athlete-profile') ? 'secondary' : 'ghost'}
+                    variant={isActive('/my-athlete/overview') ? 'secondary' : 'ghost'}
                     size="sm"
                     className="gap-2"
                   >

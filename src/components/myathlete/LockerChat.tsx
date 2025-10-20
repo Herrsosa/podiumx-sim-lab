@@ -7,7 +7,8 @@ import { Skeleton } from '@/components/ui/skeleton';
 export default function LockerChat() {
   const user = useUser();
   const { data: athleteData, isLoading: athleteLoading } = useMyAthlete();
-  const { data: accessData, isLoading: accessLoading } = useAccessTier(user?.id);
+  const athleteId = athleteData?.athlete?.id;
+  const { data: accessData, isLoading: accessLoading } = useAccessTier(athleteId);
 
   if (athleteLoading || accessLoading) {
     return (
@@ -26,7 +27,7 @@ export default function LockerChat() {
   }
 
   const { athlete } = athleteData;
-  const userHoldings = accessData?.balance || 0;
+  const userHoldings = accessData?.balance ?? 0;
 
   return (
     <div className="p-6">

@@ -5,7 +5,7 @@ import { useEffect } from 'react';
 export interface DmConversation {
   conversation_id: string;
   other_user_id: string;
-  other_display_name: string;
+  other_username: string | null;
   other_avatar_url: string | null;
   last_message: string | null;
   last_message_at: string | null;
@@ -33,19 +33,19 @@ export function useDmConversations() {
           table: 'dm_messages',
         },
         () => {
-          queryResult.refetch();
-        }
+          void queryResult.refetch();
+        },
       )
       .on(
         'postgres_changes',
         {
           event: '*',
           schema: 'public',
-          table: 'conversations',
+          table: 'dm_conversations',
         },
         () => {
-          queryResult.refetch();
-        }
+          void queryResult.refetch();
+        },
       )
       .subscribe();
 

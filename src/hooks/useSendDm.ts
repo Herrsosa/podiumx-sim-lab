@@ -8,9 +8,9 @@ export function useSendDm(conversationId: string) {
 
   return useMutation({
     mutationFn: async (content: string) => {
-      const { error } = await supabase.from('dm_messages').insert({
-        conversation_id: conversationId,
-        content,
+      const { error } = await supabase.rpc('send_dm', {
+        p_conversation_id: conversationId,
+        p_body: content,
       });
 
       if (error) throw error;

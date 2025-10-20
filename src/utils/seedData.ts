@@ -141,6 +141,8 @@ function generateWorkoutsForAthlete(athleteId: string, sport: string): Workout[]
       speed,
       rpe,
       notes: notes[Math.floor(Math.random() * notes.length)],
+      visibility: 'public',
+      minTokensRequired: 0,
     });
   }
 

@@ -55,7 +55,7 @@ export function useMyAthlete() {
 
       const { data: rawPosts, error: postsError } = await supabase
         .from('posts')
-        .select<PostRow>('id, created_at, author_id, workout_json, image_url, text, token_gated, strava_activity_id')
+        .select<PostRow>('id, created_at, author_id, workout_json, image_url, text, token_gated, strava_activity_id, visibility, min_tokens_required')
         .eq('author_id', user.id)
         .order('created_at', { ascending: false })
         .range(from, to);
@@ -80,14 +80,24 @@ export function useMyAthlete() {
         token_gated: Boolean(p.token_gated),
         strava_activity_id: p.strava_activity_id,
         author_id: p.author_id,
+        visibility: (p.visibility as Post['visibility']) ?? 'public',
+        min_tokens_required: p.min_tokens_required ?? 0,
       }));
 
       const workouts = posts
-        .filter((p) => p.workout_json)
-        .map((p) => ({
-          id: p.id,
-          ...(p.workout_json as Workout),
-        }));
+        .filter((p) => p.workout_json && typeof p.workout_json === 'object' && !Array.isArray(p.workout_json))
+        .map((p) => {
+          const workoutJson = p.workout_json as Partial<Workout>;
+          return {
+            id: p.id,
+            ...workoutJson,
+            notes: workoutJson.notes ?? p.text ?? '',
+            mediaUrl: workoutJson.mediaUrl ?? (p.image_url ?? undefined),
+            mediaType: workoutJson.mediaType ?? (p.image_url ? ('image' as const) : undefined),
+            visibility: p.visibility,
+            minTokensRequired: p.min_tokens_required,
+          };
+        });
 
       const avatarSource = athleteAvatars[profile.username] ?? profile.avatar_url;
 
