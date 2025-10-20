@@ -278,13 +278,15 @@ export default function ProofOfSweat({
                         {canView ? (
                           <>
                             {mediaUrl && (
-                              <div className="mb-3 overflow-hidden rounded-lg border border-border/40 bg-muted/30">
-                                <img
-                                  src={mediaUrl}
-                                  alt={`${workout.type} workout media`}
-                                  className="h-48 w-full object-cover"
-                                  loading="lazy"
-                                />
+                              <div className="mb-3 w-full max-w-[160px]">
+                                <div className="relative aspect-square overflow-hidden rounded-lg border border-border/40 bg-muted/30">
+                                  <img
+                                    src={mediaUrl}
+                                    alt={`${workout.type} workout media`}
+                                    className="h-full w-full object-cover"
+                                    loading="lazy"
+                                  />
+                                </div>
                               </div>
                             )}
                             <div className="mb-2 grid grid-cols-2 gap-x-4 gap-y-1 text-sm md:grid-cols-4">

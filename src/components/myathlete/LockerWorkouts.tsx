@@ -1,15 +1,55 @@
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
+import { useCallback } from 'react';
+import { useSearchParams } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { useMyAthlete } from '@/hooks/useMyAthlete';
 import ProofOfSweat from '@/components/ProofOfSweat';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useWorkouts } from '@/hooks/useWorkouts';
+import AddWorkoutModal from '@/components/AddWorkoutModal';
 
 export default function LockerWorkouts() {
+  const [searchParams, setSearchParams] = useSearchParams();
   const { data: athleteData, isLoading: athleteLoading } = useMyAthlete();
   const athlete = athleteData?.athlete;
+  const queryClient = useQueryClient();
+  const isAddWorkoutOpen = searchParams.get('add-workout') === 'true';
   const workoutsQuery = useWorkouts(athlete?.id, { pageSize: 50 });
   const isLoading = athleteLoading || workoutsQuery.isLoading;
+
+  const openAddWorkoutModal = useCallback(() => {
+    if (isAddWorkoutOpen) return;
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.set('add-workout', 'true');
+    setSearchParams(nextParams);
+  }, [isAddWorkoutOpen, searchParams, setSearchParams]);
+
+  const handleModalOpenChange = useCallback(
+    (open: boolean) => {
+      const currentlyOpen = searchParams.get('add-workout') === 'true';
+      if (open === currentlyOpen) return;
+
+      const nextParams = new URLSearchParams(searchParams);
+      if (open) {
+        nextParams.set('add-workout', 'true');
+        setSearchParams(nextParams);
+        return;
+      }
+
+      if (!nextParams.has('add-workout')) return;
+      nextParams.delete('add-workout');
+      setSearchParams(nextParams, { replace: true });
+    },
+    [searchParams, setSearchParams],
+  );
+
+  const handleWorkoutSuccess = useCallback(async () => {
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ['workouts'] }),
+      queryClient.invalidateQueries({ queryKey: ['my-athlete'] }),
+    ]);
+  }, [queryClient]);
 
   if (isLoading) {
     return (
@@ -55,11 +95,9 @@ export default function LockerWorkouts() {
             Manage your workout posts and set access levels
           </p>
         </div>
-        <Button asChild>
-          <a href="/my-athlete/locker/workouts?add-workout=true">
-            <Plus className="mr-2 h-4 w-4" />
-            Add Workout
-          </a>
+        <Button onClick={openAddWorkoutModal}>
+          <Plus className="mr-2 h-4 w-4" />
+          Add Workout
         </Button>
       </div>
 
@@ -67,11 +105,9 @@ export default function LockerWorkouts() {
         <div className="flex min-h-[300px] items-center justify-center rounded-lg border border-dashed">
           <div className="text-center">
             <p className="mb-4 text-muted-foreground">No workouts yet</p>
-            <Button asChild>
-              <a href="/my-athlete/locker/workouts?add-workout=true">
-                <Plus className="mr-2 h-4 w-4" />
-                Add Your First Workout
-              </a>
+            <Button onClick={openAddWorkoutModal}>
+              <Plus className="mr-2 h-4 w-4" />
+              Add Your First Workout
             </Button>
           </div>
         </div>
@@ -84,6 +120,13 @@ export default function LockerWorkouts() {
           viewerHoldings={Number.MAX_SAFE_INTEGER}
         />
       )}
+
+      <AddWorkoutModal
+        open={isAddWorkoutOpen}
+        onOpenChange={handleModalOpenChange}
+        athleteId={athlete.id}
+        onSuccess={handleWorkoutSuccess}
+      />
     </div>
   );
 }

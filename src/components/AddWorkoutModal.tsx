@@ -9,6 +9,7 @@ import { Upload, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { CelebrationModal } from './CelebrationModal';
+import { celebrateAura } from '@/lib/celebrate';
 
 interface AddWorkoutModalProps {
   open: boolean;
@@ -94,6 +95,7 @@ export default function AddWorkoutModal({ open, onOpenChange, athleteId, onSucce
       if (postError) throw postError;
 
       setShowCelebration(true);
+      celebrateAura();
 
       onSuccess();
       onOpenChange(false);
