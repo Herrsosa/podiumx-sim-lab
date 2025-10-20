@@ -6,14 +6,12 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useMyAthlete } from '@/hooks/useMyAthlete';
 import { formatNumber } from '@/lib/format';
-import StravaConnect from '@/components/StravaConnect';
-import { useStravaConnection } from '@/hooks/useStravaConnection';
+import { StravaCard } from '@/components/strava/StravaCard';
 import ProofOfSweat from '@/components/ProofOfSweat';
 import { OverviewPriceChart } from '@/components/myathlete/OverviewPriceChart';
 
 export default function Overview() {
   const { data: athleteData, isLoading } = useMyAthlete();
-  const { data: stravaConnection } = useStravaConnection();
 
   if (isLoading) {
     return (
@@ -182,17 +180,8 @@ export default function Overview() {
         </Card>
       )}
 
-      {/* Strava Connection */}
-      {!stravaConnection && (
-        <Card className="glass-card">
-          <CardHeader>
-            <CardTitle>Connect Strava</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <StravaConnect athleteId={athlete.id} />
-          </CardContent>
-        </Card>
-      )}
+      {/* Strava Connection & Training */}
+      <StravaCard />
     </div>
   );
 }
