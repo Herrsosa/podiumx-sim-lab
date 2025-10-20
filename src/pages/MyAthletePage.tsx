@@ -23,7 +23,6 @@ import { supabase } from '@/integrations/supabase/client';
 import AddWorkoutModal from '@/components/AddWorkoutModal';
 import EditWorkoutModal from '@/components/EditWorkoutModal';
 import { StravaCard } from '@/components/strava/StravaCard';
-import { DirectMessages } from '@/components/DirectMessages';
 import TokengatedChat from '@/components/TokengatedChat';
 import { useQueryClient } from '@tanstack/react-query';
 import { MobileActionBar } from '@/components/MobileActionBar';
@@ -787,7 +786,9 @@ export default function MyAthletePage() {
         {/* Messages Tab */}
         <TabsContent value="messages">
           <div ref={messagesSectionRef}>
-            <DirectMessages />
+            <Card className="glass-card p-8 text-center">
+              <p className="text-muted-foreground">Direct messages feature coming soon!</p>
+            </Card>
           </div>
         </TabsContent>
 

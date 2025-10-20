@@ -34,7 +34,7 @@ export function useChat(athleteId: string | undefined) {
 
       const { data: messageRows, error } = await supabase
         .from('athlete_chat_messages')
-        .select<ChatMessageRow[]>('id, athlete_id, sender_id, content, created_at')
+        .select('id, athlete_id, sender_id, content, created_at')
         .eq('athlete_id', athleteId)
         .order('created_at', { ascending: true })
         .limit(MAX_MESSAGES);
@@ -42,23 +42,23 @@ export function useChat(athleteId: string | undefined) {
       if (error) throw error;
 
       const senderIds = Array.from(
-        new Set((messageRows ?? []).map((row) => row.sender_id).filter(Boolean)),
+        new Set((messageRows ?? []).map((row: any) => row.sender_id).filter(Boolean)),
       ) as string[];
 
-      let profileRows: ProfileRow[] = [];
+      let profileRows: any[] = [];
       if (senderIds.length > 0) {
         const { data, error: profileError } = await supabase
           .from('profiles')
-          .select<ProfileRow[]>('id, display_name, avatar_url')
+          .select('id, display_name, avatar_url')
           .in('id', senderIds);
 
         if (profileError) throw profileError;
         profileRows = data ?? [];
       }
 
-      const profilesById = new Map(profileRows.map((profile) => [profile.id, profile]));
+      const profilesById = new Map(profileRows.map((profile: any) => [profile.id, profile]));
 
-      return (messageRows ?? []).map<ChatMessage>((row) => ({
+      return (messageRows ?? []).map<ChatMessage>((row: any) => ({
         id: row.id,
         athleteId: row.athlete_id,
         senderId: row.sender_id,

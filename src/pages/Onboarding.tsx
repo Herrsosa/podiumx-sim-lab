@@ -120,15 +120,14 @@ export default function Onboarding() {
         .maybeSingle();
 
       const fallbackHandleBase = user.email?.split('@')[0]?.replace(/[^a-zA-Z0-9]/g, '') || `user-${user.id.slice(0, 6)}`;
+      const fallbackUsername = `${fallbackHandleBase}-${user.id.slice(0, 4)}`.toLowerCase();
+      
       const payload: ProfileInsert = {
         id: user.id,
         role,
         onboarding_completed: false,
+        username: existing?.username || fallbackUsername,
       };
-
-      if (!existing?.username) {
-        payload.username = `${fallbackHandleBase}-${user.id.slice(0, 4)}`.toLowerCase();
-      }
 
       const { error } = await supabase.from('profiles').upsert(payload);
       if (error) {

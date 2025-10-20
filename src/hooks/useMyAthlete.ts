@@ -38,7 +38,7 @@ export function useMyAthlete() {
 
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
-        .select<ProfileRow>('id, username, display_name, sport, avatar_url, bio, instagram_url, strava_url, created_at')
+        .select('id, username, display_name, sport, avatar_url, bio, instagram_url, strava_url, created_at')
         .eq('id', user.id)
         .single();
 
@@ -46,16 +46,16 @@ export function useMyAthlete() {
 
       const { data: tokens, error: tokenError } = await supabase
         .from('athlete_tokens')
-        .select<TokenRow>('athlete_id, symbol, supply, a, b, c, treasury_balance, athlete_earnings')
+        .select('athlete_id, symbol, supply, a, b, c, treasury_balance, athlete_earnings')
         .eq('athlete_id', user.id);
 
       if (tokenError) throw tokenError;
 
-      const token = tokens?.[0];
+      const token: any = tokens?.[0];
 
       const { data: rawPosts, error: postsError } = await supabase
         .from('posts')
-        .select<PostRow>('id, created_at, author_id, workout_json, image_url, text, token_gated, strava_activity_id, visibility, min_tokens_required')
+        .select('id, created_at, author_id, workout_json, image_url, text, token_gated, strava_activity_id, visibility, min_tokens_required')
         .eq('author_id', user.id)
         .order('created_at', { ascending: false })
         .range(from, to);
@@ -71,7 +71,7 @@ export function useMyAthlete() {
       const marketCap = price * supply;
 
       // Convert posts to typed objects and workouts format
-      const posts: Post[] = (rawPosts || []).map((p) => ({
+      const posts: Post[] = (rawPosts || []).map((p: any) => ({
         id: p.id,
         created_at: p.created_at,
         workout_json: p.workout_json as Workout | Record<string, unknown> | null,
@@ -84,34 +84,40 @@ export function useMyAthlete() {
         min_tokens_required: p.min_tokens_required ?? 0,
       }));
 
-      const workouts = posts
+      const workouts: Workout[] = posts
         .filter((p) => p.workout_json && typeof p.workout_json === 'object' && !Array.isArray(p.workout_json))
         .map((p) => {
           const workoutJson = p.workout_json as Partial<Workout>;
           return {
             id: p.id,
-            ...workoutJson,
+            date: workoutJson.date || new Date(p.created_at).toISOString().split('T')[0],
+            type: workoutJson.type || 'Other',
+            duration: workoutJson.duration || 0,
+            rpe: workoutJson.rpe || 5,
+            distance: workoutJson.distance,
+            pace: workoutJson.pace,
+            speed: workoutJson.speed,
             notes: workoutJson.notes ?? p.text ?? '',
             mediaUrl: workoutJson.mediaUrl ?? (p.image_url ?? undefined),
             mediaType: workoutJson.mediaType ?? (p.image_url ? ('image' as const) : undefined),
             visibility: p.visibility,
             minTokensRequired: p.min_tokens_required,
-          };
+          } as Workout;
         });
 
-      const avatarSource = athleteAvatars[profile.username] ?? profile.avatar_url;
+      const avatarSource = athleteAvatars[(profile as any).username] ?? (profile as any).avatar_url;
 
       const athlete: Athlete = {
-        id: profile.id,
-        slug: profile.username,
-        name: profile.display_name || profile.username,
-        sport: (profile.sport || 'Other') as Sport,
+        id: (profile as any).id,
+        slug: (profile as any).username,
+        name: (profile as any).display_name || (profile as any).username,
+        sport: ((profile as any).sport || 'Other') as Sport,
         avatar: resolveAvatarUrl(avatarSource, { size: 192 }),
-        bio: profile.bio || '',
+        bio: (profile as any).bio || '',
         location: '',
         socials: {
-          instagram: profile.instagram_url || undefined,
-          strava: profile.strava_url || undefined,
+          instagram: (profile as any).instagram_url || undefined,
+          strava: (profile as any).strava_url || undefined,
         },
         supply,
         reserve: token?.treasury_balance || 0,

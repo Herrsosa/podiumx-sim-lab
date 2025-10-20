@@ -8,7 +8,7 @@ interface CelebrationModalProps {
   onOpenChange: (open: boolean) => void;
 }
 
-export default function CelebrationModal({ open, onOpenChange }: CelebrationModalProps) {
+export function CelebrationModal({ open, onOpenChange }: CelebrationModalProps) {
   useEffect(() => {
     if (open) {
       celebrateAura();
