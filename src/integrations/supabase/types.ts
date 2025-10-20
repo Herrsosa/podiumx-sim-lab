@@ -71,6 +71,45 @@ export type Database = {
         }
         Relationships: []
       }
+      athlete_chat_messages: {
+        Row: {
+          athlete_id: string
+          content: string
+          created_at: string
+          id: string
+          sender_id: string
+        }
+        Insert: {
+          athlete_id: string
+          content: string
+          created_at?: string
+          id?: string
+          sender_id?: string
+        }
+        Update: {
+          athlete_id?: string
+          content?: string
+          created_at?: string
+          id?: string
+          sender_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "athlete_chat_messages_athlete_id_fkey"
+            columns: ["athlete_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "athlete_chat_messages_sender_id_fkey"
+            columns: ["sender_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       athlete_integrations: {
         Row: {
           access_token: string
@@ -145,46 +184,17 @@ export type Database = {
           supply?: number
           symbol?: string
           treasury_balance?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "athlete_tokens_athlete_id_profiles_id_fk"
+            columns: ["athlete_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
-      Relationships: [
-        {
-          foreignKeyName: "athlete_tokens_athlete_id_profiles_id_fk"
-          columns: ["athlete_id"]
-          isOneToOne: false
-          referencedRelation: "profiles"
-          referencedColumns: ["id"]
-        },
-      ]
-    }
-    oauth_states: {
-      Row: {
-        app_url: string
-        created_at: string
-        state: string
-        user_id: string
-      }
-      Insert: {
-        app_url: string
-        created_at?: string
-        state: string
-        user_id: string
-      }
-      Update: {
-        app_url?: string
-        created_at?: string
-        state?: string
-        user_id?: string
-      }
-      Relationships: [
-        {
-          foreignKeyName: "oauth_states_user_id_fkey"
-          columns: ["user_id"]
-          isOneToOne: false
-          referencedRelation: "users"
-          referencedColumns: ["id"]
-        },
-      ]
-    }
       balances: {
         Row: {
           test_fiat_cents: number
@@ -208,96 +218,6 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
-      }
-      athlete_chat_messages: {
-        Row: {
-          athlete_id: string
-          content: string
-          created_at: string
-          id: string
-          sender_id: string
-        }
-        Insert: {
-          athlete_id: string
-          content: string
-          created_at?: string
-          id?: string
-          sender_id?: string
-        }
-        Update: {
-          athlete_id?: string
-          content?: string
-          created_at?: string
-          id?: string
-          sender_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "athlete_chat_messages_athlete_id_fkey"
-            columns: ["athlete_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "athlete_chat_messages_sender_id_fkey"
-            columns: ["sender_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      dm_conversations: {
-        Row: {
-          created_at: string
-          id: string
-          updated_at: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          updated_at?: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          updated_at?: string
-        }
-        Relationships: []
-      }
-      dm_participants: {
-        Row: {
-          conversation_id: string
-          last_read_at: string | null
-          user_id: string
-        }
-        Insert: {
-          conversation_id: string
-          last_read_at?: string | null
-          user_id: string
-        }
-        Update: {
-          conversation_id?: string
-          last_read_at?: string | null
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "dm_participants_conversation_id_fkey"
-            columns: ["conversation_id"]
-            isOneToOne: false
-            referencedRelation: "dm_conversations"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "dm_participants_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
       }
       deposit_intents: {
         Row: {
@@ -329,28 +249,46 @@ export type Database = {
         }
         Relationships: []
       }
+      dm_conversations: {
+        Row: {
+          created_at: string
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       dm_messages: {
         Row: {
+          body: string
           conversation_id: string
           created_at: string
           id: string
-          body: string
           media_url: string | null
           sender_id: string
         }
         Insert: {
+          body: string
           conversation_id: string
           created_at?: string
           id?: string
-          body: string
           media_url?: string | null
           sender_id: string
         }
         Update: {
+          body?: string
           conversation_id?: string
           created_at?: string
           id?: string
-          body?: string
           media_url?: string | null
           sender_id?: string
         }
@@ -365,6 +303,39 @@ export type Database = {
           {
             foreignKeyName: "dm_messages_sender_id_fkey"
             columns: ["sender_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dm_participants: {
+        Row: {
+          conversation_id: string
+          last_read_at: string | null
+          user_id: string
+        }
+        Insert: {
+          conversation_id: string
+          last_read_at?: string | null
+          user_id: string
+        }
+        Update: {
+          conversation_id?: string
+          last_read_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dm_participants_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "dm_conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dm_participants_user_id_fkey"
+            columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -445,6 +416,33 @@ export type Database = {
           refresh_token?: string | null
           scope?: string | null
           updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      oauth_states: {
+        Row: {
+          created_at: string
+          expires_at: string
+          id: string
+          provider: string
+          state: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          expires_at?: string
+          id?: string
+          provider: string
+          state: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string
+          id?: string
+          provider?: string
+          state?: string
           user_id?: string
         }
         Relationships: []
@@ -673,15 +671,25 @@ export type Database = {
             columns: ["athlete_id"]
             isOneToOne: false
             referencedRelation: "profiles"
-          referencedColumns: ["id"]
-        },
-      ]
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_token_holdings: {
         Row: {
           athlete_id: string | null
           balance: number | null
           user_id: string | null
+        }
+        Insert: {
+          athlete_id?: string | null
+          balance?: never
+          user_id?: string | null
+        }
+        Update: {
+          athlete_id?: string | null
+          balance?: never
+          user_id?: string | null
         }
         Relationships: [
           {
@@ -702,6 +710,10 @@ export type Database = {
       }
     }
     Functions: {
+      cleanup_expired_oauth_states: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
       execute_trade_transaction: {
         Args: {
           p_athlete_id: string
@@ -719,14 +731,14 @@ export type Database = {
         Returns: undefined
       }
       get_dm_conversations: {
-        Args: Record<string, never>
+        Args: Record<PropertyKey, never>
         Returns: {
           conversation_id: string
-          last_message: string | null
-          last_message_at: string | null
-          other_avatar_url: string | null
-          other_username: string | null
+          last_message: string
+          last_message_at: string
+          other_avatar_url: string
           other_user_id: string
+          other_username: string
           unread_count: number
         }[]
       }
@@ -736,7 +748,7 @@ export type Database = {
           body: string
           created_at: string
           id: string
-          media_url: string | null
+          media_url: string
           sender_id: string
         }[]
       }
@@ -759,7 +771,7 @@ export type Database = {
         Args: {
           p_body: string
           p_conversation_id: string
-          p_media_url?: string | null
+          p_media_url?: string
         }
         Returns: string
       }
