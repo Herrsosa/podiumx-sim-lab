@@ -71,6 +71,45 @@ export type Database = {
         }
         Relationships: []
       }
+      athlete_chat_messages: {
+        Row: {
+          athlete_id: string
+          content: string
+          created_at: string
+          id: string
+          sender_id: string
+        }
+        Insert: {
+          athlete_id: string
+          content: string
+          created_at?: string
+          id?: string
+          sender_id?: string
+        }
+        Update: {
+          athlete_id?: string
+          content?: string
+          created_at?: string
+          id?: string
+          sender_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "athlete_chat_messages_athlete_id_fkey"
+            columns: ["athlete_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "athlete_chat_messages_sender_id_fkey"
+            columns: ["sender_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       athlete_integrations: {
         Row: {
           access_token: string
@@ -180,98 +219,6 @@ export type Database = {
         }
         Relationships: []
       }
-      chat_messages: {
-        Row: {
-          athlete_id: string
-          content: string
-          created_at: string
-          id: string
-          user_id: string
-        }
-        Insert: {
-          athlete_id: string
-          content: string
-          created_at?: string
-          id?: string
-          user_id: string
-        }
-        Update: {
-          athlete_id?: string
-          content?: string
-          created_at?: string
-          id?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
-      conversation_participants: {
-        Row: {
-          conversation_id: string
-          id: string
-          joined_at: string
-          last_read_at: string | null
-          user_id: string
-        }
-        Insert: {
-          conversation_id: string
-          id?: string
-          joined_at?: string
-          last_read_at?: string | null
-          user_id: string
-        }
-        Update: {
-          conversation_id?: string
-          id?: string
-          joined_at?: string
-          last_read_at?: string | null
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "conversation_participants_conversation_id_fkey"
-            columns: ["conversation_id"]
-            isOneToOne: false
-            referencedRelation: "conversations"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "conversation_participants_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      conversations: {
-        Row: {
-          created_at: string
-          creator_id: string | null
-          id: string
-          updated_at: string
-        }
-        Insert: {
-          created_at?: string
-          creator_id?: string | null
-          id?: string
-          updated_at?: string
-        }
-        Update: {
-          created_at?: string
-          creator_id?: string | null
-          id?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "conversations_creator_id_fkey"
-            columns: ["creator_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       deposit_intents: {
         Row: {
           amount: number
@@ -302,26 +249,47 @@ export type Database = {
         }
         Relationships: []
       }
+      dm_conversations: {
+        Row: {
+          created_at: string
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       dm_messages: {
         Row: {
-          content: string
+          body: string
           conversation_id: string
           created_at: string
           id: string
+          media_url: string | null
           sender_id: string
         }
         Insert: {
-          content: string
+          body: string
           conversation_id: string
           created_at?: string
           id?: string
+          media_url?: string | null
           sender_id: string
         }
         Update: {
-          content?: string
+          body?: string
           conversation_id?: string
           created_at?: string
           id?: string
+          media_url?: string | null
           sender_id?: string
         }
         Relationships: [
@@ -329,12 +297,45 @@ export type Database = {
             foreignKeyName: "dm_messages_conversation_id_fkey"
             columns: ["conversation_id"]
             isOneToOne: false
-            referencedRelation: "conversations"
+            referencedRelation: "dm_conversations"
             referencedColumns: ["id"]
           },
           {
             foreignKeyName: "dm_messages_sender_id_fkey"
             columns: ["sender_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dm_participants: {
+        Row: {
+          conversation_id: string
+          last_read_at: string | null
+          user_id: string
+        }
+        Insert: {
+          conversation_id: string
+          last_read_at?: string | null
+          user_id: string
+        }
+        Update: {
+          conversation_id?: string
+          last_read_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dm_participants_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "dm_conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dm_participants_user_id_fkey"
+            columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -419,15 +420,44 @@ export type Database = {
         }
         Relationships: []
       }
+      oauth_states: {
+        Row: {
+          created_at: string
+          expires_at: string
+          id: string
+          provider: string
+          state: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          expires_at?: string
+          id?: string
+          provider: string
+          state: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string
+          id?: string
+          provider?: string
+          state?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       posts: {
         Row: {
           author_id: string
           created_at: string
           id: string
           image_url: string | null
+          min_tokens_required: number
           strava_activity_id: number | null
           text: string | null
           token_gated: boolean | null
+          visibility: string
           workout_json: Json | null
         }
         Insert: {
@@ -435,9 +465,11 @@ export type Database = {
           created_at?: string
           id?: string
           image_url?: string | null
+          min_tokens_required?: number
           strava_activity_id?: number | null
           text?: string | null
           token_gated?: boolean | null
+          visibility?: string
           workout_json?: Json | null
         }
         Update: {
@@ -445,9 +477,11 @@ export type Database = {
           created_at?: string
           id?: string
           image_url?: string | null
+          min_tokens_required?: number
           strava_activity_id?: number | null
           text?: string | null
           token_gated?: boolean | null
+          visibility?: string
           workout_json?: Json | null
         }
         Relationships: [
@@ -592,17 +626,94 @@ export type Database = {
     Views: {
       athlete_metrics_24h: {
         Row: {
-          athlete_id: string
+          athlete_id: string | null
           last_price: number | null
-          pct_change_24h: number | null
           notional_24h: number | null
+          pct_change_24h: number | null
           qty_24h: number | null
           spark7d: number[] | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "athlete_tokens_athlete_id_profiles_id_fk"
+            columns: ["athlete_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      trades_norm: {
+        Row: {
+          athlete_id: string | null
+          notional: number | null
+          price: number | null
+          qty: number | null
+          ts: string | null
+        }
+        Insert: {
+          athlete_id?: string | null
+          notional?: number | null
+          price?: number | null
+          qty?: never
+          ts?: never
+        }
+        Update: {
+          athlete_id?: string | null
+          notional?: number | null
+          price?: number | null
+          qty?: never
+          ts?: never
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trades_athlete_id_profiles_id_fk"
+            columns: ["athlete_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_token_holdings: {
+        Row: {
+          athlete_id: string | null
+          balance: number | null
+          user_id: string | null
+        }
+        Insert: {
+          athlete_id?: string | null
+          balance?: never
+          user_id?: string | null
+        }
+        Update: {
+          athlete_id?: string | null
+          balance?: never
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "holdings_athlete_id_profiles_id_fk"
+            columns: ["athlete_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "holdings_user_id_profiles_id_fk"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Functions: {
+      cleanup_expired_oauth_states: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
       execute_trade_transaction: {
         Args: {
           p_athlete_id: string
@@ -619,22 +730,54 @@ export type Database = {
         }
         Returns: undefined
       }
-      is_conversation_member: {
-        Args: { conversation_id: string }
-        Returns: boolean
+      get_dm_conversations: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          conversation_id: string
+          last_message: string
+          last_message_at: string
+          other_avatar_url: string
+          other_user_id: string
+          other_username: string
+          unread_count: number
+        }[]
+      }
+      get_dm_messages: {
+        Args: { p_conversation_id: string }
+        Returns: {
+          body: string
+          created_at: string
+          id: string
+          media_url: string
+          sender_id: string
+        }[]
       }
       get_market_overview: {
-        Args: {
-          athlete_ids?: string[] | null
-        }
+        Args: { athlete_ids?: string[] }
         Returns: {
           athlete_id: string
-          last_price: number | null
-          pct_change_24h: number | null
-          notional_24h: number | null
-          qty_24h: number | null
-          spark7d: number[] | null
+          last_price: number
+          notional_24h: number
+          pct_change_24h: number
+          qty_24h: number
+          spark7d: number[]
         }[]
+      }
+      get_user_balance: {
+        Args: { p_athlete_id: string }
+        Returns: number
+      }
+      send_dm: {
+        Args: {
+          p_body: string
+          p_conversation_id: string
+          p_media_url?: string
+        }
+        Returns: string
+      }
+      start_dm: {
+        Args: { p_other_user_id: string }
+        Returns: string
       }
     }
     Enums: {

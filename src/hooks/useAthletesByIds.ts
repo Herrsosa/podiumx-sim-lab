@@ -23,16 +23,16 @@ export function useAthletesByIds(athleteIds: string[]) {
     queryFn: async () => {
       if (!athleteIds || athleteIds.length === 0) return [];
 
-      const { data: profiles, error: profilesError } = await supabase
+      const { data: profiles, error: profilesError} = await supabase
         .from('profiles')
-        .select<ProfileRow>('id, username, display_name, sport, avatar_url, bio, instagram_url, strava_url, created_at')
+        .select('id, username, display_name, sport, avatar_url, bio, instagram_url, strava_url, created_at')
         .in('id', athleteIds);
 
       if (profilesError) throw profilesError;
 
       const { data: tokens, error: tokensError } = await supabase
         .from('athlete_tokens')
-        .select<TokenRow>('athlete_id, supply, a, b, c, treasury_balance, athlete_earnings')
+        .select('athlete_id, supply, a, b, c, treasury_balance, athlete_earnings')
         .in('athlete_id', athleteIds);
 
       if (tokensError) throw tokensError;
@@ -41,14 +41,14 @@ export function useAthletesByIds(athleteIds: string[]) {
 
       const { data: posts, error: postsError } = await supabase
         .from('posts')
-        .select<PostRow>('id, created_at, author_id, workout_json, image_url, text, token_gated, strava_activity_id')
+        .select('id, created_at, author_id, workout_json, image_url, text, token_gated, strava_activity_id, visibility, min_tokens_required')
         .in('author_id', athleteIds)
         .order('created_at', { ascending: false })
         .limit(postsLimit);
 
       if (postsError) throw postsError;
 
-      const typedPosts: Post[] = (posts ?? []).map((post) => ({
+      const typedPosts: Post[] = (posts ?? []).map((post: any) => ({
         id: post.id,
         created_at: post.created_at,
         workout_json: post.workout_json as Workout | Record<string, unknown> | null,
@@ -57,11 +57,13 @@ export function useAthletesByIds(athleteIds: string[]) {
         token_gated: Boolean(post.token_gated),
         strava_activity_id: post.strava_activity_id,
         author_id: post.author_id,
+        visibility: (post.visibility as 'public' | 'supporters' | 'backers') || 'public',
+        min_tokens_required: post.min_tokens_required || 0,
       }));
 
       // Combine profile + token data
-      const athletes: Athlete[] = profiles.map((profile) => {
-        const token = tokens.find((t) => t.athlete_id === profile.id);
+      const athletes: Athlete[] = (profiles ?? []).map((profile: any) => {
+        const token = (tokens ?? []).find((t: any) => t.athlete_id === profile.id);
         const athletePosts = typedPosts.filter((p) => p.author_id === profile.id);
 
         // Calculate current price from bonding curve

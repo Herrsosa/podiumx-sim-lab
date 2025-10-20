@@ -28,7 +28,7 @@ export function useTrades(athleteId?: string, options?: { enabled?: boolean }) {
     queryFn: async () => {
       let query = supabase
         .from('trades')
-        .select<DbTrade>(
+        .select(
           `${TRADE_SELECT}, profiles!trades_athlete_id_profiles_id_fk(display_name, username)`
         )
         .order('created_at', { ascending: false });
@@ -41,7 +41,7 @@ export function useTrades(athleteId?: string, options?: { enabled?: boolean }) {
 
       if (error) throw error;
 
-      const trades: Trade[] = (data ?? []).map((trade) => {
+      const trades: Trade[] = (data ?? []).map((trade: any) => {
         const profile = trade.profiles;
         return {
           id: trade.id,
@@ -72,7 +72,7 @@ export function useUserTrades() {
 
       const { data, error } = await supabase
         .from('trades')
-        .select<DbTrade>(
+        .select(
           `${TRADE_SELECT}, profiles!trades_athlete_id_profiles_id_fk(display_name, username)`
         )
         .eq('user_id', user.id)
@@ -80,7 +80,7 @@ export function useUserTrades() {
 
       if (error) throw error;
 
-      const trades: Trade[] = (data ?? []).map((trade) => {
+      const trades: Trade[] = (data ?? []).map((trade: any) => {
         const profile = trade.profiles;
         return {
           id: trade.id,

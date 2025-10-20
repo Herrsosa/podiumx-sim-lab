@@ -17,7 +17,6 @@ import ProofOfSweat from '@/components/ProofOfSweat';
 import TokengatedChat from '@/components/TokengatedChat';
 import WorkoutPosts from '@/components/WorkoutPosts';
 import AddWorkoutModal from '@/components/AddWorkoutModal';
-import { StartConversationButton } from '@/components/StartConversationButton';
 import { useQueryClient } from '@tanstack/react-query';
 import AthleteDetailSkeleton from '@/components/skeletons/AthleteDetailSkeleton';
 import { ChartSkeleton } from '@/components/ui/skeletons';
@@ -323,14 +322,6 @@ export default function AthleteDetail() {
                   <span className="font-medium">{athlete.socials.instagram}</span>
                 </div>
               )}
-            </div>
-            
-            <div className="mt-4">
-              <StartConversationButton
-                athleteId={athlete.id}
-                athleteName={athlete.name}
-                athleteHandle={athlete.slug ? '@' + athlete.slug : undefined}
-              />
             </div>
           </CardContent>
         </Card>
@@ -683,6 +674,15 @@ export default function AthleteDetail() {
             workouts={athlete.workouts} 
             posts={athlete.posts || []}
             athleteId={athlete.id}
+            athleteName={athlete.name}
+            viewerHoldings={userHoldings}
+            onUnlock={async () => {
+              await tradeMutation.mutateAsync({
+                athleteId: athlete.id,
+                quantity: 1,
+                side: 'BUY',
+              });
+            }}
             onWorkoutDeleted={handleWorkoutSuccess}
             onConnectStrava={isOwnProfile ? () => navigate('/my-athlete') : undefined}
           />

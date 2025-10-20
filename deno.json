@@ -1,0 +1,9 @@
+{
+    "tasks": {
+      "serve:strava": "supabase functions serve strava-oauth-exchange --no-verify-jwt"
+    },
+    "compilerOptions": {
+      "strict": true
+    }
+  }
+  

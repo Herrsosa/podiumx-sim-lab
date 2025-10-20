@@ -33,7 +33,7 @@ export function useAthlete(slug: string) {
 
       const { data: posts, error: postsError } = await supabase
         .from('posts')
-        .select('id, created_at, author_id, workout_json, image_url, text, token_gated, strava_activity_id')
+        .select('id, created_at, author_id, workout_json, image_url, text, token_gated, strava_activity_id, visibility, min_tokens_required')
         .eq('author_id', profile.id)
         .order('created_at', { ascending: false })
         .limit(100);
@@ -48,7 +48,7 @@ export function useAthlete(slug: string) {
       const price = priceAt(supply, { a, b, c });
       const marketCap = price * supply;
 
-      const typedPosts: Post[] = (posts ?? []).map((post: PostRow) => ({
+      const typedPosts: Post[] = (posts ?? []).map((post: any) => ({
         id: post.id,
         created_at: post.created_at,
         workout_json: post.workout_json as Workout | Record<string, unknown> | null,
@@ -57,6 +57,8 @@ export function useAthlete(slug: string) {
         token_gated: Boolean(post.token_gated),
         strava_activity_id: post.strava_activity_id,
         author_id: post.author_id,
+        visibility: (post.visibility as 'public' | 'supporters' | 'backers') || 'public',
+        min_tokens_required: post.min_tokens_required || 0,
       }));
 
       // Convert posts to workouts format

@@ -259,6 +259,8 @@ export const useAppStore = create<AppState>()(
         const newWorkout = {
           ...workout,
           id: `${Date.now()}`,
+          visibility: workout.visibility ?? 'public',
+          minTokensRequired: workout.minTokensRequired ?? 0,
         };
 
         set({

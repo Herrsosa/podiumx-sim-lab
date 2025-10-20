@@ -23,11 +23,12 @@ import { supabase } from '@/integrations/supabase/client';
 import AddWorkoutModal from '@/components/AddWorkoutModal';
 import EditWorkoutModal from '@/components/EditWorkoutModal';
 import { StravaCard } from '@/components/strava/StravaCard';
-import { DirectMessages } from '@/components/DirectMessages';
 import TokengatedChat from '@/components/TokengatedChat';
 import { useQueryClient } from '@tanstack/react-query';
 import { MobileActionBar } from '@/components/MobileActionBar';
 import { resolveAvatarUrl, resolveImageUrl } from '@/utils/avatar';
+import { useMediaQuery } from '@/hooks/useMediaQuery';
+import MobileMyAthletes from '@/pages/my-athletes/MobileMyAthletes';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -41,9 +42,17 @@ import {
 
 export default function MyAthletePage() {
   const user = useUser();
-  const { data: myAthletePage, pages, fetchNextPage, hasNextPage, isFetchingNextPage } = useMyAthlete();
+  const {
+    data: myAthletePage,
+    pages,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    isLoading: isMyAthleteLoading,
+  } = useMyAthlete();
   const { data: athleteTrades } = useAthleteTrades(user?.id || '');
   const queryClient = useQueryClient();
+  const isDesktop = useMediaQuery('(min-width: 768px)', true);
   const [isEditing, setIsEditing] = useState(false);
   const [addWorkoutOpen, setAddWorkoutOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -395,8 +404,78 @@ export default function MyAthletePage() {
     }, 100);
   }, []);
 
+  const modalStack = (
+    <>
+      {user && (
+        <AddWorkoutModal
+          open={addWorkoutOpen}
+          onOpenChange={setAddWorkoutOpen}
+          athleteId={user.id}
+          onSuccess={handleWorkoutSuccess}
+        />
+      )}
+
+      {normalizedEditingWorkout && (
+        <EditWorkoutModal
+          open={open}
+          onOpenChange={setOpen}
+          workoutPost={normalizedEditingWorkout}
+          onSuccess={() => {
+            queryClient.invalidateQueries({ queryKey: ['my-athlete', user?.id] });
+            setOpen(false);
+          }}
+        />
+      )}
+
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Workout?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete this workout.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteWorkout}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
+  );
+
+  if (!isDesktop) {
+    return (
+      <>
+        <MobileMyAthletes
+          athlete={myAthletePage?.athlete}
+          workouts={workouts}
+          posts={myAthletePage?.athlete?.posts ?? []}
+          chartData={chartData}
+          renderTooltip={renderTooltip}
+          posDomain={posDomain}
+          xDomain={xDomain}
+          glowFilterId={glowFilterId}
+          trades={athleteTrades ?? []}
+          onAddWorkout={() => setAddWorkoutOpen(true)}
+          isLoading={isMyAthleteLoading}
+          hasNextPage={Boolean(hasNextPage)}
+          fetchNextPage={hasNextPage ? () => { void fetchNextPage(); } : undefined}
+          isFetchingNextPage={isFetchingNextPage}
+        />
+        {modalStack}
+      </>
+    );
+  }
+
   return (
-    <div className="container mx-auto px-4 pb-32 pt-8 md:pb-8">
+    <>
+      <div className="container mx-auto px-4 pb-32 pt-8 md:pb-8">
       <div className="mb-8">
         <h1 className="mb-2 text-4xl font-bold">My Athlete Profile</h1>
         <p className="text-muted-foreground">Manage your profile and workout timeline</p>
@@ -787,7 +866,9 @@ export default function MyAthletePage() {
         {/* Messages Tab */}
         <TabsContent value="messages">
           <div ref={messagesSectionRef}>
-            <DirectMessages />
+            <Card className="glass-card p-8 text-center">
+              <p className="text-muted-foreground">Direct messages feature coming soon!</p>
+            </Card>
           </div>
         </TabsContent>
 
@@ -809,50 +890,6 @@ export default function MyAthletePage() {
           </Card>
         </TabsContent>
       </Tabs>
-
-      {/* Add Workout Modal */}
-      {user && (
-        <AddWorkoutModal
-          open={addWorkoutOpen}
-          onOpenChange={setAddWorkoutOpen}
-          athleteId={user.id}
-          onSuccess={handleWorkoutSuccess}
-        />
-      )}
-
-      {/* Edit Workout Modal */}
-      {normalizedEditingWorkout && (
-        <EditWorkoutModal
-          open={open}
-          onOpenChange={setOpen}
-          workoutPost={normalizedEditingWorkout}
-          onSuccess={() => {
-            queryClient.invalidateQueries({ queryKey: ['my-athlete', user?.id] });
-            setOpen(false);
-          }}
-        />
-      )}
-
-      {/* Delete Confirmation Dialog */}
-      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete Workout?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete this workout.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleDeleteWorkout}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              Delete
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
 
       <MobileActionBar
         actions={[
@@ -883,6 +920,8 @@ export default function MyAthletePage() {
         ]}
       />
     </div>
+      {modalStack}
+    </>
   );
 }
 

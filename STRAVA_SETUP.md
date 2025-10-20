@@ -38,33 +38,23 @@ The Strava credentials must be stored securely as Supabase Edge Function secrets
    supabase functions deploy --project-ref <your-project-ref>
    ```
 
-## Step 3: Update Application Code
+## Step 3: Set the Client ID in the frontend
 
-Update the Strava Client ID used by the frontend OAuth flow in the following files:
+The frontend now reads the Client ID from an environment variable.
 
-### `src/components/StravaTraining.tsx`
-```typescript
-const STRAVA_CLIENT_ID = 'YOUR_CLIENT_ID_HERE';
-```
+- Edit `.env` (or `.env.local`) and set `VITE_STRAVA_CLIENT_ID=<your Strava Client ID>`
+- The same value should be added to `.env.example` for reference only (do not commit secrets)
 
-### `src/pages/StravaCallback.tsx`
-```typescript
-const STRAVA_CLIENT_ID = 'YOUR_CLIENT_ID_HERE';
-```
-
-(If you maintain additional Strava entry points such as the compact Strava card, ensure they use the same Client ID.)
+All Strava entry points (`StravaTraining`, `StravaCard`, `ConnectStravaButton`, etc.) share the helper at `src/utils/stravaAuth.ts`, so updating the environment variable is enough.
 
 ## Step 4: Configure Redirect URI
 
-The redirect URI must match between your Strava app settings and your application code.
+The OAuth redirect now flows through the Supabase Edge Function.
 
-**For production:**
-- Strava API settings: `https://yourapp.lovable.app`
-- Redirect URI in code: `https://yourapp.lovable.app/strava/callback`
+- Strava Authorization Callback Domain: `ssnehmposgsczoadycms.functions.supabase.co`
+- Final redirect URI: `https://ssnehmposgsczoadycms.functions.supabase.co/strava-oauth-exchange`
 
-**For local development:**
-- Strava API settings: `localhost`
-- Redirect URI in code: `http://localhost:5173/strava/callback`
+This exact URI is hard coded in `src/utils/stravaAuth.ts` and in the Supabase function (`supabase/functions/strava-oauth-exchange/index.ts`), so the Strava developer settings must match it exactly.
 
 ## Step 5: Test the Integration
 
@@ -72,7 +62,7 @@ The redirect URI must match between your Strava app settings and your applicatio
 2. You should see a "Strava Training" card
 3. Click "Connect Strava"
 4. You'll be redirected to Strava to authorize the application
-5. After authorization, you'll be redirected back to your app
+5. After authorization, Strava redirects to the Supabase edge function, which exchanges the code and then returns/redirects you back to the app
 6. The "Strava Training" card should now show "Connected"
 7. Click "Import Activities" to sync your Strava workouts
 
@@ -83,8 +73,8 @@ The redirect URI must match between your Strava app settings and your applicatio
 - Redeploy your edge functions after adding or changing secrets
 
 ### OAuth redirect errors
-- Check that your Authorization Callback Domain in Strava matches your actual domain
-- Verify the redirect URI in your code matches the pattern: `https://yourdomain/strava/callback`
+- Ensure the Strava Authorization Callback Domain is `ssnehmposgsczoadycms.functions.supabase.co`
+- Confirm `STRAVA_REDIRECT_URI` in Supabase secrets matches `https://ssnehmposgsczoadycms.functions.supabase.co/strava-oauth-exchange`
 
 ### "Strava not connected" error when importing
 - Try disconnecting and reconnecting Strava

@@ -17,19 +17,33 @@ import { Workout, Post } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import EditWorkoutModal from './EditWorkoutModal';
+import { UnlockCard } from '@/components/myathlete/UnlockCard';
+import { LockBadge } from '@/components/myathlete/LockBadge';
 import { useQueryClient } from '@tanstack/react-query';
 import { EmptyState } from '@/components/ui/empty-state';
 import { useUser } from '@/store/auth';
 
 interface ProofOfSweatProps {
-  workouts: Workout[];
+  workouts?: Workout[];
   posts: Post[];
   athleteId?: string;
+  athleteName?: string;
+  viewerHoldings?: number;
+  onUnlock?: () => void;
   onWorkoutDeleted?: () => void;
   onConnectStrava?: () => void;
 }
 
-export default function ProofOfSweat({ workouts, posts, athleteId, onWorkoutDeleted, onConnectStrava }: ProofOfSweatProps) {
+export default function ProofOfSweat({
+  workouts = [],
+  posts,
+  athleteId,
+  athleteName,
+  viewerHoldings = 0,
+  onUnlock,
+  onWorkoutDeleted,
+  onConnectStrava,
+}: ProofOfSweatProps) {
   const user = useUser();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -221,83 +235,130 @@ export default function ProofOfSweat({ workouts, posts, athleteId, onWorkoutDele
             />
           ) : (
             <div className="space-y-3">
-              {safeWorkouts.map((workout) => (
-                <div
-                  key={workout.id}
-                  className="group relative overflow-hidden rounded-xl border border-border/50 bg-card/50 p-4 transition-all hover:border-primary/30 hover:bg-card/80"
-                >
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex-1">
-                      <div className="mb-2 flex items-center gap-2">
-                        <Badge variant="secondary" className="gap-1">
-                          {getWorkoutIcon(workout.type)}
-                          {workout.type}
-                        </Badge>
-                        <span className="text-xs text-muted-foreground">
-                          {formatDate(workout.date)}
-                        </span>
+              {safeWorkouts.map((workout) => {
+                const post = workoutPostMap.get(workout.id);
+                const visibility =
+                  post?.visibility ??
+                  workout.visibility ??
+                  ('public' as 'public' | 'supporters' | 'backers');
+                const minTokens =
+                  post?.min_tokens_required ?? workout.minTokensRequired ?? 0;
+                const requiredTokens =
+                  visibility === 'supporters'
+                    ? Math.max(1, minTokens)
+                    : visibility === 'backers'
+                    ? Math.max(10, minTokens)
+                    : 0;
+                const canView =
+                  visibility === 'public' ||
+                  canDelete ||
+                  viewerHoldings >= requiredTokens;
+                const mediaUrl = workout.mediaUrl ?? post?.image_url ?? undefined;
+
+                return (
+                  <div
+                    key={workout.id}
+                    className="group relative overflow-hidden rounded-xl border border-border/50 bg-card/50 p-4 transition-all hover:border-primary/30 hover:bg-card/80"
+                  >
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex-1">
+                        <div className="mb-2 flex items-center gap-2">
+                          <Badge variant="secondary" className="gap-1">
+                            {getWorkoutIcon(workout.type)}
+                            {workout.type}
+                          </Badge>
+                          <span className="text-xs text-muted-foreground">
+                            {formatDate(workout.date)}
+                          </span>
+                        {visibility !== 'public' && (
+                          <LockBadge tier={visibility} className="text-xs" />
+                        )}
                       </div>
-                      
-                      <div className="mb-2 grid grid-cols-2 gap-x-4 gap-y-1 text-sm md:grid-cols-4">
-                        {workout.distance && (
-                          <div className="flex items-center gap-1.5 text-muted-foreground">
-                            <Activity className="h-3.5 w-3.5" />
-                            <span>{workout.distance.toFixed(1)} km</span>
+
+                        {canView ? (
+                          <>
+                            {mediaUrl && (
+                              <div className="mb-3 w-full max-w-[160px]">
+                                <div className="relative aspect-square overflow-hidden rounded-lg border border-border/40 bg-muted/30">
+                                  <img
+                                    src={mediaUrl}
+                                    alt={`${workout.type} workout media`}
+                                    className="h-full w-full object-cover"
+                                    loading="lazy"
+                                  />
+                                </div>
+                              </div>
+                            )}
+                            <div className="mb-2 grid grid-cols-2 gap-x-4 gap-y-1 text-sm md:grid-cols-4">
+                              {workout.distance && (
+                                <div className="flex items-center gap-1.5 text-muted-foreground">
+                                  <Activity className="h-3.5 w-3.5" />
+                                  <span>{workout.distance.toFixed(1)} km</span>
+                                </div>
+                              )}
+                              <div className="flex items-center gap-1.5 text-muted-foreground">
+                                <Clock className="h-3.5 w-3.5" />
+                                <span>{formatDuration(workout.duration)}</span>
+                              </div>
+                              {workout.pace && (
+                                <div className="flex items-center gap-1.5 text-muted-foreground">
+                                  <Gauge className="h-3.5 w-3.5" />
+                                  <span>{workout.pace}</span>
+                                </div>
+                              )}
+                              {workout.speed && (
+                                <div className="flex items-center gap-1.5 text-muted-foreground">
+                                  <Gauge className="h-3.5 w-3.5" />
+                                  <span>{workout.speed}</span>
+                                </div>
+                              )}
+                              <div className="flex items-center gap-1.5 text-muted-foreground">
+                                <Zap className="h-3.5 w-3.5" />
+                                <span>RPE {workout.rpe}/10</span>
+                              </div>
+                            </div>
+
+                            {workout.notes && (
+                              <p className="text-sm text-foreground/80">{workout.notes}</p>
+                            )}
+                          </>
+                        ) : (
+                          <div className="mt-3">
+                            <UnlockCard
+                              tier={visibility === 'backers' ? 'backers' : 'supporters'}
+                              athleteName={athleteName || 'this athlete'}
+                              onUnlock={onUnlock}
+                            />
                           </div>
                         )}
-                        <div className="flex items-center gap-1.5 text-muted-foreground">
-                          <Clock className="h-3.5 w-3.5" />
-                          <span>{formatDuration(workout.duration)}</span>
-                        </div>
-                        {workout.pace && (
-                          <div className="flex items-center gap-1.5 text-muted-foreground">
-                            <Gauge className="h-3.5 w-3.5" />
-                            <span>{workout.pace}</span>
-                          </div>
-                        )}
-                        {workout.speed && (
-                          <div className="flex items-center gap-1.5 text-muted-foreground">
-                            <Gauge className="h-3.5 w-3.5" />
-                            <span>{workout.speed}</span>
-                          </div>
-                        )}
-                        <div className="flex items-center gap-1.5 text-muted-foreground">
-                          <Zap className="h-3.5 w-3.5" />
-                          <span>RPE {workout.rpe}/10</span>
-                        </div>
                       </div>
-                      
-                      {workout.notes && (
-                        <p className="text-sm text-foreground/80">{workout.notes}</p>
+
+                      {canDelete && (
+                        <div className="flex gap-1">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleEditClick(workout)}
+                            className="opacity-0 transition-opacity group-hover:opacity-100"
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleDeleteClick(workout.id)}
+                            className="opacity-0 transition-opacity group-hover:opacity-100"
+                          >
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          </Button>
+                        </div>
                       )}
                     </div>
 
-                    {canDelete && (
-                      <div className="flex gap-1">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleEditClick(workout)}
-                          className="opacity-0 group-hover:opacity-100 transition-opacity"
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleDeleteClick(workout.id)}
-                          className="opacity-0 group-hover:opacity-100 transition-opacity"
-                        >
-                          <Trash2 className="h-4 w-4 text-destructive" />
-                        </Button>
-                      </div>
-                    )}
+                    <div className="absolute bottom-0 left-0 h-1 w-full bg-gradient-to-r from-primary/0 via-primary/50 to-primary/0 opacity-0 transition-opacity group-hover:opacity-100" />
                   </div>
-                  
-                  {/* Subtle accent bar */}
-                  <div className="absolute bottom-0 left-0 h-1 w-full bg-gradient-to-r from-primary/0 via-primary/50 to-primary/0 opacity-0 transition-opacity group-hover:opacity-100" />
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </CardContent>

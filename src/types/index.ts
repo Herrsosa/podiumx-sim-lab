@@ -33,6 +33,8 @@ export interface Post {
   token_gated: boolean;
   strava_activity_id: number | null;
   author_id: string;
+  visibility: 'public' | 'supporters' | 'backers';
+  min_tokens_required: number;
 }
 
 export interface Trade {
@@ -75,6 +77,8 @@ export interface Workout {
   notes: string;
   mediaUrl?: string;
   mediaType?: 'image' | 'video';
+  visibility: 'public' | 'supporters' | 'backers';
+  minTokensRequired: number;
 }
 
 export interface UserProfile {
