@@ -1,5 +1,5 @@
-import { useState, useRef, useMemo, useCallback, useEffect, useId } from 'react';
-import { Camera, Upload, Plus, X, Edit2, Save, Link as LinkIcon, TrendingUp, Link2, Edit, Trash2, MessageSquare, DollarSign, Activity, Share2, MessageCircle } from 'lucide-react';
+import { useState, useMemo, useCallback, useEffect, useId, useRef } from 'react';
+import { Plus, TrendingUp, Edit, Trash2, MessageSquare, DollarSign, Activity, Share2, MessageCircle } from 'lucide-react';
 import { ComposedChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Bar, type TooltipProps } from 'recharts';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { EarningsSection } from '@/components/EarningsSection';
@@ -26,9 +26,11 @@ import { StravaCard } from '@/components/strava/StravaCard';
 import TokengatedChat from '@/components/TokengatedChat';
 import { useQueryClient } from '@tanstack/react-query';
 import { MobileActionBar } from '@/components/MobileActionBar';
-import { resolveAvatarUrl, resolveImageUrl } from '@/utils/avatar';
+import { resolveImageUrl } from '@/utils/avatar';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import MobileMyAthletes from '@/pages/my-athletes/MobileMyAthletes';
+import { ProfileDetailsCard } from '@/components/my-athlete/ProfileDetailsCard';
+import type { EditableProfile } from '@/pages/my-athletes/types';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -54,22 +56,15 @@ export default function MyAthletePage() {
   const queryClient = useQueryClient();
   const isDesktop = useMediaQuery('(min-width: 768px)', true);
   const [isEditing, setIsEditing] = useState(false);
+  const [savingProfile, setSavingProfile] = useState(false);
   const [addWorkoutOpen, setAddWorkoutOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [workoutToDelete, setWorkoutToDelete] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'workouts' | 'community' | 'messages' | 'earnings'>('workouts');
   const [newAvatarFile, setNewAvatarFile] = useState<File | null>(null);
-  const avatarInputRef = useRef<HTMLInputElement>(null);
   const messagesSectionRef = useRef<HTMLDivElement | null>(null);
 
-  const [editedProfile, setEditedProfile] = useState<{
-    displayName: string;
-    sport: Sport;
-    location: string;
-    bio: string;
-    avatar: string;
-    socials: { instagram?: string; strava?: string; twitter?: string };
-  }>({
+  const [editedProfile, setEditedProfile] = useState<EditableProfile>({
     displayName: '',
     sport: 'Running' as Sport,
     location: '',
@@ -78,19 +73,50 @@ export default function MyAthletePage() {
     socials: {},
   });
 
-  useEffect(() => {
+  const resetEditedProfile = useCallback(() => {
     const athlete = myAthletePage?.athlete;
-    if (athlete) {
-      setEditedProfile({
-        displayName: athlete.name || '',
-        sport: athlete.sport || 'Running',
-        location: athlete.location || '',
-        bio: athlete.bio || '',
-        avatar: athlete.avatar || '',
-        socials: athlete.socials || {},
-      });
+    if (!athlete) {
+      setEditedProfile((prev) => ({
+        ...prev,
+        displayName: '',
+        sport: 'Running',
+        location: '',
+        bio: '',
+        avatar: '',
+        socials: {},
+      }));
+      return;
     }
-  }, [myAthletePage]);
+
+    setEditedProfile({
+      displayName: athlete.name || '',
+      sport: (athlete.sport || 'Running') as Sport,
+      location: athlete.location || '',
+      bio: athlete.bio || '',
+      avatar: athlete.avatar || '',
+      socials: athlete.socials || {},
+    });
+  }, [myAthletePage?.athlete]);
+
+  useEffect(() => {
+    if (myAthletePage?.athlete) {
+      resetEditedProfile();
+    }
+  }, [myAthletePage?.athlete, resetEditedProfile]);
+
+  const updateEditedProfile = useCallback(
+    (updates: Partial<EditableProfile>) => {
+      setEditedProfile((prev) => ({
+        ...prev,
+        ...updates,
+        socials: {
+          ...prev.socials,
+          ...(updates.socials ?? {}),
+        },
+      }));
+    },
+    [],
+  );
 
   const workouts = useMemo(() => {
     const allPosts = pages.flatMap(p => p?.athlete?.posts ?? []);
@@ -259,16 +285,29 @@ export default function MyAthletePage() {
     );
   }, [formatTooltipLabel, posCountByDay]);
 
-  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
+  const handleAvatarFileSelected = useCallback(
+    (file: File | null) => {
+      if (!file) return;
       setNewAvatarFile(file);
-      setEditedProfile({ ...editedProfile, avatar: URL.createObjectURL(file) });
-    }
-  };
+      updateEditedProfile({ avatar: URL.createObjectURL(file) });
+    },
+    [updateEditedProfile],
+  );
+
+  const handleStartEditProfile = useCallback(() => {
+    resetEditedProfile();
+    setIsEditing(true);
+  }, [resetEditedProfile]);
+
+  const handleCancelEditProfile = useCallback(() => {
+    resetEditedProfile();
+    setIsEditing(false);
+  }, [resetEditedProfile]);
 
   const handleSaveProfile = async () => {
     if (!user) return;
+
+    setSavingProfile(true);
 
     try {
       let avatarUrl = editedProfile.avatar;
@@ -320,6 +359,8 @@ export default function MyAthletePage() {
       toast.success('Profile updated!');
     } catch (error: unknown) {
       toast.error((error as Error).message || 'Failed to update profile');
+    } finally {
+      setSavingProfile(false);
     }
   };
 
@@ -463,6 +504,14 @@ export default function MyAthletePage() {
           glowFilterId={glowFilterId}
           trades={athleteTrades ?? []}
           onAddWorkout={() => setAddWorkoutOpen(true)}
+          editedProfile={editedProfile}
+          isEditingProfile={isEditing}
+          onStartEditProfile={handleStartEditProfile}
+          onCancelEditProfile={handleCancelEditProfile}
+          onSaveProfile={handleSaveProfile}
+          onProfileFieldChange={updateEditedProfile}
+          onAvatarSelect={handleAvatarFileSelected}
+          savingProfile={savingProfile}
           isLoading={isMyAthleteLoading}
           hasNextPage={Boolean(hasNextPage)}
           fetchNextPage={hasNextPage ? () => { void fetchNextPage(); } : undefined}
@@ -481,221 +530,18 @@ export default function MyAthletePage() {
         <p className="text-muted-foreground">Manage your profile and workout timeline</p>
       </div>
 
-      {/* Profile Card */}
-      <Card className="glass-card mb-6">
-        <CardContent className="p-6">
-          <div className="flex items-start gap-6">
-            {/* Avatar */}
-            <div className="relative">
-              <div className="h-24 w-24 overflow-hidden rounded-full ring-4 ring-primary/20">
-                {(editedProfile.avatar || myAthletePage?.athlete?.avatar) ? (
-                  <img
-                    src={resolveAvatarUrl(editedProfile.avatar || myAthletePage?.athlete?.avatar, { size: 192 })}
-                    alt={editedProfile.displayName}
-                    width={96}
-                    height={96}
-                    loading="lazy"
-                    className="h-full w-full object-cover"
-                    onError={(e) => {
-                      console.error('Failed to load avatar:', editedProfile.avatar);
-                      e.currentTarget.style.display = 'none';
-                      const parent = e.currentTarget.parentElement;
-                      if (parent) {
-                        parent.innerHTML = '<div class="flex h-full w-full items-center justify-center bg-muted"><svg class="h-8 w-8 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path></svg></div>';
-                      }
-                    }}
-                  />
-                ) : (
-                  <div className="flex h-full w-full items-center justify-center bg-muted">
-                    <Camera className="h-8 w-8 text-muted-foreground" />
-                  </div>
-                )}
-              </div>
-              {isEditing && (
-                <>
-                  <input
-                    ref={avatarInputRef}
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={handleAvatarChange}
-                  />
-                  <Button
-                    size="icon"
-                    variant="secondary"
-                    className="absolute -bottom-2 -right-2 h-8 w-8 rounded-full"
-                    onClick={() => avatarInputRef.current?.click()}
-                  >
-                    <Camera className="h-4 w-4" />
-                  </Button>
-                </>
-              )}
-            </div>
-
-            {/* Profile Info */}
-            <div className="flex-1 space-y-4">
-              {isEditing ? (
-                <>
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <div>
-                      <Label>Display Name</Label>
-                      <Input
-                        value={editedProfile.displayName}
-                        onChange={(e) =>
-                          setEditedProfile({ ...editedProfile, displayName: e.target.value })
-                        }
-                      />
-                    </div>
-                    <div>
-                      <Label>Sport</Label>
-                      <Select
-                        value={editedProfile.sport}
-                        onValueChange={(sport) =>
-                          setEditedProfile({ ...editedProfile, sport: sport as Sport })
-                        }
-                      >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="Running">Running</SelectItem>
-                          <SelectItem value="HYROX">HYROX</SelectItem>
-                          <SelectItem value="Cycling">Cycling</SelectItem>
-                          <SelectItem value="Triathlon">Triathlon</SelectItem>
-                          <SelectItem value="CrossFit">CrossFit</SelectItem>
-                          <SelectItem value="Swimming">Swimming</SelectItem>
-                          <SelectItem value="Trail Run">Trail Run</SelectItem>
-                          <SelectItem value="Rowing">Rowing</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                  <div>
-                    <Label>Location</Label>
-                    <Input
-                      value={editedProfile.location}
-                      onChange={(e) =>
-                        setEditedProfile({ ...editedProfile, location: e.target.value })
-                      }
-                    />
-                  </div>
-                  <div>
-                    <Label>Bio</Label>
-                    <Textarea
-                      value={editedProfile.bio}
-                      onChange={(e) =>
-                        setEditedProfile({ ...editedProfile, bio: e.target.value })
-                      }
-                      rows={3}
-                    />
-                  </div>
-                  <div className="grid gap-4 sm:grid-cols-3">
-                    <div>
-                      <Label>Instagram</Label>
-                      <Input
-                        value={editedProfile.socials.instagram || ''}
-                        onChange={(e) =>
-                          setEditedProfile({
-                            ...editedProfile,
-                            socials: { ...editedProfile.socials, instagram: e.target.value },
-                          })
-                        }
-                        placeholder="@username"
-                      />
-                    </div>
-                    <div>
-                      <Label>Strava</Label>
-                      <Input
-                        value={editedProfile.socials.strava || ''}
-                        onChange={(e) =>
-                          setEditedProfile({
-                            ...editedProfile,
-                            socials: { ...editedProfile.socials, strava: e.target.value },
-                          })
-                        }
-                        placeholder="username"
-                      />
-                    </div>
-                    <div>
-                      <Label>Twitter</Label>
-                      <Input
-                        value={editedProfile.socials.twitter || ''}
-                        onChange={(e) =>
-                          setEditedProfile({
-                            ...editedProfile,
-                            socials: { ...editedProfile.socials, twitter: e.target.value },
-                          })
-                        }
-                        placeholder="@username"
-                      />
-                    </div>
-                  </div>
-                </>
-              ) : (
-                <>
-                  <div>
-                    <h2 className="text-2xl font-bold">{myAthletePage?.athlete?.name || 'No name'}</h2>
-                    <div className="mt-2 flex gap-2">
-                      <Badge>{myAthletePage?.athlete?.sport || 'Sport'}</Badge>
-                      {myAthletePage?.athlete?.location && <Badge variant="outline">{myAthletePage.athlete.location}</Badge>}
-                    </div>
-                  </div>
-                  <p className="text-muted-foreground">{myAthletePage?.athlete?.bio || 'No bio'}</p>
-                  {(myAthletePage?.athlete?.socials?.instagram || myAthletePage?.athlete?.socials?.strava) && (
-                    <div className="flex gap-4 text-sm">
-                      {myAthletePage?.athlete?.socials?.instagram && (
-                        <span className="flex items-center gap-1">
-                          <LinkIcon className="h-3 w-3" />
-                          {myAthletePage.athlete.socials.instagram}
-                        </span>
-                      )}
-                      {myAthletePage?.athlete?.socials?.strava && (
-                        <span className="flex items-center gap-1">
-                          <LinkIcon className="h-3 w-3" />
-                          {myAthletePage.athlete.socials.strava}
-                        </span>
-                      )}
-                    </div>
-                  )}
-                </>
-              )}
-
-              {/* Actions */}
-              <div className="flex gap-2">
-                {isEditing ? (
-                  <>
-                    <Button onClick={handleSaveProfile} className="gap-2">
-                      <Save className="h-4 w-4" />
-                      Save Changes
-                    </Button>
-                    <Button
-                      variant="outline"
-                      onClick={() => {
-                        setEditedProfile({
-                          displayName: myAthletePage?.athlete?.name || '',
-                          sport: (myAthletePage?.athlete?.sport || 'Running') as Sport,
-                          location: myAthletePage?.athlete?.location || '',
-                          bio: myAthletePage?.athlete?.bio || '',
-                          avatar: myAthletePage?.athlete?.avatar || '',
-                          socials: myAthletePage?.athlete?.socials || {},
-                        });
-                        setIsEditing(false);
-                      }}
-                    >
-                      Cancel
-                    </Button>
-                  </>
-                ) : (
-                  <Button onClick={() => setIsEditing(true)} className="gap-2">
-                    <Edit2 className="h-4 w-4" />
-                    Edit Profile
-                  </Button>
-                )}
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      <ProfileDetailsCard
+        className="mb-6"
+        athlete={myAthletePage?.athlete}
+        editedProfile={editedProfile}
+        isEditing={isEditing}
+        savingProfile={savingProfile}
+        onStartEdit={handleStartEditProfile}
+        onCancelEdit={handleCancelEditProfile}
+        onSave={handleSaveProfile}
+        onFieldChange={updateEditedProfile}
+        onAvatarSelect={handleAvatarFileSelected}
+      />
 
       {/* Price Chart - Only for Athletes */}
       {myAthletePage?.athlete && priceHistory.length > 0 && (
