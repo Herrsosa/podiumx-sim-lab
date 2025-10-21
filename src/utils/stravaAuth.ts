@@ -62,6 +62,7 @@ export async function prepareStravaAuthorizeUrl(clientId: string) {
     state,
     user_id: session.user.id,
     app_url: appUrl,
+    provider: 'strava',
   });
 
   if (insertError) {

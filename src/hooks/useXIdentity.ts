@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import type { AuthIdentity, User } from '@supabase/supabase-js';
+import type { User } from '@supabase/supabase-js';
 
 type TwitterIdentityData = {
   user_name?: string;
@@ -9,7 +9,13 @@ type TwitterIdentityData = {
   provider_id?: string;
 };
 
-type TwitterIdentity = AuthIdentity & { identity_data?: TwitterIdentityData | null };
+type Identity = {
+  id: string;
+  provider: string;
+  identity_data?: TwitterIdentityData | null;
+};
+
+type TwitterIdentity = Identity & { identity_data?: TwitterIdentityData | null };
 
 export type XIdentity = {
   id: string;
@@ -19,7 +25,7 @@ export type XIdentity = {
   userLabel: string;
 } | null;
 
-function isTwitterIdentity(identity: AuthIdentity | null | undefined): identity is TwitterIdentity {
+function isTwitterIdentity(identity: Identity | null | undefined): identity is TwitterIdentity {
   return Boolean(identity && identity.provider === 'twitter');
 }
 

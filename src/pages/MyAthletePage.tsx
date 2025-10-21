@@ -1,5 +1,6 @@
-import { useState, useMemo, useCallback, useEffect, useId, useRef } from 'react';
+import { useState, useMemo, useCallback, useEffect, useRef, useId } from 'react';
 import { Plus, TrendingUp, Edit, Trash2, MessageSquare, DollarSign, Activity, Share2, MessageCircle } from 'lucide-react';
+import { useSearchParams } from 'react-router-dom';
 import { ComposedChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Bar, type TooltipProps } from 'recharts';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { EarningsSection } from '@/components/EarningsSection';
@@ -31,6 +32,8 @@ import { useMediaQuery } from '@/hooks/useMediaQuery';
 import MobileMyAthletes from '@/pages/my-athletes/MobileMyAthletes';
 import { ProfileDetailsCard } from '@/components/my-athlete/ProfileDetailsCard';
 import type { EditableProfile } from '@/pages/my-athletes/types';
+import { PersonalConsole } from '@/pages/MyAthlete/PersonalConsole';
+import { LockerView } from '@/pages/MyAthlete/LockerView';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -44,6 +47,7 @@ import {
 
 export default function MyAthletePage() {
   const user = useUser();
+  const [searchParams, setSearchParams] = useSearchParams();
   const {
     data: myAthletePage,
     pages,
@@ -62,6 +66,12 @@ export default function MyAthletePage() {
   const [workoutToDelete, setWorkoutToDelete] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'workouts' | 'community' | 'messages' | 'earnings'>('workouts');
   const [newAvatarFile, setNewAvatarFile] = useState<File | null>(null);
+  
+  // Tab management: "personal" or "locker"
+  const currentTab = searchParams.get('tab') || 'personal';
+  const setTab = (tab: 'personal' | 'locker') => {
+    setSearchParams({ tab });
+  };
   const messagesSectionRef = useRef<HTMLDivElement | null>(null);
 
   const [editedProfile, setEditedProfile] = useState<EditableProfile>({
@@ -530,210 +540,42 @@ export default function MyAthletePage() {
         <p className="text-muted-foreground">Manage your profile and workout timeline</p>
       </div>
 
-      <ProfileDetailsCard
-        className="mb-6"
-        athlete={myAthletePage?.athlete}
-        editedProfile={editedProfile}
-        isEditing={isEditing}
-        savingProfile={savingProfile}
-        onStartEdit={handleStartEditProfile}
-        onCancelEdit={handleCancelEditProfile}
-        onSave={handleSaveProfile}
-        onFieldChange={updateEditedProfile}
-        onAvatarSelect={handleAvatarFileSelected}
-      />
-
-      {/* Price Chart - Only for Athletes */}
-      {myAthletePage?.athlete && priceHistory.length > 0 && (
-        <Card className="glass-card mb-6">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <TrendingUp className="h-5 w-5" />
-              PodiumPass Price Chart
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid gap-4 sm:grid-cols-3 mb-6">
-              <div>
-                <p className="text-sm text-muted-foreground">Current Price</p>
-                <p className="text-2xl font-bold">${myAthletePage?.athlete?.price.toFixed(4)}</p>
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Market Cap</p>
-                <p className="text-2xl font-bold">${myAthletePage?.athlete?.marketCap.toFixed(2)}</p>
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">24h Volume</p>
-                <p className="text-2xl font-bold">${myAthletePage?.athlete?.volume24h.toFixed(2)}</p>
-              </div>
-            </div>
-            <ResponsiveContainer width="100%" height={300}>
-              <ComposedChart data={chartData} margin={{ top: 24, right: 24, bottom: 56, left: 16 }}>
-                <defs>
-                  <filter id={`posGlow-${glowFilterId}`} x="-200%" y="-200%" width="500%" height="500%">
-                    <feGaussianBlur stdDeviation="5" result="coloredBlur" />
-                    <feMerge>
-                      <feMergeNode in="coloredBlur" />
-                      <feMergeNode in="SourceGraphic" />
-                    </feMerge>
-                  </filter>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.18} />
-                <XAxis
-                  dataKey="t"
-                  type="number"
-                  scale="time"
-                  domain={xDomain}
-                  padding={{ right: 18 }}
-                  tickFormatter={formatXAxisTick}
-                  tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
-                  stroke="hsl(var(--muted-foreground))"
-                  axisLine={false}
-                  tickLine={false}
-                />
-                <YAxis
-                  domain={['auto', 'auto']}
-                  tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
-                  stroke="hsl(var(--muted-foreground))"
-                  tickFormatter={(value) => `$${value.toFixed(2)}`}
-                  width={60}
-                  axisLine={false}
-                  tickLine={false}
-                />
-                <YAxis yAxisId="pos" domain={posDomain} hide />
-                <RechartsTooltip content={renderTooltip} cursor={{ stroke: 'hsl(var(--border))', strokeDasharray: '3 3' }} />
-                <Bar
-                  dataKey="posCount"
-                  yAxisId="pos"
-                  fill="transparent"
-                  barSize={56}
-                  shape={
-                    <StackedCircles
-                      color={POS_NEON_COLOR}
-                      filterId={`posGlow-${glowFilterId}`}
-                      maxCircles={6}
-                      gap={8}
-                      radius={11}
-                      hitboxSize={56}
-                    />
-                  }
-                />
-                <Line
-                  type="monotone"
-                  dataKey="price"
-                  stroke={POS_NEON_COLOR}
-                  strokeWidth={2}
-                  strokeOpacity={0.65}
-                  dot={false}
-                  connectNulls
-                  strokeLinecap="round"
-                />
-              </ComposedChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Tabs for Workouts, Community Chat, Messages, and Earnings */}
-      <Tabs
-        value={activeTab}
-        onValueChange={(value) => setActiveTab(value as 'workouts' | 'community' | 'messages' | 'earnings')}
-        className="w-full"
-      >
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="workouts">Workout Timeline</TabsTrigger>
-          <TabsTrigger value="community" className="gap-2">
-            <MessageSquare className="h-4 w-4" />
-            Community Chat
-          </TabsTrigger>
-          <TabsTrigger value="messages" className="gap-2">
-            <MessageSquare className="h-4 w-4" />
-            Direct Messages
-          </TabsTrigger>
-          <TabsTrigger value="earnings" className="gap-2">
-            <DollarSign className="h-4 w-4" />
-            Earnings
-          </TabsTrigger>
+      {/* Top-level tabs: Personal vs View Locker */}
+      <Tabs value={currentTab} onValueChange={(v) => setTab(v as 'personal' | 'locker')} className="w-full mb-6">
+        <TabsList className="grid w-full grid-cols-2 max-w-md">
+          <TabsTrigger value="personal">Personal</TabsTrigger>
+          <TabsTrigger value="locker">View Locker</TabsTrigger>
         </TabsList>
 
-        {/* Workouts Tab */}
-        <TabsContent value="workouts">
-          <Card className="glass-card">
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle>Workout Timeline</CardTitle>
-                <Button className="gap-2" onClick={() => setAddWorkoutOpen(true)}>
-                  <Plus className="h-4 w-4" />
-                  Add Workout
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent>
-              {!workouts || workouts.length === 0 ? (
-                <div className="py-16 text-center text-muted-foreground">
-                  No workouts yet. Add your first workout to get started!
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {workouts.map((workout) => (
-                    <WorkoutCard
-                      key={workout.id}
-                      workout={workout}
-                      onEdit={() => handleEditWorkout(workout)}
-                      onDelete={() => handleDeleteClick(workout.id)}
-                    />
-                  ))}
-                </div>
-              )}
-              {hasNextPage && (
-                <div className="flex justify-center py-6">
-                  <Button onClick={() => fetchNextPage()} disabled={isFetchingNextPage}>
-                    {isFetchingNextPage ? 'Loading...' : 'Load More'}
-                  </Button>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-          <StravaCard className="mt-4" />
+        <TabsContent value="personal" className="mt-6">
+          <PersonalConsole
+            athlete={myAthletePage?.athlete}
+            workouts={workouts}
+            posts={myAthletePage?.athlete?.posts ?? []}
+            athleteTrades={athleteTrades ?? []}
+            priceHistory={priceHistory}
+            editedProfile={editedProfile}
+            isEditing={isEditing}
+            savingProfile={savingProfile}
+            onStartEditProfile={handleStartEditProfile}
+            onCancelEditProfile={handleCancelEditProfile}
+            onSaveProfile={handleSaveProfile}
+            onProfileFieldChange={updateEditedProfile}
+            onAvatarSelect={handleAvatarFileSelected}
+            onWorkoutEdit={handleEditWorkout}
+            onWorkoutDelete={(id) => {
+              setWorkoutToDelete(id);
+              setDeleteDialogOpen(true);
+            }}
+            onAddWorkout={() => setAddWorkoutOpen(true)}
+            hasNextPage={Boolean(hasNextPage)}
+            fetchNextPage={hasNextPage ? () => { void fetchNextPage(); } : undefined}
+            isFetchingNextPage={isFetchingNextPage}
+          />
         </TabsContent>
 
-        {/* Community Chat Tab */}
-        <TabsContent value="community">
-          {myAthletePage && user && (
-            <TokengatedChat
-              athleteId={user.id}
-              athleteName={myAthletePage?.athlete?.name || ''}
-              userHoldings={1}
-              onBuyClick={() => {}}
-            />
-          )}
-        </TabsContent>
-
-        {/* Messages Tab */}
-        <TabsContent value="messages">
-          <div ref={messagesSectionRef}>
-            <Card className="glass-card p-8 text-center">
-              <p className="text-muted-foreground">Direct messages feature coming soon!</p>
-            </Card>
-          </div>
-        </TabsContent>
-
-        {/* Earnings Tab */}
-        <TabsContent value="earnings">
-          <Card className="glass-card">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <DollarSign className="h-5 w-5" />
-                Athlete Earnings
-              </CardTitle>
-              <p className="text-sm text-muted-foreground">
-                Track your earnings from trading fees on your PodiumPass
-              </p>
-            </CardHeader>
-            <CardContent>
-              <EarningsSection athleteId={user?.id} />
-            </CardContent>
-          </Card>
+        <TabsContent value="locker" className="mt-6">
+          <LockerView athleteId={user?.id} athleteName={myAthletePage?.athlete?.name} />
         </TabsContent>
       </Tabs>
 

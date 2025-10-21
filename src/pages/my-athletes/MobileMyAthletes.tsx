@@ -24,6 +24,9 @@ import { MOBILE_TAB_KEYS } from './mobile-config';
 export { MOBILE_TAB_KEYS } from './mobile-config';
 import { ProfileDetailsCard } from '@/components/my-athlete/ProfileDetailsCard';
 import type { EditableProfile } from '@/pages/my-athletes/types';
+import ConnectXButton from '@/components/social/ConnectXButton';
+import { useXIdentity } from '@/hooks/useXIdentity';
+import XBadge from '@/components/social/XBadge';
 
 type ChartDatum = {
   t: number;
@@ -96,6 +99,8 @@ export default function MobileMyAthletes({
   isFetchingNextPage = false,
 }: MobileMyAthletesProps) {
   const [activeTab, setActiveTab] = useState<(typeof MOBILE_TAB_KEYS)[number]>('overview');
+  const [consoleTab, setConsoleTab] = useState<'personal' | 'locker'>('personal');
+  const xIdentity = useXIdentity();
 
   const priceChange = athlete?.change24h ?? 0;
   const isPriceUp = priceChange >= 0;
@@ -123,21 +128,58 @@ export default function MobileMyAthletes({
 
     const sections = [
       {
-        title: 'Profile',
+        title: 'Console',
         content: (
-          <ProfileDetailsCard
-            variant="mobile"
-            className="shadow-none"
-            athlete={athlete}
-            editedProfile={editedProfile}
-            isEditing={isEditingProfile}
-            savingProfile={savingProfile}
-            onStartEdit={onStartEditProfile}
-            onCancelEdit={onCancelEditProfile}
-            onSave={onSaveProfile}
-            onFieldChange={onProfileFieldChange}
-            onAvatarSelect={onAvatarSelect}
-          />
+          <div className="space-y-4">
+            <Tabs value={consoleTab} onValueChange={(v) => setConsoleTab(v as 'personal' | 'locker')}>
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="personal">Personal</TabsTrigger>
+                <TabsTrigger value="locker">View Locker</TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="personal" className="space-y-4 mt-4">
+                <ProfileDetailsCard
+                  variant="mobile"
+                  className="shadow-none"
+                  athlete={athlete}
+                  editedProfile={editedProfile}
+                  isEditing={isEditingProfile}
+                  savingProfile={savingProfile}
+                  onStartEdit={onStartEditProfile}
+                  onCancelEdit={onCancelEditProfile}
+                  onSave={onSaveProfile}
+                  onFieldChange={onProfileFieldChange}
+                  onAvatarSelect={onAvatarSelect}
+                />
+                
+                {/* X.com Integration */}
+                <Card className="shadow-none">
+                  <CardContent className="p-4">
+                    <h4 className="text-sm font-medium mb-3">X.com Integration</h4>
+                    {xIdentity ? (
+                      <div className="flex items-center justify-between">
+                        <XBadge />
+                        <p className="text-xs text-muted-foreground">Connected</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        <p className="text-xs text-muted-foreground">
+                          Connect your X account to display your handle and increase credibility.
+                        </p>
+                        <ConnectXButton />
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </TabsContent>
+              
+              <TabsContent value="locker" className="mt-4">
+                <p className="text-sm text-muted-foreground text-center py-8">
+                  Locker view: See what your supporters see
+                </p>
+              </TabsContent>
+            </Tabs>
+          </div>
         ),
       },
       {

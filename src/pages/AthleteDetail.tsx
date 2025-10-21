@@ -17,6 +17,8 @@ import ProofOfSweat from '@/components/ProofOfSweat';
 import TokengatedChat from '@/components/TokengatedChat';
 import WorkoutPosts from '@/components/WorkoutPosts';
 import AddWorkoutModal from '@/components/AddWorkoutModal';
+import { LockerGate } from '@/components/myathlete/LockerGate';
+import { LockerView } from '@/pages/MyAthlete/LockerView';
 import { useQueryClient } from '@tanstack/react-query';
 import AthleteDetailSkeleton from '@/components/skeletons/AthleteDetailSkeleton';
 import { ChartSkeleton } from '@/components/ui/skeletons';
@@ -668,9 +670,25 @@ export default function AthleteDetail() {
           </CardContent>
         </Card>
 
-        {/* Proof of Sweat & Posts */}
+        {/* Locker & Proof of Sweat */}
         <div className="lg:col-span-2 space-y-6">
-          <ProofOfSweat 
+          {/* Locker Tab */}
+          <Card className="glass-card">
+            <CardHeader>
+              <CardTitle>Athlete Locker</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <LockerGate
+                athleteId={athlete.id}
+                athleteName={athlete.name}
+                onBuyClick={() => scrollToTrade('buy')}
+              >
+                <LockerView athleteId={athlete.id} athleteName={athlete.name} />
+              </LockerGate>
+            </CardContent>
+          </Card>
+
+          <ProofOfSweat
             workouts={athlete.workouts} 
             posts={athlete.posts || []}
             athleteId={athlete.id}
