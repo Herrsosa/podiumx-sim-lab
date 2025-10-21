@@ -27,7 +27,7 @@ export function useAthlete(slug: string) {
         .from('athlete_tokens')
         .select('athlete_id, supply, a, b, c, treasury_balance, athlete_earnings')
         .eq('athlete_id', profile.id)
-        .single();
+        .maybeSingle();
 
       if (tokenError) throw tokenError;
 
