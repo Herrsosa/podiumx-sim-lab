@@ -142,7 +142,7 @@ serve(async (req) => {
     // Get user wallet
     const { data: wallet, error: walletError } = await supabaseAdmin
       .from('wallets')
-      .select('id, user_id, balance')
+      .select('user_id, balance')
       .eq('user_id', user.id)
       .single();
 
@@ -191,7 +191,7 @@ serve(async (req) => {
       // Get user holdings
       const { data: holding, error: holdingError } = await supabaseAdmin
         .from('holdings')
-        .select('id, user_id, athlete_id, qty')
+        .select('user_id, athlete_id, qty')
         .eq('user_id', user.id)
         .eq('athlete_id', athleteId)
         .single();

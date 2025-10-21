@@ -3,6 +3,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useUser } from '@/store/auth';
+import { useAccessTier } from '@/hooks/useAccessTier';
 
 const LockerWorkouts = lazy(() => import('@/components/myathlete/LockerWorkouts'));
 const LockerResources = lazy(() => import('@/components/myathlete/LockerResources'));
@@ -18,6 +19,9 @@ export function LockerView({ athleteId, athleteName }: LockerViewProps) {
   const user = useUser();
   const effectiveAthleteId = athleteId || user?.id;
   const effectiveName = athleteName || 'Athlete';
+  const { data: accessData } = useAccessTier(effectiveAthleteId);
+  const isOwner = user?.id === effectiveAthleteId;
+  const viewerHoldings = isOwner ? Number.MAX_SAFE_INTEGER : accessData?.balance ?? 0;
 
   if (!effectiveAthleteId) {
     return (
@@ -45,7 +49,12 @@ export function LockerView({ athleteId, athleteName }: LockerViewProps) {
           }
         >
           <TabsContent value="workouts">
-            <LockerWorkouts />
+            <LockerWorkouts
+              athleteId={effectiveAthleteId}
+              athleteName={effectiveName}
+              isOwner={isOwner}
+              viewerHoldings={viewerHoldings}
+            />
           </TabsContent>
 
           <TabsContent value="resources">

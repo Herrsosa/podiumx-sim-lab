@@ -9,24 +9,49 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useWorkouts } from '@/hooks/useWorkouts';
 import AddWorkoutModal from '@/components/AddWorkoutModal';
 
-export default function LockerWorkouts() {
+interface LockerWorkoutsProps {
+  athleteId?: string;
+  athleteName?: string;
+  isOwner?: boolean;
+  viewerHoldings?: number;
+}
+
+export default function LockerWorkouts({
+  athleteId: lockerAthleteId,
+  athleteName: lockerAthleteName,
+  isOwner: isOwnerProp,
+  viewerHoldings = 0,
+}: LockerWorkoutsProps = {}) {
   const [searchParams, setSearchParams] = useSearchParams();
   const { data: athleteData, isLoading: athleteLoading } = useMyAthlete();
   const athlete = athleteData?.athlete;
   const queryClient = useQueryClient();
   const isAddWorkoutOpen = searchParams.get('add-workout') === 'true';
-  const workoutsQuery = useWorkouts(athlete?.id, { pageSize: 50 });
-  const isLoading = athleteLoading || workoutsQuery.isLoading;
+  const effectiveAthleteId = lockerAthleteId ?? athlete?.id;
+  const effectiveAthleteName = lockerAthleteName ?? athlete?.name ?? 'Athlete';
+  const canEdit = isOwnerProp ?? (!lockerAthleteId && Boolean(athlete?.id));
+  const workoutsQuery = useWorkouts(effectiveAthleteId, { pageSize: 50 });
+  const isLoading =
+    (!lockerAthleteId && athleteLoading) || workoutsQuery.isLoading;
+  const effectiveViewerHoldings = canEdit ? Number.MAX_SAFE_INTEGER : viewerHoldings;
+  const headerTitle = canEdit
+    ? 'My Workouts'
+    : `${effectiveAthleteName}'s Workouts`;
+  const headerDescription = canEdit
+    ? 'Manage your workout posts and set access levels'
+    : 'Catch the latest training sessions shared with supporters';
 
   const openAddWorkoutModal = useCallback(() => {
+    if (!canEdit) return;
     if (isAddWorkoutOpen) return;
     const nextParams = new URLSearchParams(searchParams);
     nextParams.set('add-workout', 'true');
     setSearchParams(nextParams);
-  }, [isAddWorkoutOpen, searchParams, setSearchParams]);
+  }, [canEdit, isAddWorkoutOpen, searchParams, setSearchParams]);
 
   const handleModalOpenChange = useCallback(
     (open: boolean) => {
+      if (!canEdit) return;
       const currentlyOpen = searchParams.get('add-workout') === 'true';
       if (open === currentlyOpen) return;
 
@@ -41,15 +66,16 @@ export default function LockerWorkouts() {
       nextParams.delete('add-workout');
       setSearchParams(nextParams, { replace: true });
     },
-    [searchParams, setSearchParams],
+    [canEdit, searchParams, setSearchParams],
   );
 
   const handleWorkoutSuccess = useCallback(async () => {
+    if (!canEdit) return;
     await Promise.all([
       queryClient.invalidateQueries({ queryKey: ['workouts'] }),
       queryClient.invalidateQueries({ queryKey: ['my-athlete'] }),
     ]);
-  }, [queryClient]);
+  }, [canEdit, queryClient]);
 
   if (isLoading) {
     return (
@@ -60,7 +86,7 @@ export default function LockerWorkouts() {
     );
   }
 
-  if (!athlete) {
+  if (!effectiveAthleteId) {
     return (
       <div className="p-6 text-muted-foreground">
         Unable to load athlete workouts.
@@ -76,7 +102,7 @@ export default function LockerWorkouts() {
   const posts = workoutItems.map((item) => ({
     id: item.id,
     created_at: item.createdAt,
-    author_id: athlete.id,
+    author_id: effectiveAthleteId,
     workout_json: item.workout,
     image_url: item.imageUrl,
     text: item.notes,
@@ -90,43 +116,49 @@ export default function LockerWorkouts() {
     <div className="space-y-6 p-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-semibold">My Workouts</h2>
+          <h2 className="text-xl font-semibold">{headerTitle}</h2>
           <p className="text-sm text-muted-foreground">
-            Manage your workout posts and set access levels
+            {headerDescription}
           </p>
         </div>
-        <Button onClick={openAddWorkoutModal}>
-          <Plus className="mr-2 h-4 w-4" />
-          Add Workout
-        </Button>
+        {canEdit && (
+          <Button onClick={openAddWorkoutModal}>
+            <Plus className="mr-2 h-4 w-4" />
+            Add Workout
+          </Button>
+        )}
       </div>
 
       {workouts.length === 0 ? (
         <div className="flex min-h-[300px] items-center justify-center rounded-lg border border-dashed">
           <div className="text-center">
             <p className="mb-4 text-muted-foreground">No workouts yet</p>
-            <Button onClick={openAddWorkoutModal}>
-              <Plus className="mr-2 h-4 w-4" />
-              Add Your First Workout
-            </Button>
+            {canEdit && (
+              <Button onClick={openAddWorkoutModal}>
+                <Plus className="mr-2 h-4 w-4" />
+                Add Your First Workout
+              </Button>
+            )}
           </div>
         </div>
       ) : (
         <ProofOfSweat
-          athleteId={athlete.id}
-          athleteName={athlete.name}
+          athleteId={effectiveAthleteId}
+          athleteName={effectiveAthleteName}
           posts={posts}
           workouts={workouts}
-          viewerHoldings={Number.MAX_SAFE_INTEGER}
+          viewerHoldings={effectiveViewerHoldings}
         />
       )}
 
-      <AddWorkoutModal
-        open={isAddWorkoutOpen}
-        onOpenChange={handleModalOpenChange}
-        athleteId={athlete.id}
-        onSuccess={handleWorkoutSuccess}
-      />
+      {canEdit && (
+        <AddWorkoutModal
+          open={isAddWorkoutOpen}
+          onOpenChange={handleModalOpenChange}
+          athleteId={effectiveAthleteId}
+          onSuccess={handleWorkoutSuccess}
+        />
+      )}
     </div>
   );
 }
