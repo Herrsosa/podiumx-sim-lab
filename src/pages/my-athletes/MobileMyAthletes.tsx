@@ -22,6 +22,8 @@ import { POS_NEON_COLOR, StackedCircles } from '@/components/charts/StackedCircl
 import type { TooltipProps } from 'recharts';
 import { MOBILE_TAB_KEYS } from './mobile-config';
 export { MOBILE_TAB_KEYS } from './mobile-config';
+import { ProfileDetailsCard } from '@/components/my-athlete/ProfileDetailsCard';
+import type { EditableProfile } from '@/pages/my-athletes/types';
 
 type ChartDatum = {
   t: number;
@@ -42,6 +44,14 @@ interface MobileMyAthletesProps {
   glowFilterId: string;
   trades?: Array<Record<string, unknown>>;
   onAddWorkout: () => void;
+  editedProfile: EditableProfile;
+  isEditingProfile: boolean;
+  onStartEditProfile: () => void;
+  onCancelEditProfile: () => void;
+  onSaveProfile: () => void;
+  onProfileFieldChange: (updates: Partial<EditableProfile>) => void;
+  onAvatarSelect: (file: File | null) => void;
+  savingProfile: boolean;
   isLoading?: boolean;
   hasNextPage?: boolean;
   fetchNextPage?: () => void;
@@ -72,6 +82,14 @@ export default function MobileMyAthletes({
   glowFilterId,
   trades = [],
   onAddWorkout,
+  editedProfile,
+  isEditingProfile,
+  onStartEditProfile,
+  onCancelEditProfile,
+  onSaveProfile,
+  onProfileFieldChange,
+  onAvatarSelect,
+  savingProfile,
   isLoading = false,
   hasNextPage = false,
   fetchNextPage,
@@ -105,25 +123,21 @@ export default function MobileMyAthletes({
 
     const sections = [
       {
-        title: 'About',
+        title: 'Profile',
         content: (
-          <div className="space-y-3 text-sm text-muted-foreground">
-            <p className="text-foreground">{athlete.bio || 'Add a short bio to introduce yourself.'}</p>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <p className="text-xs uppercase text-muted-foreground">Location</p>
-                <p className="text-foreground">{athlete.location || '—'}</p>
-              </div>
-              <div>
-                <p className="text-xs uppercase text-muted-foreground">Socials</p>
-                <div className="space-y-1">
-                  {athlete.socials.instagram && <p className="text-foreground">@{athlete.socials.instagram}</p>}
-                  {athlete.socials.strava && <p className="text-foreground">Strava linked</p>}
-                  {!athlete.socials.instagram && !athlete.socials.strava && <p>Connect your socials</p>}
-                </div>
-              </div>
-            </div>
-          </div>
+          <ProfileDetailsCard
+            variant="mobile"
+            className="shadow-none"
+            athlete={athlete}
+            editedProfile={editedProfile}
+            isEditing={isEditingProfile}
+            savingProfile={savingProfile}
+            onStartEdit={onStartEditProfile}
+            onCancelEdit={onCancelEditProfile}
+            onSave={onSaveProfile}
+            onFieldChange={onProfileFieldChange}
+            onAvatarSelect={onAvatarSelect}
+          />
         ),
       },
       {
@@ -167,7 +181,20 @@ export default function MobileMyAthletes({
     ];
 
     return sections;
-  }, [athlete, onAddWorkout, posts, workouts]);
+  }, [
+    athlete,
+    editedProfile,
+    isEditingProfile,
+    onStartEditProfile,
+    onCancelEditProfile,
+    onSaveProfile,
+    onProfileFieldChange,
+    onAvatarSelect,
+    savingProfile,
+    onAddWorkout,
+    posts,
+    workouts,
+  ]);
 
   if (!athlete) {
     return (

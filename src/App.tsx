@@ -8,6 +8,7 @@ import { useAppStore } from "@/store/useAppStore";
 import Navigation from "@/components/Navigation";
 import Landing from "./pages/Landing";
 import Auth from "./pages/Auth";
+import AuthCallback from "./pages/AuthCallback";
 import NotFound from "./pages/NotFound";
 import StravaCallback from "./pages/StravaCallback";
 import StravaLinkedResult from "./pages/StravaLinkedResult";
@@ -23,7 +24,7 @@ const Onboarding = lazy(() => import("./pages/Onboarding"));
 const AthleteDetail = lazy(() => import("./pages/AthleteDetail"));
 const Portfolio = lazy(() => import("./pages/Portfolio"));
 const Marketplace = lazy(() => import("./pages/Marketplace"));
-const MyAthleteOverview = lazy(() => import("./pages/MyAthlete/Overview"));
+const MyAthletePage = lazy(() => import("./pages/MyAthletePage"));
 const MyAthleteLocker = lazy(() => import("./pages/MyAthlete/Locker"));
 
 interface RouteGuardProps {
@@ -77,6 +78,7 @@ function AppContent() {
     <Routes>
       <Route path="/" element={<Landing />} />
       <Route path="/auth" element={<Auth />} />
+      <Route path="/auth/callback" element={<AuthCallback />} />
       <Route path="/onboarding" element={
         <RouteGuard requireAuth>
           <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Loading...</div>}>
@@ -113,7 +115,7 @@ function AppContent() {
         <RouteGuard requireAuth>
           <Navigation />
           <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Loading...</div>}>
-            <MyAthleteOverview />
+            <MyAthletePage />
           </Suspense>
         </RouteGuard>
       } />
