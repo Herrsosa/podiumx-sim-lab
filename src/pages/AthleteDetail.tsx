@@ -57,6 +57,11 @@ export default function AthleteDetail() {
     enabled: Boolean(athlete?.id),
   });
   const tradeMutation = useTrade();
+  const [initialLoadComplete, setInitialLoadComplete] = useState(false);
+  useEffect(() => {
+    setInitialLoadComplete(false);
+  }, [slug]);
+
 
   const position = useMemo(() => {
     if (!athlete?.id || !wallet) return null;
@@ -225,6 +230,7 @@ export default function AthleteDetail() {
     // Possible spot for optimistic updates if we wire in a client-side store
     await tradeMutation.mutateAsync({
       athleteId: athlete.id,
+      athleteSlug: athlete.slug,
       quantity,
       side: tradeType === 'buy' ? 'BUY' : 'SELL',
     });
@@ -258,13 +264,16 @@ export default function AthleteDetail() {
   }, []);
 
   useEffect(() => {
-    if (!isBootstrapping) {
+    if (!isBootstrapping && !initialLoadComplete) {
       window.scrollTo({ top: 0, behavior: 'auto' });
+      setInitialLoadComplete(true);
     }
-  }, [isBootstrapping]);
+  }, [initialLoadComplete, isBootstrapping]);
+
+  const showInitialSkeleton = !initialLoadComplete && isBootstrapping;
 
   // Now check loading and not found states
-  if (isBootstrapping) {
+  if (showInitialSkeleton) {
     return <AthleteDetailSkeleton />;
   }
 
@@ -697,6 +706,7 @@ export default function AthleteDetail() {
             onUnlock={async () => {
               await tradeMutation.mutateAsync({
                 athleteId: athlete.id,
+                athleteSlug: athlete.slug,
                 quantity: 1,
                 side: 'BUY',
               });
@@ -720,10 +730,11 @@ export default function AthleteDetail() {
               athleteId={athlete.id}
               userHoldings={userHoldings}
               posts={athlete.posts || []}
-              isLoading={isBootstrapping}
+              isLoading={showInitialSkeleton}
               onUnlockClick={async () => {
                 await tradeMutation.mutateAsync({
                   athleteId: athlete.id,
+                  athleteSlug: athlete.slug,
                   quantity: 1,
                   side: 'BUY',
                 });
@@ -740,6 +751,7 @@ export default function AthleteDetail() {
               onBuyClick={async () => {
                 await tradeMutation.mutateAsync({
                   athleteId: athlete.id,
+                  athleteSlug: athlete.slug,
                   quantity: 1,
                   side: 'BUY',
                 });

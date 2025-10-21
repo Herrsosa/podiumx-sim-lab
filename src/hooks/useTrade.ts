@@ -5,6 +5,13 @@ import { walletService } from '@/services/wallet';
 import { useAuthStore, useUser } from '@/store/auth';
 import { logger } from '@/lib/logger';
 
+type TradeParams = {
+  athleteId: string;
+  athleteSlug?: string;
+  quantity: number;
+  side: 'BUY' | 'SELL';
+};
+
 export function useTrade() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -12,11 +19,7 @@ export function useTrade() {
   const refreshWallet = useAuthStore((state) => state.refreshWallet);
 
   return useMutation({
-    mutationFn: async ({ athleteId, quantity, side }: { 
-      athleteId: string; 
-      quantity: number; 
-      side: 'BUY' | 'SELL' 
-    }) => {
+    mutationFn: async ({ athleteId, athleteSlug, quantity, side }: TradeParams) => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) throw new Error('Not authenticated. Please sign in to trade.');
 
@@ -33,17 +36,23 @@ export function useTrade() {
         throw new Error(error.message || 'Trade execution failed');
       }
 
-      logger.info('Trade successful', { athleteId, quantity, side });
+      logger.info('Trade successful', { athleteId, athleteSlug, quantity, side });
       return data;
     },
     onSuccess: async (data, variables) => {
-      // Wait for all invalidations to complete
+      const { athleteId, athleteSlug } = variables;
+
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ['athletes'] }),
         queryClient.invalidateQueries({ queryKey: ['trades'] }),
         queryClient.invalidateQueries({ queryKey: ['user-trades'] }),
+        queryClient.invalidateQueries({ queryKey: ['access-tier', athleteId] }),
         refreshWallet(user?.id),
       ]);
+
+      if (athleteSlug) {
+        await queryClient.invalidateQueries({ queryKey: ['athlete', athleteSlug] });
+      }
 
       // Show success toast with fill price
       const fillPrice = data?.newPrice || 0;
