@@ -34,10 +34,12 @@ export function useAthlete(slug: string) {
 
       if (postsError) throw postsError;
 
-      const typedPosts: Post[] = (posts ?? []).map((post: any) => ({
+      const rawPosts: PostRow[] = (posts ?? []) as PostRow[];
+
+      const typedPosts: Post[] = rawPosts.map((post) => ({
         id: post.id,
         created_at: post.created_at,
-        workout_json: post.workout_json as Workout | Record<string, unknown> | null,
+        workout_json: (post.workout_json as Workout | Record<string, unknown> | null) ?? null,
         image_url: post.image_url,
         text: post.text,
         token_gated: Boolean(post.token_gated),

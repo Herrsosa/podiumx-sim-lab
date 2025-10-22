@@ -1,6 +1,15 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import type { Database } from '@/integrations/supabase/types';
+
+type TradeRow = Database['public']['Tables']['trades']['Row'];
+
+export type AthleteTrade = TradeRow & {
+  timestamp: number;
+  athleteName: string;
+  userName: string;
+};
 
 export function useAthleteTrades(athleteId: string) {
   return useQuery({
@@ -17,7 +26,9 @@ export function useAthleteTrades(athleteId: string) {
 
       if (error) throw error;
 
-      return data.map(trade => ({
+      const rows: TradeRow[] = (data ?? []) as TradeRow[];
+
+      return rows.map<AthleteTrade>((trade) => ({
         ...trade,
         timestamp: new Date(trade.created_at).getTime(),
         athleteName: '', // This can be enriched if needed

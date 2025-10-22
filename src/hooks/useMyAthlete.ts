@@ -12,6 +12,11 @@ type ProfileRow = Database['public']['Tables']['profiles']['Row'];
 type TokenRow = Database['public']['Tables']['athlete_tokens']['Row'];
 type PostRow = Database['public']['Tables']['posts']['Row'];
 
+type ProfileSummary = Pick<
+  ProfileRow,
+  'id' | 'username' | 'display_name' | 'sport' | 'avatar_url' | 'bio' | 'instagram_url' | 'strava_url' | 'created_at'
+>;
+
 type MyAthletePageResult = {
   athlete: Athlete;
   nextPage?: number;
@@ -43,6 +48,9 @@ export function useMyAthlete() {
         .single();
 
       if (profileError) throw profileError;
+      if (!profile) return null;
+
+      const profileData = profile as ProfileSummary;
 
       const { data: tokens, error: tokenError } = await supabase
         .from('athlete_tokens')
@@ -50,8 +58,8 @@ export function useMyAthlete() {
         .eq('athlete_id', user.id);
 
       if (tokenError) throw tokenError;
-
-      const token: any = tokens?.[0];
+      const tokenRows = (tokens ?? []) as TokenRow[];
+      const token = tokenRows[0];
 
       const { data: rawPosts, error: postsError } = await supabase
         .from('posts')
@@ -71,17 +79,19 @@ export function useMyAthlete() {
       const marketCap = price * supply;
 
       // Convert posts to typed objects and workouts format
-      const posts: Post[] = (rawPosts || []).map((p: any) => ({
-        id: p.id,
-        created_at: p.created_at,
-        workout_json: p.workout_json as Workout | Record<string, unknown> | null,
-        image_url: p.image_url,
-        text: p.text,
-        token_gated: Boolean(p.token_gated),
-        strava_activity_id: p.strava_activity_id,
-        author_id: p.author_id,
-        visibility: (p.visibility as Post['visibility']) ?? 'public',
-        min_tokens_required: p.min_tokens_required ?? 0,
+      const postRows: PostRow[] = (rawPosts ?? []) as PostRow[];
+
+      const posts: Post[] = postRows.map((post) => ({
+        id: post.id,
+        created_at: post.created_at,
+        workout_json: (post.workout_json as Workout | Record<string, unknown> | null) ?? null,
+        image_url: post.image_url,
+        text: post.text,
+        token_gated: Boolean(post.token_gated),
+        strava_activity_id: post.strava_activity_id,
+        author_id: post.author_id,
+        visibility: (post.visibility as Post['visibility']) ?? 'public',
+        min_tokens_required: post.min_tokens_required ?? 0,
       }));
 
       const workouts: Workout[] = posts
@@ -105,19 +115,19 @@ export function useMyAthlete() {
           } as Workout;
         });
 
-      const avatarSource = athleteAvatars[(profile as any).username] ?? (profile as any).avatar_url;
+      const avatarSource = athleteAvatars[profileData.username] ?? profileData.avatar_url;
 
       const athlete: Athlete = {
-        id: (profile as any).id,
-        slug: (profile as any).username,
-        name: (profile as any).display_name || (profile as any).username,
-        sport: ((profile as any).sport || 'Other') as Sport,
+        id: profileData.id,
+        slug: profileData.username,
+        name: profileData.display_name || profileData.username,
+        sport: (profileData.sport || 'Other') as Sport,
         avatar: resolveAvatarUrl(avatarSource, { size: 192 }),
-        bio: (profile as any).bio || '',
+        bio: profileData.bio || '',
         location: '',
         socials: {
-          instagram: (profile as any).instagram_url || undefined,
-          strava: (profile as any).strava_url || undefined,
+          instagram: profileData.instagram_url || undefined,
+          strava: profileData.strava_url || undefined,
         },
         supply,
         reserve: token?.treasury_balance || 0,

@@ -18,7 +18,7 @@ import TokengatedChat from '@/components/TokengatedChat';
 import WorkoutPosts from '@/components/WorkoutPosts';
 import AddWorkoutModal from '@/components/AddWorkoutModal';
 import { LockerGate } from '@/components/myathlete/LockerGate';
-import { LockerView } from '@/pages/MyAthlete/LockerView';
+import { LockerView, type LockerTab } from '@/pages/MyAthlete/LockerView';
 import { useQueryClient } from '@tanstack/react-query';
 import AthleteDetailSkeleton from '@/components/skeletons/AthleteDetailSkeleton';
 import { ChartSkeleton } from '@/components/ui/skeletons';
@@ -48,6 +48,7 @@ export default function AthleteDetail() {
   const [showAddWorkout, setShowAddWorkout] = useState(false);
   const [timeRange, setTimeRange] = useState<TimeRange>('24h');
   const [activeTab, setActiveTab] = useState<'overview' | 'locker'>('overview');
+  const [lockerInitialTab, setLockerInitialTab] = useState<LockerTab>('workouts');
   const timeRanges: TimeRange[] = ['24h', '7d', '30d', 'all'];
   const tradeSectionRef = useRef<HTMLDivElement | null>(null);
   const chatSectionRef = useRef<HTMLDivElement | null>(null);
@@ -259,10 +260,22 @@ export default function AthleteDetail() {
   );
 
   const scrollToChat = useCallback(() => {
+    if (!isOwnProfile) {
+      setLockerInitialTab('messages');
+      setActiveTab('locker');
+      return;
+    }
+
     setTimeout(() => {
       chatSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }, 0);
-  }, []);
+  }, [isOwnProfile, setActiveTab, setLockerInitialTab]);
+
+  useEffect(() => {
+    if (activeTab === 'overview') {
+      setLockerInitialTab('workouts');
+    }
+  }, [activeTab]);
 
   useEffect(() => {
     if (!isBootstrapping && !initialLoadComplete) {
@@ -709,49 +722,51 @@ export default function AthleteDetail() {
                   onConnectStrava={isOwnProfile ? () => navigate('/my-athlete') : undefined}
                 />
                 
-                {/* Workout Posts Section */}
-                <div>
-                  <div className="flex items-center justify-between mb-4">
-                    <h2 className="text-2xl font-bold">Training Feed</h2>
-                    {isOwnProfile && (
-                      <Button onClick={() => setShowAddWorkout(true)} size="sm" className="gap-2">
-                        <Edit className="h-4 w-4" />
-                        Add Workout
-                      </Button>
-                    )}
-                  </div>
-                  <WorkoutPosts
-                    athleteId={athlete.id}
-                    userHoldings={userHoldings}
-                    posts={athlete.posts || []}
-                    isLoading={showInitialSkeleton}
-                    onUnlockClick={async () => {
-                      await tradeMutation.mutateAsync({
-                        athleteId: athlete.id,
-                        athleteSlug: athlete.slug,
-                        quantity: 1,
-                        side: 'BUY',
-                      });
-                    }}
-                    onConnectStrava={isOwnProfile ? () => navigate('/my-athlete') : undefined}
-                  />
-                </div>
+                {isOwnProfile && (
+                  <>
+                    {/* Workout Posts Section */}
+                    <div>
+                      <div className="flex items-center justify-between mb-4">
+                        <h2 className="text-2xl font-bold">Training Feed</h2>
+                        <Button onClick={() => setShowAddWorkout(true)} size="sm" className="gap-2">
+                          <Edit className="h-4 w-4" />
+                          Add Workout
+                        </Button>
+                      </div>
+                      <WorkoutPosts
+                        athleteId={athlete.id}
+                        userHoldings={userHoldings}
+                        posts={athlete.posts || []}
+                        isLoading={showInitialSkeleton}
+                        onUnlockClick={async () => {
+                          await tradeMutation.mutateAsync({
+                            athleteId: athlete.id,
+                            athleteSlug: athlete.slug,
+                            quantity: 1,
+                            side: 'BUY',
+                          });
+                        }}
+                        onConnectStrava={() => navigate('/my-athlete')}
+                      />
+                    </div>
 
-                <div ref={chatSectionRef}>
-                  <TokengatedChat
-                    athleteId={athlete.id}
-                    athleteName={athlete.name}
-                    userHoldings={userHoldings}
-                    onBuyClick={async () => {
-                      await tradeMutation.mutateAsync({
-                        athleteId: athlete.id,
-                        athleteSlug: athlete.slug,
-                        quantity: 1,
-                        side: 'BUY',
-                      });
-                    }}
-                  />
-                </div>
+                    <div ref={chatSectionRef}>
+                      <TokengatedChat
+                        athleteId={athlete.id}
+                        athleteName={athlete.name}
+                        userHoldings={userHoldings}
+                        onBuyClick={async () => {
+                          await tradeMutation.mutateAsync({
+                            athleteId: athlete.id,
+                            athleteSlug: athlete.slug,
+                            quantity: 1,
+                            side: 'BUY',
+                          });
+                        }}
+                      />
+                    </div>
+                  </>
+                )}
               </div>
             </div>
           </TabsContent>
@@ -770,6 +785,7 @@ export default function AthleteDetail() {
                 athleteId={athlete.id} 
                 athleteName={athlete.name}
                 athleteSlug={athlete.slug}
+                initialTab={lockerInitialTab}
               />
             </LockerGate>
           </TabsContent>

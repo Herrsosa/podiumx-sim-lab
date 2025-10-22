@@ -26,6 +26,15 @@ export const RANGE_WINDOWS: Record<Exclude<TimeRange, 'all'>, number> = {
 
 const MAX_POINTS = 240;
 
+type PriceRow = Database['public']['Tables']['athlete_prices']['Row'];
+
+type RealtimePricePayload = Partial<PriceRow> & {
+  updated_at?: string | null;
+  updatedAt?: string | null;
+  reserve?: number | null;
+  athleteRevenue?: number | null;
+};
+
 export const trimToWindow = (points: TradePoint[], range: TimeRange) => {
   if (range === 'all') return points;
   const hours = RANGE_WINDOWS[range];
@@ -119,7 +128,7 @@ export function useAthleteTradeHistory(athleteId: string | undefined, range: Tim
           filter: `athlete_id=eq.${athleteId}`,
         },
         (payload) => {
-          const snapshot = payload.new as any;
+          const snapshot = payload.new as RealtimePricePayload | null;
 
           if (!snapshot) return;
 
@@ -131,7 +140,7 @@ export function useAthleteTradeHistory(athleteId: string | undefined, range: Tim
 
           const previous = queryClient.getQueryData<AthletePriceSnapshot | null>(['athlete-price', athleteId]);
           const curve =
-            'curve_a' in snapshot
+            snapshot.curve_a !== undefined || snapshot.curve_b !== undefined || snapshot.curve_c !== undefined
               ? {
                   a: Number(snapshot.curve_a ?? previous?.curve.a ?? 0.0002),
                   b: Number(snapshot.curve_b ?? previous?.curve.b ?? 0.02),
@@ -141,14 +150,10 @@ export function useAthleteTradeHistory(athleteId: string | undefined, range: Tim
 
           const formatted: AthletePriceSnapshot = {
             athleteId: snapshot.athlete_id ?? athleteId,
-            price: Number(snapshot.price ?? 0),
-            supply: Number(snapshot.supply ?? 0),
-            reserve: Number(
-              snapshot.reserve ?? snapshot.treasury_balance ?? 0,
-            ),
-            athleteRevenue: Number(
-              snapshot.athleteRevenue ?? snapshot.athlete_earnings ?? 0,
-            ),
+            price: Number(snapshot.price ?? previous?.price ?? 0),
+            supply: Number(snapshot.supply ?? previous?.supply ?? 0),
+            reserve: Number(snapshot.reserve ?? snapshot.treasury_balance ?? previous?.reserve ?? 0),
+            athleteRevenue: Number(snapshot.athleteRevenue ?? snapshot.athlete_earnings ?? previous?.athleteRevenue ?? 0),
             updatedAt,
             curve,
           };

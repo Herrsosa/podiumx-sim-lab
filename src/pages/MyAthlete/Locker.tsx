@@ -112,7 +112,7 @@ export default function Locker() {
             </TabsContent>
 
             <TabsContent value="messages">
-              <LockerMessages athleteId={athlete.id} />
+              <LockerMessages athleteId={athlete.id} athleteName={athlete.name} />
             </TabsContent>
           </Suspense>
         </Tabs>

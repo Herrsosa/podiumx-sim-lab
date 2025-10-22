@@ -1,4 +1,4 @@
-import { lazy, Suspense } from 'react';
+import { lazy, Suspense, useEffect, useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -10,13 +10,16 @@ const LockerResources = lazy(() => import('@/components/myathlete/LockerResource
 const LockerChat = lazy(() => import('@/components/myathlete/LockerChat'));
 const LockerMessages = lazy(() => import('@/components/myathlete/LockerMessages'));
 
+export type LockerTab = 'workouts' | 'resources' | 'chat' | 'messages';
+
 interface LockerViewProps {
   athleteId?: string;
   athleteName?: string;
   athleteSlug?: string;
+  initialTab?: LockerTab;
 }
 
-export function LockerView({ athleteId, athleteName, athleteSlug }: LockerViewProps) {
+export function LockerView({ athleteId, athleteName, athleteSlug, initialTab }: LockerViewProps) {
   const user = useUser();
   const effectiveAthleteId = athleteId || user?.id;
   const effectiveName = athleteName || 'Athlete';
@@ -24,6 +27,11 @@ export function LockerView({ athleteId, athleteName, athleteSlug }: LockerViewPr
   const { data: accessData } = useAccessTier(effectiveAthleteId);
   const isOwner = user?.id === effectiveAthleteId;
   const viewerHoldings = isOwner ? Number.MAX_SAFE_INTEGER : accessData?.balance ?? 0;
+  const [activeTab, setActiveTab] = useState<LockerTab>(initialTab ?? 'workouts');
+
+  useEffect(() => {
+    setActiveTab(initialTab ?? 'workouts');
+  }, [initialTab]);
 
   if (!effectiveAthleteId) {
     return (
@@ -35,7 +43,16 @@ export function LockerView({ athleteId, athleteName, athleteSlug }: LockerViewPr
 
   return (
     <Card className="glass-card">
-      <Tabs defaultValue="workouts" className="w-full">
+      <Tabs
+        value={activeTab}
+        onValueChange={(value) => {
+          const tab = ['workouts', 'resources', 'chat', 'messages'].includes(value as LockerTab)
+            ? (value as LockerTab)
+            : 'workouts';
+          setActiveTab(tab);
+        }}
+        className="w-full"
+      >
         <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="workouts">Workouts</TabsTrigger>
           <TabsTrigger value="resources">Resources</TabsTrigger>
@@ -72,7 +89,7 @@ export function LockerView({ athleteId, athleteName, athleteSlug }: LockerViewPr
           </TabsContent>
 
           <TabsContent value="messages">
-            <LockerMessages athleteId={effectiveAthleteId} />
+            <LockerMessages athleteId={effectiveAthleteId} athleteName={effectiveName} />
           </TabsContent>
         </Suspense>
       </Tabs>

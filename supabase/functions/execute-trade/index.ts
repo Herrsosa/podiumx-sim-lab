@@ -20,6 +20,16 @@ interface Curve {
   c: number;
 }
 
+interface PositionSnapshot {
+  athleteId: string;
+  athleteName: string;
+  quantity: number;
+  avgCost: number;
+  currentPrice: number;
+  pnl: number;
+  pnlPercent: number;
+}
+
 const priceAt = (supply: number, curve: Curve) => curve.a * supply * supply + curve.b * supply + curve.c;
 
 const lockerTierFromBalance = (balance: number) => {
@@ -62,7 +72,7 @@ async function buildSnapshot(supabaseAdmin: ReturnType<typeof createClient>, use
     (tokenRows ?? []).map((token) => [token.athlete_id, token])
   );
 
-  const positions: Record<string, any> = {};
+  const positions: Record<string, PositionSnapshot> = {};
 
   (holdingsRows ?? []).forEach((row) => {
     const token = tokenMap.get(row.athlete_id);

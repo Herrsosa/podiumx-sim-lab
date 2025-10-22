@@ -6,7 +6,7 @@ import { EarningsSection } from '@/components/EarningsSection';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Workout, Post } from '@/types';
+import { Athlete, Workout, Post } from '@/types';
 import { toast } from 'sonner';
 import { useUser } from '@/store/auth';
 import { StackedCircles, POS_NEON_COLOR } from '@/components/charts/StackedCircles';
@@ -31,13 +31,20 @@ import { StravaCard } from '@/components/strava/StravaCard';
 import ConnectXButton from '@/components/social/ConnectXButton';
 import { useXIdentity } from '@/hooks/useXIdentity';
 import XBadge from '@/components/social/XBadge';
+import type { AthleteTrade } from '@/hooks/useAthleteTrades';
+
+interface PriceHistoryPoint {
+  t: number;
+  price: number;
+  posCount?: number;
+}
 
 interface PersonalConsoleProps {
-  athlete: any;
+  athlete?: Athlete;
   workouts: Workout[];
   posts: Post[];
-  athleteTrades: any[];
-  priceHistory: any[];
+  athleteTrades: AthleteTrade[];
+  priceHistory: PriceHistoryPoint[];
   editedProfile: EditableProfile;
   isEditing: boolean;
   savingProfile: boolean;

@@ -41,11 +41,10 @@ export function useChat(athleteId: string | undefined) {
 
       if (error) throw error;
 
-      const senderIds = Array.from(
-        new Set((messageRows ?? []).map((row: any) => row.sender_id).filter(Boolean)),
-      ) as string[];
+      const rows: ChatMessageRow[] = (messageRows ?? []) as ChatMessageRow[];
+      const senderIds = Array.from(new Set(rows.map((row) => row.sender_id).filter(Boolean))) as string[];
 
-      let profileRows: any[] = [];
+      let profileRows: ProfileRow[] = [];
       if (senderIds.length > 0) {
         const { data, error: profileError } = await supabase
           .from('profiles')
@@ -53,12 +52,12 @@ export function useChat(athleteId: string | undefined) {
           .in('id', senderIds);
 
         if (profileError) throw profileError;
-        profileRows = data ?? [];
+        profileRows = (data ?? []) as ProfileRow[];
       }
 
-      const profilesById = new Map(profileRows.map((profile: any) => [profile.id, profile]));
+      const profilesById = new Map(profileRows.map((profile) => [profile.id, profile]));
 
-      return (messageRows ?? []).map<ChatMessage>((row: any) => ({
+      return rows.map<ChatMessage>((row) => ({
         id: row.id,
         athleteId: row.athlete_id,
         senderId: row.sender_id,

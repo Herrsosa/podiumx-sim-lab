@@ -21,7 +21,6 @@ import { ResponsiveContainer, ComposedChart, Line, Bar, XAxis, YAxis, Tooltip as
 import { POS_NEON_COLOR, StackedCircles } from '@/components/charts/StackedCircles';
 import type { TooltipProps } from 'recharts';
 import { MOBILE_TAB_KEYS } from './mobile-config';
-export { MOBILE_TAB_KEYS } from './mobile-config';
 import { ProfileDetailsCard } from '@/components/my-athlete/ProfileDetailsCard';
 import type { EditableProfile } from '@/pages/my-athletes/types';
 import ConnectXButton from '@/components/social/ConnectXButton';
@@ -225,6 +224,7 @@ export default function MobileMyAthletes({
     return sections;
   }, [
     athlete,
+    consoleTab,
     editedProfile,
     isEditingProfile,
     onStartEditProfile,
@@ -236,6 +236,7 @@ export default function MobileMyAthletes({
     onAddWorkout,
     posts,
     workouts,
+    xIdentity,
   ]);
 
   if (!athlete) {

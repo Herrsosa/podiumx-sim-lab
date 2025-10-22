@@ -48,10 +48,12 @@ export function useAthletesByIds(athleteIds: string[]) {
 
       if (postsError) throw postsError;
 
-      const typedPosts: Post[] = (posts ?? []).map((post: any) => ({
+      const postRows: PostRow[] = (posts ?? []) as PostRow[];
+
+      const typedPosts: Post[] = postRows.map((post) => ({
         id: post.id,
         created_at: post.created_at,
-        workout_json: post.workout_json as Workout | Record<string, unknown> | null,
+        workout_json: (post.workout_json as Workout | Record<string, unknown> | null) ?? null,
         image_url: post.image_url,
         text: post.text,
         token_gated: Boolean(post.token_gated),
@@ -61,9 +63,12 @@ export function useAthletesByIds(athleteIds: string[]) {
         min_tokens_required: post.min_tokens_required || 0,
       }));
 
+      const profileRows: ProfileRow[] = (profiles ?? []) as ProfileRow[];
+      const tokenRows: TokenRow[] = (tokens ?? []) as TokenRow[];
+
       // Combine profile + token data
-      const athletes: Athlete[] = (profiles ?? []).map((profile: any) => {
-        const token = (tokens ?? []).find((t: any) => t.athlete_id === profile.id);
+      const athletes: Athlete[] = profileRows.map((profile) => {
+        const token = tokenRows.find((row) => row.athlete_id === profile.id);
         const athletePosts = typedPosts.filter((p) => p.author_id === profile.id);
 
         // Calculate current price from bonding curve
@@ -76,10 +81,10 @@ export function useAthletesByIds(athleteIds: string[]) {
 
         // Convert posts to workouts format
         const workouts = athletePosts
-          .filter((p) => p.workout_json)
-          .map((p) => ({
-            id: p.id,
-            ...(p.workout_json as unknown as Workout),
+          .filter((post) => post.workout_json && typeof post.workout_json === 'object' && !Array.isArray(post.workout_json))
+          .map((post) => ({
+            id: post.id,
+            ...(post.workout_json as Workout),
           }));
 
         const avatarSource = athleteAvatars[profile.username] ?? profile.avatar_url;
