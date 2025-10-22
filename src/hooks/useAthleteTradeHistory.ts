@@ -119,17 +119,13 @@ export function useAthleteTradeHistory(athleteId: string | undefined, range: Tim
           filter: `athlete_id=eq.${athleteId}`,
         },
         (payload) => {
-          const snapshot = payload.new as AthletePriceSnapshot & {
-            athlete_id?: string;
-            treasury_balance?: number;
-            athlete_earnings?: number;
-          };
+          const snapshot = payload.new as any;
 
           if (!snapshot) return;
 
           const updatedAt =
-            (snapshot as { updated_at?: string }).updated_at ??
-            (snapshot as { updatedAt?: string }).updatedAt ??
+            snapshot.updated_at ??
+            snapshot.updatedAt ??
             snapshot.created_at ??
             null;
 
@@ -137,9 +133,9 @@ export function useAthleteTradeHistory(athleteId: string | undefined, range: Tim
           const curve =
             'curve_a' in snapshot
               ? {
-                  a: Number((snapshot as any).curve_a ?? previous?.curve.a ?? 0.0002),
-                  b: Number((snapshot as any).curve_b ?? previous?.curve.b ?? 0.02),
-                  c: Number((snapshot as any).curve_c ?? previous?.curve.c ?? 1),
+                  a: Number(snapshot.curve_a ?? previous?.curve.a ?? 0.0002),
+                  b: Number(snapshot.curve_b ?? previous?.curve.b ?? 0.02),
+                  c: Number(snapshot.curve_c ?? previous?.curve.c ?? 1),
                 }
               : previous?.curve ?? { a: 0.0002, b: 0.02, c: 1 };
 
@@ -148,12 +144,10 @@ export function useAthleteTradeHistory(athleteId: string | undefined, range: Tim
             price: Number(snapshot.price ?? 0),
             supply: Number(snapshot.supply ?? 0),
             reserve: Number(
-              'reserve' in snapshot ? (snapshot as any).reserve : snapshot.treasury_balance ?? 0,
+              snapshot.reserve ?? snapshot.treasury_balance ?? 0,
             ),
             athleteRevenue: Number(
-              'athleteRevenue' in snapshot
-                ? (snapshot as any).athleteRevenue
-                : snapshot.athlete_earnings ?? 0,
+              snapshot.athleteRevenue ?? snapshot.athlete_earnings ?? 0,
             ),
             updatedAt,
             curve,

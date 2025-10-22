@@ -75,7 +75,7 @@ export function useAthletePrice(athleteId: string | undefined) {
 
       const { data: token, error } = await supabase
         .from('athlete_tokens')
-        .select('athlete_id, supply, a, b, c, treasury_balance, athlete_earnings, updated_at')
+        .select('athlete_id, supply, a, b, c, treasury_balance, athlete_earnings, created_at')
         .eq('athlete_id', athleteId)
         .maybeSingle();
 
@@ -106,7 +106,7 @@ export function useAthletePrice(athleteId: string | undefined) {
           b: token.b ?? 0.02,
           c: token.c ?? 1,
         },
-        updatedAt: token.updated_at ?? null,
+        updatedAt: token.created_at ?? null,
       };
 
       queryClient.setQueryData(['athlete-price', athleteId], snapshot);

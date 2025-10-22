@@ -118,8 +118,8 @@ export function useTrade() {
     onSuccess: (payload, variables, context) => {
       logger.info('Trade successful', { ...variables, tradeId: payload?.tradeId });
 
-      if (context) {
-        reconcileTradeSuccess(queryClient, context, payload ?? {});
+      if (context && payload) {
+        reconcileTradeSuccess(queryClient, context, payload);
       }
 
       const fillPrice = payload?.athletePrice?.price ?? payload?.priceTick?.price ?? 0;
