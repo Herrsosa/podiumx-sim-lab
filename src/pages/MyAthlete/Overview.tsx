@@ -9,6 +9,8 @@ import { formatNumber } from '@/lib/format';
 import { StravaCard } from '@/components/strava/StravaCard';
 import ProofOfSweat from '@/components/ProofOfSweat';
 import { OverviewPriceChart } from '@/components/myathlete/OverviewPriceChart';
+import { OptimizedImage } from '@/components/OptimizedImage';
+import { getAvatarAsset, resolveAvatarUrl } from '@/utils/avatar';
 
 export default function Overview() {
   const { data: athleteData, isLoading } = useMyAthlete();
@@ -42,9 +44,13 @@ export default function Overview() {
       <Card className="glass-card">
         <CardContent className="pt-6">
           <div className="flex flex-col items-start gap-6 md:flex-row md:items-center">
-            <img
-              src={athlete.avatar}
+            <OptimizedImage
+              src={resolveAvatarUrl(athlete.avatar, { size: 256 })}
+              webpSrc={getAvatarAsset(athlete.avatar)?.webp}
               alt={athlete.name}
+              width={256}
+              height={256}
+              eager
               className="h-24 w-24 rounded-full object-cover ring-2 ring-primary/20 md:h-32 md:w-32"
             />
             <div className="flex-1">

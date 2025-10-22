@@ -1,3 +1,5 @@
+import { athleteAvatarAssetBySrc, type AvatarAsset } from '@/utils/athleteAvatars';
+
 const DEFAULT_AVATAR = '/placeholder.svg';
 
 function getSupabaseStorageRoot(): string | null {
@@ -56,6 +58,11 @@ export function resolveImageUrl(raw?: string | null, options?: ImageTransformOpt
 export function resolveAvatarUrl(raw?: string | null, options?: { size?: number }): string {
   const size = options?.size ?? 64;
   return resolveImageUrl(raw, { width: size, height: size, resize: 'cover', quality: 80 });
+}
+
+export function getAvatarAsset(raw?: string | null): AvatarAsset | undefined {
+  if (!raw) return undefined;
+  return athleteAvatarAssetBySrc[raw] ?? undefined;
 }
 
 function appendTransformParams(url: string, options?: ImageTransformOptions): string {

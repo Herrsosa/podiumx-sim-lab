@@ -5,8 +5,9 @@ import { Card, CardContent } from "@/components/ui/card";
 import type { Athlete } from "@/types";
 import type { MarketplaceChartPoint } from "@/hooks/useMarketplaceCharts";
 import { formatMoney, formatNumber } from "@/lib/format";
-import { resolveAvatarUrl } from "@/utils/avatar";
+import { getAvatarAsset, resolveAvatarUrl } from "@/utils/avatar";
 import { Link } from "react-router-dom";
+import { OptimizedImage } from "@/components/OptimizedImage";
 
 interface AthleteCardNewProps {
   athlete: Athlete;
@@ -79,12 +80,12 @@ export const AthleteCardNew = memo(({ athlete, chartData }: AthleteCardNewProps)
       <Card className="group relative overflow-hidden border-border/40 bg-card/60 backdrop-blur-sm hover:border-primary/40 hover:bg-card/80 transition-all duration-300 hover:scale-[1.02] cursor-pointer">
         <CardContent className="p-0">
           <div className="relative h-40 overflow-hidden">
-            <img
+            <OptimizedImage
               src={resolveAvatarUrl(athlete.avatar, { size: 320 })}
+              webpSrc={getAvatarAsset(athlete.avatar)?.webp}
               alt={athlete.name}
               width={320}
-              height={240}
-              loading="lazy"
+              height={320}
               className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-card via-card/60 to-transparent" />

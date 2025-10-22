@@ -10,9 +10,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { cn } from '@/lib/utils';
 import ConnectXButton from '@/components/social/ConnectXButton';
 import XBadge from '@/components/social/XBadge';
-import { resolveAvatarUrl } from '@/utils/avatar';
+import { getAvatarAsset, resolveAvatarUrl } from '@/utils/avatar';
 import type { Athlete, Sport } from '@/types';
 import type { EditableProfile } from '@/pages/my-athletes/types';
+import { OptimizedImage } from '@/components/OptimizedImage';
 
 interface ProfileDetailsCardProps {
   athlete?: Athlete;
@@ -43,11 +44,19 @@ export function ProfileDetailsCard({
 }: ProfileDetailsCardProps) {
   const avatarInputRef = useRef<HTMLInputElement>(null);
 
-  const displayAvatar = useMemo(() => {
-    const source = isEditing ? editedProfile.avatar || athlete?.avatar : athlete?.avatar;
-    if (!source) return '';
-    return resolveAvatarUrl(source, { size: 192 });
+  const avatarSource = useMemo(() => {
+    if (isEditing) {
+      return editedProfile.avatar || athlete?.avatar || null;
+    }
+    return athlete?.avatar || null;
   }, [athlete?.avatar, editedProfile.avatar, isEditing]);
+
+  const displayAvatar = useMemo(() => {
+    if (!avatarSource) return '';
+    return resolveAvatarUrl(avatarSource, { size: 192 });
+  }, [avatarSource]);
+
+  const avatarAsset = useMemo(() => getAvatarAsset(avatarSource ?? undefined), [avatarSource]);
 
   const athleteName = athlete?.name || editedProfile.displayName || 'No name';
   const athleteSport = (athlete?.sport || editedProfile.sport || 'Running') as Sport;
@@ -67,10 +76,12 @@ export function ProfileDetailsCard({
             <div className="relative">
               <div className="h-24 w-24 overflow-hidden rounded-full ring-4 ring-primary/20">
                 {displayAvatar ? (
-                  <img
+                  <OptimizedImage
                     src={displayAvatar}
+                    webpSrc={avatarAsset?.webp}
                     alt={athleteName}
-                    loading="lazy"
+                    width={192}
+                    height={192}
                     className="h-full w-full object-cover"
                   />
                 ) : (

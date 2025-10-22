@@ -25,9 +25,10 @@ import { ChartSkeleton } from '@/components/ui/skeletons';
 import { SectionTitle, Body, Small } from '@/components/ui/typography';
 import { formatMoney, formatNumber } from '@/lib/format';
 import { cn } from '@/lib/utils';
-import { resolveAvatarUrl } from '@/utils/avatar';
+import { getAvatarAsset, resolveAvatarUrl } from '@/utils/avatar';
 import { useUser } from '@/store/auth';
 import { MobileActionBar } from '@/components/MobileActionBar';
+import { OptimizedImage } from '@/components/OptimizedImage';
 
 const AthletePriceChart = lazy(() => import('@/components/charts/AthletePriceChart'));
 
@@ -320,12 +321,12 @@ export default function AthleteDetail() {
             <div className="relative mx-auto mb-4 h-32 w-32">
               <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-yellow-400 via-pink-500 to-purple-600 p-1">
                 <div className="h-full w-full rounded-full bg-background p-1">
-                  <img
+                  <OptimizedImage
                     src={resolveAvatarUrl(athlete.avatar, { size: 160 })}
+                    webpSrc={getAvatarAsset(athlete.avatar)?.webp}
                     alt={athlete.name}
-                    width={128}
-                    height={128}
-                    loading="lazy"
+                    width={160}
+                    height={160}
                     className="h-full w-full rounded-full object-cover"
                   />
                 </div>

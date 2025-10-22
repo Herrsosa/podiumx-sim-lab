@@ -6,8 +6,9 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { Athlete } from '@/types';
 import type { MarketplaceChartPoint } from '@/hooks/useMarketplaceCharts';
 import { formatMoney, formatNumber } from '@/lib/format';
-import { resolveAvatarUrl } from '@/utils/avatar';
+import { getAvatarAsset, resolveAvatarUrl } from '@/utils/avatar';
 import { format } from 'date-fns';
+import { OptimizedImage } from '@/components/OptimizedImage';
 
 interface AthleteCardProps {
   athlete: Athlete;
@@ -59,12 +60,12 @@ export const AthleteCard = memo(({ athlete, chartData, onClick, onMouseEnter }: 
     >
       <CardContent className="p-0">
         <div className="aspect-w-1 aspect-h-1">
-          <img
+          <OptimizedImage
             src={resolveAvatarUrl(athlete.avatar, { size: 320 })}
+            webpSrc={getAvatarAsset(athlete.avatar)?.webp}
             alt={athlete.name}
             width={320}
-            height={192}
-            loading="lazy"
+            height={320}
             className="h-48 w-full object-cover"
           />
         </div>
