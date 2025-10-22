@@ -10,7 +10,11 @@ import { supabase } from '@/integrations/supabase/client';
 import { useStartDm } from '@/hooks/useStartDm';
 import { useToast } from '@/hooks/use-toast';
 
-export default function LockerMessages() {
+interface LockerMessagesProps {
+  athleteId?: string;
+}
+
+export default function LockerMessages({ athleteId }: LockerMessagesProps) {
   const params = useParams<{ conversationId?: string }>();
   const navigate = useNavigate();
   const conversationId = params.conversationId;

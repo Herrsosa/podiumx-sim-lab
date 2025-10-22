@@ -13,12 +13,14 @@ const LockerMessages = lazy(() => import('@/components/myathlete/LockerMessages'
 interface LockerViewProps {
   athleteId?: string;
   athleteName?: string;
+  athleteSlug?: string;
 }
 
-export function LockerView({ athleteId, athleteName }: LockerViewProps) {
+export function LockerView({ athleteId, athleteName, athleteSlug }: LockerViewProps) {
   const user = useUser();
   const effectiveAthleteId = athleteId || user?.id;
   const effectiveName = athleteName || 'Athlete';
+  const effectiveSlug = athleteSlug || effectiveAthleteId || '';
   const { data: accessData } = useAccessTier(effectiveAthleteId);
   const isOwner = user?.id === effectiveAthleteId;
   const viewerHoldings = isOwner ? Number.MAX_SAFE_INTEGER : accessData?.balance ?? 0;
@@ -62,11 +64,15 @@ export function LockerView({ athleteId, athleteName }: LockerViewProps) {
           </TabsContent>
 
           <TabsContent value="chat">
-            <LockerChat />
+            <LockerChat
+              athleteId={effectiveAthleteId}
+              athleteName={effectiveName}
+              athleteSlug={effectiveSlug}
+            />
           </TabsContent>
 
           <TabsContent value="messages">
-            <LockerMessages />
+            <LockerMessages athleteId={effectiveAthleteId} />
           </TabsContent>
         </Suspense>
       </Tabs>

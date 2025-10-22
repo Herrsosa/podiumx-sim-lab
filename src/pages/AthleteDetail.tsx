@@ -692,7 +692,11 @@ export default function AthleteDetail() {
                 athleteName={athlete.name}
                 onBuyClick={() => scrollToTrade('buy')}
               >
-                <LockerView athleteId={athlete.id} athleteName={athlete.name} />
+                <LockerView 
+                  athleteId={athlete.id} 
+                  athleteName={athlete.name}
+                  athleteSlug={athlete.slug}
+                />
               </LockerGate>
             </CardContent>
           </Card>
