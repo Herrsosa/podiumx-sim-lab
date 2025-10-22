@@ -542,6 +542,7 @@ export type Database = {
       trades: {
         Row: {
           athlete_id: string
+          client_request_id: string | null
           created_at: string
           fee: number
           gross_amount: number
@@ -555,6 +556,7 @@ export type Database = {
         }
         Insert: {
           athlete_id: string
+          client_request_id?: string | null
           created_at?: string
           fee: number
           gross_amount: number
@@ -568,6 +570,7 @@ export type Database = {
         }
         Update: {
           athlete_id?: string
+          client_request_id?: string | null
           created_at?: string
           fee?: number
           gross_amount?: number
@@ -593,6 +596,62 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
+          },
+        ]
+      }
+      athlete_prices: {
+        Row: {
+          athlete_earnings: number
+          athlete_id: string
+          created_at: string
+          client_request_id: string | null
+          curve_a: number | null
+          curve_b: number | null
+          curve_c: number | null
+          gross_amount: number
+          id: string
+          price: number
+          side: Database["public"]["Enums"]["trade_side"]
+          supply: number
+          treasury_balance: number
+        }
+        Insert: {
+          athlete_earnings: number
+          athlete_id: string
+          created_at?: string
+          client_request_id?: string | null
+          curve_a?: number | null
+          curve_b?: number | null
+          curve_c?: number | null
+          gross_amount: number
+          id?: string
+          price: number
+          side: Database["public"]["Enums"]["trade_side"]
+          supply: number
+          treasury_balance: number
+        }
+        Update: {
+          athlete_earnings?: number
+          athlete_id?: string
+          created_at?: string
+          client_request_id?: string | null
+          curve_a?: number | null
+          curve_b?: number | null
+          curve_c?: number | null
+          gross_amount?: number
+          id?: string
+          price?: number
+          side?: Database["public"]["Enums"]["trade_side"]
+          supply?: number
+          treasury_balance?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "athlete_prices_athlete_id_fkey"
+            columns: ["athlete_id"]
+            isOneToOne: false
+            referencedRelation: "athlete_tokens"
+            referencedColumns: ["athlete_id"]
           },
         ]
       }
@@ -716,17 +775,21 @@ export type Database = {
       }
       execute_trade_transaction: {
         Args: {
+          p_user_id: string
           p_athlete_id: string
-          p_fee: number
           p_gross_amount: number
           p_net_amount: number
-          p_new_athlete_earnings: number
-          p_new_price: number
+          p_fee: number
           p_new_supply: number
+          p_new_price: number
           p_new_treasury: number
+          p_new_athlete_earnings: number
           p_qty: number
           p_side: Database["public"]["Enums"]["trade_side"]
-          p_user_id: string
+          p_idempotency_key: string
+          p_curve_a: number
+          p_curve_b: number
+          p_curve_c: number
         }
         Returns: undefined
       }

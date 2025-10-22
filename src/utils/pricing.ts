@@ -1,26 +1,26 @@
 export type Curve = { a: number; b: number; c: number };
 
-export function priceAt(s: number, curve: Curve): number {
-  return curve.a * s * s + curve.b * s + curve.c;
+export function priceAt(supply: number, curve: Curve): number {
+  return curve.a * supply * supply + curve.b * supply + curve.c;
 }
 
-export function costToBuy(s: number, q: number, curve: Curve): number {
-  const s1 = s;
-  const s2 = s + q;
+export function costToBuy(supply: number, quantity: number, curve: Curve): number {
+  const start = supply;
+  const end = supply + quantity;
   return (
-    (curve.a * (s2 ** 3 - s1 ** 3)) / 3 +
-    (curve.b * (s2 ** 2 - s1 ** 2)) / 2 +
-    curve.c * (s2 - s1)
+    (curve.a * (end ** 3 - start ** 3)) / 3 +
+    (curve.b * (end ** 2 - start ** 2)) / 2 +
+    curve.c * (end - start)
   );
 }
 
-export function payoutToSell(s: number, q: number, curve: Curve): number {
-  const s1 = s;
-  const s2 = Math.max(0, s - q);
+export function payoutToSell(supply: number, quantity: number, curve: Curve): number {
+  const start = supply;
+  const end = Math.max(0, supply - quantity);
   return (
-    (curve.a * (s1 ** 3 - s2 ** 3)) / 3 +
-    (curve.b * (s1 ** 2 - s2 ** 2)) / 2 +
-    curve.c * (s1 - s2)
+    (curve.a * (start ** 3 - end ** 3)) / 3 +
+    (curve.b * (start ** 2 - end ** 2)) / 2 +
+    curve.c * (start - end)
   );
 }
 
