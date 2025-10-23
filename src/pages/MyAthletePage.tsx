@@ -534,7 +534,7 @@ export default function MyAthletePage() {
 
   return (
     <>
-      <div className="container mx-auto px-4 pb-32 pt-8 md:pb-8">
+      <div className="container mx-auto px-4 pb-32 pt-8 md:pb-8 overflow-x-hidden">
       <div className="mb-8">
         <h1 className="mb-2 text-4xl font-bold">My Athlete Profile</h1>
         <p className="text-muted-foreground">Manage your profile and workout timeline</p>

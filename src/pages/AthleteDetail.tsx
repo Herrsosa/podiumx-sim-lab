@@ -302,7 +302,7 @@ export default function AthleteDetail() {
   }
 
   return (
-    <div className="container mx-auto px-4 pb-32 pt-8 md:pb-8">
+    <div className="container mx-auto px-4 pb-32 pt-8 md:pb-8 overflow-x-hidden">
       {/* Back Button */}
       <Button
         variant="ghost"
@@ -840,34 +840,44 @@ export default function AthleteDetail() {
         athleteId={athlete.id}
         onSuccess={handleWorkoutSuccess}
       />
-      <MobileActionBar
-        actions={[
-          {
-            id: 'athlete-detail-buy',
-            label: 'Buy',
-            icon: <ShoppingCart className="h-4 w-4" aria-hidden="true" />,
-            variant: 'primary',
-            onPress: () => scrollToTrade('buy'),
-            ariaLabel: 'Buy athlete tokens',
-          },
-          {
-            id: 'athlete-detail-sell',
-            label: 'Sell',
-            icon: <TrendingDown className="h-4 w-4" aria-hidden="true" />,
-            variant: 'secondary',
-            onPress: () => scrollToTrade('sell'),
-            ariaLabel: 'Sell athlete tokens',
-          },
-          {
-            id: 'athlete-detail-message',
-            label: 'Message',
-            icon: <MessageCircle className="h-4 w-4" aria-hidden="true" />,
-            variant: 'ghost',
-            onPress: scrollToChat,
-            ariaLabel: 'Open community chat',
-          },
-        ]}
-      />
+      
+      {/* Mobile Action Bar - Only show for other athletes, not own profile */}
+      {!isOwnProfile && (
+        <MobileActionBar
+          actions={[
+            {
+              id: 'athlete-detail-buy',
+              label: 'Buy',
+              icon: <ShoppingCart className="h-4 w-4" aria-hidden="true" />,
+              variant: 'primary',
+              onPress: () => {
+                setActiveTab('overview');
+                scrollToTrade('buy');
+              },
+              ariaLabel: 'Buy athlete tokens',
+            },
+            {
+              id: 'athlete-detail-sell',
+              label: 'Sell',
+              icon: <TrendingDown className="h-4 w-4" aria-hidden="true" />,
+              variant: 'secondary',
+              onPress: () => {
+                setActiveTab('overview');
+                scrollToTrade('sell');
+              },
+              ariaLabel: 'Sell athlete tokens',
+            },
+            {
+              id: 'athlete-detail-message',
+              label: 'Message',
+              icon: <MessageCircle className="h-4 w-4" aria-hidden="true" />,
+              variant: 'ghost',
+              onPress: scrollToChat,
+              ariaLabel: 'Open community chat',
+            },
+          ]}
+        />
+      )}
     </div>
   );
 }

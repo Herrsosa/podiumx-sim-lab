@@ -99,6 +99,14 @@ All colors MUST be HSL.
 
   html {
     @apply scroll-smooth;
+    overflow-x: hidden;
+  }
+
+  /* Prevent content from being hidden behind mobile action bar */
+  @media (max-width: 767px) {
+    body {
+      padding-bottom: env(safe-area-inset-bottom, 0px);
+    }
   }
 }
 
