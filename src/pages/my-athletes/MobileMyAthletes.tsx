@@ -16,7 +16,7 @@ import TokengatedChat from '@/components/TokengatedChat';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
-import { ArrowDownRight, ArrowUpRight, MessageSquare, Plus, TrendingUp } from 'lucide-react';
+import { Activity, ArrowDownRight, ArrowUpRight, MessageSquare, Plus, TrendingUp } from 'lucide-react';
 import { ResponsiveContainer, ComposedChart, Line, Bar, XAxis, YAxis, Tooltip as RechartsTooltip } from 'recharts';
 import { POS_NEON_COLOR, StackedCircles } from '@/components/charts/StackedCircles';
 import type { TooltipProps } from 'recharts';
@@ -26,6 +26,7 @@ import type { EditableProfile } from '@/pages/my-athletes/types';
 import ConnectXButton from '@/components/social/ConnectXButton';
 import { useXIdentity } from '@/hooks/useXIdentity';
 import XBadge from '@/components/social/XBadge';
+import { MobileActionBar } from '@/components/MobileActionBar';
 
 type ChartDatum = {
   t: number;
@@ -475,16 +476,18 @@ export default function MobileMyAthletes({
         </Tabs>
       </main>
 
-      <footer className="sticky bottom-0 z-30 border-t border-border/60 bg-background/85 px-4 py-3 backdrop-blur">
-        <div className="grid grid-cols-2 gap-3">
-          <Button type="button" className="h-12 text-base font-semibold">
-            Buy / Sell
-          </Button>
-          <Button type="button" variant="secondary" className="h-12 text-base font-semibold">
-            Follow
-          </Button>
-        </div>
-      </footer>
+      <MobileActionBar
+        actions={[
+          {
+            id: 'add-pos',
+            label: 'Add Proof of Sweat',
+            icon: <Activity className="h-5 w-5" />,
+            onPress: onAddWorkout,
+            variant: 'primary',
+            ariaLabel: 'Add proof-of-sweat workout',
+          },
+        ]}
+      />
     </div>
   );
 }

@@ -19,6 +19,7 @@ import WorkoutPosts from '@/components/WorkoutPosts';
 import AddWorkoutModal from '@/components/AddWorkoutModal';
 import { LockerGate } from '@/components/myathlete/LockerGate';
 import { LockerView, type LockerTab } from '@/pages/MyAthlete/LockerView';
+import LockerMessages from '@/components/myathlete/LockerMessages';
 import { useQueryClient } from '@tanstack/react-query';
 import AthleteDetailSkeleton from '@/components/skeletons/AthleteDetailSkeleton';
 import { ChartSkeleton } from '@/components/ui/skeletons';
@@ -29,6 +30,7 @@ import { getAvatarAsset, resolveAvatarUrl } from '@/utils/avatar';
 import { useUser } from '@/store/auth';
 import { MobileActionBar } from '@/components/MobileActionBar';
 import { OptimizedImage } from '@/components/OptimizedImage';
+import { SelfMobileProfile } from '@/pages/AthleteDetailSelfMobile';
 
 const AthletePriceChart = lazy(() => import('@/components/charts/AthletePriceChart'));
 
@@ -304,7 +306,7 @@ export default function AthleteDetail() {
     );
   }
 
-  return (
+  const desktopContent = (
     <div className="container mx-auto px-4 pb-32 pt-8 md:pb-8 overflow-x-hidden">
       {/* Back Button */}
       <Button
@@ -835,76 +837,116 @@ export default function AthleteDetail() {
           </CardContent>
         </Card>
       </div>
-
-      {/* Add Workout Modal */}
-      <AddWorkoutModal
-        open={showAddWorkout}
-        onOpenChange={setShowAddWorkout}
-        athleteId={athlete.id}
-        onSuccess={handleWorkoutSuccess}
-      />
-      
-      {/* Mobile Action Bar */}
-      <MobileActionBar
-        actions={
-          isOwnProfile
-            ? [
-                {
-                  id: 'add-pos',
-                  label: 'Add Proof of Sweat',
-                  icon: <Activity className="h-5 w-5" />,
-                  onPress: () => setAddWorkoutOpen(true),
-                  variant: 'primary',
-                  ariaLabel: 'Add proof of sweat workout',
-                },
-              ]
-            : [
-                {
-                  id: 'buy',
-                  label: 'Buy',
-                  icon: <TrendingUp className="h-4 w-4" />,
-                  onPress: () => {
-                    setActiveTab('overview');
-                    scrollToTrade('buy');
-                  },
-                  variant: 'primary',
-                  ariaLabel: 'Buy athlete tokens',
-                },
-                {
-                  id: 'sell',
-                  label: 'Sell',
-                  icon: <TrendingDown className="h-4 w-4" />,
-                  onPress: () => {
-                    setActiveTab('overview');
-                    scrollToTrade('sell');
-                  },
-                  variant: 'secondary',
-                  ariaLabel: 'Sell athlete tokens',
-                },
-                {
-                  id: 'message',
-                  label: 'Message',
-                  icon: <MessageCircle className="h-4 w-4" />,
-                  onPress: scrollToChat,
-                  variant: 'ghost',
-                  ariaLabel: 'Open community chat',
-                },
-              ]
-        }
-      />
-
-      {/* Add Proof of Sweat Modal for own profile */}
-      {isOwnProfile && user && (
-        <AddWorkoutModal
-          open={addWorkoutOpen}
-          onOpenChange={setAddWorkoutOpen}
-          athleteId={user.id}
-          onSuccess={() => {
-            queryClient.refetchQueries({ queryKey: ['athlete', slug] });
-            setAddWorkoutOpen(false);
-          }}
-        />
-      )}
     </div>
+  );
+
+  const sharedWorkoutModal = (
+    <AddWorkoutModal
+      open={showAddWorkout}
+      onOpenChange={setShowAddWorkout}
+      athleteId={athlete.id}
+      onSuccess={handleWorkoutSuccess}
+    />
+  );
+
+  const addProofOfSweatModal =
+    isOwnProfile && user ? (
+      <AddWorkoutModal
+        open={addWorkoutOpen}
+        onOpenChange={setAddWorkoutOpen}
+        athleteId={user.id}
+        onSuccess={() => {
+          queryClient.refetchQueries({ queryKey: ['athlete', slug] });
+          setAddWorkoutOpen(false);
+        }}
+      />
+    ) : null;
+
+  const mobileActionBar = (
+    <MobileActionBar
+      className={isOwnProfile ? 'max-[480px]:hidden' : undefined}
+      actions={
+        isOwnProfile
+          ? [
+              {
+                id: 'add-pos',
+                label: 'Add Proof of Sweat',
+                icon: <Activity className="h-5 w-5" />,
+                onPress: () => setAddWorkoutOpen(true),
+                variant: 'primary',
+                ariaLabel: 'Add proof of sweat workout',
+              },
+            ]
+          : [
+              {
+                id: 'buy',
+                label: 'Buy',
+                icon: <TrendingUp className="h-4 w-4" />,
+                onPress: () => {
+                  setActiveTab('overview');
+                  scrollToTrade('buy');
+                },
+                variant: 'primary',
+                ariaLabel: 'Buy athlete tokens',
+              },
+              {
+                id: 'sell',
+                label: 'Sell',
+                icon: <TrendingDown className="h-4 w-4" />,
+                onPress: () => {
+                  setActiveTab('overview');
+                  scrollToTrade('sell');
+                },
+                variant: 'secondary',
+                ariaLabel: 'Sell athlete tokens',
+              },
+              {
+                id: 'message',
+                label: 'Message',
+                icon: <MessageCircle className="h-4 w-4" />,
+                onPress: scrollToChat,
+                variant: 'ghost',
+                ariaLabel: 'Open community chat',
+              },
+            ]
+      }
+    />
+  );
+
+  if (isOwnProfile) {
+    return (
+      <>
+        <div className="hidden max-[480px]:block">
+          <SelfMobileProfile
+            athlete={athlete}
+            userHoldings={userHoldings}
+            onAddProof={() => setAddWorkoutOpen(true)}
+            onConnectStrava={() => navigate('/my-athlete')}
+            isLoadingPosts={showInitialSkeleton}
+            lockerInitialTab={lockerInitialTab}
+            avatarUrl={resolveAvatarUrl(athlete.avatar, { size: 96 })}
+            components={{
+              workoutPosts: WorkoutPosts,
+              tokengatedChat: TokengatedChat,
+              lockerMessages: LockerMessages,
+              lockerView: LockerView,
+            }}
+          />
+        </div>
+        <div className="max-[480px]:hidden">{desktopContent}</div>
+        {sharedWorkoutModal}
+        {addProofOfSweatModal}
+        {mobileActionBar}
+      </>
+    );
+  }
+
+  return (
+    <>
+      {desktopContent}
+      {sharedWorkoutModal}
+      {addProofOfSweatModal}
+      {mobileActionBar}
+    </>
   );
 }

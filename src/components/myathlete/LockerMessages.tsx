@@ -12,13 +12,23 @@ import { supabase } from '@/integrations/supabase/client';
 import { useStartDm } from '@/hooks/useStartDm';
 import { useToast } from '@/hooks/use-toast';
 import { useUser } from '@/store/auth';
+import { cn } from '@/lib/utils';
 
 interface LockerMessagesProps {
   athleteId?: string;
   athleteName?: string;
+  mode?: 'default' | 'embedded';
+  initialConversationId?: string | null;
+  onConversationChange?: (id: string | null) => void;
 }
 
-export default function LockerMessages({ athleteId, athleteName }: LockerMessagesProps) {
+export default function LockerMessages({
+  athleteId,
+  athleteName,
+  mode = 'default',
+  initialConversationId = null,
+  onConversationChange,
+}: LockerMessagesProps) {
   const user = useUser();
   const isOwnerView = !athleteId || user?.id === athleteId;
 
@@ -31,7 +41,13 @@ export default function LockerMessages({ athleteId, athleteName }: LockerMessage
   }
 
   if (isOwnerView) {
-    return <OwnerLockerMessages />;
+    return (
+      <OwnerLockerMessages
+        mode={mode}
+        initialConversationId={initialConversationId}
+        onConversationChange={onConversationChange}
+      />
+    );
   }
 
   return (
@@ -42,21 +58,50 @@ export default function LockerMessages({ athleteId, athleteName }: LockerMessage
   );
 }
 
-function OwnerLockerMessages() {
+function OwnerLockerMessages({
+  mode = 'default',
+  initialConversationId = null,
+  onConversationChange,
+}: {
+  mode?: 'default' | 'embedded';
+  initialConversationId?: string | null;
+  onConversationChange?: (id: string | null) => void;
+}) {
   const params = useParams<{ conversationId?: string }>();
   const navigate = useNavigate();
-  const conversationId = params.conversationId;
+  const conversationIdParam = params.conversationId ?? null;
   const { data: conversations, isLoading } = useDmConversations();
   const [username, setUsername] = useState('');
   const [isSearching, setIsSearching] = useState(false);
+  const [embeddedConversationId, setEmbeddedConversationId] = useState(initialConversationId);
   const startDmMutation = useStartDm();
   const { toast } = useToast();
 
+  useEffect(() => {
+    if (mode !== 'embedded') return;
+    setEmbeddedConversationId(initialConversationId ?? null);
+  }, [initialConversationId, mode]);
+
+  const conversationId =
+    mode === 'embedded' ? embeddedConversationId : conversationIdParam;
+
   const handleSelectConversation = (id: string) => {
+    if (mode === 'embedded') {
+      setEmbeddedConversationId(id);
+      onConversationChange?.(id);
+      return;
+    }
+
     navigate(`/my-athlete/locker/messages/${id}`);
   };
 
   const handleBack = () => {
+    if (mode === 'embedded') {
+      setEmbeddedConversationId(null);
+      onConversationChange?.(null);
+      return;
+    }
+
     navigate(`/my-athlete/locker/messages`);
   };
 
@@ -84,6 +129,13 @@ function OwnerLockerMessages() {
 
       const conversation = await startDmMutation.mutateAsync(profile.id);
       setUsername('');
+
+      if (mode === 'embedded') {
+        setEmbeddedConversationId(conversation);
+        onConversationChange?.(conversation);
+        return;
+      }
+
       navigate(`/my-athlete/locker/messages/${conversation}`);
     } catch (err) {
       toast({
@@ -105,7 +157,13 @@ function OwnerLockerMessages() {
   }
 
   return (
-    <div className="grid h-[600px] md:grid-cols-[320px_1fr]" data-testid="locker-messages-owner">
+    <div
+      className={cn(
+        'grid md:grid-cols-[320px_1fr]',
+        mode === 'embedded' ? 'min-h-[520px]' : 'h-[600px]',
+      )}
+      data-testid="locker-messages-owner"
+    >
       <div className={`border-r ${conversationId ? 'hidden md:block' : ''}`}>
         <div className="flex h-full flex-col space-y-4 p-4">
           <div className="rounded-lg border border-dashed p-3">
@@ -129,7 +187,7 @@ function OwnerLockerMessages() {
           <div className="flex-1 overflow-hidden">
             <ConversationList
               conversations={conversations || []}
-              selectedId={conversationId}
+              selectedId={conversationId ?? undefined}
               onSelect={handleSelectConversation}
             />
           </div>
