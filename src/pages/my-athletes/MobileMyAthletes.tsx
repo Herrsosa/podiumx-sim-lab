@@ -127,13 +127,13 @@ export default function MobileMyAthletes({
 
     const sections = [
       {
-        title: 'Console',
+        title: 'Personal',
         content: (
           <div className="space-y-4">
             <Tabs value={consoleTab} onValueChange={(v) => setConsoleTab(v as 'personal' | 'locker')}>
               <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="personal">Personal</TabsTrigger>
-                <TabsTrigger value="locker">View Locker</TabsTrigger>
+                <TabsTrigger value="personal">Settings</TabsTrigger>
+                <TabsTrigger value="locker">Locker</TabsTrigger>
               </TabsList>
               
               <TabsContent value="personal" className="space-y-4 mt-4">
@@ -173,9 +173,20 @@ export default function MobileMyAthletes({
               </TabsContent>
               
               <TabsContent value="locker" className="mt-4">
-                <p className="text-sm text-muted-foreground text-center py-8">
-                  Locker view: See what your supporters see
-                </p>
+                <Card className="shadow-none">
+                  <CardContent className="p-4">
+                    <p className="text-sm text-muted-foreground mb-3">
+                      This is what your supporters see in your locker.
+                    </p>
+                    <div className="text-center py-8 text-muted-foreground">
+                      <p className="text-sm mb-4">No locked content yet</p>
+                      <Button onClick={onAddWorkout} size="sm" variant="outline">
+                        <Plus className="mr-2 h-4 w-4" />
+                        Create Locked Post
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
               </TabsContent>
             </Tabs>
           </div>

@@ -455,6 +455,8 @@ export default function MyAthletePage() {
     }, 100);
   }, []);
 
+  const isMobile = !isDesktop;
+
   const modalStack = (
     <>
       {user && (
@@ -579,34 +581,20 @@ export default function MyAthletePage() {
         </TabsContent>
       </Tabs>
 
-      <MobileActionBar
-        actions={[
-          {
-            id: 'my-athlete-log-pos',
-            label: 'Log PoS',
-            icon: <Activity className="h-4 w-4" aria-hidden="true" />,
-            variant: 'primary',
-            onPress: handleMobileLogPos,
-            ariaLabel: 'Log proof-of-sweat workout',
-          },
-          {
-            id: 'my-athlete-share',
-            label: 'Share',
-            icon: <Share2 className="h-4 w-4" aria-hidden="true" />,
-            variant: 'secondary',
-            onPress: handleMobileShare,
-            ariaLabel: 'Share your athlete profile',
-          },
-          {
-            id: 'my-athlete-message',
-            label: 'Message',
-            icon: <MessageCircle className="h-4 w-4" aria-hidden="true" />,
-            variant: 'ghost',
-            onPress: handleMobileMessage,
-            ariaLabel: 'Open messages',
-          },
-        ]}
-      />
+      {isMobile && (
+        <MobileActionBar
+          actions={[
+            {
+              id: 'add-pos',
+              label: 'Add Proof of Sweat',
+              icon: <Activity className="h-5 w-5" aria-hidden="true" />,
+              variant: 'primary',
+              onPress: handleMobileLogPos,
+              ariaLabel: 'Add proof-of-sweat workout',
+            },
+          ]}
+        />
+      )}
     </div>
       {modalStack}
     </>

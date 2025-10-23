@@ -53,7 +53,7 @@ export function LockerView({ athleteId, athleteName, athleteSlug, initialTab }: 
         }}
         className="w-full"
       >
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-4 sticky top-0 z-20 bg-background/95 backdrop-blur-sm">
           <TabsTrigger value="workouts">Workouts</TabsTrigger>
           <TabsTrigger value="resources">Resources</TabsTrigger>
           <TabsTrigger value="chat">Chat</TabsTrigger>

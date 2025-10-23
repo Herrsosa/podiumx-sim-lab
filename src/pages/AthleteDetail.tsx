@@ -1,6 +1,6 @@
 import { lazy, Suspense, useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Info, Plus, Minus, Edit, ShoppingCart, TrendingDown, MessageCircle } from 'lucide-react';
+import { ArrowLeft, Info, Plus, Minus, Edit, ShoppingCart, TrendingDown, MessageCircle, Activity, TrendingUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -50,6 +50,9 @@ export default function AthleteDetail() {
   const [timeRange, setTimeRange] = useState<TimeRange>('24h');
   const [activeTab, setActiveTab] = useState<'overview' | 'locker'>('overview');
   const [lockerInitialTab, setLockerInitialTab] = useState<LockerTab>('workouts');
+  const [addWorkoutOpen, setAddWorkoutOpen] = useState(false);
+  const [tradeMode, setTradeMode] = useState<'buy' | 'sell'>('buy');
+  const [tradeModalOpen, setTradeModalOpen] = useState(false);
   const timeRanges: TimeRange[] = ['24h', '7d', '30d', 'all'];
   const tradeSectionRef = useRef<HTMLDivElement | null>(null);
   const chatSectionRef = useRef<HTMLDivElement | null>(null);
@@ -841,41 +844,65 @@ export default function AthleteDetail() {
         onSuccess={handleWorkoutSuccess}
       />
       
-      {/* Mobile Action Bar - Only show for other athletes, not own profile */}
-      {!isOwnProfile && (
-        <MobileActionBar
-          actions={[
-            {
-              id: 'athlete-detail-buy',
-              label: 'Buy',
-              icon: <ShoppingCart className="h-4 w-4" aria-hidden="true" />,
-              variant: 'primary',
-              onPress: () => {
-                setActiveTab('overview');
-                scrollToTrade('buy');
-              },
-              ariaLabel: 'Buy athlete tokens',
-            },
-            {
-              id: 'athlete-detail-sell',
-              label: 'Sell',
-              icon: <TrendingDown className="h-4 w-4" aria-hidden="true" />,
-              variant: 'secondary',
-              onPress: () => {
-                setActiveTab('overview');
-                scrollToTrade('sell');
-              },
-              ariaLabel: 'Sell athlete tokens',
-            },
-            {
-              id: 'athlete-detail-message',
-              label: 'Message',
-              icon: <MessageCircle className="h-4 w-4" aria-hidden="true" />,
-              variant: 'ghost',
-              onPress: scrollToChat,
-              ariaLabel: 'Open community chat',
-            },
-          ]}
+      {/* Mobile Action Bar */}
+      <MobileActionBar
+        actions={
+          isOwnProfile
+            ? [
+                {
+                  id: 'add-pos',
+                  label: 'Add Proof of Sweat',
+                  icon: <Activity className="h-5 w-5" />,
+                  onPress: () => setAddWorkoutOpen(true),
+                  variant: 'primary',
+                  ariaLabel: 'Add proof of sweat workout',
+                },
+              ]
+            : [
+                {
+                  id: 'buy',
+                  label: 'Buy',
+                  icon: <TrendingUp className="h-4 w-4" />,
+                  onPress: () => {
+                    setActiveTab('overview');
+                    scrollToTrade('buy');
+                  },
+                  variant: 'primary',
+                  ariaLabel: 'Buy athlete tokens',
+                },
+                {
+                  id: 'sell',
+                  label: 'Sell',
+                  icon: <TrendingDown className="h-4 w-4" />,
+                  onPress: () => {
+                    setActiveTab('overview');
+                    scrollToTrade('sell');
+                  },
+                  variant: 'secondary',
+                  ariaLabel: 'Sell athlete tokens',
+                },
+                {
+                  id: 'message',
+                  label: 'Message',
+                  icon: <MessageCircle className="h-4 w-4" />,
+                  onPress: scrollToChat,
+                  variant: 'ghost',
+                  ariaLabel: 'Open community chat',
+                },
+              ]
+        }
+      />
+
+      {/* Add Proof of Sweat Modal for own profile */}
+      {isOwnProfile && user && (
+        <AddWorkoutModal
+          open={addWorkoutOpen}
+          onOpenChange={setAddWorkoutOpen}
+          athleteId={user.id}
+          onSuccess={() => {
+            queryClient.refetchQueries({ queryKey: ['athlete', slug] });
+            setAddWorkoutOpen(false);
+          }}
         />
       )}
     </div>
