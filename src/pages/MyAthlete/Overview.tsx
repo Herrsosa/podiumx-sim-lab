@@ -98,63 +98,6 @@ export default function Overview() {
         </CardContent>
       </Card>
 
-      {/* Stats Grid */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Card className="glass-card">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Token Price
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold">${formatNumber(athlete.price)}</p>
-            <p
-              className={`text-sm ${
-                athlete.change24h >= 0 ? 'text-green-500' : 'text-red-500'
-              }`}
-            >
-              {athlete.change24h >= 0 ? '+' : ''}
-              {athlete.change24h.toFixed(2)}%
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card className="glass-card">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Market Cap
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold">${formatNumber(athlete.marketCap)}</p>
-          </CardContent>
-        </Card>
-
-        <Card className="glass-card">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Supply
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold">{formatNumber(athlete.supply)}</p>
-          </CardContent>
-        </Card>
-
-        <Card className="glass-card">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Earnings
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold">
-              ${formatNumber(athlete.athleteRevenue)}
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-
       {/* Price Chart */}
       <Card className="glass-card">
         <CardHeader>
@@ -164,6 +107,40 @@ export default function Overview() {
           <OverviewPriceChart athlete={athlete} />
         </CardContent>
       </Card>
+
+      {/* Token Stats - Compact below chart */}
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <Card className="glass-card">
+          <CardContent className="pt-4">
+            <p className="text-xs text-muted-foreground mb-1">Token Price</p>
+            <p className="text-lg font-bold">${formatNumber(athlete.price)}</p>
+            <p className={`text-xs ${athlete.change24h >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+              {athlete.change24h >= 0 ? '+' : ''}{athlete.change24h.toFixed(2)}%
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card className="glass-card">
+          <CardContent className="pt-4">
+            <p className="text-xs text-muted-foreground mb-1">Market Cap</p>
+            <p className="text-lg font-bold">${formatNumber(athlete.marketCap)}</p>
+          </CardContent>
+        </Card>
+
+        <Card className="glass-card">
+          <CardContent className="pt-4">
+            <p className="text-xs text-muted-foreground mb-1">Supply</p>
+            <p className="text-lg font-bold">{formatNumber(athlete.supply)}</p>
+          </CardContent>
+        </Card>
+
+        <Card className="glass-card">
+          <CardContent className="pt-4">
+            <p className="text-xs text-muted-foreground mb-1">Earnings</p>
+            <p className="text-lg font-bold">${formatNumber(athlete.athleteRevenue)}</p>
+          </CardContent>
+        </Card>
+      </div>
 
       {/* Proof of Sweat Preview */}
       {athlete.posts && athlete.posts.length > 0 && (

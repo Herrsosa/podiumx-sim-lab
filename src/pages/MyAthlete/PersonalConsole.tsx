@@ -1,5 +1,6 @@
 import { useState, useMemo, useCallback, useRef, useId } from 'react';
 import { Plus, TrendingUp, Edit, Trash2, MessageSquare, DollarSign, Activity, Share2, MessageCircle } from 'lucide-react';
+import type { TimeRangeKey } from '@/utils/chartData';
 import { ComposedChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Bar, type TooltipProps } from 'recharts';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { EarningsSection } from '@/components/EarningsSection';
@@ -85,6 +86,7 @@ export function PersonalConsole({
   const user = useUser();
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<'workouts' | 'community' | 'messages' | 'earnings'>('workouts');
+  const [timeRange, setTimeRange] = useState<TimeRangeKey>('7d');
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [workoutToDelete, setWorkoutToDelete] = useState<string | null>(null);
   const messagesSectionRef = useRef<HTMLDivElement | null>(null);
@@ -260,20 +262,14 @@ export function PersonalConsole({
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid gap-4 sm:grid-cols-3 mb-6">
-              <div>
-                <p className="text-sm text-muted-foreground">Current Price</p>
-                <p className="text-2xl font-bold">${athlete?.price.toFixed(4)}</p>
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Market Cap</p>
-                <p className="text-2xl font-bold">${athlete?.marketCap.toFixed(2)}</p>
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">24h Volume</p>
-                <p className="text-2xl font-bold">${athlete?.volume24h.toFixed(2)}</p>
-              </div>
-            </div>
+            <Tabs value={timeRange} onValueChange={(value) => setTimeRange(value as TimeRangeKey)} className="mb-4">
+              <TabsList className="grid w-full max-w-md grid-cols-4">
+                <TabsTrigger value="24h">24H</TabsTrigger>
+                <TabsTrigger value="7d">7D</TabsTrigger>
+                <TabsTrigger value="30d">30D</TabsTrigger>
+                <TabsTrigger value="all">All</TabsTrigger>
+              </TabsList>
+            </Tabs>
             <ResponsiveContainer width="100%" height={300}>
               <ComposedChart data={chartData} margin={{ top: 24, right: 24, bottom: 56, left: 16 }}>
                 <defs>
@@ -337,6 +333,22 @@ export function PersonalConsole({
                 />
               </ComposedChart>
             </ResponsiveContainer>
+            
+            {/* Token Stats - Compact below chart */}
+            <div className="grid grid-cols-3 gap-3 mt-4">
+              <div>
+                <p className="text-xs text-muted-foreground mb-1">Current Price</p>
+                <p className="text-base font-bold">${athlete?.price.toFixed(4)}</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground mb-1">Market Cap</p>
+                <p className="text-base font-bold">${athlete?.marketCap.toFixed(2)}</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground mb-1">24h Volume</p>
+                <p className="text-base font-bold">${athlete?.volume24h.toFixed(2)}</p>
+              </div>
+            </div>
           </CardContent>
         </Card>
       )}

@@ -99,13 +99,15 @@ const AthletePriceChart = memo(({
       typeof posEntry?.value === 'number' ? posEntry.value : posCountByDay.get(dayStart) ?? 0;
 
     return (
-      <div className="rounded-lg border border-border/60 bg-card/90 px-3 py-2 shadow-lg">
-        <div className="text-xs text-muted-foreground">{dateLabel}</div>
+      <div className="rounded-lg border border-border/60 bg-card/95 backdrop-blur-sm px-3 py-2 shadow-xl">
+        <div className="text-xs font-medium text-muted-foreground mb-1">{dateLabel}</div>
         {typeof price === 'number' && (
-          <div className="text-sm font-semibold text-foreground">${price.toFixed(4)}</div>
+          <div className="text-base font-bold text-foreground mb-1">${price.toFixed(4)}</div>
         )}
-        <div className="mt-1 text-xs text-muted-foreground">
-          PoS: <span className="font-medium text-foreground">{posCount}</span>
+        <div className="flex items-center gap-1.5 text-xs">
+          <div className="h-2 w-2 rounded-full bg-primary/80" />
+          <span className="text-muted-foreground">PoS:</span>
+          <span className="font-semibold text-foreground">{posCount}</span>
         </div>
       </div>
     );
@@ -136,7 +138,12 @@ const AthletePriceChart = memo(({
               </feMerge>
             </filter>
           </defs>
-          <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.18} />
+          <CartesianGrid 
+            strokeDasharray="3 3" 
+            stroke="hsl(var(--border))" 
+            opacity={0.15} 
+            vertical={false}
+          />
           <XAxis
             dataKey="t"
             type="number"
@@ -159,7 +166,11 @@ const AthletePriceChart = memo(({
             tickLine={false}
           />
           <YAxis yAxisId="pos" domain={posDomain} hide />
-          <RechartsTooltip content={renderTooltip} cursor={{ stroke: 'hsl(var(--border))', strokeDasharray: '3 3' }} />
+          <RechartsTooltip 
+            content={renderTooltip} 
+            cursor={{ stroke: 'hsl(var(--primary))', strokeWidth: 1, strokeDasharray: '5 5', opacity: 0.5 }} 
+            animationDuration={200}
+          />
           <Bar
             dataKey="posCount"
             yAxisId="pos"

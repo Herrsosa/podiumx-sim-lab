@@ -1,20 +1,28 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import type { Athlete } from '@/types';
 import { useAthleteTrades } from '@/hooks/useAthleteTrades';
 import AthletePriceChart from '@/components/charts/AthletePriceChart';
-import { startOfUtcDay } from '@/utils/chartData';
+import { startOfUtcDay, getRangeWindow, type TimeRangeKey } from '@/utils/chartData';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 interface OverviewPriceChartProps {
   athlete: Athlete;
 }
 
 export function OverviewPriceChart({ athlete }: OverviewPriceChartProps) {
+  const [timeRange, setTimeRange] = useState<TimeRangeKey>('7d');
   const { data: trades = [], isLoading } = useAthleteTrades(athlete.id);
 
   const chartPoints = useMemo(() => {
+    const { start, end } = getRangeWindow(timeRange);
+    const filteredTrades = trades.filter((trade) => {
+      const t = typeof trade.timestamp === 'number' ? trade.timestamp : new Date(trade.created_at).getTime();
+      return (!start || t >= start) && t <= end;
+    });
+    
     const tradesByDay = new Map<number, { t: number; price: number }>();
 
-    for (const trade of trades) {
+    for (const trade of filteredTrades) {
       const t =
         typeof trade.timestamp === 'number'
           ? trade.timestamp
@@ -50,7 +58,7 @@ export function OverviewPriceChart({ athlete }: OverviewPriceChartProps) {
     }
 
     return Array.from(tradesByDay.values()).sort((a, b) => a.t - b.t);
-  }, [athlete.price, trades]);
+  }, [athlete.price, trades, timeRange]);
 
   const hasRealTrades = trades.length > 0;
   const firstTradePoint = hasRealTrades
@@ -72,17 +80,27 @@ export function OverviewPriceChart({ athlete }: OverviewPriceChartProps) {
     });
 
   return (
-    <div className="h-64 md:h-72">
-      <AthletePriceChart
-        chartPoints={chartPoints}
-        firstTradePoint={firstTradePoint}
-        hasRealTrades={hasRealTrades}
-        timeRange="all"
-        formatXAxisTick={formatXAxisTick}
-        formatTooltipLabel={formatTooltipLabel}
-        isLoading={isLoading}
-        posts={athlete.posts}
-      />
+    <div className="space-y-4">
+      <Tabs value={timeRange} onValueChange={(value) => setTimeRange(value as TimeRangeKey)}>
+        <TabsList className="grid w-full max-w-md grid-cols-4">
+          <TabsTrigger value="24h">24H</TabsTrigger>
+          <TabsTrigger value="7d">7D</TabsTrigger>
+          <TabsTrigger value="30d">30D</TabsTrigger>
+          <TabsTrigger value="all">All</TabsTrigger>
+        </TabsList>
+      </Tabs>
+      <div className="h-64 md:h-72">
+        <AthletePriceChart
+          chartPoints={chartPoints}
+          firstTradePoint={firstTradePoint}
+          hasRealTrades={hasRealTrades}
+          timeRange={timeRange}
+          formatXAxisTick={formatXAxisTick}
+          formatTooltipLabel={formatTooltipLabel}
+          isLoading={isLoading}
+          posts={athlete.posts}
+        />
+      </div>
     </div>
   );
 }

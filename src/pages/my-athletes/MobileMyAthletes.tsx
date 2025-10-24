@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Athlete, Workout, Post } from '@/types';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import type { TimeRangeKey } from '@/utils/chartData';
 import {
   Accordion,
   AccordionContent,
@@ -59,6 +60,8 @@ interface MobileMyAthletesProps {
   hasNextPage?: boolean;
   fetchNextPage?: () => void;
   isFetchingNextPage?: boolean;
+  timeRange?: TimeRangeKey;
+  onTimeRangeChange?: (range: TimeRangeKey) => void;
 }
 
 const currencyFormatter = new Intl.NumberFormat('en-US', {
@@ -97,6 +100,8 @@ export default function MobileMyAthletes({
   hasNextPage = false,
   fetchNextPage,
   isFetchingNextPage = false,
+  timeRange = '7d',
+  onTimeRangeChange,
 }: MobileMyAthletesProps) {
   const [activeTab, setActiveTab] = useState<(typeof MOBILE_TAB_KEYS)[number]>('overview');
   const [consoleTab, setConsoleTab] = useState<'personal' | 'locker'>('personal');
@@ -348,45 +353,74 @@ export default function MobileMyAthletes({
 
           <TabsContent value="chart" className="min-w-0 space-y-4">
             <Card>
-              <CardContent className="p-0">
+              <CardContent className="p-4">
+                {onTimeRangeChange && (
+                  <Tabs value={timeRange} onValueChange={(value) => onTimeRangeChange(value as TimeRangeKey)} className="mb-4">
+                    <TabsList className="grid w-full grid-cols-4">
+                      <TabsTrigger value="24h">24H</TabsTrigger>
+                      <TabsTrigger value="7d">7D</TabsTrigger>
+                      <TabsTrigger value="30d">30D</TabsTrigger>
+                      <TabsTrigger value="all">All</TabsTrigger>
+                    </TabsList>
+                  </Tabs>
+                )}
+                
                 {chartData.length === 0 ? (
                   <div className="space-y-3 p-6 text-center text-sm text-muted-foreground">
                     <TrendingUp className="mx-auto h-8 w-8 text-muted-foreground" />
                     <p>Add workouts and trades to see your progress charted here.</p>
                   </div>
                 ) : (
-                  <div className="h-[260px] w-full">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <ComposedChart data={chartData} margin={{ top: 16, right: 12, bottom: 8, left: 12 }}>
-                        <defs>
-                          <filter id={`posGlowMobile-${glowFilterId}`} x="-50%" y="-50%" width="200%" height="200%">
-                            <feDropShadow dx="0" dy="2" stdDeviation="6" floodColor="rgba(59,130,246,0.35)" />
-                          </filter>
-                        </defs>
-                        <XAxis
-                          dataKey="t"
-                          domain={xDomain}
-                          type="number"
-                          tickFormatter={(value: number) => new Date(value).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
-                          tickLine={false}
-                          axisLine={false}
-                          tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }}
-                          interval="preserveStartEnd"
-                        />
-                        <YAxis domain={['auto', 'auto']} tickLine={false} axisLine={false} tick={false} />
-                        <YAxis yAxisId="pos" domain={posDomain} hide />
-                        <RechartsTooltip content={renderTooltip} />
-                        <Bar
-                          dataKey="posCount"
-                          yAxisId="pos"
-                          fill="transparent"
-                          barSize={48}
-                          shape={<StackedCircles color={POS_NEON_COLOR} filterId={`posGlowMobile-${glowFilterId}`} maxCircles={4} gap={8} radius={10} hitboxSize={40} />}
-                        />
-                        <Line type="monotone" dataKey="price" stroke={POS_NEON_COLOR} strokeWidth={2} dot={false} connectNulls />
-                      </ComposedChart>
-                    </ResponsiveContainer>
-                  </div>
+                  <>
+                    <div className="h-[260px] w-full">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <ComposedChart data={chartData} margin={{ top: 16, right: 12, bottom: 8, left: 12 }}>
+                          <defs>
+                            <filter id={`posGlowMobile-${glowFilterId}`} x="-50%" y="-50%" width="200%" height="200%">
+                              <feDropShadow dx="0" dy="2" stdDeviation="6" floodColor="rgba(59,130,246,0.35)" />
+                            </filter>
+                          </defs>
+                          <XAxis
+                            dataKey="t"
+                            domain={xDomain}
+                            type="number"
+                            tickFormatter={(value: number) => new Date(value).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                            tickLine={false}
+                            axisLine={false}
+                            tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }}
+                            interval="preserveStartEnd"
+                          />
+                          <YAxis domain={['auto', 'auto']} tickLine={false} axisLine={false} tick={false} />
+                          <YAxis yAxisId="pos" domain={posDomain} hide />
+                          <RechartsTooltip content={renderTooltip} />
+                          <Bar
+                            dataKey="posCount"
+                            yAxisId="pos"
+                            fill="transparent"
+                            barSize={48}
+                            shape={<StackedCircles color={POS_NEON_COLOR} filterId={`posGlowMobile-${glowFilterId}`} maxCircles={4} gap={8} radius={10} hitboxSize={40} />}
+                          />
+                          <Line type="monotone" dataKey="price" stroke={POS_NEON_COLOR} strokeWidth={2} dot={false} connectNulls />
+                        </ComposedChart>
+                      </ResponsiveContainer>
+                    </div>
+                    
+                    {/* Token Stats - Compact below chart */}
+                    <div className="grid grid-cols-3 gap-2 mt-4 pt-4 border-t border-border/50">
+                      <div>
+                        <p className="text-xs text-muted-foreground mb-1">Price</p>
+                        <p className="text-sm font-bold">{currencyFormatter.format(athlete?.price ?? 0)}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-muted-foreground mb-1">Market Cap</p>
+                        <p className="text-sm font-bold">{currencyFormatter.format(athlete?.marketCap ?? 0)}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-muted-foreground mb-1">24h Vol</p>
+                        <p className="text-sm font-bold">{currencyFormatter.format(athlete?.volume24h ?? 0)}</p>
+                      </div>
+                    </div>
+                  </>
                 )}
               </CardContent>
             </Card>

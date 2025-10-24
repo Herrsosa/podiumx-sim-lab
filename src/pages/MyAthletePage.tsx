@@ -1,4 +1,5 @@
 import { useState, useMemo, useCallback, useEffect, useRef, useId } from 'react';
+import type { TimeRangeKey } from '@/utils/chartData';
 import { Plus, TrendingUp, Edit, Trash2, MessageSquare, DollarSign, Activity, Share2, MessageCircle } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
 import { ComposedChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Bar, type TooltipProps } from 'recharts';
@@ -66,6 +67,7 @@ export default function MyAthletePage() {
   const [workoutToDelete, setWorkoutToDelete] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'workouts' | 'community' | 'messages' | 'earnings'>('workouts');
   const [newAvatarFile, setNewAvatarFile] = useState<File | null>(null);
+  const [chartTimeRange, setChartTimeRange] = useState<TimeRangeKey>('7d');
   
   // Tab management: "personal" or "locker"
   const currentTab = searchParams.get('tab') || 'personal';
@@ -528,6 +530,8 @@ export default function MyAthletePage() {
           hasNextPage={Boolean(hasNextPage)}
           fetchNextPage={hasNextPage ? () => { void fetchNextPage(); } : undefined}
           isFetchingNextPage={isFetchingNextPage}
+          timeRange={chartTimeRange}
+          onTimeRangeChange={setChartTimeRange}
         />
         {modalStack}
       </>
