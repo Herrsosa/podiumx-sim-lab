@@ -174,20 +174,47 @@ export default function MobileMyAthletes({
               </TabsContent>
               
               <TabsContent value="locker" className="mt-4">
-                <Card className="shadow-none">
-                  <CardContent className="p-4">
-                    <p className="text-sm text-muted-foreground mb-3">
-                      This is what your supporters see in your locker.
-                    </p>
-                    <div className="text-center py-8 text-muted-foreground">
-                      <p className="text-sm mb-4">No locked content yet</p>
-                      <Button onClick={onAddWorkout} size="sm" variant="outline">
-                        <Plus className="mr-2 h-4 w-4" />
-                        Create Locked Post
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
+                {(() => {
+                  const lockedWorkouts = workouts.filter(w => {
+                    const post = posts.find(p => p.id === w.id);
+                    return post?.token_gated === true || (post?.min_tokens_required ?? 0) > 0;
+                  });
+                  const lockedPosts = posts.filter(p => p.token_gated === true || (p.min_tokens_required ?? 0) > 0);
+                  
+                  if (lockedWorkouts.length === 0 && lockedPosts.length === 0) {
+                    return (
+                      <Card className="shadow-none">
+                        <CardContent className="p-6 text-center">
+                          <p className="text-sm text-muted-foreground mb-4">
+                            This is what your supporters see in your locker.
+                          </p>
+                          <p className="text-sm mb-4">No locked content yet</p>
+                          <Button onClick={onAddWorkout} size="sm" variant="outline">
+                            <Plus className="mr-2 h-4 w-4" />
+                            Create Locked Post
+                          </Button>
+                        </CardContent>
+                      </Card>
+                    );
+                  }
+                  
+                  return (
+                    <ScrollArea className="max-h-[600px] -mx-4">
+                      <div className="px-4">
+                        <p className="text-sm text-muted-foreground mb-4">
+                          This is what your supporters see in your locker.
+                        </p>
+                        <ProofOfSweat
+                          athleteId={athlete.id}
+                          athleteName={athlete.name}
+                          workouts={lockedWorkouts}
+                          posts={lockedPosts}
+                          viewerHoldings={Number.MAX_SAFE_INTEGER}
+                        />
+                      </div>
+                    </ScrollArea>
+                  );
+                })()}
               </TabsContent>
             </Tabs>
           </div>
