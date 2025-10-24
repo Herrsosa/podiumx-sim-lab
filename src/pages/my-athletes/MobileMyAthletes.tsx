@@ -12,11 +12,10 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import ProofOfSweat from '@/components/ProofOfSweat';
 import { Skeleton } from '@/components/ui/skeleton';
-import TokengatedChat from '@/components/TokengatedChat';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
-import { Activity, ArrowDownRight, ArrowUpRight, MessageSquare, Plus, TrendingUp } from 'lucide-react';
+import { Activity, ArrowDownRight, ArrowUpRight, Plus, TrendingUp } from 'lucide-react';
 import { ResponsiveContainer, ComposedChart, Line, Bar, XAxis, YAxis, Tooltip as RechartsTooltip } from 'recharts';
 import { POS_NEON_COLOR, StackedCircles } from '@/components/charts/StackedCircles';
 import type { TooltipProps } from 'recharts';
@@ -27,6 +26,7 @@ import ConnectXButton from '@/components/social/ConnectXButton';
 import { useXIdentity } from '@/hooks/useXIdentity';
 import XBadge from '@/components/social/XBadge';
 import { MobileActionBar } from '@/components/MobileActionBar';
+import LockerMessages from '@/components/myathlete/LockerMessages';
 
 type ChartDatum = {
   t: number;
@@ -175,11 +175,15 @@ export default function MobileMyAthletes({
               
               <TabsContent value="locker" className="mt-4">
                 {(() => {
-                  const lockedWorkouts = workouts.filter(w => {
-                    const post = posts.find(p => p.id === w.id);
-                    return post?.token_gated === true || (post?.min_tokens_required ?? 0) > 0;
+                  // Filter workouts and posts that are locked (token-gated or require tokens)
+                  const lockedPosts = posts.filter(p => {
+                    return p.token_gated === true || (p.min_tokens_required ?? 0) > 0 || p.visibility === 'supporters' || p.visibility === 'backers';
                   });
-                  const lockedPosts = posts.filter(p => p.token_gated === true || (p.min_tokens_required ?? 0) > 0);
+                  
+                  // Get workouts that have corresponding locked posts
+                  const lockedWorkouts = workouts.filter(w => {
+                    return lockedPosts.some(p => p.id === w.id);
+                  });
                   
                   if (lockedWorkouts.length === 0 && lockedPosts.length === 0) {
                     return (
@@ -199,20 +203,22 @@ export default function MobileMyAthletes({
                   }
                   
                   return (
-                    <ScrollArea className="max-h-[600px] -mx-4">
-                      <div className="px-4">
-                        <p className="text-sm text-muted-foreground mb-4">
-                          This is what your supporters see in your locker.
-                        </p>
-                        <ProofOfSweat
-                          athleteId={athlete.id}
-                          athleteName={athlete.name}
-                          workouts={lockedWorkouts}
-                          posts={lockedPosts}
-                          viewerHoldings={Number.MAX_SAFE_INTEGER}
-                        />
-                      </div>
-                    </ScrollArea>
+                    <div className="-mx-4">
+                      <ScrollArea className="h-[500px]">
+                        <div className="px-4 space-y-4">
+                          <p className="text-sm text-muted-foreground">
+                            This is what your supporters see in your locker.
+                          </p>
+                          <ProofOfSweat
+                            athleteId={athlete.id}
+                            athleteName={athlete.name}
+                            workouts={lockedWorkouts}
+                            posts={lockedPosts}
+                            viewerHoldings={Number.MAX_SAFE_INTEGER}
+                          />
+                        </div>
+                      </ScrollArea>
+                    </div>
                   );
                 })()}
               </TabsContent>
@@ -481,24 +487,12 @@ export default function MobileMyAthletes({
             )}
           </TabsContent>
 
-          <TabsContent value="dm" className="min-w-0 space-y-4">
-            <Card>
-              <CardContent className="space-y-3 p-6">
-                <div className="flex items-center gap-3">
-                  <MessageSquare className="h-5 w-5 text-primary" />
-                  <div>
-                    <p className="font-medium text-foreground">Direct Messages</p>
-                    <p className="text-sm text-muted-foreground">Reach your supporters directly and share exclusive updates.</p>
-                  </div>
-                </div>
-                <TokengatedChat
-                  athleteId={athlete.id}
-                  athleteName={athlete.name}
-                  userHoldings={1}
-                  onBuyClick={() => {}}
-                />
-              </CardContent>
-            </Card>
+          <TabsContent value="dm" className="min-w-0">
+            <LockerMessages 
+              athleteId={athlete.id} 
+              athleteName={athlete.name}
+              mode="embedded"
+            />
           </TabsContent>
         </Tabs>
       </main>
