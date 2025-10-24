@@ -73,23 +73,22 @@ const AthletePriceChart = memo(({
   const { start, end } = getRangeWindow(timeRange);
   
   const xDomain = useMemo<[number, number]>(() => {
-    // For non-'all' ranges with defined start, clamp to range window
+    const now = Date.now();
+    const dayMs = 86_400_000;
+    
+    // Hard-clamp to range for 24h/7d/30d
     if (timeRange !== 'all' && start) {
       return [start, end];
     }
     
     // For 'all', compute from data
-    const now = Date.now();
-    const dayMs = 24 * 60 * 60 * 1000;
-    
     if (chartPoints.length === 0) {
       return [now - dayMs, now + dayMs];
     }
     
     const min = chartPoints[0].t;
     const max = Math.max(chartPoints[chartPoints.length - 1].t, now);
-    const pad = dayMs * 0.1;
-    return [min - pad, max + pad];
+    return [min, max];
   }, [chartPoints, timeRange, start, end]);
 
   const renderTooltip = useCallback(({ active, label, payload }: TooltipProps<number, string>) => {

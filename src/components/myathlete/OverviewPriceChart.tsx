@@ -21,13 +21,10 @@ export function OverviewPriceChart({
   const activeTimeRange = externalTimeRange ?? internalTimeRange;
   const handleTimeRangeChange = onTimeRangeChange ?? setInternalTimeRange;
   
-  // Derive sinceMs from range to reduce overfetch
-  const sinceMs = useMemo(() => {
-    const { start } = getRangeWindow(activeTimeRange);
-    return start;
-  }, [activeTimeRange]);
+  // Get range window and pass start as sinceMs
+  const { start } = useMemo(() => getRangeWindow(activeTimeRange), [activeTimeRange]);
   
-  const { data: trades = [], isLoading } = useAthleteTrades(athlete.id, sinceMs);
+  const { data: trades = [], isLoading } = useAthleteTrades(athlete.id, start);
 
   const chartPoints = useMemo(() => {
     if (!athlete?.price) return [];

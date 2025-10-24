@@ -22,8 +22,8 @@ export function useAthleteTrades(athleteId: string, sinceMs?: number) {
         .select('id, created_at, athlete_id, user_id, side, qty, gross_amount, net_amount, fee, price_after')
         .eq('athlete_id', athleteId);
 
-      // Add time filter if provided to reduce overfetch
-      if (sinceMs) {
+      // Filter by time window when provided
+      if (sinceMs !== undefined) {
         query = query.gte('created_at', new Date(sinceMs).toISOString());
       }
 
@@ -38,8 +38,8 @@ export function useAthleteTrades(athleteId: string, sinceMs?: number) {
       return rows.map<AthleteTrade>((trade) => ({
         ...trade,
         timestamp: new Date(trade.created_at).getTime(),
-        athleteName: '', // This can be enriched if needed
-        userName: '', // This can be enriched if needed
+        athleteName: '',
+        userName: '',
       }));
     },
     enabled: !!athleteId,
