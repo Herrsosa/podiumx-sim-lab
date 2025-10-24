@@ -67,6 +67,7 @@ export const AthleteCard = memo(({ athlete, chartData, onClick, onMouseEnter }: 
             width={320}
             height={320}
             className="h-48 w-full object-cover"
+            eager={false}
           />
         </div>
         <div className="p-6">
