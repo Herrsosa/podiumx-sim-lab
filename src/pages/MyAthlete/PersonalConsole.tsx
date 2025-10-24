@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useCallback, useRef, useId } from 'react';
 import { Plus, TrendingUp, Edit, Trash2, MessageSquare, DollarSign, Activity, Share2, MessageCircle } from 'lucide-react';
 import type { TimeRangeKey } from '@/utils/chartData';
+import { getRangeWindow } from '@/utils/chartData';
 import { formatNumber } from '@/lib/format';
 import { ComposedChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Bar, type TooltipProps } from 'recharts';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -61,6 +62,8 @@ interface PersonalConsoleProps {
   hasNextPage?: boolean;
   fetchNextPage?: () => void;
   isFetchingNextPage?: boolean;
+  timeRange?: TimeRangeKey;
+  onTimeRangeChange?: (range: TimeRangeKey) => void;
 }
 
 export function PersonalConsole({
@@ -83,11 +86,15 @@ export function PersonalConsole({
   hasNextPage = false,
   fetchNextPage,
   isFetchingNextPage = false,
+  timeRange: externalTimeRange,
+  onTimeRangeChange,
 }: PersonalConsoleProps) {
   const user = useUser();
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<'workouts' | 'community' | 'messages' | 'earnings'>('workouts');
-  const [timeRange, setTimeRange] = useState<TimeRangeKey>('7d');
+  const [internalTimeRange, setInternalTimeRange] = useState<TimeRangeKey>('7d');
+  const activeTimeRange = externalTimeRange ?? internalTimeRange;
+  const handleTimeRangeChange = onTimeRangeChange ?? setInternalTimeRange;
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [workoutToDelete, setWorkoutToDelete] = useState<string | null>(null);
   const messagesSectionRef = useRef<HTMLDivElement | null>(null);
@@ -104,9 +111,16 @@ export function PersonalConsole({
   );
 
   const chartData = useMemo(() => {
+    const { start, end } = getRangeWindow(activeTimeRange);
+    
+    // Filter priceHistory by time range
+    const filteredPriceHistory = priceHistory.filter((point) => {
+      return (!start || point.t >= start) && point.t <= end;
+    });
+    
     const dayWithPrice = new Set<number>();
 
-    const baseData = priceHistory.map((point) => {
+    const baseData = filteredPriceHistory.map((point) => {
       const dayStart = startOfUtcDay(point.t);
       dayWithPrice.add(dayStart);
 
@@ -119,6 +133,7 @@ export function PersonalConsole({
 
     const posOnlyData = posDailyPoints
       .filter((posPoint) => !dayWithPrice.has(posPoint.dateMs))
+      .filter((posPoint) => (!start || posPoint.dateMs >= start) && posPoint.dateMs <= end)
       .map((posPoint) => ({
         t: posPoint.dateMs,
         price: null,
@@ -126,7 +141,7 @@ export function PersonalConsole({
       }));
 
     return [...baseData, ...posOnlyData].sort((a, b) => a.t - b.t);
-  }, [posCountByDay, posDailyPoints, priceHistory]);
+  }, [posCountByDay, posDailyPoints, priceHistory, activeTimeRange]);
 
   const posDomain = useMemo<[number, number]>(() => {
     const maxPos = posDailyPoints.reduce((max, point) => Math.max(max, point.posCount), 0);
@@ -263,7 +278,7 @@ export function PersonalConsole({
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <Tabs value={timeRange} onValueChange={(value) => setTimeRange(value as TimeRangeKey)} className="mb-4">
+            <Tabs value={activeTimeRange} onValueChange={(value) => handleTimeRangeChange(value as TimeRangeKey)} className="mb-4">
               <TabsList className="grid w-full max-w-md grid-cols-4">
                 <TabsTrigger value="24h">24H</TabsTrigger>
                 <TabsTrigger value="7d">7D</TabsTrigger>

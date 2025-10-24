@@ -1,5 +1,6 @@
 import { useState, useMemo, useCallback, useEffect, useRef, useId } from 'react';
 import type { TimeRangeKey } from '@/utils/chartData';
+import { getRangeWindow } from '@/utils/chartData';
 import { Plus, TrendingUp, Edit, Trash2, MessageSquare, DollarSign, Activity, Share2, MessageCircle } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
 import { ComposedChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Bar, type TooltipProps } from 'recharts';
@@ -211,9 +212,16 @@ export default function MyAthletePage() {
   );
 
   const chartData = useMemo(() => {
+    const { start, end } = getRangeWindow(chartTimeRange);
+    
+    // Filter priceHistory by time range
+    const filteredPriceHistory = priceHistory.filter((point) => {
+      return (!start || point.t >= start) && point.t <= end;
+    });
+    
     const dayWithPrice = new Set<number>();
 
-    const baseData = priceHistory.map((point) => {
+    const baseData = filteredPriceHistory.map((point) => {
       const dayStart = startOfUtcDay(point.t);
       dayWithPrice.add(dayStart);
 
@@ -226,6 +234,7 @@ export default function MyAthletePage() {
 
     const posOnlyData = posDailyPoints
       .filter((posPoint) => !dayWithPrice.has(posPoint.dateMs))
+      .filter((posPoint) => (!start || posPoint.dateMs >= start) && posPoint.dateMs <= end)
       .map((posPoint) => ({
         t: posPoint.dateMs,
         price: null,
@@ -233,7 +242,7 @@ export default function MyAthletePage() {
       }));
 
     return [...baseData, ...posOnlyData].sort((a, b) => a.t - b.t);
-  }, [posCountByDay, posDailyPoints, priceHistory]);
+  }, [posCountByDay, posDailyPoints, priceHistory, chartTimeRange]);
 
   const posDomain = useMemo<[number, number]>(() => {
     const maxPos = posDailyPoints.reduce((max, point) => Math.max(max, point.posCount), 0);
@@ -577,6 +586,8 @@ export default function MyAthletePage() {
             hasNextPage={Boolean(hasNextPage)}
             fetchNextPage={hasNextPage ? () => { void fetchNextPage(); } : undefined}
             isFetchingNextPage={isFetchingNextPage}
+            timeRange={chartTimeRange}
+            onTimeRangeChange={setChartTimeRange}
           />
         </TabsContent>
 

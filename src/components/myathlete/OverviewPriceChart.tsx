@@ -9,14 +9,21 @@ interface OverviewPriceChartProps {
   athlete: Athlete;
 }
 
-export function OverviewPriceChart({ athlete, timeRange: externalTimeRange, onTimeRangeChange }: OverviewPriceChartProps & { timeRange?: TimeRangeKey; onTimeRangeChange?: (range: TimeRangeKey) => void }) {
+export function OverviewPriceChart({ 
+  athlete, 
+  timeRange: externalTimeRange, 
+  onTimeRangeChange 
+}: OverviewPriceChartProps & { 
+  timeRange?: TimeRangeKey; 
+  onTimeRangeChange?: (range: TimeRangeKey) => void 
+}) {
   const [internalTimeRange, setInternalTimeRange] = useState<TimeRangeKey>('7d');
-  const timeRange = externalTimeRange ?? internalTimeRange;
-  const setTimeRange = onTimeRangeChange ?? setInternalTimeRange;
+  const activeTimeRange = externalTimeRange ?? internalTimeRange;
+  const handleTimeRangeChange = onTimeRangeChange ?? setInternalTimeRange;
   const { data: trades = [], isLoading } = useAthleteTrades(athlete.id);
 
   const chartPoints = useMemo(() => {
-    const { start, end } = getRangeWindow(timeRange);
+    const { start, end } = getRangeWindow(activeTimeRange);
     const filteredTrades = trades.filter((trade) => {
       const t = typeof trade.timestamp === 'number' ? trade.timestamp : new Date(trade.created_at).getTime();
       return (!start || t >= start) && t <= end;
@@ -60,7 +67,7 @@ export function OverviewPriceChart({ athlete, timeRange: externalTimeRange, onTi
     }
 
     return Array.from(tradesByDay.values()).sort((a, b) => a.t - b.t);
-  }, [athlete.price, trades, timeRange]);
+  }, [athlete.price, trades, activeTimeRange]);
 
   const hasRealTrades = trades.length > 0;
   const firstTradePoint = hasRealTrades
@@ -83,7 +90,7 @@ export function OverviewPriceChart({ athlete, timeRange: externalTimeRange, onTi
 
   return (
     <div className="space-y-4">
-      <Tabs value={timeRange} onValueChange={(value) => setTimeRange(value as TimeRangeKey)}>
+      <Tabs value={activeTimeRange} onValueChange={(value) => handleTimeRangeChange(value as TimeRangeKey)}>
         <TabsList className="grid w-full max-w-md grid-cols-4">
           <TabsTrigger value="24h">24H</TabsTrigger>
           <TabsTrigger value="7d">7D</TabsTrigger>
@@ -96,7 +103,7 @@ export function OverviewPriceChart({ athlete, timeRange: externalTimeRange, onTi
           chartPoints={chartPoints}
           firstTradePoint={firstTradePoint}
           hasRealTrades={hasRealTrades}
-          timeRange={timeRange}
+          timeRange={activeTimeRange}
           formatXAxisTick={formatXAxisTick}
           formatTooltipLabel={formatTooltipLabel}
           isLoading={isLoading}
