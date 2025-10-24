@@ -31,6 +31,7 @@ import { useUser } from '@/store/auth';
 import { MobileActionBar } from '@/components/MobileActionBar';
 import { OptimizedImage } from '@/components/OptimizedImage';
 import { SelfMobileProfile } from '@/pages/AthleteDetailSelfMobile';
+import { fillPriceGaps } from '@/utils/chartData';
 
 const AthletePriceChart = lazy(() => import('@/components/charts/AthletePriceChart'));
 
@@ -104,31 +105,27 @@ export default function AthleteDetail() {
   }, [tradeHistory]);
 
   const { chartPoints, firstTradePoint } = useMemo(() => {
-    if (rawChartData.length === 0) {
-      return { chartPoints: [], firstTradePoint: null };
-    }
-
-    const sorted = [...rawChartData].sort((a, b) => a.t - b.t);
-    const first = sorted[0];
-
-    if (sorted.length === 1) {
-      const now = Date.now();
-      const duplicateTimestamp = now > first.t ? now : first.t + 60_000;
-      const duplicatePoint = { ...first, t: duplicateTimestamp };
-      return {
-        chartPoints: [first, duplicatePoint],
-        firstTradePoint: first,
-      };
-    }
-
+    if (!athlete) return { chartPoints: [], firstTradePoint: null };
+    
+    // Convert rawChartData to trade format for gap filling
+    const tradeFormat = rawChartData.map(point => ({
+      created_at: new Date(point.t).toISOString(),
+      timestamp: point.t,
+      price_after: point.price,
+    }));
+    
+    // Use fillPriceGaps to ensure continuous data
+    const filled = fillPriceGaps(tradeFormat, athlete.price, timeRange);
+    
+    const first = filled[0] || null;
     return {
-      chartPoints: sorted,
+      chartPoints: filled,
       firstTradePoint: first,
     };
-  }, [rawChartData]);
+  }, [rawChartData, athlete, timeRange]);
 
   const hasRealTrades = (tradeHistory?.volume ?? 0) > 0 || rawChartData.length > 1;
-  const displayChartPoints = hasRealTrades ? chartPoints : [];
+  const displayChartPoints = chartPoints;
 
   const formatXAxisTick = useCallback(
     (value: number) => {

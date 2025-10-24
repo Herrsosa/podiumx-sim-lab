@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import type { Athlete } from '@/types';
 import { useAthleteTrades } from '@/hooks/useAthleteTrades';
 import AthletePriceChart from '@/components/charts/AthletePriceChart';
-import { startOfUtcDay, getRangeWindow, type TimeRangeKey } from '@/utils/chartData';
+import { fillPriceGaps, type TimeRangeKey } from '@/utils/chartData';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 interface OverviewPriceChartProps {
@@ -23,50 +23,7 @@ export function OverviewPriceChart({
   const { data: trades = [], isLoading } = useAthleteTrades(athlete.id);
 
   const chartPoints = useMemo(() => {
-    const { start, end } = getRangeWindow(activeTimeRange);
-    const filteredTrades = trades.filter((trade) => {
-      const t = typeof trade.timestamp === 'number' ? trade.timestamp : new Date(trade.created_at).getTime();
-      return (!start || t >= start) && t <= end;
-    });
-    
-    const tradesByDay = new Map<number, { t: number; price: number }>();
-
-    for (const trade of filteredTrades) {
-      const t =
-        typeof trade.timestamp === 'number'
-          ? trade.timestamp
-          : new Date(trade.created_at).getTime();
-      if (!Number.isFinite(t)) continue;
-
-      const rawPrice =
-        typeof trade.price_after === 'number'
-          ? trade.price_after
-          : Number(trade.price_after);
-      const price = Number.isFinite(rawPrice) ? rawPrice : athlete.price;
-
-      const dayStart = startOfUtcDay(t);
-      const existing = tradesByDay.get(dayStart);
-      if (!existing || t > existing.t) {
-        tradesByDay.set(dayStart, { t, price });
-      }
-    }
-
-    if (tradesByDay.size === 0) {
-      const now = Date.now();
-      tradesByDay.set(now, { t: now, price: athlete.price });
-    } else {
-      const nowMs = Date.now();
-      const todayStart = startOfUtcDay(nowMs);
-      const latestToday = tradesByDay.get(todayStart);
-      if (!latestToday || nowMs > latestToday.t) {
-        tradesByDay.set(todayStart, {
-          t: nowMs,
-          price: tradesByDay.get(todayStart)?.price ?? athlete.price,
-        });
-      }
-    }
-
-    return Array.from(tradesByDay.values()).sort((a, b) => a.t - b.t);
+    return fillPriceGaps(trades, athlete.price, activeTimeRange);
   }, [athlete.price, trades, activeTimeRange]);
 
   const hasRealTrades = trades.length > 0;

@@ -73,16 +73,17 @@ const AthletePriceChart = memo(({
   const glowFilterId = useId().replace(/:/g, '');
 
   const xDomain = useMemo<[number, number]>(() => {
-    if (chartData.length === 0) {
-      const now = Date.now();
-      const dayMs = 24 * 60 * 60 * 1000;
+    const now = Date.now();
+    const dayMs = 24 * 60 * 60 * 1000;
+    
+    if (chartPoints.length === 0) {
       return [now - dayMs, now + dayMs];
     }
-    const dayMs = 24 * 60 * 60 * 1000;
-    const min = chartData[0].t;
-    const max = chartData[chartData.length - 1].t;
-    return [min - dayMs * 0.5, max + dayMs * 0.75];
-  }, [chartData]);
+    
+    const min = chartPoints[0].t;
+    const max = Math.max(chartPoints[chartPoints.length - 1].t, now);
+    return [min - dayMs * 0.1, max + dayMs * 0.1];
+  }, [chartPoints]);
 
   const renderTooltip = useCallback(({ active, label, payload }: TooltipProps<number, string>) => {
     if (!active || !payload || payload.length === 0 || typeof label !== 'number') {
@@ -115,14 +116,6 @@ const AthletePriceChart = memo(({
 
   if (isLoading) {
     return <ChartSkeleton className="h-full" />;
-  }
-
-  if (chartPoints.length === 0) {
-    return (
-      <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
-        No trades yet
-      </div>
-    );
   }
 
   return (

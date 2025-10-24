@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useCallback, useRef, useId } from 'react';
 import { Plus, TrendingUp, Edit, Trash2, MessageSquare, DollarSign, Activity, Share2, MessageCircle } from 'lucide-react';
 import type { TimeRangeKey } from '@/utils/chartData';
-import { getRangeWindow } from '@/utils/chartData';
+import { fillPriceGaps } from '@/utils/chartData';
 import { formatNumber } from '@/lib/format';
 import { ComposedChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Bar, type TooltipProps } from 'recharts';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -110,17 +110,21 @@ export function PersonalConsole({
     [posDailyPoints],
   );
 
+  const filledPricePoints = useMemo(() => {
+    // Convert priceHistory to trade-like format for fillPriceGaps
+    const tradeFormat = priceHistory.map(point => ({
+      created_at: new Date(point.t).toISOString(),
+      timestamp: point.t,
+      price_after: point.price,
+    }));
+    
+    return fillPriceGaps(tradeFormat, athlete.price, activeTimeRange);
+  }, [priceHistory, athlete.price, activeTimeRange]);
+
   const chartData = useMemo(() => {
-    const { start, end } = getRangeWindow(activeTimeRange);
-    
-    // Filter priceHistory by time range
-    const filteredPriceHistory = priceHistory.filter((point) => {
-      return (!start || point.t >= start) && point.t <= end;
-    });
-    
     const dayWithPrice = new Set<number>();
 
-    const baseData = filteredPriceHistory.map((point) => {
+    const baseData = filledPricePoints.map((point) => {
       const dayStart = startOfUtcDay(point.t);
       dayWithPrice.add(dayStart);
 
@@ -133,7 +137,6 @@ export function PersonalConsole({
 
     const posOnlyData = posDailyPoints
       .filter((posPoint) => !dayWithPrice.has(posPoint.dateMs))
-      .filter((posPoint) => (!start || posPoint.dateMs >= start) && posPoint.dateMs <= end)
       .map((posPoint) => ({
         t: posPoint.dateMs,
         price: null,
@@ -141,7 +144,7 @@ export function PersonalConsole({
       }));
 
     return [...baseData, ...posOnlyData].sort((a, b) => a.t - b.t);
-  }, [posCountByDay, posDailyPoints, priceHistory, activeTimeRange]);
+  }, [filledPricePoints, posCountByDay, posDailyPoints]);
 
   const posDomain = useMemo<[number, number]>(() => {
     const maxPos = posDailyPoints.reduce((max, point) => Math.max(max, point.posCount), 0);
@@ -150,16 +153,17 @@ export function PersonalConsole({
   }, [posDailyPoints]);
 
   const xDomain = useMemo<[number, number]>(() => {
-    if (chartData.length === 0) {
-      const now = Date.now();
-      const dayMs = 24 * 60 * 60 * 1000;
+    const now = Date.now();
+    const dayMs = 24 * 60 * 60 * 1000;
+    
+    if (filledPricePoints.length === 0) {
       return [now - dayMs, now + dayMs];
     }
-    const dayMs = 24 * 60 * 60 * 1000;
-    const min = chartData[0].t;
-    const max = chartData[chartData.length - 1].t;
-    return [min - dayMs * 0.5, max + dayMs * 0.75];
-  }, [chartData]);
+    
+    const min = filledPricePoints[0].t;
+    const max = Math.max(filledPricePoints[filledPricePoints.length - 1].t, now);
+    return [min - dayMs * 0.1, max + dayMs * 0.1];
+  }, [filledPricePoints]);
 
   const glowFilterId = useId().replace(/:/g, '');
 
