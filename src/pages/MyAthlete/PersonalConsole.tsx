@@ -111,6 +111,8 @@ export function PersonalConsole({
   );
 
   const filledPricePoints = useMemo(() => {
+    if (!athlete?.price) return [];
+    
     // Convert priceHistory to trade-like format for fillPriceGaps
     const tradeFormat = priceHistory.map(point => ({
       created_at: new Date(point.t).toISOString(),
@@ -119,7 +121,7 @@ export function PersonalConsole({
     }));
     
     return fillPriceGaps(tradeFormat, athlete.price, activeTimeRange);
-  }, [priceHistory, athlete.price, activeTimeRange]);
+  }, [priceHistory, athlete?.price, activeTimeRange]);
 
   const chartData = useMemo(() => {
     const dayWithPrice = new Set<number>();

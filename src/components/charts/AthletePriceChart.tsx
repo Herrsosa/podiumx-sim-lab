@@ -12,7 +12,6 @@ type ChartPoint = {
 
 interface AthletePriceChartProps {
   chartPoints: ChartPoint[];
-  firstTradePoint: ChartPoint | null;
   hasRealTrades: boolean;
   timeRange: '24h' | '7d' | '30d' | 'all';
   formatXAxisTick: (value: number) => string;
@@ -23,7 +22,6 @@ interface AthletePriceChartProps {
 
 const AthletePriceChart = memo(({
   chartPoints,
-  firstTradePoint,
   hasRealTrades,
   timeRange,
   formatXAxisTick,
@@ -191,22 +189,6 @@ const AthletePriceChart = memo(({
             strokeLinecap="round"
             animationDuration={500}
           />
-          {hasRealTrades && firstTradePoint && chartPoints.length > 0 && (
-            <ReferenceDot
-              x={firstTradePoint.t}
-              y={firstTradePoint.price}
-              r={6}
-              stroke="hsl(var(--background))"
-              strokeWidth={2}
-              fill={POS_NEON_COLOR}
-              label={{
-                value: 'First trade',
-                position: 'top',
-                fill: 'hsl(var(--muted-foreground))',
-                fontSize: 12,
-              }}
-            />
-          )}
         </ComposedChart>
       </ResponsiveContainer>
     </div>

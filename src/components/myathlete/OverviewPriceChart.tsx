@@ -23,13 +23,11 @@ export function OverviewPriceChart({
   const { data: trades = [], isLoading } = useAthleteTrades(athlete.id);
 
   const chartPoints = useMemo(() => {
+    if (!athlete?.price) return [];
     return fillPriceGaps(trades, athlete.price, activeTimeRange);
-  }, [athlete.price, trades, activeTimeRange]);
+  }, [athlete?.price, trades, activeTimeRange]);
 
   const hasRealTrades = trades.length > 0;
-  const firstTradePoint = hasRealTrades
-    ? chartPoints[0] ?? null
-    : null;
 
   const formatXAxisTick = (value: number) =>
     new Date(value).toLocaleDateString(undefined, {
@@ -58,7 +56,6 @@ export function OverviewPriceChart({
       <div className="h-64 md:h-72">
         <AthletePriceChart
           chartPoints={chartPoints}
-          firstTradePoint={firstTradePoint}
           hasRealTrades={hasRealTrades}
           timeRange={activeTimeRange}
           formatXAxisTick={formatXAxisTick}

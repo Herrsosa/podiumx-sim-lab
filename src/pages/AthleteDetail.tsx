@@ -104,8 +104,8 @@ export default function AthleteDetail() {
       .filter((point): point is { t: number; price: number } => point !== null);
   }, [tradeHistory]);
 
-  const { chartPoints, firstTradePoint } = useMemo(() => {
-    if (!athlete) return { chartPoints: [], firstTradePoint: null };
+  const chartPoints = useMemo(() => {
+    if (!athlete?.price) return [];
     
     // Convert rawChartData to trade format for gap filling
     const tradeFormat = rawChartData.map(point => ({
@@ -115,14 +115,8 @@ export default function AthleteDetail() {
     }));
     
     // Use fillPriceGaps to ensure continuous data
-    const filled = fillPriceGaps(tradeFormat, athlete.price, timeRange);
-    
-    const first = filled[0] || null;
-    return {
-      chartPoints: filled,
-      firstTradePoint: first,
-    };
-  }, [rawChartData, athlete, timeRange]);
+    return fillPriceGaps(tradeFormat, athlete.price, timeRange);
+  }, [rawChartData, athlete?.price, timeRange]);
 
   const hasRealTrades = (tradeHistory?.volume ?? 0) > 0 || rawChartData.length > 1;
   const displayChartPoints = chartPoints;
@@ -395,7 +389,6 @@ export default function AthleteDetail() {
               <Suspense fallback={<ChartSkeleton className="h-full" />}>
                 <AthletePriceChart
                   chartPoints={displayChartPoints}
-                  firstTradePoint={firstTradePoint}
                   hasRealTrades={hasRealTrades}
                   timeRange={timeRange}
                   formatXAxisTick={formatXAxisTick}
