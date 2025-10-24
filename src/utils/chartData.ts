@@ -72,8 +72,8 @@ export type TradePoint = {
 };
 
 /**
- * Fills gaps in price data by forward-filling prices across all days in the timerange.
- * Ensures every day has a price point, using the last known price or current price.
+ * Fills gaps in price data by forward-filling prices across all intervals in the timerange.
+ * For 24h: uses 1-hour increments. For 7d/30d: uses daily increments.
  */
 export function fillPriceGaps(
   trades: Array<{ timestamp?: number; created_at: string; price_after: number | string }>,
@@ -83,16 +83,16 @@ export function fillPriceGaps(
 ): TradePoint[] {
   const { start, end } = getRangeWindow(timeRange, now);
   
-  // Extract and sort trade points
+  // Extract and sort trade points - strictly filter within range
   const tradePoints: TradePoint[] = [];
   for (const trade of trades) {
     const t = typeof trade.timestamp === 'number' ? trade.timestamp : new Date(trade.created_at).getTime();
     if (!Number.isFinite(t)) continue;
     
-    const rawPrice = typeof trade.price_after === 'number' ? trade.price_after : Number(trade.price_after);
-    const price = Number.isFinite(rawPrice) ? rawPrice : currentPrice;
+    const raw = typeof trade.price_after === 'number' ? trade.price_after : Number(trade.price_after);
+    const price = Number.isFinite(raw) ? raw : currentPrice;
     
-    // Only include trades within the range
+    // Strictly filter: only include trades within [start, end]
     if (start && t < start) continue;
     if (t > end) continue;
     
@@ -101,18 +101,32 @@ export function fillPriceGaps(
   
   tradePoints.sort((a, b) => a.t - b.t);
   
-  // If no trades in range, create single point at current price
+  // If no trades in range, seed a single point at start with currentPrice
   if (tradePoints.length === 0) {
-    return [{ t: end, price: currentPrice }];
+    const seedTime = start || end;
+    return [{ t: seedTime, price: currentPrice }];
   }
   
-  // Generate all days in range
-  const rangeStart = start || tradePoints[0].t;
-  const allDays: number[] = [];
+  // Determine step size and alignment based on timeRange
+  const oneHourMs = 60 * 60 * 1000;
   const oneDayMs = 24 * 60 * 60 * 1000;
+  const is24h = timeRange === '24h';
+  const stepMs = is24h ? oneHourMs : oneDayMs;
   
-  for (let dayMs = startOfUtcDay(rangeStart); dayMs <= end; dayMs += oneDayMs) {
-    allDays.push(dayMs);
+  // Generate all intervals in range
+  const rangeStart = start || tradePoints[0].t;
+  const allIntervals: number[] = [];
+  
+  if (is24h) {
+    // For 24h: step by hour, no rounding to day start
+    for (let t = rangeStart; t <= end; t += oneHourMs) {
+      allIntervals.push(t);
+    }
+  } else {
+    // For 7d/30d: step by day using startOfUtcDay
+    for (let dayMs = startOfUtcDay(rangeStart); dayMs <= end; dayMs += oneDayMs) {
+      allIntervals.push(dayMs);
+    }
   }
   
   // Fill gaps with forward-filled prices
@@ -120,25 +134,26 @@ export function fillPriceGaps(
   let lastPrice = currentPrice;
   let tradeIndex = 0;
   
-  for (const dayMs of allDays) {
-    // Find latest trade up to this day
-    while (tradeIndex < tradePoints.length && tradePoints[tradeIndex].t <= dayMs + oneDayMs - 1) {
+  for (const intervalTime of allIntervals) {
+    // Find latest trade up to this interval
+    while (tradeIndex < tradePoints.length && tradePoints[tradeIndex].t <= intervalTime) {
       lastPrice = tradePoints[tradeIndex].price;
       tradeIndex++;
     }
     
-    // Add point for this day with the latest known price
-    filledPoints.push({ t: dayMs, price: lastPrice });
+    // Add point for this interval with the latest known price
+    filledPoints.push({ t: intervalTime, price: lastPrice });
   }
   
-  // Always ensure today is included with current price
-  const todayStart = startOfUtcDay(now);
-  const todayIndex = filledPoints.findIndex(p => p.t === todayStart);
-  if (todayIndex >= 0) {
-    filledPoints[todayIndex] = { t: now, price: currentPrice };
-  } else {
+  // Always ensure current time is included with current price
+  if (filledPoints.length === 0 || filledPoints[filledPoints.length - 1].t < now) {
     filledPoints.push({ t: now, price: currentPrice });
+  } else if (Math.abs(filledPoints[filledPoints.length - 1].t - now) > stepMs / 2) {
+    filledPoints.push({ t: now, price: currentPrice });
+  } else {
+    // Update last point to current time and price
+    filledPoints[filledPoints.length - 1] = { t: now, price: currentPrice };
   }
   
-  return filledPoints.sort((a, b) => a.t - b.t);
+  return filledPoints;
 }

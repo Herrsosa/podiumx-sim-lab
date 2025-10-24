@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import type { Athlete } from '@/types';
 import { useAthleteTrades } from '@/hooks/useAthleteTrades';
 import AthletePriceChart from '@/components/charts/AthletePriceChart';
-import { fillPriceGaps, type TimeRangeKey } from '@/utils/chartData';
+import { fillPriceGaps, getRangeWindow, type TimeRangeKey } from '@/utils/chartData';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 interface OverviewPriceChartProps {
@@ -20,7 +20,14 @@ export function OverviewPriceChart({
   const [internalTimeRange, setInternalTimeRange] = useState<TimeRangeKey>('7d');
   const activeTimeRange = externalTimeRange ?? internalTimeRange;
   const handleTimeRangeChange = onTimeRangeChange ?? setInternalTimeRange;
-  const { data: trades = [], isLoading } = useAthleteTrades(athlete.id);
+  
+  // Derive sinceMs from range to reduce overfetch
+  const sinceMs = useMemo(() => {
+    const { start } = getRangeWindow(activeTimeRange);
+    return start;
+  }, [activeTimeRange]);
+  
+  const { data: trades = [], isLoading } = useAthleteTrades(athlete.id, sinceMs);
 
   const chartPoints = useMemo(() => {
     if (!athlete?.price) return [];

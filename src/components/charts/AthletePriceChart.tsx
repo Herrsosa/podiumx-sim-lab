@@ -3,7 +3,7 @@ import { ComposedChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTo
 import { ChartSkeleton } from '@/components/ui/skeletons';
 import type { Post } from '@/types';
 import { StackedCircles, POS_NEON_COLOR } from './StackedCircles';
-import { aggregatePosByDay, startOfUtcDay } from '@/utils/chartData';
+import { aggregatePosByDay, startOfUtcDay, getRangeWindow } from '@/utils/chartData';
 
 type ChartPoint = {
   t: number;
@@ -70,7 +70,15 @@ const AthletePriceChart = memo(({
 
   const glowFilterId = useId().replace(/:/g, '');
 
+  const { start, end } = getRangeWindow(timeRange);
+  
   const xDomain = useMemo<[number, number]>(() => {
+    // For non-'all' ranges with defined start, clamp to range window
+    if (timeRange !== 'all' && start) {
+      return [start, end];
+    }
+    
+    // For 'all', compute from data
     const now = Date.now();
     const dayMs = 24 * 60 * 60 * 1000;
     
@@ -80,8 +88,9 @@ const AthletePriceChart = memo(({
     
     const min = chartPoints[0].t;
     const max = Math.max(chartPoints[chartPoints.length - 1].t, now);
-    return [min - dayMs * 0.1, max + dayMs * 0.1];
-  }, [chartPoints]);
+    const pad = dayMs * 0.1;
+    return [min - pad, max + pad];
+  }, [chartPoints, timeRange, start, end]);
 
   const renderTooltip = useCallback(({ active, label, payload }: TooltipProps<number, string>) => {
     if (!active || !payload || payload.length === 0 || typeof label !== 'number') {
