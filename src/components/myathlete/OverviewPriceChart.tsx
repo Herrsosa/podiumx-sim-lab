@@ -9,8 +9,10 @@ interface OverviewPriceChartProps {
   athlete: Athlete;
 }
 
-export function OverviewPriceChart({ athlete }: OverviewPriceChartProps) {
-  const [timeRange, setTimeRange] = useState<TimeRangeKey>('7d');
+export function OverviewPriceChart({ athlete, timeRange: externalTimeRange, onTimeRangeChange }: OverviewPriceChartProps & { timeRange?: TimeRangeKey; onTimeRangeChange?: (range: TimeRangeKey) => void }) {
+  const [internalTimeRange, setInternalTimeRange] = useState<TimeRangeKey>('7d');
+  const timeRange = externalTimeRange ?? internalTimeRange;
+  const setTimeRange = onTimeRangeChange ?? setInternalTimeRange;
   const { data: trades = [], isLoading } = useAthleteTrades(athlete.id);
 
   const chartPoints = useMemo(() => {

@@ -405,19 +405,36 @@ export default function MobileMyAthletes({
                       </ResponsiveContainer>
                     </div>
                     
-                    {/* Token Stats - Compact below chart */}
-                    <div className="grid grid-cols-3 gap-2 mt-4 pt-4 border-t border-border/50">
-                      <div>
-                        <p className="text-xs text-muted-foreground mb-1">Price</p>
-                        <p className="text-sm font-bold">{currencyFormatter.format(athlete?.price ?? 0)}</p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-muted-foreground mb-1">Market Cap</p>
-                        <p className="text-sm font-bold">{currencyFormatter.format(athlete?.marketCap ?? 0)}</p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-muted-foreground mb-1">24h Vol</p>
-                        <p className="text-sm font-bold">{currencyFormatter.format(athlete?.volume24h ?? 0)}</p>
+                    {/* Token Stats - Compact list style below chart */}
+                    <div className="pt-4 border-t border-border">
+                      <h3 className="text-xs font-semibold mb-3 text-muted-foreground">Stats</h3>
+                      <div className="space-y-2 text-sm">
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Price</span>
+                          <span className="font-medium">{currencyFormatter.format(athlete?.price ?? 0)}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">24h Change</span>
+                          <span className={`font-medium ${isPriceUp ? 'text-success' : 'text-destructive'}`}>
+                            {isPriceUp ? '+' : ''}{percentFormatter.format((priceChange || 0) / 100)}
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Market Cap</span>
+                          <span className="font-medium">{currencyFormatter.format(athlete?.marketCap ?? 0)}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Supply</span>
+                          <span className="font-medium">{athlete?.supply ?? 0}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Reserve</span>
+                          <span className="font-medium">{currencyFormatter.format(athlete?.reserve ?? 0)}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Earnings</span>
+                          <span className="font-medium">{currencyFormatter.format(athlete?.athleteRevenue ?? 0)}</span>
+                        </div>
                       </div>
                     </div>
                   </>

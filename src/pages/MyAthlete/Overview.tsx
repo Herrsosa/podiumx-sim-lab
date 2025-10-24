@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Instagram, ExternalLink, Lock } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -14,6 +15,7 @@ import { getAvatarAsset, resolveAvatarUrl } from '@/utils/avatar';
 
 export default function Overview() {
   const { data: athleteData, isLoading } = useMyAthlete();
+  const [timeRange, setTimeRange] = useState<import('@/utils/chartData').TimeRangeKey>('7d');
 
   if (isLoading) {
     return (
@@ -98,49 +100,48 @@ export default function Overview() {
         </CardContent>
       </Card>
 
-      {/* Price Chart */}
+      {/* Price Chart & Stats */}
       <Card className="glass-card">
         <CardHeader>
           <CardTitle>Price Chart</CardTitle>
         </CardHeader>
-        <CardContent>
-          <OverviewPriceChart athlete={athlete} />
+        <CardContent className="space-y-4">
+          <OverviewPriceChart athlete={athlete} timeRange={timeRange} onTimeRangeChange={setTimeRange} />
+          
+          {/* Token Stats - Compact list style */}
+          <div className="pt-4 border-t border-border">
+            <h3 className="text-sm font-semibold mb-3 text-muted-foreground">Stats</h3>
+            <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Price</span>
+                <span className="font-medium">${formatNumber(athlete.price)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">24h Change</span>
+                <span className={`font-medium ${athlete.change24h >= 0 ? 'text-success' : 'text-destructive'}`}>
+                  {athlete.change24h >= 0 ? '+' : ''}{athlete.change24h.toFixed(2)}%
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Market Cap</span>
+                <span className="font-medium">${formatNumber(athlete.marketCap)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Supply</span>
+                <span className="font-medium">{formatNumber(athlete.supply)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Reserve</span>
+                <span className="font-medium">${formatNumber(athlete.reserve)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Earnings</span>
+                <span className="font-medium">${formatNumber(athlete.athleteRevenue)}</span>
+              </div>
+            </div>
+          </div>
         </CardContent>
       </Card>
-
-      {/* Token Stats - Compact below chart */}
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <Card className="glass-card">
-          <CardContent className="pt-4">
-            <p className="text-xs text-muted-foreground mb-1">Token Price</p>
-            <p className="text-lg font-bold">${formatNumber(athlete.price)}</p>
-            <p className={`text-xs ${athlete.change24h >= 0 ? 'text-green-500' : 'text-red-500'}`}>
-              {athlete.change24h >= 0 ? '+' : ''}{athlete.change24h.toFixed(2)}%
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card className="glass-card">
-          <CardContent className="pt-4">
-            <p className="text-xs text-muted-foreground mb-1">Market Cap</p>
-            <p className="text-lg font-bold">${formatNumber(athlete.marketCap)}</p>
-          </CardContent>
-        </Card>
-
-        <Card className="glass-card">
-          <CardContent className="pt-4">
-            <p className="text-xs text-muted-foreground mb-1">Supply</p>
-            <p className="text-lg font-bold">{formatNumber(athlete.supply)}</p>
-          </CardContent>
-        </Card>
-
-        <Card className="glass-card">
-          <CardContent className="pt-4">
-            <p className="text-xs text-muted-foreground mb-1">Earnings</p>
-            <p className="text-lg font-bold">${formatNumber(athlete.athleteRevenue)}</p>
-          </CardContent>
-        </Card>
-      </div>
 
       {/* Proof of Sweat Preview */}
       {athlete.posts && athlete.posts.length > 0 && (

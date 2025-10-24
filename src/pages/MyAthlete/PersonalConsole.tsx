@@ -1,6 +1,7 @@
-import { useState, useMemo, useCallback, useRef, useId } from 'react';
+import React, { useState, useMemo, useCallback, useRef, useId } from 'react';
 import { Plus, TrendingUp, Edit, Trash2, MessageSquare, DollarSign, Activity, Share2, MessageCircle } from 'lucide-react';
 import type { TimeRangeKey } from '@/utils/chartData';
+import { formatNumber } from '@/lib/format';
 import { ComposedChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Bar, type TooltipProps } from 'recharts';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { EarningsSection } from '@/components/EarningsSection';
@@ -334,19 +335,36 @@ export function PersonalConsole({
               </ComposedChart>
             </ResponsiveContainer>
             
-            {/* Token Stats - Compact below chart */}
-            <div className="grid grid-cols-3 gap-3 mt-4">
-              <div>
-                <p className="text-xs text-muted-foreground mb-1">Current Price</p>
-                <p className="text-base font-bold">${athlete?.price.toFixed(4)}</p>
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground mb-1">Market Cap</p>
-                <p className="text-base font-bold">${athlete?.marketCap.toFixed(2)}</p>
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground mb-1">24h Volume</p>
-                <p className="text-base font-bold">${athlete?.volume24h.toFixed(2)}</p>
+            {/* Token Stats - Compact list style below chart */}
+            <div className="pt-4 border-t border-border">
+              <h3 className="text-sm font-semibold mb-3 text-muted-foreground">Stats</h3>
+              <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Price</span>
+                  <span className="font-medium">${formatNumber(athlete?.price || 0)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">24h Change</span>
+                  <span className={`font-medium ${(athlete?.change24h || 0) >= 0 ? 'text-success' : 'text-destructive'}`}>
+                    {(athlete?.change24h || 0) >= 0 ? '+' : ''}{(athlete?.change24h || 0).toFixed(2)}%
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Market Cap</span>
+                  <span className="font-medium">${formatNumber(athlete?.marketCap || 0)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Supply</span>
+                  <span className="font-medium">{formatNumber(athlete?.supply || 0)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Reserve</span>
+                  <span className="font-medium">${formatNumber(athlete?.reserve || 0)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Earnings</span>
+                  <span className="font-medium">${formatNumber(athlete?.athleteRevenue || 0)}</span>
+                </div>
               </div>
             </div>
           </CardContent>

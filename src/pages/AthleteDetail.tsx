@@ -392,27 +392,7 @@ export default function AthleteDetail() {
               </div>
             </div>
           </CardHeader>
-          <CardContent>
-            {/* Stats */}
-            <div className="mb-6 grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
-              <div className="stat-card">
-                <Small className="text-xs">Supply</Small>
-                <SectionTitle className="text-base md:text-xl">{formatNumber(athlete.supply)}</SectionTitle>
-              </div>
-              <div className="stat-card">
-                <Small className="text-xs">Market Cap</Small>
-                <SectionTitle className="text-base md:text-xl">{formatMoney(athlete.marketCap)}</SectionTitle>
-              </div>
-              <div className="stat-card">
-                <Small className="text-xs">24h Vol</Small>
-                <SectionTitle className="text-base md:text-xl">{formatMoney(athlete.volume24h)}</SectionTitle>
-              </div>
-              <div className="stat-card">
-                <Small className="text-xs">Reserve</Small>
-                <SectionTitle className="text-base md:text-xl">{formatMoney(athlete.reserve)}</SectionTitle>
-              </div>
-            </div>
-
+          <CardContent className="space-y-4">
             {/* Chart */}
             <div className="h-48 sm:h-64">
               <Suspense fallback={<ChartSkeleton className="h-full" />}>
@@ -427,6 +407,39 @@ export default function AthleteDetail() {
                   posts={athlete.posts}
                 />
               </Suspense>
+            </div>
+
+            {/* Stats - Compact list style below chart */}
+            <div className="pt-4 border-t border-border">
+              <h3 className="text-sm font-semibold mb-3 text-muted-foreground">Stats</h3>
+              <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Price</span>
+                  <span className="font-medium">{formatMoney(athlete.price)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">24h Vol</span>
+                  <span className="font-medium">{formatMoney(athlete.volume24h)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Market Cap</span>
+                  <span className="font-medium">{formatMoney(athlete.marketCap)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Supply</span>
+                  <span className="font-medium">{formatNumber(athlete.supply)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Reserve</span>
+                  <span className="font-medium">{formatMoney(athlete.reserve)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">24h Change</span>
+                  <span className={`font-medium ${athlete.change24h >= 0 ? 'text-success' : 'text-destructive'}`}>
+                    {athlete.change24h >= 0 ? '+' : ''}{formatNumber(athlete.change24h)}%
+                  </span>
+                </div>
+              </div>
             </div>
           </CardContent>
         </Card>
