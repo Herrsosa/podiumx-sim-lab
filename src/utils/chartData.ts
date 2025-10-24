@@ -1,9 +1,10 @@
 import { Post } from '@/types';
 
-const RANGE_IN_HOURS: Record<'24h' | '7d' | '30d', number> = {
+const RANGE_IN_HOURS: Record<TimeRangeKey, number | null> = {
   '24h': 24,
   '7d': 7 * 24,
   '30d': 30 * 24,
+  'all': null,
 };
 
 export type TimeRangeKey = '24h' | '7d' | '30d' | 'all';
@@ -14,11 +15,11 @@ export type PosDailyPoint = {
 };
 
 export function getRangeWindow(range: TimeRangeKey, now: number = Date.now()): { start?: number; end: number } {
-  if (range === 'all') {
+  const hours = RANGE_IN_HOURS[range];
+  if (hours === null) {
     return { end: now };
   }
 
-  const hours = RANGE_IN_HOURS[range];
   const start = now - hours * 60 * 60 * 1000;
   return { start, end: now };
 }
