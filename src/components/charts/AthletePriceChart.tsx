@@ -154,7 +154,7 @@ const AthletePriceChart = memo(({
             tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
             stroke="hsl(var(--muted-foreground))"
             tickFormatter={(value) => `$${value.toFixed(2)}`}
-            width={60}
+            width={64}
             axisLine={false}
             tickLine={false}
           />
@@ -180,11 +180,12 @@ const AthletePriceChart = memo(({
             type="monotone"
             dataKey="price"
             stroke={POS_NEON_COLOR}
-            strokeWidth={2}
-            strokeOpacity={0.65}
+            strokeWidth={3}
+            strokeOpacity={0.8}
             dot={false}
             connectNulls
             strokeLinecap="round"
+            animationDuration={500}
           />
           {hasRealTrades && firstTradePoint && chartPoints.length > 0 && (
             <ReferenceDot

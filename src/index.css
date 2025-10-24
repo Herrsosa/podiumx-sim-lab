@@ -24,7 +24,7 @@ All colors MUST be HSL.
     --secondary-foreground: 0 0% 10%;
 
     --muted: 0 0% 95%;
-    --muted-foreground: 0 0% 35%;
+    --muted-foreground: 0 0% 40%;
 
     --accent: 212 100% 64%;
     --accent-foreground: 0 0% 100%;
@@ -35,11 +35,20 @@ All colors MUST be HSL.
     --success: 142 71% 45%;
     --success-foreground: 0 0% 98%;
 
+    --warning: 45 93% 63%;
+    --warning-foreground: 0 0% 10%;
+
     --border: 0 0% 90%;
     --input: 0 0% 90%;
     --ring: 132 82% 72%;
 
     --radius: 1rem;
+
+    /* Elevation shadows */
+    --shadow-sm: 0 1px 2px 0 hsl(0 0% 0% / 0.05);
+    --shadow-md: 0 4px 6px -1px hsl(0 0% 0% / 0.1), 0 2px 4px -2px hsl(0 0% 0% / 0.1);
+    --shadow-lg: 0 10px 15px -3px hsl(0 0% 0% / 0.1), 0 4px 6px -4px hsl(0 0% 0% / 0.1);
+    --shadow-xl: 0 20px 25px -5px hsl(0 0% 0% / 0.1), 0 8px 10px -6px hsl(0 0% 0% / 0.1);
 
     --chart-1: 132 82% 72%;
     --chart-2: 212 100% 64%;
@@ -65,7 +74,7 @@ All colors MUST be HSL.
     --secondary-foreground: 0 0% 98%;
 
     --muted: 0 0% 12%;
-    --muted-foreground: 0 0% 70%;
+    --muted-foreground: 0 0% 65%;
 
     --accent: 212 100% 64%;
     --accent-foreground: 0 0% 98%;
@@ -76,9 +85,18 @@ All colors MUST be HSL.
     --success: 142 71% 45%;
     --success-foreground: 0 0% 98%;
 
+    --warning: 45 93% 63%;
+    --warning-foreground: 0 0% 10%;
+
     --border: 0 0% 16%;
     --input: 0 0% 16%;
     --ring: 132 82% 72%;
+
+    /* Elevation shadows for dark mode */
+    --shadow-sm: 0 1px 2px 0 hsl(0 0% 0% / 0.2);
+    --shadow-md: 0 4px 6px -1px hsl(0 0% 0% / 0.3), 0 2px 4px -2px hsl(0 0% 0% / 0.3);
+    --shadow-lg: 0 10px 15px -3px hsl(0 0% 0% / 0.4), 0 4px 6px -4px hsl(0 0% 0% / 0.4);
+    --shadow-xl: 0 20px 25px -5px hsl(0 0% 0% / 0.5), 0 8px 10px -6px hsl(0 0% 0% / 0.5);
 
     --chart-1: 132 82% 72%;
     --chart-2: 212 100% 64%;
@@ -116,15 +134,23 @@ All colors MUST be HSL.
   }
 
   .stat-card {
-    @apply glass-card rounded-2xl p-4 transition-all duration-200 hover:border-primary/30;
+    @apply glass-card rounded-2xl p-4 transition-all duration-200 hover:border-primary/30 hover:shadow-md;
   }
 
   .btn-primary {
-    @apply bg-primary text-primary-foreground hover:bg-primary/90 transition-all duration-200;
+    @apply bg-primary text-primary-foreground hover:bg-primary/90 transition-all duration-200 active:scale-95;
   }
 
   .btn-secondary {
-    @apply bg-secondary text-secondary-foreground hover:bg-secondary/80 transition-all duration-200;
+    @apply bg-secondary text-secondary-foreground hover:bg-secondary/80 transition-all duration-200 active:scale-95;
+  }
+
+  .page-transition {
+    @apply animate-fade-in;
+  }
+
+  .hover-lift {
+    @apply transition-transform duration-200 hover:-translate-y-1 hover:shadow-lg;
   }
 }
 

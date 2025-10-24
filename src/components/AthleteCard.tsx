@@ -54,7 +54,7 @@ export const AthleteCard = memo(({ athlete, chartData, onClick, onMouseEnter }: 
 
   return (
     <Card
-      className="glass-card group cursor-pointer transition-all hover:scale-[1.02] hover:shadow-lg"
+      className="glass-card group cursor-pointer transition-all duration-300 hover:scale-[1.02] hover:shadow-xl hover:border-primary/30"
       onClick={onClick}
       onMouseEnter={onMouseEnter}
     >

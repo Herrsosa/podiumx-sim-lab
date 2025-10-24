@@ -60,9 +60,9 @@ export default function Navigation() {
   }, []);
 
   return (
-    <nav className="sticky top-0 z-50 border-b border-border/50 bg-background/80 backdrop-blur-xl">
+    <nav className="sticky top-0 z-50 border-b border-border/50 bg-background/95 backdrop-blur-xl shadow-sm">
       <div className="container mx-auto px-2 sm:px-4">
-        <div className="flex h-14 sm:h-16 items-center justify-between">
+        <div className="flex h-16 sm:h-18 items-center justify-between">
           {/* Logo */}
           <Link to="/" className="flex items-center gap-1.5 sm:gap-2">
             <div className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-xl bg-primary">
@@ -77,9 +77,9 @@ export default function Navigation() {
               <Button
                 variant={isActive('/marketplace') ? 'secondary' : 'ghost'}
                 size="sm"
-                className="gap-2"
+                className="gap-2 min-h-[44px]"
               >
-                <Home className="h-4 w-4" />
+                <Home className="h-5 w-5" />
                 <span className="hidden sm:inline">Marketplace</span>
               </Button>
             </Link>
@@ -89,9 +89,9 @@ export default function Navigation() {
                   <Button
                     variant={isActive('/portfolio') ? 'secondary' : 'ghost'}
                     size="sm"
-                    className="gap-2"
+                    className="gap-2 min-h-[44px]"
                   >
-                    <Wallet className="h-4 w-4" />
+                    <Wallet className="h-5 w-5" />
                     <span className="hidden sm:inline">Portfolio</span>
                   </Button>
                 </Link>
@@ -99,9 +99,9 @@ export default function Navigation() {
                   <Button
                     variant={isActive('/my-athlete/overview') ? 'secondary' : 'ghost'}
                     size="sm"
-                    className="gap-2"
+                    className="gap-2 min-h-[44px]"
                   >
-                    <User className="h-4 w-4" />
+                    <User className="h-5 w-5" />
                     <span className="hidden sm:inline">My Athlete Profile</span>
                   </Button>
                 </Link>
@@ -113,15 +113,15 @@ export default function Navigation() {
           <div className="flex items-center gap-2">
             <Button
               variant="ghost"
-              size="sm"
+              size="icon"
               onClick={toggleTheme}
-              className="h-8 w-8 sm:h-9 sm:w-9 p-0"
+              className="min-h-[44px] min-w-[44px]"
               aria-label="Toggle theme"
             >
               {theme === 'dark' ? (
-                <Sun className="h-4 w-4" />
+                <Sun className="h-5 w-5" />
               ) : (
-                <Moon className="h-4 w-4" />
+                <Moon className="h-5 w-5" />
               )}
             </Button>
             {user && (
@@ -130,7 +130,7 @@ export default function Navigation() {
                   variant="outline"
                   size="sm"
                   onClick={handleReset}
-                  className="gap-2"
+                  className="gap-2 min-h-[44px]"
                 >
                   <RotateCcw className="h-4 w-4" />
                   <span className="hidden sm:inline">Reset</span>
@@ -139,7 +139,7 @@ export default function Navigation() {
                   variant="ghost"
                   size="sm"
                   onClick={handleSignOut}
-                  className="gap-2"
+                  className="gap-2 min-h-[44px]"
                 >
                   <LogOut className="h-4 w-4" />
                   <span className="hidden sm:inline">Sign Out</span>
