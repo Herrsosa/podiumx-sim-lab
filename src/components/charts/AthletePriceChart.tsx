@@ -80,30 +80,37 @@ const AthletePriceChart = memo(({
   
   const xDomain = useMemo<[number, number]>(() => {
     const now = Date.now();
-    const dayMs = 86_400_000;
     
-    if (chartPoints.length === 0) {
-      return timeRange === 'all' ? [now - dayMs, now + dayMs] : [start || now - dayMs, end];
+    // Filter for actual price points only (not carried, ignore PoS-only)
+    const pricePoints = chartPoints.filter((p) => p.price != null && !p.carried);
+    
+    if (pricePoints.length === 0) {
+      return timeRange === 'all' ? [now - 86400000, now] : [start || now - 86400000, end];
     }
     
-    const firstDataPoint = chartPoints[0].t;
-    const lastDataPoint = chartPoints[chartPoints.length - 1].t;
+    const firstPriceT = pricePoints[0].t;
+    const lastPriceT = pricePoints[pricePoints.length - 1].t;
     
-    // For 24h/7d/30d: use max(windowStart, firstDataPoint) to windowEnd
-    if (timeRange !== 'all' && start) {
-      const domainStart = Math.max(start, firstDataPoint);
-      return [domainStart, end];
+    if (timeRange === 'all') {
+      // ALL: start at first trade, end at max(lastTrade, now)
+      const domainEnd = Math.max(lastPriceT, now);
+      return [firstPriceT, domainEnd];
     }
     
-    // For 'all': start at first trade, end at max(lastDataPoint, now)
-    const max = Math.max(lastDataPoint, now);
-    return [firstDataPoint, max];
+    // 24h/7d/30d: data-aware domain with no calendar padding
+    const domainStart = Math.max(start || now - 86400000, firstPriceT);
+    const domainEnd = end;
+    
+    return [domainStart, domainEnd];
   }, [chartPoints, timeRange, start, end]);
   
   const yDomain = useMemo<[number, number]>(() => {
-    if (chartPoints.length === 0) return [0, 1];
+    // Filter for actual price points (not carried, not null)
+    const pricePoints = chartPoints.filter((p) => p.price != null && !p.carried);
     
-    const prices = chartPoints.map(p => p.price).filter(p => Number.isFinite(p));
+    if (pricePoints.length === 0) return [0, 1];
+    
+    const prices = pricePoints.map(p => p.price).filter(p => Number.isFinite(p));
     if (prices.length === 0) return [0, 1];
     
     const min = Math.min(...prices);

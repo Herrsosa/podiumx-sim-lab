@@ -151,6 +151,7 @@ export function PersonalConsole({
         lastTradeTime: undefined,
       }));
 
+    // Combine and sort strictly by timestamp (ascending)
     return [...baseData, ...posOnlyData].sort((a, b) => a.t - b.t);
   }, [filledPricePoints, posCountByDay, posDailyPoints]);
 
@@ -164,30 +165,37 @@ export function PersonalConsole({
   
   const xDomain = useMemo<[number, number]>(() => {
     const now = Date.now();
-    const dayMs = 86_400_000;
     
-    if (filledPricePoints.length === 0) {
-      return activeTimeRange === 'all' ? [now - dayMs, now + dayMs] : [start || now - dayMs, end];
+    // Filter for price points only (ignore PoS-only points and carried points)
+    const pricePoints = chartData.filter((d) => d.price != null && !d.carried);
+    
+    if (pricePoints.length === 0) {
+      return activeTimeRange === 'all' ? [now - 86400000, now] : [start || now - 86400000, end];
     }
     
-    const firstDataPoint = filledPricePoints[0].t;
-    const lastDataPoint = filledPricePoints[filledPricePoints.length - 1].t;
+    const firstPriceT = pricePoints[0].t;
+    const lastPriceT = pricePoints[pricePoints.length - 1].t;
     
-    // For 24h/7d/30d: use max(windowStart, firstDataPoint) to windowEnd
-    if (activeTimeRange !== 'all' && start) {
-      const domainStart = Math.max(start, firstDataPoint);
-      return [domainStart, end];
+    if (activeTimeRange === 'all') {
+      // ALL: start at first trade, end at max(lastTrade, now)
+      const domainEnd = Math.max(lastPriceT, now);
+      return [firstPriceT, domainEnd];
     }
     
-    // For 'all': start at first trade, end at max(lastDataPoint, now)
-    const max = Math.max(lastDataPoint, now);
-    return [firstDataPoint, max];
-  }, [filledPricePoints, activeTimeRange, start, end]);
+    // 24h/7d/30d: data-aware domain with no calendar padding
+    const domainStart = Math.max(start || now - 86400000, firstPriceT);
+    const domainEnd = end;
+    
+    return [domainStart, domainEnd];
+  }, [chartData, activeTimeRange, start, end]);
   
   const yDomain = useMemo<[number, number]>(() => {
-    if (filledPricePoints.length === 0) return [0, 1];
+    // Filter for actual price points (not carried, not null)
+    const pricePoints = chartData.filter((d) => d.price != null && !d.carried);
     
-    const prices = filledPricePoints.map(p => p.price).filter(p => Number.isFinite(p));
+    if (pricePoints.length === 0) return [0, 1];
+    
+    const prices = pricePoints.map(p => p.price).filter(p => Number.isFinite(p)) as number[];
     if (prices.length === 0) return [0, 1];
     
     const min = Math.min(...prices);
@@ -195,7 +203,7 @@ export function PersonalConsole({
     const padding = (max - min) * 0.1 || max * 0.1 || 0.1;
     
     return [Math.max(0, min - padding), max + padding];
-  }, [filledPricePoints]);
+  }, [chartData]);
 
   const glowFilterId = useId().replace(/:/g, '');
 

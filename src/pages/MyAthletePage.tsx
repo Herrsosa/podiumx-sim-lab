@@ -198,6 +198,7 @@ export default function MyAthletePage() {
       });
     }
 
+    // Sort strictly by timestamp (ascending)
     return Array.from(tradesByDay.values()).sort((a, b) => a.t - b.t);
   }, [user?.id, athleteTrades, myAthletePage]);
 
@@ -275,7 +276,7 @@ export default function MyAthletePage() {
 
     // 24h/7d/30d: data-aware domain with no calendar padding
     const domainStart = Math.max(windowStart, firstPriceT);
-    const domainEnd = Math.max(windowEnd, lastPriceT);
+    const domainEnd = windowEnd;
 
     return [domainStart, domainEnd];
   }, [chartData, chartTimeRange]);
