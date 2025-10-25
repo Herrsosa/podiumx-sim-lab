@@ -8,6 +8,8 @@ import { aggregatePosByDay, startOfUtcDay, getRangeWindow } from '@/utils/chartD
 type ChartPoint = {
   t: number;
   price: number;
+  carried?: boolean;
+  lastTradeTime?: number;
 };
 
 interface AthletePriceChartProps {
@@ -48,6 +50,8 @@ const AthletePriceChart = memo(({
           t: point.t,
           price: point.price,
           posCount: posCountByDay.get(dayStart) ?? 0,
+          carried: point.carried,
+          lastTradeTime: point.lastTradeTime,
         };
       });
 
@@ -57,6 +61,8 @@ const AthletePriceChart = memo(({
         t: posPoint.dateMs,
         price: null,
         posCount: posPoint.posCount,
+        carried: undefined,
+        lastTradeTime: undefined,
       }));
 
     return [...baseData, ...posOnlyData].sort((a, b) => a.t - b.t);
@@ -76,20 +82,36 @@ const AthletePriceChart = memo(({
     const now = Date.now();
     const dayMs = 86_400_000;
     
-    // Hard-clamp to range for 24h/7d/30d
-    if (timeRange !== 'all' && start) {
-      return [start, end];
-    }
-    
-    // For 'all', compute from data
     if (chartPoints.length === 0) {
-      return [now - dayMs, now + dayMs];
+      return timeRange === 'all' ? [now - dayMs, now + dayMs] : [start || now - dayMs, end];
     }
     
-    const min = chartPoints[0].t;
-    const max = Math.max(chartPoints[chartPoints.length - 1].t, now);
-    return [min, max];
+    const firstDataPoint = chartPoints[0].t;
+    const lastDataPoint = chartPoints[chartPoints.length - 1].t;
+    
+    // For 24h/7d/30d: use max(windowStart, firstDataPoint) to windowEnd
+    if (timeRange !== 'all' && start) {
+      const domainStart = Math.max(start, firstDataPoint);
+      return [domainStart, end];
+    }
+    
+    // For 'all': start at first trade, end at max(lastDataPoint, now)
+    const max = Math.max(lastDataPoint, now);
+    return [firstDataPoint, max];
   }, [chartPoints, timeRange, start, end]);
+  
+  const yDomain = useMemo<[number, number]>(() => {
+    if (chartPoints.length === 0) return [0, 1];
+    
+    const prices = chartPoints.map(p => p.price).filter(p => Number.isFinite(p));
+    if (prices.length === 0) return [0, 1];
+    
+    const min = Math.min(...prices);
+    const max = Math.max(...prices);
+    const padding = (max - min) * 0.1 || max * 0.1 || 0.1;
+    
+    return [Math.max(0, min - padding), max + padding];
+  }, [chartPoints]);
 
   const renderTooltip = useCallback(({ active, label, payload }: TooltipProps<number, string>) => {
     if (!active || !payload || payload.length === 0 || typeof label !== 'number') {
@@ -100,6 +122,7 @@ const AthletePriceChart = memo(({
     const posEntry = payload.find((item) => item && item.dataKey === 'posCount');
 
     const price = typeof priceEntry?.value === 'number' ? priceEntry.value : undefined;
+    const dataPoint = chartData.find(d => d.t === label);
     const dateLabel = formatTooltipLabel(label);
     const dayStart = startOfUtcDay(label);
     const posCount =
@@ -111,6 +134,11 @@ const AthletePriceChart = memo(({
         {typeof price === 'number' && (
           <div className="text-base font-bold text-foreground mb-1">${price.toFixed(4)}</div>
         )}
+        {dataPoint?.carried && dataPoint.lastTradeTime && (
+          <div className="text-xs text-muted-foreground italic mb-1">
+            No trades — price carried from {new Date(dataPoint.lastTradeTime).toLocaleDateString()}
+          </div>
+        )}
         <div className="flex items-center gap-1.5 text-xs">
           <div className="h-2 w-2 rounded-full bg-primary/80" />
           <span className="text-muted-foreground">PoS:</span>
@@ -118,7 +146,7 @@ const AthletePriceChart = memo(({
         </div>
       </div>
     );
-  }, [formatTooltipLabel, posCountByDay]);
+  }, [formatTooltipLabel, posCountByDay, chartData]);
 
   if (isLoading) {
     return <ChartSkeleton className="h-full" />;
@@ -156,7 +184,7 @@ const AthletePriceChart = memo(({
             tickLine={false}
           />
           <YAxis
-            domain={['auto', 'auto']}
+            domain={yDomain}
             tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
             stroke="hsl(var(--muted-foreground))"
             tickFormatter={(value) => `$${value.toFixed(2)}`}
