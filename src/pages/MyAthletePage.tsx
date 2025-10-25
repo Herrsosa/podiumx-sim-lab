@@ -241,6 +241,7 @@ export default function MyAthletePage() {
         posCount: posPoint.posCount,
       }));
 
+    // Combine and sort strictly by timestamp (ascending)
     return [...baseData, ...posOnlyData].sort((a, b) => a.t - b.t);
   }, [posCountByDay, posDailyPoints, priceHistory, chartTimeRange]);
 
@@ -254,27 +255,27 @@ export default function MyAthletePage() {
     const { start: windowStart, end: windowEnd } = getRangeWindow(chartTimeRange);
     const now = Date.now();
 
-    // Find first price datapoint (ignore PoS-only points)
-    const firstPricePoint = chartData.find((d) => d.price !== null);
-    const firstPriceT = firstPricePoint?.t;
-    const lastT = chartData.length > 0 ? chartData[chartData.length - 1].t : now;
+    // Filter for price points only (ignore PoS-only rows)
+    const pricePoints = chartData.filter((d) => d.price != null);
+
+    if (pricePoints.length === 0) {
+      // No price data: return minimal domain
+      return [now - 86400000, now];
+    }
+
+    const firstPriceT = pricePoints[0].t;
+    const lastPriceT = pricePoints[pricePoints.length - 1].t;
 
     if (chartTimeRange === 'all') {
-      // ALL: start at first trade date
-      const domainStart = firstPriceT ?? now;
-      const domainEnd = Math.max(lastT, now);
+      // ALL: start at first trade date, end at last trade or now
+      const domainStart = firstPriceT;
+      const domainEnd = Math.max(lastPriceT, now);
       return [domainStart, domainEnd];
     }
 
-    // 24h/7d/30d: start = max(windowStart, firstPriceT)
-    const domainStart = firstPriceT ? Math.max(windowStart, firstPriceT) : windowStart;
-    const domainEnd = windowEnd;
-
-    // Small padding for 24h only (hourly), no extra day padding
-    if (chartTimeRange === '24h') {
-      const hourMs = 60 * 60 * 1000;
-      return [domainStart - hourMs * 0.5, domainEnd + hourMs * 0.5];
-    }
+    // 24h/7d/30d: data-aware domain with no calendar padding
+    const domainStart = Math.max(windowStart, firstPriceT);
+    const domainEnd = Math.max(windowEnd, lastPriceT);
 
     return [domainStart, domainEnd];
   }, [chartData, chartTimeRange]);
