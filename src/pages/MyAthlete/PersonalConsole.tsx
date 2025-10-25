@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useCallback, useRef, useId } from 'react';
 import { Plus, TrendingUp, Edit, Trash2, MessageSquare, DollarSign, Activity, Share2, MessageCircle } from 'lucide-react';
 import type { TimeRangeKey } from '@/utils/chartData';
-import { fillPriceGaps } from '@/utils/chartData';
+import { fillPriceGaps, getRangeWindow } from '@/utils/chartData';
 import { formatNumber } from '@/lib/format';
 import { ComposedChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Bar, type TooltipProps } from 'recharts';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -40,6 +40,8 @@ interface PriceHistoryPoint {
   t: number;
   price: number;
   posCount?: number;
+  carried?: boolean;
+  lastTradeTime?: number;
 }
 
 interface PersonalConsoleProps {
@@ -134,6 +136,8 @@ export function PersonalConsole({
         t: point.t,
         price: point.price,
         posCount: posCountByDay.get(dayStart) ?? 0,
+        carried: point.carried,
+        lastTradeTime: point.lastTradeTime,
       };
     });
 
@@ -143,6 +147,8 @@ export function PersonalConsole({
         t: posPoint.dateMs,
         price: null,
         posCount: posPoint.posCount,
+        carried: undefined,
+        lastTradeTime: undefined,
       }));
 
     return [...baseData, ...posOnlyData].sort((a, b) => a.t - b.t);
@@ -154,17 +160,41 @@ export function PersonalConsole({
     return [0, upper];
   }, [posDailyPoints]);
 
+  const { start, end } = getRangeWindow(activeTimeRange);
+  
   const xDomain = useMemo<[number, number]>(() => {
     const now = Date.now();
-    const dayMs = 24 * 60 * 60 * 1000;
+    const dayMs = 86_400_000;
     
     if (filledPricePoints.length === 0) {
-      return [now - dayMs, now + dayMs];
+      return activeTimeRange === 'all' ? [now - dayMs, now + dayMs] : [start || now - dayMs, end];
     }
     
-    const min = filledPricePoints[0].t;
-    const max = Math.max(filledPricePoints[filledPricePoints.length - 1].t, now);
-    return [min - dayMs * 0.1, max + dayMs * 0.1];
+    const firstDataPoint = filledPricePoints[0].t;
+    const lastDataPoint = filledPricePoints[filledPricePoints.length - 1].t;
+    
+    // For 24h/7d/30d: use max(windowStart, firstDataPoint) to windowEnd
+    if (activeTimeRange !== 'all' && start) {
+      const domainStart = Math.max(start, firstDataPoint);
+      return [domainStart, end];
+    }
+    
+    // For 'all': start at first trade, end at max(lastDataPoint, now)
+    const max = Math.max(lastDataPoint, now);
+    return [firstDataPoint, max];
+  }, [filledPricePoints, activeTimeRange, start, end]);
+  
+  const yDomain = useMemo<[number, number]>(() => {
+    if (filledPricePoints.length === 0) return [0, 1];
+    
+    const prices = filledPricePoints.map(p => p.price).filter(p => Number.isFinite(p));
+    if (prices.length === 0) return [0, 1];
+    
+    const min = Math.min(...prices);
+    const max = Math.max(...prices);
+    const padding = (max - min) * 0.1 || max * 0.1 || 0.1;
+    
+    return [Math.max(0, min - padding), max + padding];
   }, [filledPricePoints]);
 
   const glowFilterId = useId().replace(/:/g, '');
@@ -193,23 +223,31 @@ export function PersonalConsole({
     const posEntry = payload.find((item) => item && item.dataKey === 'posCount');
 
     const price = typeof priceEntry?.value === 'number' ? priceEntry.value : undefined;
+    const dataPoint = chartData.find(d => d.t === label);
     const dateLabel = formatTooltipLabel(label);
     const dayStart = startOfUtcDay(label);
     const posCount =
       typeof posEntry?.value === 'number' ? posEntry.value : posCountByDay.get(dayStart) ?? 0;
 
     return (
-      <div className="rounded-lg border border-border/60 bg-card/90 px-3 py-2 shadow-lg">
-        <div className="text-xs text-muted-foreground">{dateLabel}</div>
+      <div className="rounded-lg border border-border/60 bg-card/95 backdrop-blur-sm px-3 py-2 shadow-xl">
+        <div className="text-xs font-medium text-muted-foreground mb-1">{dateLabel}</div>
         {typeof price === 'number' && (
-          <div className="text-sm font-semibold text-foreground">${price.toFixed(4)}</div>
+          <div className="text-base font-bold text-foreground mb-1">${price.toFixed(4)}</div>
         )}
-        <div className="mt-1 text-xs text-muted-foreground">
-          PoS: <span className="font-medium text-foreground">{posCount}</span>
+        {dataPoint?.carried && dataPoint.lastTradeTime && (
+          <div className="text-xs text-muted-foreground italic mb-1">
+            No trades — price carried from {new Date(dataPoint.lastTradeTime).toLocaleDateString()}
+          </div>
+        )}
+        <div className="flex items-center gap-1.5 text-xs">
+          <div className="h-2 w-2 rounded-full bg-primary/80" />
+          <span className="text-muted-foreground">PoS:</span>
+          <span className="font-semibold text-foreground">{posCount}</span>
         </div>
       </div>
     );
-  }, [formatTooltipLabel, posCountByDay]);
+  }, [formatTooltipLabel, posCountByDay, chartData]);
 
   const handleDeleteClick = (workoutId: string) => {
     setWorkoutToDelete(workoutId);
@@ -317,11 +355,11 @@ export function PersonalConsole({
                   tickLine={false}
                 />
                 <YAxis
-                  domain={['auto', 'auto']}
+                  domain={yDomain}
                   tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
                   stroke="hsl(var(--muted-foreground))"
                   tickFormatter={(value) => `$${value.toFixed(2)}`}
-                  width={60}
+                  width={64}
                   axisLine={false}
                   tickLine={false}
                 />
