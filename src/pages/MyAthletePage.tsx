@@ -251,16 +251,33 @@ export default function MyAthletePage() {
   }, [posDailyPoints]);
 
   const xDomain = useMemo<[number, number]>(() => {
-    if (chartData.length === 0) {
-      const now = Date.now();
-      const dayMs = 24 * 60 * 60 * 1000;
-      return [now - dayMs, now + dayMs];
+    const { start: windowStart, end: windowEnd } = getRangeWindow(chartTimeRange);
+    const now = Date.now();
+
+    // Find first price datapoint (ignore PoS-only points)
+    const firstPricePoint = chartData.find((d) => d.price !== null);
+    const firstPriceT = firstPricePoint?.t;
+    const lastT = chartData.length > 0 ? chartData[chartData.length - 1].t : now;
+
+    if (chartTimeRange === 'all') {
+      // ALL: start at first trade date
+      const domainStart = firstPriceT ?? now;
+      const domainEnd = Math.max(lastT, now);
+      return [domainStart, domainEnd];
     }
-    const dayMs = 24 * 60 * 60 * 1000;
-    const min = chartData[0].t;
-    const max = chartData[chartData.length - 1].t;
-    return [min - dayMs * 0.5, max + dayMs * 0.75];
-  }, [chartData]);
+
+    // 24h/7d/30d: start = max(windowStart, firstPriceT)
+    const domainStart = firstPriceT ? Math.max(windowStart, firstPriceT) : windowStart;
+    const domainEnd = windowEnd;
+
+    // Small padding for 24h only (hourly), no extra day padding
+    if (chartTimeRange === '24h') {
+      const hourMs = 60 * 60 * 1000;
+      return [domainStart - hourMs * 0.5, domainEnd + hourMs * 0.5];
+    }
+
+    return [domainStart, domainEnd];
+  }, [chartData, chartTimeRange]);
 
   const glowFilterId = useId().replace(/:/g, '');
 
