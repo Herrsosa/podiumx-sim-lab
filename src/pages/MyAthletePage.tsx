@@ -250,7 +250,7 @@ export default function MyAthletePage() {
     const pricePoints = filledPricePoints.filter(p => p.price != null && !p.carried).sort((a,b)=>a.t-b.t);
 
     if (pricePoints.length === 0) {
-      // no trades in range
+      // No real trades - use window or minimal range
       return chartTimeRange === 'all'
         ? [now - 86_400_000, now]
         : [windowStart ?? now - 86_400_000, windowEnd];
@@ -264,7 +264,7 @@ export default function MyAthletePage() {
       return [startOfUtcDay(firstTradeT), Math.max(lastTradeT, now)];
     }
 
-    // 24h/7d/30d: window-based domain (no calendar padding)
+    // 24h/7d/30d: use full window range for consistent axis
     return [windowStart!, windowEnd];
   }, [filledPricePoints, chartTimeRange]);
 

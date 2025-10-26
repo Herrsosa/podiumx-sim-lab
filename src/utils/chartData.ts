@@ -77,9 +77,9 @@ export function fillPriceGaps(
   timeRange: TimeRangeKey,
   now: number = Date.now()
 ): TradePoint[] {
-  const { start, end } = getRangeWindow(timeRange, now);
+  const { start: windowStart, end: windowEnd } = getRangeWindow(timeRange, now);
   
-  // Parse all trades (including those before window for seeding)
+  // Parse all trades
   const allTrades: Array<{ t: number; price: number }> = [];
   for (const trade of trades) {
     const t = typeof trade.timestamp === 'number' 
@@ -96,78 +96,112 @@ export function fillPriceGaps(
   
   allTrades.sort((a, b) => a.t - b.t);
   
-  // Find trades within window
-  const inWindowTrades = start 
-    ? allTrades.filter(tr => tr.t >= start && tr.t <= end)
-    : allTrades.filter(tr => tr.t <= end);
-  
-  if (inWindowTrades.length === 0) {
-    // No trades in window; return empty or single current point
-    return currentPrice && now <= end ? [{ t: now, price: currentPrice }] : [];
+  if (allTrades.length === 0) {
+    return [];
   }
   
-  // Find seed price: last trade ≤ windowStart (or first trade if 'all')
-  let seedPrice: number | undefined;
-  let seedTime: number | undefined;
+  // For ALL: use all trades
+  // For time windows: filter to trades in or before window
+  let relevantTrades: Array<{ t: number; price: number }>;
   
   if (timeRange === 'all') {
-    // Start at first trade
-    seedPrice = inWindowTrades[0].price;
-    seedTime = inWindowTrades[0].t;
-  } else if (start) {
-    // Find last trade before or at start
-    const beforeStart = allTrades.filter(tr => tr.t <= start);
+    relevantTrades = allTrades;
+  } else {
+    // Include trades before window for seeding
+    relevantTrades = allTrades.filter(tr => tr.t <= windowEnd!);
+  }
+  
+  if (relevantTrades.length === 0) {
+    return [];
+  }
+  
+  // Determine series boundaries
+  let seriesStart: number;
+  let seriesEnd: number;
+  
+  if (timeRange === 'all') {
+    // ALL: start at first trade, end at now
+    seriesStart = relevantTrades[0].t;
+    seriesEnd = Math.max(relevantTrades[relevantTrades.length - 1].t, now);
+  } else {
+    // Window-based: start at windowStart, end at windowEnd
+    seriesStart = windowStart!;
+    seriesEnd = windowEnd!;
+  }
+  
+  // Find seed price for window start
+  let seedPrice: number;
+  let seedTradeTime: number;
+  
+  if (timeRange === 'all') {
+    seedPrice = relevantTrades[0].price;
+    seedTradeTime = relevantTrades[0].t;
+  } else {
+    // Find last trade <= seriesStart
+    const beforeStart = relevantTrades.filter(tr => tr.t <= seriesStart);
     if (beforeStart.length > 0) {
-      const lastBeforeStart = beforeStart[beforeStart.length - 1];
-      seedPrice = lastBeforeStart.price;
-      seedTime = lastBeforeStart.t;
+      const lastBefore = beforeStart[beforeStart.length - 1];
+      seedPrice = lastBefore.price;
+      seedTradeTime = lastBefore.t;
     } else {
-      // No trades before start; use first in-window trade
-      seedPrice = inWindowTrades[0].price;
-      seedTime = inWindowTrades[0].t;
+      // No trades before window; use first trade
+      const firstInWindow = relevantTrades.find(tr => tr.t >= seriesStart);
+      if (!firstInWindow) return [];
+      seedPrice = firstInWindow.price;
+      seedTradeTime = firstInWindow.t;
+      // Adjust seriesStart to first trade if it's after window start
+      seriesStart = firstInWindow.t;
     }
   }
   
-  // Determine step and series start
-  const stepMs = timeRange === '24h' ? 3_600_000 : 86_400_000; // 1h vs 1d
-  const seriesStart = timeRange === 'all' 
-    ? inWindowTrades[0].t 
-    : (start && seedTime && seedTime < start ? start : seedTime!);
-  
-  // Build carry-forward series
+  // Build series with proper spacing
+  const stepMs = timeRange === '24h' ? 3_600_000 : 86_400_000; // 1h for 24h, 1d otherwise
   const series: TradePoint[] = [];
-  let lastPrice = seedPrice!;
-  let lastTradeTime = seedTime!;
-  let tradeIndex = 0;
   
-  // Align series start to step boundary for daily ranges
+  // Align start to step boundary for daily (not for 24h to preserve hours)
   let t = timeRange === '24h' ? seriesStart : startOfUtcDay(seriesStart);
   
-  while (t <= end) {
-    // Update with all trades up to this timestamp
-    let hadTrade = false;
-    while (tradeIndex < inWindowTrades.length && inWindowTrades[tradeIndex].t <= t) {
-      lastPrice = inWindowTrades[tradeIndex].price;
-      lastTradeTime = inWindowTrades[tradeIndex].t;
+  let lastPrice = seedPrice;
+  let lastTradeTime = seedTradeTime;
+  let tradeIndex = 0;
+  
+  // Skip trades before series start
+  while (tradeIndex < relevantTrades.length && relevantTrades[tradeIndex].t < t) {
+    lastPrice = relevantTrades[tradeIndex].price;
+    lastTradeTime = relevantTrades[tradeIndex].t;
+    tradeIndex++;
+  }
+  
+  while (t <= seriesEnd) {
+    let hadTradeAtThisPoint = false;
+    
+    // Apply all trades up to this timestamp
+    while (tradeIndex < relevantTrades.length && relevantTrades[tradeIndex].t <= t) {
+      lastPrice = relevantTrades[tradeIndex].price;
+      lastTradeTime = relevantTrades[tradeIndex].t;
+      hadTradeAtThisPoint = true;
       tradeIndex++;
-      hadTrade = true;
     }
     
-    series.push({ 
-      t, 
+    series.push({
+      t,
       price: lastPrice,
-      carried: !hadTrade && series.length > 0,
-      lastTradeTime: hadTrade ? undefined : lastTradeTime
+      carried: !hadTradeAtThisPoint && series.length > 0,
+      lastTradeTime: hadTradeAtThisPoint ? undefined : lastTradeTime,
     });
     
     t += stepMs;
   }
   
-  // Ensure current time is included with current price
-  if (now <= end && (series.length === 0 || series[series.length - 1].t < now)) {
-    series.push({ t: now, price: currentPrice });
-  } else if (now <= end) {
-    series[series.length - 1] = { t: now, price: currentPrice };
+  // Ensure final point is at current time with current price (for non-ALL ranges)
+  if (timeRange !== 'all' && series.length > 0) {
+    const lastPoint = series[series.length - 1];
+    if (lastPoint.t < now && now <= seriesEnd) {
+      series.push({ t: now, price: currentPrice });
+    } else if (Math.abs(lastPoint.t - now) < stepMs / 2 && now <= seriesEnd) {
+      // Update last point to now
+      series[series.length - 1] = { t: now, price: currentPrice };
+    }
   }
   
   return series;

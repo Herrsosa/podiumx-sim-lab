@@ -204,7 +204,7 @@ export function PersonalConsole({
       return [startOfUtcDay(firstPriceT), Math.max(lastPriceT, now)];
     }
     
-    // 24h/7d/30d: window-based domain (no calendar padding)
+    // 24h/7d/30d: use full window range for consistent axis
     return [windowStart!, windowEnd];
   }, [chartData, activeTimeRange]);
   
