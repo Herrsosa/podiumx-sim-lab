@@ -384,7 +384,13 @@ export default function MobileMyAthletes({
                             dataKey="t"
                             domain={xDomain}
                             type="number"
-                            tickFormatter={(value: number) => new Date(value).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                            tickFormatter={(value: number) => {
+                              const date = new Date(value);
+                              if (timeRange === '24h') {
+                                return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
+                              }
+                              return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+                            }}
                             tickLine={false}
                             axisLine={false}
                             tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }}

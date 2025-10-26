@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback, useEffect, useRef, useId } from 'react';
 import type { TimeRangeKey } from '@/utils/chartData';
-import { getRangeWindow } from '@/utils/chartData';
+import { getRangeWindow, fillPriceGaps } from '@/utils/chartData';
 import { Plus, TrendingUp, Edit, Trash2, MessageSquare, DollarSign, Activity, Share2, MessageCircle } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
 import { ComposedChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Bar, type TooltipProps } from 'recharts';
@@ -158,49 +158,19 @@ export default function MyAthletePage() {
     };
   }, [editingWorkout]);
 
-  const priceHistory = useMemo(() => {
-    const athlete = myAthletePage?.athlete;
-    if (!user?.id || !athleteTrades || !athlete) return [];
+  // Build trades array compatible with fillPriceGaps
+  const tradesForFill = useMemo(() => {
+    if (!athleteTrades) return [];
+    return athleteTrades.map(t => ({
+      created_at: t.created_at,
+      price_after: t.price_after,
+      timestamp: typeof t.timestamp === 'number' ? t.timestamp : undefined,
+    }));
+  }, [athleteTrades]);
 
-    const tradesByDay = new Map<number, { t: number; price: number }>();
-
-    for (const trade of athleteTrades) {
-      const rawTimestamp = trade.timestamp;
-      const t = new Date(rawTimestamp).getTime();
-      if (!Number.isFinite(t)) {
-        continue;
-      }
-
-      const price =
-        typeof trade.price_after === 'number'
-          ? trade.price_after
-          : Number(trade.price_after);
-
-      const resolvedPrice = Number.isFinite(price) ? price : athlete.price;
-      const dayStart = startOfUtcDay(t);
-      const existing = tradesByDay.get(dayStart);
-
-      if (!existing || t > existing.t) {
-        tradesByDay.set(dayStart, {
-          t,
-          price: resolvedPrice,
-        });
-      }
-    }
-
-    const nowMs = Date.now();
-    const nowDay = startOfUtcDay(nowMs);
-    const latestForToday = tradesByDay.get(nowDay);
-    if (!latestForToday || nowMs > latestForToday.t) {
-      tradesByDay.set(nowDay, {
-        t: nowMs,
-        price: athlete.price,
-      });
-    }
-
-    // Sort strictly by timestamp (ascending)
-    return Array.from(tradesByDay.values()).sort((a, b) => a.t - b.t);
-  }, [user?.id, athleteTrades, myAthletePage]);
+  const filledPricePoints = useMemo(() => {
+    return fillPriceGaps(tradesForFill, myAthletePage?.athlete?.price ?? 0, chartTimeRange);
+  }, [tradesForFill, myAthletePage?.athlete?.price, chartTimeRange]);
 
   const posDailyPoints = useMemo(
     () => aggregatePosByDay(myAthletePage?.athlete?.posts, 'all'),
@@ -214,15 +184,9 @@ export default function MyAthletePage() {
 
   const chartData = useMemo(() => {
     const { start, end } = getRangeWindow(chartTimeRange);
-    
-    // Filter priceHistory by time range
-    const filteredPriceHistory = priceHistory.filter((point) => {
-      return (!start || point.t >= start) && point.t <= end;
-    });
-    
     const dayWithPrice = new Set<number>();
 
-    const baseData = filteredPriceHistory.map((point) => {
+    const baseData = filledPricePoints.map((point) => {
       const dayStart = startOfUtcDay(point.t);
       dayWithPrice.add(dayStart);
 
@@ -230,6 +194,8 @@ export default function MyAthletePage() {
         t: point.t,
         price: point.price,
         posCount: posCountByDay.get(dayStart) ?? 0,
+        carried: point.carried,
+        lastTradeTime: point.lastTradeTime,
       };
     });
 
@@ -240,11 +206,13 @@ export default function MyAthletePage() {
         t: posPoint.dateMs,
         price: null,
         posCount: posPoint.posCount,
+        carried: undefined,
+        lastTradeTime: undefined,
       }));
 
     // Combine and sort strictly by timestamp (ascending)
     return [...baseData, ...posOnlyData].sort((a, b) => a.t - b.t);
-  }, [posCountByDay, posDailyPoints, priceHistory, chartTimeRange]);
+  }, [posCountByDay, posDailyPoints, filledPricePoints, chartTimeRange]);
 
   const posDomain = useMemo<[number, number]>(() => {
     const maxPos = posDailyPoints.reduce((max, point) => Math.max(max, point.posCount), 0);
@@ -256,37 +224,36 @@ export default function MyAthletePage() {
     const { start: windowStart, end: windowEnd } = getRangeWindow(chartTimeRange);
     const now = Date.now();
 
-    // Filter for price points only (ignore PoS-only rows)
-    const pricePoints = chartData.filter((d) => d.price != null);
+    // Use only real trade points (ignore PoS-only and carried-forward)
+    const pricePoints = filledPricePoints.filter(p => p.price != null && !p.carried).sort((a,b)=>a.t-b.t);
 
     if (pricePoints.length === 0) {
-      // No price data: return minimal domain
-      return [now - 86400000, now];
+      // no trades in range
+      return chartTimeRange === 'all'
+        ? [now - 86_400_000, now]
+        : [windowStart ?? now - 86_400_000, windowEnd];
     }
 
-    const firstPriceT = pricePoints[0].t;
-    const lastPriceT = pricePoints[pricePoints.length - 1].t;
+    const firstTradeT = pricePoints[0].t;
+    const lastTradeT  = pricePoints[pricePoints.length - 1].t;
 
     if (chartTimeRange === 'all') {
-      // ALL: start at first trade date, end at last trade or now
-      const domainStart = firstPriceT;
-      const domainEnd = Math.max(lastPriceT, now);
-      return [domainStart, domainEnd];
+      return [firstTradeT, Math.max(lastTradeT, now)];
     }
 
-    // 24h/7d/30d: data-aware domain with no calendar padding
-    const domainStart = Math.max(windowStart, firstPriceT);
-    const domainEnd = windowEnd;
-
-    return [domainStart, domainEnd];
-  }, [chartData, chartTimeRange]);
+    // 24h/7d/30d: start at max(windowStart, firstTradeT), end at windowEnd
+    return [Math.max(windowStart!, firstTradeT), windowEnd];
+  }, [filledPricePoints, chartTimeRange]);
 
   const glowFilterId = useId().replace(/:/g, '');
 
   const formatXAxisTick = useCallback((value: number) => {
     const date = new Date(value);
+    if (chartTimeRange === '24h') {
+      return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
+    }
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-  }, []);
+  }, [chartTimeRange]);
 
   const formatTooltipLabel = useCallback((value: number) => {
     const date = new Date(value);
@@ -587,7 +554,7 @@ export default function MyAthletePage() {
             workouts={workouts}
             posts={myAthletePage?.athlete?.posts ?? []}
             athleteTrades={athleteTrades ?? []}
-            priceHistory={priceHistory}
+            priceHistory={filledPricePoints}
             editedProfile={editedProfile}
             isEditing={isEditing}
             savingProfile={savingProfile}

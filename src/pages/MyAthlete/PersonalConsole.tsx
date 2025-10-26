@@ -207,8 +207,11 @@ export function PersonalConsole({
 
   const glowFilterId = useId().replace(/:/g, '');
 
-  const formatXAxisTick = useCallback((value: number) => {
+  const formatXAxisTick = useCallback((value: number, timeRange: TimeRangeKey) => {
     const date = new Date(value);
+    if (timeRange === '24h') {
+      return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
+    }
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   }, []);
 
@@ -356,7 +359,7 @@ export function PersonalConsole({
                   scale="time"
                   domain={xDomain}
                   padding={{ right: 18 }}
-                  tickFormatter={formatXAxisTick}
+                  tickFormatter={(value) => formatXAxisTick(value, activeTimeRange)}
                   tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
                   stroke="hsl(var(--muted-foreground))"
                   axisLine={false}
