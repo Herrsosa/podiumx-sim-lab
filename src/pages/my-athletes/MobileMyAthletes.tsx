@@ -382,8 +382,10 @@ export default function MobileMyAthletes({
                           </defs>
                           <XAxis
                             dataKey="t"
-                            domain={xDomain}
                             type="number"
+                            scale="time"
+                            domain={xDomain}
+                            allowDataOverflow
                             tickFormatter={(value: number) => {
                               const date = new Date(value);
                               if (timeRange === '24h') {

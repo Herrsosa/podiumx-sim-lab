@@ -183,7 +183,7 @@ export default function MyAthletePage() {
   );
 
   const chartData = useMemo(() => {
-    const { start, end } = getRangeWindow(chartTimeRange);
+    const { start: windowStart, end: windowEnd } = getRangeWindow(chartTimeRange);
     const dayWithPrice = new Set<number>();
 
     const baseData = filledPricePoints.map((point) => {
@@ -199,9 +199,31 @@ export default function MyAthletePage() {
       };
     });
 
+    // Calculate domain for PoS filtering
+    const pricePoints = baseData.filter(p => p.price != null && !p.carried).sort((a,b)=>a.t-b.t);
+    let domainStart: number;
+    let domainEnd: number;
+    
+    if (pricePoints.length === 0) {
+      domainStart = windowStart ?? Date.now() - 86_400_000;
+      domainEnd = windowEnd;
+    } else {
+      const firstTradeT = pricePoints[0].t;
+      const lastTradeT = pricePoints[pricePoints.length - 1].t;
+      
+      if (chartTimeRange === 'all') {
+        domainStart = startOfUtcDay(firstTradeT);
+        domainEnd = Math.max(lastTradeT, Date.now());
+      } else {
+        domainStart = windowStart!;
+        domainEnd = windowEnd;
+      }
+    }
+
+    // Filter PoS to domain range only
     const posOnlyData = posDailyPoints
       .filter((posPoint) => !dayWithPrice.has(posPoint.dateMs))
-      .filter((posPoint) => (!start || posPoint.dateMs >= start) && posPoint.dateMs <= end)
+      .filter((posPoint) => posPoint.dateMs >= domainStart && posPoint.dateMs <= domainEnd)
       .map((posPoint) => ({
         t: posPoint.dateMs,
         price: null,
@@ -238,11 +260,12 @@ export default function MyAthletePage() {
     const lastTradeT  = pricePoints[pricePoints.length - 1].t;
 
     if (chartTimeRange === 'all') {
-      return [firstTradeT, Math.max(lastTradeT, now)];
+      // ALL: start at first trade day, end at max(lastTrade, now)
+      return [startOfUtcDay(firstTradeT), Math.max(lastTradeT, now)];
     }
 
-    // 24h/7d/30d: start at max(windowStart, firstTradeT), end at windowEnd
-    return [Math.max(windowStart!, firstTradeT), windowEnd];
+    // 24h/7d/30d: window-based domain (no calendar padding)
+    return [windowStart!, windowEnd];
   }, [filledPricePoints, chartTimeRange]);
 
   const glowFilterId = useId().replace(/:/g, '');

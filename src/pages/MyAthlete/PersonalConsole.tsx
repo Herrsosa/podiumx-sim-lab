@@ -126,6 +126,7 @@ export function PersonalConsole({
   }, [priceHistory, athlete?.price, activeTimeRange]);
 
   const chartData = useMemo(() => {
+    const { start: windowStart, end: windowEnd } = getRangeWindow(activeTimeRange);
     const dayWithPrice = new Set<number>();
 
     const baseData = filledPricePoints.map((point) => {
@@ -141,8 +142,31 @@ export function PersonalConsole({
       };
     });
 
+    // Calculate domain for PoS filtering
+    const pricePoints = baseData.filter(p => p.price != null && !p.carried).sort((a,b)=>a.t-b.t);
+    let domainStart: number;
+    let domainEnd: number;
+    
+    if (pricePoints.length === 0) {
+      domainStart = windowStart ?? Date.now() - 86_400_000;
+      domainEnd = windowEnd;
+    } else {
+      const firstTradeT = pricePoints[0].t;
+      const lastTradeT = pricePoints[pricePoints.length - 1].t;
+      
+      if (activeTimeRange === 'all') {
+        domainStart = startOfUtcDay(firstTradeT);
+        domainEnd = Math.max(lastTradeT, Date.now());
+      } else {
+        domainStart = windowStart!;
+        domainEnd = windowEnd;
+      }
+    }
+
+    // Filter PoS to domain range only
     const posOnlyData = posDailyPoints
       .filter((posPoint) => !dayWithPrice.has(posPoint.dateMs))
+      .filter((posPoint) => posPoint.dateMs >= domainStart && posPoint.dateMs <= domainEnd)
       .map((posPoint) => ({
         t: posPoint.dateMs,
         price: null,
@@ -153,7 +177,7 @@ export function PersonalConsole({
 
     // Combine and sort strictly by timestamp (ascending)
     return [...baseData, ...posOnlyData].sort((a, b) => a.t - b.t);
-  }, [filledPricePoints, posCountByDay, posDailyPoints]);
+  }, [filledPricePoints, posCountByDay, posDailyPoints, activeTimeRange]);
 
   const posDomain = useMemo<[number, number]>(() => {
     const maxPos = posDailyPoints.reduce((max, point) => Math.max(max, point.posCount), 0);
@@ -161,33 +185,28 @@ export function PersonalConsole({
     return [0, upper];
   }, [posDailyPoints]);
 
-  const { start, end } = getRangeWindow(activeTimeRange);
-  
   const xDomain = useMemo<[number, number]>(() => {
+    const { start: windowStart, end: windowEnd } = getRangeWindow(activeTimeRange);
     const now = Date.now();
     
     // Filter for price points only (ignore PoS-only points and carried points)
-    const pricePoints = chartData.filter((d) => d.price != null && !d.carried);
+    const pricePoints = chartData.filter((d) => d.price != null && !d.carried).sort((a,b)=>a.t-b.t);
     
     if (pricePoints.length === 0) {
-      return activeTimeRange === 'all' ? [now - 86400000, now] : [start || now - 86400000, end];
+      return activeTimeRange === 'all' ? [now - 86400000, now] : [windowStart || now - 86400000, windowEnd];
     }
     
     const firstPriceT = pricePoints[0].t;
     const lastPriceT = pricePoints[pricePoints.length - 1].t;
     
     if (activeTimeRange === 'all') {
-      // ALL: start at first trade, end at max(lastTrade, now)
-      const domainEnd = Math.max(lastPriceT, now);
-      return [firstPriceT, domainEnd];
+      // ALL: start at first trade day, end at max(lastTrade, now)
+      return [startOfUtcDay(firstPriceT), Math.max(lastPriceT, now)];
     }
     
-    // 24h/7d/30d: data-aware domain with no calendar padding
-    const domainStart = Math.max(start || now - 86400000, firstPriceT);
-    const domainEnd = end;
-    
-    return [domainStart, domainEnd];
-  }, [chartData, activeTimeRange, start, end]);
+    // 24h/7d/30d: window-based domain (no calendar padding)
+    return [windowStart!, windowEnd];
+  }, [chartData, activeTimeRange]);
   
   const yDomain = useMemo<[number, number]>(() => {
     // Filter for actual price points (not carried, not null)
@@ -358,6 +377,7 @@ export function PersonalConsole({
                   type="number"
                   scale="time"
                   domain={xDomain}
+                  allowDataOverflow
                   padding={{ right: 18 }}
                   tickFormatter={(value) => formatXAxisTick(value, activeTimeRange)}
                   tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
