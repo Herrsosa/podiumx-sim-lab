@@ -62,7 +62,7 @@ export function ProfileDetailsCard({
 
   const athleteName = athlete?.name || editedProfile.displayName || 'No name';
   const athleteSport = (athlete?.sport || editedProfile.sport || 'Running') as Sport;
-  const { identity: xIdentity, isConnected: xConnected, loading: xLoading } = useXConnection();
+  const { isConnected: xConnected, loading: xLoading, displayHandle: xDisplayHandle, handle: xHandle } = useXConnection();
 
   return (
     <Card
@@ -204,17 +204,12 @@ export function ProfileDetailsCard({
                 <div className="pt-2">
                   {xLoading ? (
                     <Skeleton className="h-9 w-40" />
-                  ) : xConnected && xIdentity ? (
-                    <div className="flex flex-wrap items-center gap-3">
-                      <XBadge
-                        className="items-start"
-                        handle={xIdentity.handle}
-                        userLabel={xIdentity.userLabel}
-                        providerUserId={xIdentity.providerUserId}
-                      />
+                  ) : xConnected ? (
+                    <div className="flex flex-wrap items-center gap-2">
+                      <XBadge handle={xHandle} text={xDisplayHandle ?? 'Connected'} />
                       <ConnectXButton
                         label="Manage"
-                        className="w-auto px-0 font-medium text-sm"
+                        className="w-auto px-0 text-sm font-medium"
                         buttonProps={{ variant: 'link' }}
                       />
                     </div>
@@ -231,14 +226,9 @@ export function ProfileDetailsCard({
                   </div>
                   {xLoading ? (
                     <Skeleton className="mt-2 h-5 w-32" />
-                  ) : xConnected && xIdentity ? (
-                    <div className="mt-2 flex flex-wrap items-center gap-2">
-                      <XBadge
-                        className="items-start"
-                        handle={xIdentity.handle}
-                        userLabel={xIdentity.userLabel}
-                        providerUserId={xIdentity.providerUserId}
-                      />
+                  ) : xConnected ? (
+                    <div className="mt-2 flex items-center gap-2">
+                      <XBadge handle={xHandle} text={xDisplayHandle ?? 'Connected'} />
                       <ConnectXButton
                         label="Manage"
                         className="w-auto px-0 text-sm font-medium"

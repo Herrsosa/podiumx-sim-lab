@@ -4,25 +4,45 @@ import { useXIdentity } from './useXIdentity';
 export function useXConnection() {
   const { identity, isLoading } = useXIdentity();
 
-  const isConnected = useMemo(() => {
-    if (!identity) return false;
-    if (identity.connected === true) return true;
+  const { rawHandle, normalizedHandle, displayHandle, isConnected } = useMemo(() => {
+    const rawHandleCandidate =
+      identity?.handle ??
+      identity?.username ??
+      (identity as { screenName?: string } | null | undefined)?.screenName ??
+      (identity as { screen_name?: string } | null | undefined)?.screen_name ??
+      null;
 
-    return Boolean(
-      identity.handle ||
-        identity.username ||
-        identity.id ||
-        identity.providerUserId ||
-        identity.userLabel,
-    );
+    const normalized =
+      typeof rawHandleCandidate === 'string' && rawHandleCandidate.trim().length > 0
+        ? rawHandleCandidate.replace(/^@/, '')
+        : undefined;
+
+    const display =
+      normalized && normalized.length > 0
+        ? normalized.startsWith('@')
+          ? normalized
+          : `@${normalized}`
+        : undefined;
+
+    const connected = Boolean(identity && (identity.connected || normalized));
+
+    return {
+      rawHandle: rawHandleCandidate ?? undefined,
+      normalizedHandle: normalized,
+      displayHandle: display,
+      isConnected: connected,
+    };
   }, [identity]);
 
   return useMemo(
     () => ({
-      isConnected,
-      loading: isLoading,
       identity,
+      loading: isLoading,
+      isConnected,
+      handle: normalizedHandle,
+      displayHandle: displayHandle ?? (isConnected ? 'Connected' : undefined),
+      rawHandle,
     }),
-    [identity, isConnected, isLoading],
+    [identity, isLoading, isConnected, normalizedHandle, displayHandle, rawHandle],
   );
 }
