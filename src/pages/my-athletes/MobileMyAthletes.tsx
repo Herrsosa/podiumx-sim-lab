@@ -24,8 +24,7 @@ import { MOBILE_TAB_KEYS } from './mobile-config';
 import { ProfileDetailsCard } from '@/components/my-athlete/ProfileDetailsCard';
 import type { EditableProfile } from '@/pages/my-athletes/types';
 import ConnectXButton from '@/components/social/ConnectXButton';
-import { useXIdentity } from '@/hooks/useXIdentity';
-import XBadge from '@/components/social/XBadge';
+import { useXConnection } from '@/hooks/useXConnection';
 import { MobileActionBar } from '@/components/MobileActionBar';
 import LockerMessages from '@/components/myathlete/LockerMessages';
 
@@ -105,7 +104,7 @@ export default function MobileMyAthletes({
 }: MobileMyAthletesProps) {
   const [activeTab, setActiveTab] = useState<(typeof MOBILE_TAB_KEYS)[number]>('overview');
   const [consoleTab, setConsoleTab] = useState<'personal' | 'locker'>('personal');
-  const xIdentity = useXIdentity();
+  const { isConnected: xConnected, loading: xLoading } = useXConnection();
 
   const priceChange = athlete?.change24h ?? 0;
   const isPriceUp = priceChange >= 0;
@@ -158,24 +157,24 @@ export default function MobileMyAthletes({
                 />
                 
                 {/* X.com Integration */}
-                <Card className="shadow-none">
-                  <CardContent className="p-4">
-                    <h4 className="text-sm font-medium mb-3">X.com Integration</h4>
-                    {xIdentity ? (
-                      <div className="flex items-center justify-between">
-                        <XBadge />
-                        <p className="text-xs text-muted-foreground">Connected</p>
-                      </div>
-                    ) : (
-                      <div className="space-y-2">
-                        <p className="text-xs text-muted-foreground">
-                          Connect your X account to display your handle and increase credibility.
-                        </p>
-                        <ConnectXButton />
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
+                {xLoading ? (
+                  <Card className="shadow-none">
+                    <CardContent className="p-4">
+                      <h4 className="text-sm font-medium mb-3">X.com Integration</h4>
+                      <Skeleton className="h-8 w-32" />
+                    </CardContent>
+                  </Card>
+                ) : !xConnected ? (
+                  <Card className="shadow-none">
+                    <CardContent className="p-4 space-y-2">
+                      <h4 className="text-sm font-medium">X.com Integration</h4>
+                      <p className="text-xs text-muted-foreground">
+                        Connect your X account to display your handle and increase credibility.
+                      </p>
+                      <ConnectXButton />
+                    </CardContent>
+                  </Card>
+                ) : null}
               </TabsContent>
               
               <TabsContent value="locker" className="mt-4">

@@ -32,8 +32,8 @@ import {
 } from '@/components/ui/alert-dialog';
 import { StravaCard } from '@/components/strava/StravaCard';
 import ConnectXButton from '@/components/social/ConnectXButton';
-import { useXIdentity } from '@/hooks/useXIdentity';
-import XBadge from '@/components/social/XBadge';
+import { useXConnection } from '@/hooks/useXConnection';
+import { Skeleton } from '@/components/ui/skeleton';
 import type { AthleteTrade } from '@/hooks/useAthleteTrades';
 
 interface PriceHistoryPoint {
@@ -100,7 +100,7 @@ export function PersonalConsole({
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [workoutToDelete, setWorkoutToDelete] = useState<string | null>(null);
   const messagesSectionRef = useRef<HTMLDivElement | null>(null);
-  const xIdentity = useXIdentity();
+  const { isConnected: xConnected, loading: xLoading } = useXConnection();
 
   const posDailyPoints = useMemo(
     () => aggregatePosByDay(posts, 'all'),
@@ -331,26 +331,28 @@ export function PersonalConsole({
       />
 
       {/* X.com Integration Card */}
-      <Card className="glass-card">
-        <CardHeader>
-          <CardTitle>X.com Integration</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {xIdentity ? (
-            <div className="flex items-center justify-between">
-              <XBadge />
-              <p className="text-sm text-muted-foreground">Connected</p>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              <p className="text-sm text-muted-foreground">
-                Connect your X account to display your handle and increase credibility.
-              </p>
-              <ConnectXButton />
-            </div>
-          )}
-        </CardContent>
-      </Card>
+      {xLoading ? (
+        <Card className="glass-card">
+          <CardHeader>
+            <CardTitle>X.com Integration</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Skeleton className="h-9 w-full max-w-xs" />
+          </CardContent>
+        </Card>
+      ) : !xConnected ? (
+        <Card className="glass-card">
+          <CardHeader>
+            <CardTitle>X.com Integration</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <p className="text-sm text-muted-foreground">
+              Connect your X account to display your handle and increase credibility.
+            </p>
+            <ConnectXButton />
+          </CardContent>
+        </Card>
+      ) : null}
 
       {/* Price Chart */}
       {priceHistory.length > 0 && (

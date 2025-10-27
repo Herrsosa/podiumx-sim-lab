@@ -14,6 +14,8 @@ import { getAvatarAsset, resolveAvatarUrl } from '@/utils/avatar';
 import type { Athlete, Sport } from '@/types';
 import type { EditableProfile } from '@/pages/my-athletes/types';
 import { OptimizedImage } from '@/components/OptimizedImage';
+import { Skeleton } from '@/components/ui/skeleton';
+import { useXConnection } from '@/hooks/useXConnection';
 
 interface ProfileDetailsCardProps {
   athlete?: Athlete;
@@ -60,6 +62,7 @@ export function ProfileDetailsCard({
 
   const athleteName = athlete?.name || editedProfile.displayName || 'No name';
   const athleteSport = (athlete?.sport || editedProfile.sport || 'Running') as Sport;
+  const { identity: xIdentity, isConnected: xConnected, loading: xLoading } = useXConnection();
 
   return (
     <Card
@@ -198,9 +201,24 @@ export function ProfileDetailsCard({
                     />
                   </div>
                 </div>
-                <div className="pt-2 space-y-2">
-                  <ConnectXButton />
-                  <XBadge className="items-start" />
+                <div className="pt-2">
+                  {xLoading ? (
+                    <Skeleton className="h-9 w-40" />
+                  ) : xConnected && xIdentity ? (
+                    <div className="flex flex-wrap items-center gap-3">
+                      <XBadge
+                        className="items-start"
+                        handle={xIdentity.handle}
+                        userLabel={xIdentity.userLabel}
+                        providerUserId={xIdentity.providerUserId}
+                      />
+                      <ConnectXButton
+                        label="Manage"
+                        className="w-auto px-0 font-medium text-sm"
+                        buttonProps={{ variant: 'link' }}
+                      />
+                    </div>
+                  ) : null}
                 </div>
               </>
             ) : (
@@ -211,7 +229,23 @@ export function ProfileDetailsCard({
                     <Badge>{athleteSport}</Badge>
                     {athlete?.location && <Badge variant="outline">{athlete.location}</Badge>}
                   </div>
-                  <XBadge className="mt-2 items-start" />
+                  {xLoading ? (
+                    <Skeleton className="mt-2 h-5 w-32" />
+                  ) : xConnected && xIdentity ? (
+                    <div className="mt-2 flex flex-wrap items-center gap-2">
+                      <XBadge
+                        className="items-start"
+                        handle={xIdentity.handle}
+                        userLabel={xIdentity.userLabel}
+                        providerUserId={xIdentity.providerUserId}
+                      />
+                      <ConnectXButton
+                        label="Manage"
+                        className="w-auto px-0 text-sm font-medium"
+                        buttonProps={{ variant: 'link' }}
+                      />
+                    </div>
+                  ) : null}
                 </div>
                 <p className="text-muted-foreground">{athlete?.bio || 'No bio yet.'}</p>
                 {(athlete?.socials?.instagram || athlete?.socials?.strava) && (
