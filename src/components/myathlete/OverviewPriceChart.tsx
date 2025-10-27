@@ -24,7 +24,7 @@ export function OverviewPriceChart({
   // Get range window and pass start as sinceMs
   const { start } = useMemo(() => getRangeWindow(activeTimeRange), [activeTimeRange]);
   
-  const { data: trades = [], isLoading } = useAthleteTrades(athlete.id, start);
+  const { data: trades = [], isLoading, isFetching } = useAthleteTrades(athlete.id, start);
 
   const chartPoints = useMemo(() => {
     if (!athlete?.price) return [];
@@ -52,9 +52,9 @@ export function OverviewPriceChart({
       <Tabs value={activeTimeRange} onValueChange={(value) => handleTimeRangeChange(value as TimeRangeKey)}>
         <TabsList className="grid w-full max-w-md grid-cols-4">
           <TabsTrigger value="24h">24H</TabsTrigger>
-          <TabsTrigger value="7d">7D</TabsTrigger>
-          <TabsTrigger value="30d">30D</TabsTrigger>
-          <TabsTrigger value="all">All</TabsTrigger>
+          <TabsTrigger value="7d" disabled={isLoading || isFetching}>7D</TabsTrigger>
+          <TabsTrigger value="30d" disabled={isLoading || isFetching}>30D</TabsTrigger>
+          <TabsTrigger value="all" disabled={isLoading || isFetching}>All</TabsTrigger>
         </TabsList>
       </Tabs>
       <div className="h-64 md:h-72">
@@ -65,6 +65,7 @@ export function OverviewPriceChart({
           formatXAxisTick={formatXAxisTick}
           formatTooltipLabel={formatTooltipLabel}
           isLoading={isLoading}
+          isFetching={isFetching}
           posts={athlete.posts}
         />
       </div>

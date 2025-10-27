@@ -1,9 +1,9 @@
 import { memo, useMemo, useId, useCallback } from 'react';
-import { ComposedChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, ReferenceDot, Bar, type TooltipProps } from 'recharts';
-import { ChartSkeleton } from '@/components/ui/skeletons';
+import { ComposedChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Bar, type TooltipProps } from 'recharts';
+import { Skeleton } from '@/components/ui/skeleton';
 import type { Post } from '@/types';
 import { StackedCircles, POS_NEON_COLOR } from './StackedCircles';
-import { aggregatePosByDay, startOfUtcDay, getRangeWindow, dailyTicks, endOfUtcDay } from '@/utils/chartData';
+import { aggregatePosByDay, startOfUtcDay, getRangeWindow, dailyTicks } from '@/utils/chartData';
 
 type ChartPoint = {
   t: number;
@@ -19,6 +19,7 @@ interface AthletePriceChartProps {
   formatXAxisTick: (value: number) => string;
   formatTooltipLabel: (value: number) => string;
   isLoading: boolean;
+  isFetching?: boolean;
   posts?: Post[];
 }
 
@@ -29,6 +30,7 @@ const AthletePriceChart = memo(({
   formatXAxisTick,
   formatTooltipLabel,
   isLoading,
+  isFetching = false,
   posts,
 }: AthletePriceChartProps) => {
   const posDailyPoints = useMemo(() => aggregatePosByDay(posts, timeRange), [posts, timeRange]);
@@ -75,6 +77,7 @@ const AthletePriceChart = memo(({
   }, [posDailyPoints]);
 
   const glowFilterId = useId().replace(/:/g, '');
+  const syncId = useMemo(() => `athlete-price-${glowFilterId}`, [glowFilterId]);
 
   const xDomain = useMemo<[number, number]>(() => {
     const DAY = 86_400_000;
@@ -111,6 +114,13 @@ const AthletePriceChart = memo(({
     console.debug('[ChartDomain]', { page: 'OtherAthlete', range: timeRange, domainStart: windowStart, domainEnd: windowEnd, firstPriceT, lastPriceT, priceCount: pricePoints.length });
     return [windowStart!, windowEnd];
   }, [chartPoints, timeRange]);
+
+  const xTicks = useMemo<number[] | undefined>(() => {
+    if (timeRange === 'all') {
+      return undefined;
+    }
+    return dailyTicks(xDomain[0], xDomain[1]);
+  }, [timeRange, xDomain]);
   
   const yDomain = useMemo<[number, number]>(() => {
     // Filter for actual price points (not carried, not null)
@@ -163,14 +173,17 @@ const AthletePriceChart = memo(({
     );
   }, [formatTooltipLabel, posCountByDay, chartData]);
 
-  if (isLoading) {
-    return <ChartSkeleton className="h-full" />;
-  }
+  const isBusy = isLoading || isFetching;
 
   return (
     <div style={{ position: 'relative', width: '100%', height: '100%' }}>
+      {isBusy ? (
+        <div className="pointer-events-none absolute inset-0 px-6 pt-6 pb-10">
+          <Skeleton className="h-full w-full rounded-lg opacity-70" />
+        </div>
+      ) : null}
       <ResponsiveContainer width="100%" height="100%">
-        <ComposedChart data={chartData} margin={{ top: 24, right: 24, bottom: 56, left: 16 }}>
+        <ComposedChart data={chartData} margin={{ top: 24, right: 24, bottom: 56, left: 16 }} syncId={syncId}>
           <defs>
             <filter id={`posGlow-${glowFilterId}`} x="-200%" y="-200%" width="500%" height="500%">
               <feGaussianBlur stdDeviation="5" result="coloredBlur" />
@@ -191,7 +204,7 @@ const AthletePriceChart = memo(({
             type="number"
             scale="time"
             domain={xDomain}
-            ticks={dailyTicks(xDomain[0], xDomain[1])}
+            ticks={xTicks}
             padding={{ right: 18 }}
             tickFormatter={formatXAxisTick}
             tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
