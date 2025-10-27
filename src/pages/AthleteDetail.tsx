@@ -36,7 +36,7 @@ import { fillPriceGaps } from '@/utils/chartData';
 const AthletePriceChart = lazy(() => import('@/components/charts/AthletePriceChart'));
 
 
-type TimeRange = '24h' | '7d' | '30d' | 'all';
+type TimeRange = '7d' | '30d' | 'all';
 
 export default function AthleteDetail() {
   const { slug } = useParams<{ slug: string }>();
@@ -50,13 +50,13 @@ export default function AthleteDetail() {
   const [quantityError, setQuantityError] = useState<string | null>(null);
   const [, setShowTradeModal] = useState(false);
   const [showAddWorkout, setShowAddWorkout] = useState(false);
-  const [timeRange, setTimeRange] = useState<TimeRange>('24h');
+  const [timeRange, setTimeRange] = useState<TimeRange>('7d');
   const [activeTab, setActiveTab] = useState<'overview' | 'locker'>('overview');
   const [lockerInitialTab, setLockerInitialTab] = useState<LockerTab>('workouts');
   const [addWorkoutOpen, setAddWorkoutOpen] = useState(false);
   const [tradeMode, setTradeMode] = useState<'buy' | 'sell'>('buy');
   const [tradeModalOpen, setTradeModalOpen] = useState(false);
-  const timeRanges: TimeRange[] = ['24h', '7d', '30d', 'all'];
+  const timeRanges: TimeRange[] = ['7d', '30d', 'all'];
   const tradeSectionRef = useRef<HTMLDivElement | null>(null);
   const chatSectionRef = useRef<HTMLDivElement | null>(null);
   
@@ -121,23 +121,13 @@ export default function AthleteDetail() {
   const hasRealTrades = (tradeHistory?.volume ?? 0) > 0 || rawChartData.length > 1;
   const displayChartPoints = chartPoints;
 
-  const formatXAxisTick = useCallback(
-    (value: number) => {
-      const date = new Date(value);
-      if (timeRange === '24h') {
-        return date.toLocaleTimeString('en-US', {
-          hour: 'numeric',
-          minute: '2-digit',
-        });
-      }
-
-      return date.toLocaleDateString('en-US', {
-        month: 'short',
-        day: 'numeric',
-      });
-    },
-    [timeRange]
-  );
+  const formatXAxisTick = useCallback((value: number) => {
+    const date = new Date(value);
+    return date.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+    });
+  }, []);
 
   const formatTooltipLabel = useCallback((value: number) => {
     const date = new Date(value);

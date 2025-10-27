@@ -204,7 +204,7 @@ export function PersonalConsole({
       return [startOfUtcDay(firstPriceT), Math.max(lastPriceT, now)];
     }
     
-    // 24h/7d/30d: use full window range for consistent axis
+    // 7d/30d: use full window range (UTC-aligned)
     return [windowStart!, windowEnd];
   }, [chartData, activeTimeRange]);
   
@@ -226,11 +226,8 @@ export function PersonalConsole({
 
   const glowFilterId = useId().replace(/:/g, '');
 
-  const formatXAxisTick = useCallback((value: number, timeRange: TimeRangeKey) => {
+  const formatXAxisTick = useCallback((value: number) => {
     const date = new Date(value);
-    if (timeRange === '24h') {
-      return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
-    }
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   }, []);
 
@@ -353,8 +350,7 @@ export function PersonalConsole({
           </CardHeader>
           <CardContent>
             <Tabs value={activeTimeRange} onValueChange={(value) => handleTimeRangeChange(value as TimeRangeKey)} className="mb-4">
-              <TabsList className="grid w-full max-w-md grid-cols-4">
-                <TabsTrigger value="24h">24H</TabsTrigger>
+              <TabsList className="grid w-full max-w-md grid-cols-3">
                 <TabsTrigger value="7d">7D</TabsTrigger>
                 <TabsTrigger value="30d">30D</TabsTrigger>
                 <TabsTrigger value="all">All</TabsTrigger>
@@ -379,7 +375,7 @@ export function PersonalConsole({
                   domain={xDomain}
                   allowDataOverflow
                   padding={{ right: 18 }}
-                  tickFormatter={(value) => formatXAxisTick(value, activeTimeRange)}
+                  tickFormatter={formatXAxisTick}
                   tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
                   stroke="hsl(var(--muted-foreground))"
                   axisLine={false}

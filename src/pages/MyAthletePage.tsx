@@ -264,7 +264,7 @@ export default function MyAthletePage() {
       return [startOfUtcDay(firstTradeT), Math.max(lastTradeT, now)];
     }
 
-    // 24h/7d/30d: use full window range for consistent axis
+    // 7d/30d: use full window range (UTC-aligned)
     return [windowStart!, windowEnd];
   }, [filledPricePoints, chartTimeRange]);
 
@@ -272,11 +272,8 @@ export default function MyAthletePage() {
 
   const formatXAxisTick = useCallback((value: number) => {
     const date = new Date(value);
-    if (chartTimeRange === '24h') {
-      return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
-    }
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-  }, [chartTimeRange]);
+  }, []);
 
   const formatTooltipLabel = useCallback((value: number) => {
     const date = new Date(value);

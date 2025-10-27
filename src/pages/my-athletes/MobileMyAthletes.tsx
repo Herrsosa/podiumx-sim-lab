@@ -354,10 +354,9 @@ export default function MobileMyAthletes({
           <TabsContent value="chart" className="min-w-0 space-y-4">
             <Card>
               <CardContent className="p-4">
-                {onTimeRangeChange && (
+                  {onTimeRangeChange && (
                   <Tabs value={timeRange} onValueChange={(value) => onTimeRangeChange(value as TimeRangeKey)} className="mb-4">
-                    <TabsList className="grid w-full grid-cols-4">
-                      <TabsTrigger value="24h">24H</TabsTrigger>
+                    <TabsList className="grid w-full grid-cols-3">
                       <TabsTrigger value="7d">7D</TabsTrigger>
                       <TabsTrigger value="30d">30D</TabsTrigger>
                       <TabsTrigger value="all">All</TabsTrigger>
@@ -388,9 +387,6 @@ export default function MobileMyAthletes({
                             allowDataOverflow
                             tickFormatter={(value: number) => {
                               const date = new Date(value);
-                              if (timeRange === '24h') {
-                                return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
-                              }
                               return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
                             }}
                             tickLine={false}

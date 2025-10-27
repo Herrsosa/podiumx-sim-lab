@@ -15,7 +15,7 @@ type ChartPoint = {
 interface AthletePriceChartProps {
   chartPoints: ChartPoint[];
   hasRealTrades: boolean;
-  timeRange: '24h' | '7d' | '30d' | 'all';
+  timeRange: '7d' | '30d' | 'all';
   formatXAxisTick: (value: number) => string;
   formatTooltipLabel: (value: number) => string;
   isLoading: boolean;
@@ -97,11 +97,8 @@ const AthletePriceChart = memo(({
       return [firstPriceT, domainEnd];
     }
     
-    // 24h/7d/30d: data-aware domain with no calendar padding
-    const domainStart = Math.max(start || now - 86400000, firstPriceT);
-    const domainEnd = end;
-    
-    return [domainStart, domainEnd];
+    // 7d/30d: use full window (UTC-aligned)
+    return [start || now - 86400000, end];
   }, [chartPoints, timeRange, start, end]);
   
   const yDomain = useMemo<[number, number]>(() => {

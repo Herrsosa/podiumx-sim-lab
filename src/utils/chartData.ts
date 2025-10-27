@@ -1,17 +1,38 @@
 import { Post } from '@/types';
 
-export type TimeRangeKey = '24h' | '7d' | '30d' | 'all';
+export type TimeRangeKey = '7d' | '30d' | 'all';
 
 export type PosDailyPoint = {
   dateMs: number;
   posCount: number;
 };
 
+export function endOfUtcDay(timestamp: number): number {
+  const date = new Date(timestamp);
+  date.setUTCHours(23, 59, 59, 999);
+  return date.getTime();
+}
+
 export function getRangeWindow(range: TimeRangeKey, now: number = Date.now()): { start?: number; end: number } {
   const dayMs = 86_400_000;
-  if (range === '24h') return { start: now - dayMs, end: now };
-  if (range === '7d') return { start: now - 7 * dayMs, end: now };
-  if (range === '30d') return { start: now - 30 * dayMs, end: now };
+  
+  if (range === '7d') {
+    // 7 days: start 6 days back at UTC midnight, end at UTC end of today
+    return { 
+      start: startOfUtcDay(now - 6 * dayMs), 
+      end: endOfUtcDay(now) 
+    };
+  }
+  
+  if (range === '30d') {
+    // 30 days: start 29 days back at UTC midnight, end at UTC end of today
+    return { 
+      start: startOfUtcDay(now - 29 * dayMs), 
+      end: endOfUtcDay(now) 
+    };
+  }
+  
+  // ALL: no start, end at now
   return { start: undefined, end: now };
 }
 
@@ -69,7 +90,7 @@ export type TradePoint = {
  * - Seeds from the last trade ≤ windowStart (if available)
  * - Marks carried-forward points with {carried: true, lastTradeTime}
  * - For 'all', starts at first trade date
- * - For 24h: hourly increments; 7d/30d: daily increments
+ * - For 7d/30d: daily increments
  */
 export function fillPriceGaps(
   trades: Array<{ timestamp?: number; created_at: string; price_after: number | string }>,
@@ -120,11 +141,11 @@ export function fillPriceGaps(
   let seriesEnd: number;
   
   if (timeRange === 'all') {
-    // ALL: start at first trade, end at now
-    seriesStart = relevantTrades[0].t;
+    // ALL: start at first trade day, end at max(lastTrade, now)
+    seriesStart = startOfUtcDay(relevantTrades[0].t);
     seriesEnd = Math.max(relevantTrades[relevantTrades.length - 1].t, now);
   } else {
-    // Window-based: start at windowStart, end at windowEnd
+    // Window-based: start at windowStart (already UTC aligned), end at windowEnd
     seriesStart = windowStart!;
     seriesEnd = windowEnd!;
   }
@@ -132,6 +153,7 @@ export function fillPriceGaps(
   // Find seed price for window start
   let seedPrice: number;
   let seedTradeTime: number;
+  let shouldSeedAtStart = false;
   
   if (timeRange === 'all') {
     seedPrice = relevantTrades[0].price;
@@ -143,23 +165,33 @@ export function fillPriceGaps(
       const lastBefore = beforeStart[beforeStart.length - 1];
       seedPrice = lastBefore.price;
       seedTradeTime = lastBefore.t;
+      shouldSeedAtStart = true; // Inject carried point at windowStart
     } else {
-      // No trades before window; use first trade
+      // No trades before window; don't seed, start at first in-window trade
       const firstInWindow = relevantTrades.find(tr => tr.t >= seriesStart);
       if (!firstInWindow) return [];
       seedPrice = firstInWindow.price;
       seedTradeTime = firstInWindow.t;
-      // Adjust seriesStart to first trade if it's after window start
-      seriesStart = firstInWindow.t;
+      seriesStart = firstInWindow.t; // Start series at first trade, not windowStart
     }
   }
   
-  // Build series with proper spacing
-  const stepMs = timeRange === '24h' ? 3_600_000 : 86_400_000; // 1h for 24h, 1d otherwise
+  const stepMs = 86_400_000; // 1 day for all ranges
   const series: TradePoint[] = [];
   
-  // Align start to step boundary for daily (not for 24h to preserve hours)
-  let t = timeRange === '24h' ? seriesStart : startOfUtcDay(seriesStart);
+  // For windowed ranges with prior trade, inject carried point at windowStart
+  if (shouldSeedAtStart && timeRange !== 'all') {
+    series.push({
+      t: seriesStart,
+      price: seedPrice,
+      carried: true,
+      lastTradeTime: seedTradeTime,
+    });
+  }
+  
+  // Align start to UTC day boundary
+  let t = startOfUtcDay(seriesStart);
+  if (t < seriesStart) t += stepMs; // Skip if already seeded
   
   let lastPrice = seedPrice;
   let lastTradeTime = seedTradeTime;
@@ -191,17 +223,6 @@ export function fillPriceGaps(
     });
     
     t += stepMs;
-  }
-  
-  // Ensure final point is at current time with current price (for non-ALL ranges)
-  if (timeRange !== 'all' && series.length > 0) {
-    const lastPoint = series[series.length - 1];
-    if (lastPoint.t < now && now <= seriesEnd) {
-      series.push({ t: now, price: currentPrice });
-    } else if (Math.abs(lastPoint.t - now) < stepMs / 2 && now <= seriesEnd) {
-      // Update last point to now
-      series[series.length - 1] = { t: now, price: currentPrice };
-    }
   }
   
   return series;
