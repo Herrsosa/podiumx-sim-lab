@@ -13,7 +13,6 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import ProofOfSweat from '@/components/ProofOfSweat';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
 import { Activity, ArrowDownRight, ArrowUpRight, Plus, TrendingUp } from 'lucide-react';
@@ -27,6 +26,7 @@ import ConnectXButton from '@/components/social/ConnectXButton';
 import { useXConnection } from '@/hooks/useXConnection';
 import { MobileActionBar } from '@/components/MobileActionBar';
 import LockerMessages from '@/components/myathlete/LockerMessages';
+import LockerWorkouts from '@/components/myathlete/LockerWorkouts';
 
 type ChartDatum = {
   t: number;
@@ -178,53 +178,7 @@ export default function MobileMyAthletes({
               </TabsContent>
               
               <TabsContent value="locker" className="mt-4">
-                {(() => {
-                  // Filter workouts and posts that are locked (token-gated or require tokens)
-                  const lockedPosts = posts.filter(p => {
-                    return p.token_gated === true || (p.min_tokens_required ?? 0) > 0 || p.visibility === 'supporters' || p.visibility === 'backers';
-                  });
-                  
-                  // Get workouts that have corresponding locked posts
-                  const lockedWorkouts = workouts.filter(w => {
-                    return lockedPosts.some(p => p.id === w.id);
-                  });
-                  
-                  if (lockedWorkouts.length === 0 && lockedPosts.length === 0) {
-                    return (
-                      <Card className="shadow-none">
-                        <CardContent className="p-6 text-center">
-                          <p className="text-sm text-muted-foreground mb-4">
-                            This is what your supporters see in your locker.
-                          </p>
-                          <p className="text-sm mb-4">No locked content yet</p>
-                          <Button onClick={onAddWorkout} size="sm" variant="outline">
-                            <Plus className="mr-2 h-4 w-4" />
-                            Create Locked Post
-                          </Button>
-                        </CardContent>
-                      </Card>
-                    );
-                  }
-                  
-                  return (
-                    <div className="-mx-4">
-                      <ScrollArea className="h-[500px]">
-                        <div className="px-4 space-y-4">
-                          <p className="text-sm text-muted-foreground">
-                            This is what your supporters see in your locker.
-                          </p>
-                          <ProofOfSweat
-                            athleteId={athlete.id}
-                            athleteName={athlete.name}
-                            workouts={lockedWorkouts}
-                            posts={lockedPosts}
-                            viewerHoldings={Number.MAX_SAFE_INTEGER}
-                          />
-                        </div>
-                      </ScrollArea>
-                    </div>
-                  );
-                })()}
+                <LockerWorkouts />
               </TabsContent>
             </Tabs>
           </div>
@@ -464,10 +418,9 @@ export default function MobileMyAthletes({
                 </CardContent>
               </Card>
             ) : (
-              <ScrollArea className="max-h-[420px]">
-                <div className="space-y-3 pr-2">
-                  {trades.map((trade, index) => {
-                    const side = (trade.side as string) ?? 'buy';
+              <div className="max-h-[420px] space-y-3 overflow-y-auto pr-2">
+                {trades.map((trade, index) => {
+                      const side = (trade.side as string) ?? 'buy';
                     const isBuy = side === 'buy';
                     const qty = Number(trade.qty ?? 0);
                     const gross = Number(trade.gross_amount ?? 0);
@@ -495,9 +448,8 @@ export default function MobileMyAthletes({
                         </CardContent>
                       </Card>
                     );
-                  })}
-                </div>
-              </ScrollArea>
+                })}
+              </div>
             )}
           </TabsContent>
 

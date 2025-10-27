@@ -1,6 +1,6 @@
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
-import { useCallback } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { useMyAthlete } from '@/hooks/useMyAthlete';
@@ -30,9 +30,10 @@ export default function LockerWorkouts({
   const effectiveAthleteId = lockerAthleteId ?? athlete?.id;
   const effectiveAthleteName = lockerAthleteName ?? athlete?.name ?? 'Athlete';
   const canEdit = isOwnerProp ?? (!lockerAthleteId && Boolean(athlete?.id));
-  const workoutsQuery = useWorkouts(effectiveAthleteId, { pageSize: 50 });
-  const isLoading =
-    (!lockerAthleteId && athleteLoading) || workoutsQuery.isLoading;
+  const workoutsQuery = useWorkouts(effectiveAthleteId, { pageSize: 30 });
+  const { fetchNextPage, hasNextPage = false, isFetchingNextPage } = workoutsQuery;
+  const isLoading = (!lockerAthleteId && athleteLoading) || workoutsQuery.isLoading;
+  const loadMoreRef = useRef<HTMLDivElement | null>(null);
   const effectiveViewerHoldings = canEdit ? Number.MAX_SAFE_INTEGER : viewerHoldings;
   const headerTitle = canEdit
     ? 'My Workouts'
@@ -77,6 +78,54 @@ export default function LockerWorkouts({
     ]);
   }, [canEdit, queryClient]);
 
+  const workoutItems = workoutsQuery.workouts ?? [];
+
+  const { workouts, posts } = useMemo(() => {
+    const assembledWorkouts = workoutItems
+      .map((item) => item.workout)
+      .filter((w): w is NonNullable<typeof w> => Boolean(w));
+
+    const assembledPosts = workoutItems.map((item) => ({
+      id: item.id,
+      created_at: item.createdAt,
+      author_id: effectiveAthleteId,
+      workout_json: item.workout,
+      image_url: item.imageUrl,
+      text: item.notes,
+      token_gated: item.visibility !== 'public',
+      strava_activity_id: null,
+      visibility: item.visibility,
+      min_tokens_required: item.minTokensRequired,
+    }));
+
+    return {
+      workouts: assembledWorkouts,
+      posts: assembledPosts,
+    };
+  }, [workoutItems, effectiveAthleteId]);
+
+  useEffect(() => {
+    if (!hasNextPage) return;
+    const node = loadMoreRef.current;
+    if (!node) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const entry = entries[0];
+        if (entry.isIntersecting && !isFetchingNextPage) {
+          fetchNextPage();
+        }
+      },
+      { rootMargin: '200px' },
+    );
+
+    observer.observe(node);
+
+    return () => {
+      observer.disconnect();
+    };
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
+
   if (isLoading) {
     return (
       <div className="space-y-4 p-6">
@@ -93,24 +142,6 @@ export default function LockerWorkouts({
       </div>
     );
   }
-
-  const workoutItems = workoutsQuery.data ?? [];
-  const workouts = workoutItems
-    .map((item) => item.workout)
-    .filter((w): w is NonNullable<typeof w> => Boolean(w));
-
-  const posts = workoutItems.map((item) => ({
-    id: item.id,
-    created_at: item.createdAt,
-    author_id: effectiveAthleteId,
-    workout_json: item.workout,
-    image_url: item.imageUrl,
-    text: item.notes,
-    token_gated: item.visibility !== 'public',
-    strava_activity_id: null,
-    visibility: item.visibility,
-    min_tokens_required: item.minTokensRequired,
-  }));
 
   return (
     <div className="space-y-6 p-6">
@@ -148,7 +179,16 @@ export default function LockerWorkouts({
           posts={posts}
           workouts={workouts}
           viewerHoldings={effectiveViewerHoldings}
+          groupByMonth
+          initialExpandedMonths={4}
         />
+      )}
+
+      <div ref={loadMoreRef} className="h-8" aria-hidden="true" />
+      {hasNextPage && (
+        <div className="flex items-center justify-center text-sm text-muted-foreground">
+          {isFetchingNextPage ? 'Loading more workouts…' : 'Scroll to load more'}
+        </div>
       )}
 
       {canEdit && (

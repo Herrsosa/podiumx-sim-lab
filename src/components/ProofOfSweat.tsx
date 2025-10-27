@@ -3,6 +3,7 @@ import { Activity, Clock, Gauge, Zap, Trash2, Edit } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -32,6 +33,8 @@ interface ProofOfSweatProps {
   onUnlock?: () => void;
   onWorkoutDeleted?: () => void;
   onConnectStrava?: () => void;
+  groupByMonth?: boolean;
+  initialExpandedMonths?: number;
 }
 
 export default function ProofOfSweat({
@@ -43,6 +46,8 @@ export default function ProofOfSweat({
   onUnlock,
   onWorkoutDeleted,
   onConnectStrava,
+  groupByMonth = false,
+  initialExpandedMonths = 4,
 }: ProofOfSweatProps) {
   const user = useUser();
   const { toast } = useToast();
@@ -71,6 +76,172 @@ export default function ProofOfSweat({
 
   // Use optimistic workouts for display
   const safeWorkouts = optimisticWorkouts;
+
+  const [openMonths, setOpenMonths] = useState<string[]>([]);
+
+  const monthlyGroups = useMemo(() => {
+    if (!groupByMonth || safeWorkouts.length === 0) {
+      return [] as Array<{ key: string; label: string; workouts: Workout[] }>;
+    }
+
+    const map = new Map<string, { key: string; label: string; workouts: Workout[] }>();
+
+    safeWorkouts.forEach((workout) => {
+      const rawDate = workout.date ?? new Date().toISOString();
+      const date = new Date(rawDate);
+      const key = `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, '0')}`;
+      const label = date.toLocaleDateString(undefined, {
+        month: 'long',
+        year: 'numeric',
+      });
+
+      if (!map.has(key)) {
+        map.set(key, { key, label, workouts: [] });
+      }
+      map.get(key)!.workouts.push(workout);
+    });
+
+    return Array.from(map.values()).sort((a, b) => (a.key > b.key ? -1 : 1));
+  }, [groupByMonth, safeWorkouts]);
+
+  useEffect(() => {
+    if (!groupByMonth) return;
+    setOpenMonths((prev) => {
+      const existing = new Set(prev);
+      const next: string[] = [];
+      monthlyGroups.forEach((group, index) => {
+        if (existing.has(group.key) || index < initialExpandedMonths) {
+          next.push(group.key);
+        }
+      });
+      return next;
+    });
+  }, [groupByMonth, monthlyGroups, initialExpandedMonths]);
+
+  const renderWorkoutCard = (workout: Workout) => {
+    const post = workoutPostMap.get(workout.id);
+    const visibility =
+      post?.visibility ??
+      workout.visibility ??
+      ('public' as 'public' | 'supporters' | 'backers');
+    const minTokens =
+      post?.min_tokens_required ?? workout.minTokensRequired ?? 0;
+    const requiredTokens =
+      visibility === 'supporters'
+        ? Math.max(1, minTokens)
+        : visibility === 'backers'
+        ? Math.max(10, minTokens)
+        : 0;
+    const canView =
+      visibility === 'public' ||
+      canDelete ||
+      viewerHoldings >= requiredTokens;
+    const mediaUrl = workout.mediaUrl ?? post?.image_url ?? undefined;
+
+    return (
+      <div
+        key={workout.id}
+        className="group relative overflow-hidden rounded-xl border border-border/50 bg-card/50 p-4 transition-all hover:border-primary/30 hover:bg-card/80"
+      >
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex-1">
+            <div className="mb-2 flex items-center gap-2">
+              <Badge variant="secondary" className="gap-1">
+                {getWorkoutIcon(workout.type)}
+                {workout.type}
+              </Badge>
+              <span className="text-xs text-muted-foreground">
+                {formatDate(workout.date)}
+              </span>
+              {visibility !== 'public' && (
+                <LockBadge tier={visibility} className="text-xs" />
+              )}
+            </div>
+
+            {canView ? (
+              <>
+                {mediaUrl && (
+                  <div className="mb-3 w-full max-w-[160px]">
+                    <div className="relative aspect-square overflow-hidden rounded-lg border border-border/40 bg-muted/30">
+                      <img
+                        src={mediaUrl}
+                        alt={`${workout.type} workout media`}
+                        className="h-full w-full object-cover"
+                        loading="lazy"
+                      />
+                    </div>
+                  </div>
+                )}
+                <div className="mb-2 grid grid-cols-2 gap-x-4 gap-y-1 text-sm md:grid-cols-4">
+                  {workout.distance && (
+                    <div className="flex items-center gap-1.5 text-muted-foreground">
+                      <Activity className="h-3.5 w-3.5" />
+                      <span>{workout.distance.toFixed(1)} km</span>
+                    </div>
+                  )}
+                  <div className="flex items-center gap-1.5 text-muted-foreground">
+                    <Clock className="h-3.5 w-3.5" />
+                    <span>{formatDuration(workout.duration)}</span>
+                  </div>
+                  {workout.pace && (
+                    <div className="flex items-center gap-1.5 text-muted-foreground">
+                      <Gauge className="h-3.5 w-3.5" />
+                      <span>{workout.pace}</span>
+                    </div>
+                  )}
+                  {workout.speed && (
+                    <div className="flex items-center gap-1.5 text-muted-foreground">
+                      <Gauge className="h-3.5 w-3.5" />
+                      <span>{workout.speed}</span>
+                    </div>
+                  )}
+                  <div className="flex items-center gap-1.5 text-muted-foreground">
+                    <Zap className="h-3.5 w-3.5" />
+                    <span>RPE {workout.rpe}/10</span>
+                  </div>
+                </div>
+
+                {workout.notes && (
+                  <p className="text-sm text-foreground/80">{workout.notes}</p>
+                )}
+              </>
+            ) : (
+              <div className="mt-3">
+                <UnlockCard
+                  tier={visibility === 'backers' ? 'backers' : 'supporters'}
+                  athleteName={athleteName || 'this athlete'}
+                  onUnlock={onUnlock}
+                />
+              </div>
+            )}
+          </div>
+
+          {canDelete && (
+            <div className="flex gap-1">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => handleEditClick(workout)}
+                className="opacity-0 transition-opacity group-hover:opacity-100"
+              >
+                <Edit className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => handleDeleteClick(workout.id)}
+                className="opacity-0 transition-opacity group-hover:opacity-100"
+              >
+                <Trash2 className="h-4 w-4 text-destructive" />
+              </Button>
+            </div>
+          )}
+        </div>
+
+        <div className="absolute bottom-0 left-0 h-1 w-full bg-gradient-to-r from-primary/0 via-primary/50 to-primary/0 opacity-0 transition-opacity group-hover:opacity-100" />
+      </div>
+    );
+  };
   
   const canDelete = user?.id === athleteId;
 
@@ -233,132 +404,34 @@ export default function ProofOfSweat({
               onCta={handleConnectStrava}
               className="py-12"
             />
+          ) : groupByMonth ? (
+            <Accordion
+              type="multiple"
+              value={openMonths}
+              onValueChange={(value) => setOpenMonths(Array.isArray(value) ? value : [])}
+              className="space-y-2"
+            >
+              {monthlyGroups.map((group) => (
+                <AccordionItem
+                  key={group.key}
+                  value={group.key}
+                  className="overflow-hidden rounded-xl border border-border/60 bg-card/40"
+                >
+                  <AccordionTrigger className="flex items-center justify-between px-4 py-3 text-left text-sm font-semibold">
+                    <span>{group.label}</span>
+                    <Badge variant="outline" className="text-xs">
+                      {group.workouts.length} {group.workouts.length === 1 ? 'workout' : 'workouts'}
+                    </Badge>
+                  </AccordionTrigger>
+                  <AccordionContent className="space-y-3 px-4 pb-4">
+                    {group.workouts.map((workout) => renderWorkoutCard(workout))}
+                  </AccordionContent>
+                </AccordionItem>
+              ))}
+            </Accordion>
           ) : (
             <div className="space-y-3">
-              {safeWorkouts.map((workout) => {
-                const post = workoutPostMap.get(workout.id);
-                const visibility =
-                  post?.visibility ??
-                  workout.visibility ??
-                  ('public' as 'public' | 'supporters' | 'backers');
-                const minTokens =
-                  post?.min_tokens_required ?? workout.minTokensRequired ?? 0;
-                const requiredTokens =
-                  visibility === 'supporters'
-                    ? Math.max(1, minTokens)
-                    : visibility === 'backers'
-                    ? Math.max(10, minTokens)
-                    : 0;
-                const canView =
-                  visibility === 'public' ||
-                  canDelete ||
-                  viewerHoldings >= requiredTokens;
-                const mediaUrl = workout.mediaUrl ?? post?.image_url ?? undefined;
-
-                return (
-                  <div
-                    key={workout.id}
-                    className="group relative overflow-hidden rounded-xl border border-border/50 bg-card/50 p-4 transition-all hover:border-primary/30 hover:bg-card/80"
-                  >
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="flex-1">
-                        <div className="mb-2 flex items-center gap-2">
-                          <Badge variant="secondary" className="gap-1">
-                            {getWorkoutIcon(workout.type)}
-                            {workout.type}
-                          </Badge>
-                          <span className="text-xs text-muted-foreground">
-                            {formatDate(workout.date)}
-                          </span>
-                        {visibility !== 'public' && (
-                          <LockBadge tier={visibility} className="text-xs" />
-                        )}
-                      </div>
-
-                        {canView ? (
-                          <>
-                            {mediaUrl && (
-                              <div className="mb-3 w-full max-w-[160px]">
-                                <div className="relative aspect-square overflow-hidden rounded-lg border border-border/40 bg-muted/30">
-                                  <img
-                                    src={mediaUrl}
-                                    alt={`${workout.type} workout media`}
-                                    className="h-full w-full object-cover"
-                                    loading="lazy"
-                                  />
-                                </div>
-                              </div>
-                            )}
-                            <div className="mb-2 grid grid-cols-2 gap-x-4 gap-y-1 text-sm md:grid-cols-4">
-                              {workout.distance && (
-                                <div className="flex items-center gap-1.5 text-muted-foreground">
-                                  <Activity className="h-3.5 w-3.5" />
-                                  <span>{workout.distance.toFixed(1)} km</span>
-                                </div>
-                              )}
-                              <div className="flex items-center gap-1.5 text-muted-foreground">
-                                <Clock className="h-3.5 w-3.5" />
-                                <span>{formatDuration(workout.duration)}</span>
-                              </div>
-                              {workout.pace && (
-                                <div className="flex items-center gap-1.5 text-muted-foreground">
-                                  <Gauge className="h-3.5 w-3.5" />
-                                  <span>{workout.pace}</span>
-                                </div>
-                              )}
-                              {workout.speed && (
-                                <div className="flex items-center gap-1.5 text-muted-foreground">
-                                  <Gauge className="h-3.5 w-3.5" />
-                                  <span>{workout.speed}</span>
-                                </div>
-                              )}
-                              <div className="flex items-center gap-1.5 text-muted-foreground">
-                                <Zap className="h-3.5 w-3.5" />
-                                <span>RPE {workout.rpe}/10</span>
-                              </div>
-                            </div>
-
-                            {workout.notes && (
-                              <p className="text-sm text-foreground/80">{workout.notes}</p>
-                            )}
-                          </>
-                        ) : (
-                          <div className="mt-3">
-                            <UnlockCard
-                              tier={visibility === 'backers' ? 'backers' : 'supporters'}
-                              athleteName={athleteName || 'this athlete'}
-                              onUnlock={onUnlock}
-                            />
-                          </div>
-                        )}
-                      </div>
-
-                      {canDelete && (
-                        <div className="flex gap-1">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleEditClick(workout)}
-                            className="opacity-0 transition-opacity group-hover:opacity-100"
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleDeleteClick(workout.id)}
-                            className="opacity-0 transition-opacity group-hover:opacity-100"
-                          >
-                            <Trash2 className="h-4 w-4 text-destructive" />
-                          </Button>
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="absolute bottom-0 left-0 h-1 w-full bg-gradient-to-r from-primary/0 via-primary/50 to-primary/0 opacity-0 transition-opacity group-hover:opacity-100" />
-                  </div>
-                );
-              })}
+              {safeWorkouts.map((workout) => renderWorkoutCard(workout))}
             </div>
           )}
         </CardContent>
