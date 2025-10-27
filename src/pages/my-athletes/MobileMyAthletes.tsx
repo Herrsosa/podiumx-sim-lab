@@ -285,7 +285,8 @@ export default function MobileMyAthletes({
     onAddWorkout,
     posts,
     workouts,
-    xIdentity,
+    xConnected,
+    xLoading,
   ]);
 
   if (!athlete) {
