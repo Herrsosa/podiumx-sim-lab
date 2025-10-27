@@ -3,7 +3,7 @@ import { ComposedChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTo
 import { ChartSkeleton } from '@/components/ui/skeletons';
 import type { Post } from '@/types';
 import { StackedCircles, POS_NEON_COLOR } from './StackedCircles';
-import { aggregatePosByDay, startOfUtcDay, getRangeWindow } from '@/utils/chartData';
+import { aggregatePosByDay, startOfUtcDay, getRangeWindow, dailyTicks, endOfUtcDay } from '@/utils/chartData';
 
 type ChartPoint = {
   t: number;
@@ -76,30 +76,41 @@ const AthletePriceChart = memo(({
 
   const glowFilterId = useId().replace(/:/g, '');
 
-  const { start, end } = getRangeWindow(timeRange);
-  
   const xDomain = useMemo<[number, number]>(() => {
+    const DAY = 86_400_000;
     const now = Date.now();
+    const { start: windowStart, end: windowEnd } = getRangeWindow(timeRange, now);
     
-    // Filter for actual price points only (not carried, ignore PoS-only)
-    const pricePoints = chartPoints.filter((p) => p.price != null && !p.carried);
+    // Filter for actual price points only (price != null && !carried)
+    const pricePoints = chartPoints.filter((p) => p.price != null && !p.carried).sort((a,b)=>a.t-b.t);
     
     if (pricePoints.length === 0) {
-      return timeRange === 'all' ? [now - 86400000, now] : [start || now - 86400000, end];
+      return timeRange === 'all' ? [now - DAY, now] : [windowStart || now - DAY, windowEnd];
     }
     
     const firstPriceT = pricePoints[0].t;
     const lastPriceT = pricePoints[pricePoints.length - 1].t;
     
     if (timeRange === 'all') {
-      // ALL: start at first trade, end at max(lastTrade, now)
+      // ALL: start at first trade day, end at max(lastTrade, now)
+      const domainStart = startOfUtcDay(firstPriceT);
       const domainEnd = Math.max(lastPriceT, now);
-      return [firstPriceT, domainEnd];
+      console.debug('[ChartDomain]', { page: 'OtherAthlete', range: timeRange, domainStart, domainEnd, firstPriceT, lastPriceT, priceCount: pricePoints.length });
+      return [domainStart, domainEnd];
+    }
+    
+    // 30D: if first trade is within window, start at that trade day
+    if (timeRange === '30d' && firstPriceT >= windowStart!) {
+      const domainStart = startOfUtcDay(firstPriceT);
+      const domainEnd = windowEnd;
+      console.debug('[ChartDomain]', { page: 'OtherAthlete', range: timeRange, domainStart, domainEnd, firstPriceT, lastPriceT, priceCount: pricePoints.length });
+      return [domainStart, domainEnd];
     }
     
     // 7d/30d: use full window (UTC-aligned)
-    return [start || now - 86400000, end];
-  }, [chartPoints, timeRange, start, end]);
+    console.debug('[ChartDomain]', { page: 'OtherAthlete', range: timeRange, domainStart: windowStart, domainEnd: windowEnd, firstPriceT, lastPriceT, priceCount: pricePoints.length });
+    return [windowStart!, windowEnd];
+  }, [chartPoints, timeRange]);
   
   const yDomain = useMemo<[number, number]>(() => {
     // Filter for actual price points (not carried, not null)
@@ -180,12 +191,15 @@ const AthletePriceChart = memo(({
             type="number"
             scale="time"
             domain={xDomain}
+            ticks={dailyTicks(xDomain[0], xDomain[1])}
             padding={{ right: 18 }}
             tickFormatter={formatXAxisTick}
             tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
             stroke="hsl(var(--muted-foreground))"
             axisLine={false}
             tickLine={false}
+            interval="preserveStartEnd"
+            allowDataOverflow
           />
           <YAxis
             domain={yDomain}

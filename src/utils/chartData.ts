@@ -42,6 +42,20 @@ export function startOfUtcDay(timestamp: number): number {
   return date.getTime();
 }
 
+/**
+ * Generate daily ticks for even X-axis labeling
+ */
+export function dailyTicks(startMs: number, endMs: number): number[] {
+  const ticks: number[] = [];
+  let t = startOfUtcDay(startMs);
+  const end = startOfUtcDay(endMs);
+  while (t <= end) {
+    ticks.push(t);
+    t += 86_400_000;
+  }
+  return ticks;
+}
+
 export function aggregatePosByDay(
   posts: Post[] | undefined,
   range: TimeRangeKey,

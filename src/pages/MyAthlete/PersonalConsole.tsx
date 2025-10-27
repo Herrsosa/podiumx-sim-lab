@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useCallback, useRef, useId } from 'react';
 import { Plus, TrendingUp, Edit, Trash2, MessageSquare, DollarSign, Activity, Share2, MessageCircle } from 'lucide-react';
 import type { TimeRangeKey } from '@/utils/chartData';
-import { fillPriceGaps, getRangeWindow } from '@/utils/chartData';
+import { fillPriceGaps, getRangeWindow, dailyTicks, startOfUtcDay, endOfUtcDay } from '@/utils/chartData';
 import { formatNumber } from '@/lib/format';
 import { ComposedChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Bar, type TooltipProps } from 'recharts';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -13,7 +13,7 @@ import { Athlete, Workout, Post } from '@/types';
 import { toast } from 'sonner';
 import { useUser } from '@/store/auth';
 import { StackedCircles, POS_NEON_COLOR } from '@/components/charts/StackedCircles';
-import { aggregatePosByDay, startOfUtcDay } from '@/utils/chartData';
+import { aggregatePosByDay } from '@/utils/chartData';
 import { supabase } from '@/integrations/supabase/client';
 import TokengatedChat from '@/components/TokengatedChat';
 import { useQueryClient } from '@tanstack/react-query';
@@ -186,14 +186,15 @@ export function PersonalConsole({
   }, [posDailyPoints]);
 
   const xDomain = useMemo<[number, number]>(() => {
-    const { start: windowStart, end: windowEnd } = getRangeWindow(activeTimeRange);
+    const DAY = 86_400_000;
     const now = Date.now();
+    const { start: windowStart, end: windowEnd } = getRangeWindow(activeTimeRange, now);
     
-    // Filter for price points only (ignore PoS-only points and carried points)
+    // Filter for price points only (price != null && !carried)
     const pricePoints = chartData.filter((d) => d.price != null && !d.carried).sort((a,b)=>a.t-b.t);
     
     if (pricePoints.length === 0) {
-      return activeTimeRange === 'all' ? [now - 86400000, now] : [windowStart || now - 86400000, windowEnd];
+      return activeTimeRange === 'all' ? [now - DAY, now] : [windowStart || now - DAY, windowEnd];
     }
     
     const firstPriceT = pricePoints[0].t;
@@ -201,10 +202,22 @@ export function PersonalConsole({
     
     if (activeTimeRange === 'all') {
       // ALL: start at first trade day, end at max(lastTrade, now)
-      return [startOfUtcDay(firstPriceT), Math.max(lastPriceT, now)];
+      const domainStart = startOfUtcDay(firstPriceT);
+      const domainEnd = Math.max(lastPriceT, now);
+      console.debug('[ChartDomain]', { page: 'PersonalConsole', range: activeTimeRange, domainStart, domainEnd, firstPriceT, lastPriceT, priceCount: pricePoints.length });
+      return [domainStart, domainEnd];
+    }
+    
+    // 30D: if first trade is within window, start at that trade day
+    if (activeTimeRange === '30d' && firstPriceT >= windowStart!) {
+      const domainStart = startOfUtcDay(firstPriceT);
+      const domainEnd = windowEnd;
+      console.debug('[ChartDomain]', { page: 'PersonalConsole', range: activeTimeRange, domainStart, domainEnd, firstPriceT, lastPriceT, priceCount: pricePoints.length });
+      return [domainStart, domainEnd];
     }
     
     // 7d/30d: use full window range (UTC-aligned)
+    console.debug('[ChartDomain]', { page: 'PersonalConsole', range: activeTimeRange, domainStart: windowStart, domainEnd: windowEnd, firstPriceT, lastPriceT, priceCount: pricePoints.length });
     return [windowStart!, windowEnd];
   }, [chartData, activeTimeRange]);
   
@@ -373,6 +386,7 @@ export function PersonalConsole({
                   type="number"
                   scale="time"
                   domain={xDomain}
+                  ticks={dailyTicks(xDomain[0], xDomain[1])}
                   allowDataOverflow
                   padding={{ right: 18 }}
                   tickFormatter={formatXAxisTick}
@@ -380,6 +394,7 @@ export function PersonalConsole({
                   stroke="hsl(var(--muted-foreground))"
                   axisLine={false}
                   tickLine={false}
+                  interval="preserveStartEnd"
                 />
                 <YAxis
                   domain={yDomain}

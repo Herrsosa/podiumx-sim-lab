@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback, useEffect, useRef, useId } from 'react';
 import type { TimeRangeKey } from '@/utils/chartData';
-import { getRangeWindow, fillPriceGaps } from '@/utils/chartData';
+import { getRangeWindow, fillPriceGaps, dailyTicks, startOfUtcDay, endOfUtcDay } from '@/utils/chartData';
 import { Plus, TrendingUp, Edit, Trash2, MessageSquare, DollarSign, Activity, Share2, MessageCircle } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
 import { ComposedChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Bar, type TooltipProps } from 'recharts';
@@ -20,7 +20,7 @@ import { useAthleteTrades } from '@/hooks/useAthleteTrades';
 import { useWorkoutEditor } from '@/hooks/useWorkoutEditor';
 import { useUser } from '@/store/auth';
 import { StackedCircles, POS_NEON_COLOR } from '@/components/charts/StackedCircles';
-import { aggregatePosByDay, startOfUtcDay } from '@/utils/chartData';
+import { aggregatePosByDay } from '@/utils/chartData';
 
 import { supabase } from '@/integrations/supabase/client';
 import AddWorkoutModal from '@/components/AddWorkoutModal';
@@ -243,17 +243,18 @@ export default function MyAthletePage() {
   }, [posDailyPoints]);
 
   const xDomain = useMemo<[number, number]>(() => {
-    const { start: windowStart, end: windowEnd } = getRangeWindow(chartTimeRange);
+    const DAY = 86_400_000;
     const now = Date.now();
+    const { start: windowStart, end: windowEnd } = getRangeWindow(chartTimeRange, now);
 
-    // Use only real trade points (ignore PoS-only and carried-forward)
+    // Use only real trade points (price != null && !carried)
     const pricePoints = filledPricePoints.filter(p => p.price != null && !p.carried).sort((a,b)=>a.t-b.t);
 
     if (pricePoints.length === 0) {
       // No real trades - use window or minimal range
       return chartTimeRange === 'all'
-        ? [now - 86_400_000, now]
-        : [windowStart ?? now - 86_400_000, windowEnd];
+        ? [now - DAY, now]
+        : [windowStart ?? now - DAY, windowEnd];
     }
 
     const firstTradeT = pricePoints[0].t;
@@ -261,10 +262,22 @@ export default function MyAthletePage() {
 
     if (chartTimeRange === 'all') {
       // ALL: start at first trade day, end at max(lastTrade, now)
-      return [startOfUtcDay(firstTradeT), Math.max(lastTradeT, now)];
+      const domainStart = startOfUtcDay(firstTradeT);
+      const domainEnd = Math.max(lastTradeT, now);
+      console.debug('[ChartDomain]', { page: 'MyAthlete', range: chartTimeRange, domainStart, domainEnd, firstTradeT, lastTradeT, priceCount: pricePoints.length });
+      return [domainStart, domainEnd];
+    }
+
+    // 30D: if first trade is within window, start at that trade day
+    if (chartTimeRange === '30d' && firstTradeT >= windowStart!) {
+      const domainStart = startOfUtcDay(firstTradeT);
+      const domainEnd = windowEnd;
+      console.debug('[ChartDomain]', { page: 'MyAthlete', range: chartTimeRange, domainStart, domainEnd, firstTradeT, lastTradeT, priceCount: pricePoints.length });
+      return [domainStart, domainEnd];
     }
 
     // 7d/30d: use full window range (UTC-aligned)
+    console.debug('[ChartDomain]', { page: 'MyAthlete', range: chartTimeRange, domainStart: windowStart, domainEnd: windowEnd, firstTradeT, lastTradeT, priceCount: pricePoints.length });
     return [windowStart!, windowEnd];
   }, [filledPricePoints, chartTimeRange]);
 
