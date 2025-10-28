@@ -28,19 +28,29 @@ export function PosGlobe({ locations, className = '' }: PosGlobeProps) {
   const cx = width / 2;
   const cy = height / 2;
 
-  // Project lat/lng to orthographic coordinates
+  // Project lat/lng to orthographic coordinates (centered on Prime Meridian, 0° latitude)
   const projectPoint = (lat: number, lng: number): [number, number] | null => {
-    // Simple orthographic projection (front-facing)
-    // Hide points on back hemisphere
-    if (Math.abs(lng) > 90) return null;
+    // Simple orthographic projection
+    const lambda = (lng * Math.PI) / 180;
+    const phi = (lat * Math.PI) / 180;
     
-    const latRad = (lat * Math.PI) / 180;
-    const lngRad = (lng * Math.PI) / 180;
+    // Center on 0°, 0° (Prime Meridian, Equator)
+    const lambda0 = 0;
+    const phi0 = 0;
     
-    const x = cx + radius * Math.cos(latRad) * Math.sin(lngRad);
-    const y = cy - radius * Math.sin(latRad);
+    // Check if point is on visible hemisphere
+    const cosPhi = Math.cos(phi);
+    const x = cosPhi * Math.sin(lambda - lambda0);
+    const y = Math.cos(phi0) * Math.sin(phi) - Math.sin(phi0) * cosPhi * Math.cos(lambda - lambda0);
     
-    return [x, y];
+    // Hide if on back side
+    const visible = Math.sin(phi0) * Math.sin(phi) + Math.cos(phi0) * cosPhi * Math.cos(lambda - lambda0) > 0;
+    if (!visible) return null;
+    
+    return [
+      cx + radius * x,
+      cy - radius * y,
+    ];
   };
 
   // Project dots
@@ -111,14 +121,17 @@ export function PosGlobe({ locations, className = '' }: PosGlobeProps) {
           ))}
         </g>
 
-        {/* Continent outlines */}
-        <path
-          d={WORLD_OUTLINE_PATH}
-          stroke="hsl(var(--foreground))"
-          strokeWidth="0.5"
-          fill="none"
-          className="opacity-20"
-        />
+        {/* Continent outlines - using embedded path with proper transform */}
+        <g transform={`translate(${cx}, ${cy}) scale(${radius / 180})`}>
+          <path
+            d={WORLD_OUTLINE_PATH}
+            stroke="hsl(var(--foreground))"
+            strokeWidth="1"
+            fill="none"
+            className="opacity-30"
+            transform="translate(-180, -90)"
+          />
+        </g>
 
         {/* Location dots */}
         <g>
