@@ -11,7 +11,15 @@ serve(async (req) => {
   }
 
   try {
-    const { q: query } = await req.json();
+    // Handle both GET (with query params) and POST (with JSON body)
+    const url = new URL(req.url);
+    let query = url.searchParams.get('q');
+    
+    // If no query param, try reading from body (POST)
+    if (!query && req.method === 'POST') {
+      const body = await req.json();
+      query = body.q;
+    }
 
     if (!query || query.trim().length < 2) {
       return new Response(

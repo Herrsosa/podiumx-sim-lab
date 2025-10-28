@@ -34,11 +34,7 @@ export function useLocationSearch() {
 
       try {
         const { data, error } = await supabase.functions.invoke('location-search', {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ q: debouncedQuery }),
+          body: { q: debouncedQuery },
         });
 
         if (error) throw error;
