@@ -158,7 +158,7 @@ const AthletePriceChart = memo(({
         </div>
       </div>
     );
-  }, [formatTooltipLabel, posCountByDay, chartData]);
+  }, [formatTooltipLabel, posCountByDay, chartData,startOfDay]);
 
   const isBusy = isLoading || isFetching;
 

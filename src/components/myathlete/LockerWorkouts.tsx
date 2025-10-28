@@ -78,7 +78,11 @@ export default function LockerWorkouts({
     ]);
   }, [canEdit, queryClient]);
 
-  const workoutItems = workoutsQuery.workouts ?? [];
+  const workoutItems = useMemo(
+    () => workoutsQuery.workouts ?? [],
+    [workoutsQuery.workouts]
+  );
+  
 
   const { workouts, posts } = useMemo(() => {
     const assembledWorkouts = workoutItems
