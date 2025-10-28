@@ -11,8 +11,7 @@ serve(async (req) => {
   }
 
   try {
-    const url = new URL(req.url);
-    const query = url.searchParams.get('q');
+    const { q: query } = await req.json();
 
     if (!query || query.trim().length < 2) {
       return new Response(
