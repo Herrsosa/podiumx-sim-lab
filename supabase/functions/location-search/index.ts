@@ -75,7 +75,7 @@ serve(async (req) => {
   } catch (error) {
     console.error('[location-search] Error:', error);
     return new Response(
-      JSON.stringify({ error: error.message || 'Failed to search locations' }),
+      JSON.stringify({ error: (error as Error).message || 'Failed to search locations' }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }

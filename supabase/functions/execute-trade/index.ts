@@ -38,14 +38,14 @@ const lockerTierFromBalance = (balance: number) => {
   return "public";
 };
 
-async function buildSnapshot(supabaseAdmin: ReturnType<typeof createClient>, userId: string, athleteId: string) {
+async function buildSnapshot(supabaseAdmin: any, userId: string, athleteId: string) {
   const { data: walletRow } = await supabaseAdmin
     .from("wallets")
     .select("balance")
     .eq("user_id", userId)
     .maybeSingle();
 
-  const walletBalance = Number(walletRow?.balance ?? 0);
+  const walletBalance = Number((walletRow as any)?.balance ?? 0);
 
   const { data: holdingsRows } = await supabaseAdmin
     .from("holdings")
@@ -56,7 +56,7 @@ async function buildSnapshot(supabaseAdmin: ReturnType<typeof createClient>, use
 
   const athleteIds = new Set<string>();
   if (holdingsRows) {
-    holdingsRows.forEach((row) => athleteIds.add(row.athlete_id));
+    (holdingsRows as any[]).forEach((row: any) => athleteIds.add(row.athlete_id));
   }
   athleteIds.add(athleteId);
 
@@ -69,19 +69,19 @@ async function buildSnapshot(supabaseAdmin: ReturnType<typeof createClient>, use
     : { data: null };
 
   const tokenMap = new Map(
-    (tokenRows ?? []).map((token) => [token.athlete_id, token])
+    ((tokenRows ?? []) as any[]).map((token: any) => [token.athlete_id, token])
   );
 
   const positions: Record<string, PositionSnapshot> = {};
 
-  (holdingsRows ?? []).forEach((row) => {
+  ((holdingsRows ?? []) as any[]).forEach((row: any) => {
     const token = tokenMap.get(row.athlete_id);
     const curve: Curve = {
-      a: token?.a ?? 0.0002,
-      b: token?.b ?? 0.02,
-      c: token?.c ?? 1,
+      a: (token as any)?.a ?? 0.0002,
+      b: (token as any)?.b ?? 0.02,
+      c: (token as any)?.c ?? 1,
     };
-    const currentPrice = priceAt(token?.supply ?? 0, curve);
+    const currentPrice = priceAt((token as any)?.supply ?? 0, curve);
     const avgCost = Number(row.avg_cost ?? 0);
     const quantity = Number(row.qty ?? 0);
     const displayName = row.profiles?.display_name ?? row.profiles?.username ?? "Unknown";
@@ -99,21 +99,21 @@ async function buildSnapshot(supabaseAdmin: ReturnType<typeof createClient>, use
 
   const athleteToken = tokenMap.get(athleteId);
   const curve: Curve = {
-    a: athleteToken?.a ?? 0.0002,
-    b: athleteToken?.b ?? 0.02,
-    c: athleteToken?.c ?? 1,
+    a: (athleteToken as any)?.a ?? 0.0002,
+    b: (athleteToken as any)?.b ?? 0.02,
+    c: (athleteToken as any)?.c ?? 1,
   };
   const athletePrice = {
     athleteId,
-    price: priceAt(athleteToken?.supply ?? 0, curve),
-    supply: athleteToken?.supply ?? 0,
-    reserve: athleteToken?.treasury_balance ?? 0,
-    athleteRevenue: athleteToken?.athlete_earnings ?? 0,
+    price: priceAt((athleteToken as any)?.supply ?? 0, curve),
+    supply: (athleteToken as any)?.supply ?? 0,
+    reserve: (athleteToken as any)?.treasury_balance ?? 0,
+    athleteRevenue: (athleteToken as any)?.athlete_earnings ?? 0,
     curve,
-    updatedAt: athleteToken?.updated_at ?? null,
+    updatedAt: (athleteToken as any)?.updated_at ?? null,
   };
 
-  const athleteBalance = (holdingsRows ?? []).find((row) => row.athlete_id === athleteId)?.qty ?? 0;
+  const athleteBalance = ((holdingsRows ?? []) as any[]).find((row: any) => row.athlete_id === athleteId)?.qty ?? 0;
   const access = {
     balance: Number(athleteBalance ?? 0),
     tier: lockerTierFromBalance(Number(athleteBalance ?? 0)),

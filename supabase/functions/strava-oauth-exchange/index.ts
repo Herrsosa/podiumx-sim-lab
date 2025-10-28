@@ -59,7 +59,7 @@ function sanitizeReason(value: string) {
   return value.replace(/[\r\n]+/g, " ").slice(0, 200);
 }
 
-async function cleanupState(adminClient: ReturnType<typeof createClient>, state: string) {
+async function cleanupState(adminClient: any, state: string) {
   const { error } = await adminClient.from("oauth_states").delete().eq("state", state);
   if (error) {
     if ((error.message ?? "").toLowerCase().includes("oauth_states")) {
