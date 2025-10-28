@@ -3,7 +3,14 @@ import { ComposedChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTo
 import { Skeleton } from '@/components/ui/skeleton';
 import type { Post } from '@/types';
 import { StackedCircles, POS_NEON_COLOR } from './StackedCircles';
-import { aggregatePosByDay, startOfUtcDay, getRangeWindow, dailyTicks } from '@/utils/chartData';
+import { featureFlags } from '@/lib/config/featureFlags';
+import {
+  buildPoSSeries,
+  formatTooltip as defaultFormatTooltip,
+  getDailyTicks,
+  getDomain,
+  type PoSSeriesPoint,
+} from '@/lib/charting/engine';
 
 type ChartPoint = {
   t: number;
@@ -17,10 +24,11 @@ interface AthletePriceChartProps {
   hasRealTrades: boolean;
   timeRange: '7d' | '30d' | 'all';
   formatXAxisTick: (value: number) => string;
-  formatTooltipLabel: (value: number) => string;
+  formatTooltipLabel?: (value: number) => string;
   isLoading: boolean;
   isFetching?: boolean;
   posts?: Post[];
+  syncId?: string | null;
 }
 
 const AthletePriceChart = memo(({
@@ -28,15 +36,29 @@ const AthletePriceChart = memo(({
   hasRealTrades,
   timeRange,
   formatXAxisTick,
-  formatTooltipLabel,
+  formatTooltipLabel = defaultFormatTooltip,
   isLoading,
   isFetching = false,
   posts,
+  syncId = null,
 }: AthletePriceChartProps) => {
-  const posDailyPoints = useMemo(() => aggregatePosByDay(posts, timeRange), [posts, timeRange]);
+  const startOfDay = useCallback((timestamp: number) => {
+    const date = new Date(timestamp);
+    date.setUTCHours(0, 0, 0, 0);
+    return date.getTime();
+  }, []);
+
+  const posSeries = useMemo<PoSSeriesPoint[]>(() => {
+    if (!posts || !featureFlags.showPoS) return [];
+    const entries = posts
+      .filter((post) => post?.workout_json)
+      .map((post) => ({ timestamp: new Date(post.created_at).getTime(), count: 1 }));
+    return buildPoSSeries(entries, timeRange);
+  }, [posts, timeRange]);
+
   const posCountByDay = useMemo(
-    () => new Map(posDailyPoints.map((point) => [startOfUtcDay(point.dateMs), point.posCount])),
-    [posDailyPoints],
+    () => new Map(posSeries.map((point) => [point.t, point.posCount])),
+    [posSeries],
   );
 
   const chartData = useMemo(() => {
@@ -45,7 +67,7 @@ const AthletePriceChart = memo(({
     const baseData = chartPoints
       .filter((point) => Number.isFinite(point.t))
       .map((point) => {
-        const dayStart = startOfUtcDay(point.t);
+        const dayStart = startOfDay(point.t);
         dayWithPrice.add(dayStart);
 
         return {
@@ -57,10 +79,10 @@ const AthletePriceChart = memo(({
         };
       });
 
-    const posOnlyData = posDailyPoints
-      .filter((posPoint) => Number.isFinite(posPoint.dateMs) && !dayWithPrice.has(posPoint.dateMs))
+    const posOnlyData = posSeries
+      .filter((posPoint) => Number.isFinite(posPoint.t) && !dayWithPrice.has(posPoint.t))
       .map((posPoint) => ({
-        t: posPoint.dateMs,
+        t: posPoint.t,
         price: null,
         posCount: posPoint.posCount,
         carried: undefined,
@@ -68,58 +90,23 @@ const AthletePriceChart = memo(({
       }));
 
     return [...baseData, ...posOnlyData].sort((a, b) => a.t - b.t);
-  }, [chartPoints, posCountByDay, posDailyPoints]);
+  }, [chartPoints, posCountByDay, posSeries, startOfDay]);
 
   const posDomain = useMemo<[number, number]>(() => {
-    const maxPos = posDailyPoints.reduce((max, point) => Math.max(max, point.posCount), 0);
+    const maxPos = posSeries.reduce((max, point) => Math.max(max, point.posCount), 0);
     const upper = maxPos > 0 ? maxPos + 1 : 1;
     return [0, upper];
-  }, [posDailyPoints]);
+  }, [posSeries]);
 
   const glowFilterId = useId().replace(/:/g, '');
-  const syncId = useMemo(() => `athlete-price-${glowFilterId}`, [glowFilterId]);
 
-  const xDomain = useMemo<[number, number]>(() => {
-    const DAY = 86_400_000;
-    const now = Date.now();
-    const { start: windowStart, end: windowEnd } = getRangeWindow(timeRange, now);
-    
-    // Filter for actual price points only (price != null && !carried)
-    const pricePoints = chartPoints.filter((p) => p.price != null && !p.carried).sort((a,b)=>a.t-b.t);
-    
-    if (pricePoints.length === 0) {
-      return timeRange === 'all' ? [now - DAY, now] : [windowStart || now - DAY, windowEnd];
-    }
-    
-    const firstPriceT = pricePoints[0].t;
-    const lastPriceT = pricePoints[pricePoints.length - 1].t;
-    
-    if (timeRange === 'all') {
-      // ALL: start at first trade day, end at max(lastTrade, now)
-      const domainStart = startOfUtcDay(firstPriceT);
-      const domainEnd = Math.max(lastPriceT, now);
-      console.debug('[ChartDomain]', { page: 'OtherAthlete', range: timeRange, domainStart, domainEnd, firstPriceT, lastPriceT, priceCount: pricePoints.length });
-      return [domainStart, domainEnd];
-    }
-    
-    // 30D: if first trade is within window, start at that trade day
-    if (timeRange === '30d' && firstPriceT >= windowStart!) {
-      const domainStart = startOfUtcDay(firstPriceT);
-      const domainEnd = windowEnd;
-      console.debug('[ChartDomain]', { page: 'OtherAthlete', range: timeRange, domainStart, domainEnd, firstPriceT, lastPriceT, priceCount: pricePoints.length });
-      return [domainStart, domainEnd];
-    }
-    
-    // 7d/30d: use full window (UTC-aligned)
-    console.debug('[ChartDomain]', { page: 'OtherAthlete', range: timeRange, domainStart: windowStart, domainEnd: windowEnd, firstPriceT, lastPriceT, priceCount: pricePoints.length });
-    return [windowStart!, windowEnd];
-  }, [chartPoints, timeRange]);
+  const xDomain = useMemo<[number, number]>(() => getDomain(timeRange, chartPoints), [chartPoints, timeRange]);
 
   const xTicks = useMemo<number[] | undefined>(() => {
     if (timeRange === 'all') {
       return undefined;
     }
-    return dailyTicks(xDomain[0], xDomain[1]);
+    return getDailyTicks(xDomain);
   }, [timeRange, xDomain]);
   
   const yDomain = useMemo<[number, number]>(() => {
@@ -149,7 +136,7 @@ const AthletePriceChart = memo(({
     const price = typeof priceEntry?.value === 'number' ? priceEntry.value : undefined;
     const dataPoint = chartData.find(d => d.t === label);
     const dateLabel = formatTooltipLabel(label);
-    const dayStart = startOfUtcDay(label);
+    const dayStart = startOfDay(label);
     const posCount =
       typeof posEntry?.value === 'number' ? posEntry.value : posCountByDay.get(dayStart) ?? 0;
 
@@ -183,7 +170,11 @@ const AthletePriceChart = memo(({
         </div>
       ) : null}
       <ResponsiveContainer width="100%" height="100%">
-        <ComposedChart data={chartData} margin={{ top: 24, right: 24, bottom: 56, left: 16 }} syncId={syncId}>
+        <ComposedChart
+          data={chartData}
+          margin={{ top: 24, right: 24, bottom: 56, left: 16 }}
+          syncId={syncId ?? undefined}
+        >
           <defs>
             <filter id={`posGlow-${glowFilterId}`} x="-200%" y="-200%" width="500%" height="500%">
               <feGaussianBlur stdDeviation="5" result="coloredBlur" />
@@ -205,7 +196,6 @@ const AthletePriceChart = memo(({
             scale="time"
             domain={xDomain}
             ticks={xTicks}
-            padding={{ right: 18 }}
             tickFormatter={formatXAxisTick}
             tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
             stroke="hsl(var(--muted-foreground))"
@@ -229,22 +219,24 @@ const AthletePriceChart = memo(({
             cursor={{ stroke: 'hsl(var(--primary))', strokeWidth: 1, strokeDasharray: '5 5', opacity: 0.5 }} 
             animationDuration={200}
           />
-          <Bar
-            dataKey="posCount"
-            yAxisId="pos"
-            fill="transparent"
-            barSize={56}
-            shape={
-              <StackedCircles
-                color={POS_NEON_COLOR}
-                filterId={`posGlow-${glowFilterId}`}
-                maxCircles={6}
-                gap={8}
-                radius={11}
-                hitboxSize={56}
-              />
-            }
-          />
+          {featureFlags.showPoS ? (
+            <Bar
+              dataKey="posCount"
+              yAxisId="pos"
+              fill="transparent"
+              barSize={56}
+              shape={
+                <StackedCircles
+                  color={POS_NEON_COLOR}
+                  filterId={`posGlow-${glowFilterId}`}
+                  maxCircles={6}
+                  gap={8}
+                  radius={11}
+                  hitboxSize={56}
+                />
+              }
+            />
+          ) : null}
           <Line
             type="monotone"
             dataKey="price"

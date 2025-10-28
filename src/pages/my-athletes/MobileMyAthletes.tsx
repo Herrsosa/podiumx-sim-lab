@@ -16,9 +16,6 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
 import { Activity, ArrowDownRight, ArrowUpRight, Plus, TrendingUp } from 'lucide-react';
-import { ResponsiveContainer, ComposedChart, Line, Bar, XAxis, YAxis, Tooltip as RechartsTooltip } from 'recharts';
-import { POS_NEON_COLOR, StackedCircles } from '@/components/charts/StackedCircles';
-import type { TooltipProps } from 'recharts';
 import { MOBILE_TAB_KEYS } from './mobile-config';
 import { ProfileDetailsCard } from '@/components/my-athlete/ProfileDetailsCard';
 import type { EditableProfile } from '@/pages/my-athletes/types';
@@ -27,24 +24,16 @@ import { useXConnection } from '@/hooks/useXConnection';
 import { MobileActionBar } from '@/components/MobileActionBar';
 import LockerMessages from '@/components/myathlete/LockerMessages';
 import LockerWorkouts from '@/components/myathlete/LockerWorkouts';
-
-type ChartDatum = {
-  t: number;
-  price: number | null;
-  posCount: number;
-};
-
-type TooltipContent = NonNullable<TooltipProps<number, number | string>['content']>;
+import { featureFlags } from '@/lib/config/featureFlags';
+import AthletePriceChart from '@/components/charts/AthletePriceChart';
+import type { PriceSeriesPoint } from '@/lib/charting/engine';
 
 interface MobileMyAthletesProps {
   athlete?: Athlete;
   workouts: Workout[];
   posts: Post[];
-  chartData: ChartDatum[];
-  renderTooltip: TooltipContent;
-  posDomain: [number, number];
-  xDomain: [number, number];
-  glowFilterId: string;
+  priceSeries: PriceSeriesPoint[];
+  hasRealTrades: boolean;
   trades?: Array<Record<string, unknown>>;
   onAddWorkout: () => void;
   editedProfile: EditableProfile;
@@ -80,11 +69,8 @@ export default function MobileMyAthletes({
   athlete,
   workouts,
   posts,
-  chartData,
-  renderTooltip,
-  posDomain,
-  xDomain,
-  glowFilterId,
+  priceSeries,
+  hasRealTrades,
   trades = [],
   onAddWorkout,
   editedProfile,
@@ -105,6 +91,15 @@ export default function MobileMyAthletes({
   const [activeTab, setActiveTab] = useState<(typeof MOBILE_TAB_KEYS)[number]>('overview');
   const [consoleTab, setConsoleTab] = useState<'personal' | 'locker'>('personal');
   const { isConnected: xConnected, loading: xLoading } = useXConnection();
+
+  const chartRangeOptions = useMemo<TimeRangeKey[]>(() => {
+    const ranges: TimeRangeKey[] = ['7d'];
+    if (featureFlags.show30d) ranges.push('30d');
+    if (featureFlags.showAll) ranges.push('all');
+    return ranges;
+  }, []);
+
+  const safeChartRange = chartRangeOptions.includes(timeRange) ? timeRange : '7d';
 
   const priceChange = athlete?.change24h ?? 0;
   const isPriceUp = priceChange >= 0;
@@ -308,94 +303,46 @@ export default function MobileMyAthletes({
           <TabsContent value="chart" className="min-w-0 space-y-4">
             <Card>
               <CardContent className="p-4">
-                  {onTimeRangeChange && (
-                  <Tabs value={timeRange} onValueChange={(value) => onTimeRangeChange(value as TimeRangeKey)} className="mb-4">
-                    <TabsList className="grid w-full grid-cols-3">
-                      <TabsTrigger value="7d">7D</TabsTrigger>
-                      <TabsTrigger value="30d">30D</TabsTrigger>
-                      <TabsTrigger value="all">All</TabsTrigger>
+                {onTimeRangeChange && (
+                  <Tabs
+                    value={safeChartRange}
+                    onValueChange={(value) => {
+                      const next = value as TimeRangeKey;
+                      if (!chartRangeOptions.includes(next)) return;
+                      onTimeRangeChange(next);
+                    }}
+                    className="mb-4"
+                  >
+                    <TabsList className="flex w-full gap-1">
+                      <TabsTrigger value="7d" className="flex-1">7D</TabsTrigger>
+                      {featureFlags.show30d ? (
+                        <TabsTrigger value="30d" className="flex-1">30D</TabsTrigger>
+                      ) : null}
+                      {featureFlags.showAll ? (
+                        <TabsTrigger value="all" className="flex-1">All</TabsTrigger>
+                      ) : null}
                     </TabsList>
                   </Tabs>
                 )}
                 
-                {chartData.length === 0 ? (
+                {priceSeries.length === 0 ? (
                   <div className="space-y-3 p-6 text-center text-sm text-muted-foreground">
                     <TrendingUp className="mx-auto h-8 w-8 text-muted-foreground" />
                     <p>Add workouts and trades to see your progress charted here.</p>
                   </div>
                 ) : (
-                  <>
-                    <div className="h-[260px] w-full">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <ComposedChart data={chartData} margin={{ top: 16, right: 12, bottom: 8, left: 12 }}>
-                          <defs>
-                            <filter id={`posGlowMobile-${glowFilterId}`} x="-50%" y="-50%" width="200%" height="200%">
-                              <feDropShadow dx="0" dy="2" stdDeviation="6" floodColor="rgba(59,130,246,0.35)" />
-                            </filter>
-                          </defs>
-                          <XAxis
-                            dataKey="t"
-                            type="number"
-                            scale="time"
-                            domain={xDomain}
-                            allowDataOverflow
-                            tickFormatter={(value: number) => {
-                              const date = new Date(value);
-                              return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
-                            }}
-                            tickLine={false}
-                            axisLine={false}
-                            tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }}
-                            interval="preserveStartEnd"
-                          />
-                          <YAxis domain={['auto', 'auto']} tickLine={false} axisLine={false} tick={false} />
-                          <YAxis yAxisId="pos" domain={posDomain} hide />
-                          <RechartsTooltip content={renderTooltip} />
-                          <Bar
-                            dataKey="posCount"
-                            yAxisId="pos"
-                            fill="transparent"
-                            barSize={48}
-                            shape={<StackedCircles color={POS_NEON_COLOR} filterId={`posGlowMobile-${glowFilterId}`} maxCircles={4} gap={8} radius={10} hitboxSize={40} />}
-                          />
-                          <Line type="monotone" dataKey="price" stroke={POS_NEON_COLOR} strokeWidth={2} dot={false} connectNulls />
-                        </ComposedChart>
-                      </ResponsiveContainer>
-                    </div>
-                    
-                    {/* Token Stats - Compact list style below chart */}
-                    <div className="pt-4 border-t border-border">
-                      <h3 className="text-xs font-semibold mb-3 text-muted-foreground">Stats</h3>
-                      <div className="space-y-2 text-sm">
-                        <div className="flex justify-between">
-                          <span className="text-muted-foreground">Price</span>
-                          <span className="font-medium">{currencyFormatter.format(athlete?.price ?? 0)}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-muted-foreground">24h Change</span>
-                          <span className={`font-medium ${isPriceUp ? 'text-success' : 'text-destructive'}`}>
-                            {isPriceUp ? '+' : ''}{percentFormatter.format((priceChange || 0) / 100)}
-                          </span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-muted-foreground">Market Cap</span>
-                          <span className="font-medium">{currencyFormatter.format(athlete?.marketCap ?? 0)}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-muted-foreground">Supply</span>
-                          <span className="font-medium">{athlete?.supply ?? 0}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-muted-foreground">Reserve</span>
-                          <span className="font-medium">{currencyFormatter.format(athlete?.reserve ?? 0)}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-muted-foreground">Earnings</span>
-                          <span className="font-medium">{currencyFormatter.format(athlete?.athleteRevenue ?? 0)}</span>
-                        </div>
-                      </div>
-                    </div>
-                  </>
+                  <div className="h-[260px] w-full">
+                    <AthletePriceChart
+                      chartPoints={priceSeries}
+                      hasRealTrades={hasRealTrades}
+                      timeRange={safeChartRange}
+                      formatXAxisTick={(value) => new Date(value).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                      formatTooltipLabel={(value) => new Date(value).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                      isLoading={isLoading}
+                      posts={posts}
+                      syncId="myathlete-chart"
+                    />
+                  </div>
                 )}
               </CardContent>
             </Card>

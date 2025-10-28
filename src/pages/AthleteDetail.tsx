@@ -31,7 +31,7 @@ import { useUser } from '@/store/auth';
 import { MobileActionBar } from '@/components/MobileActionBar';
 import { OptimizedImage } from '@/components/OptimizedImage';
 import { SelfMobileProfile } from '@/pages/AthleteDetailSelfMobile';
-import { fillPriceGaps } from '@/utils/chartData';
+import { buildPriceSeries } from '@/lib/charting/engine';
 
 const AthletePriceChart = lazy(() => import('@/components/charts/AthletePriceChart'));
 
@@ -106,16 +106,12 @@ export default function AthleteDetail() {
 
   const chartPoints = useMemo(() => {
     if (!athlete?.price) return [];
-    
-    // Convert rawChartData to trade format for gap filling
-    const tradeFormat = rawChartData.map(point => ({
-      created_at: new Date(point.t).toISOString(),
-      timestamp: point.t,
-      price_after: point.price,
-    }));
-    
-    // Use fillPriceGaps to ensure continuous data
-    return fillPriceGaps(tradeFormat, athlete.price, timeRange);
+
+    const priceInputs = rawChartData
+      .map((point) => ({ timestamp: point.t, price: point.price }))
+      .filter((point) => Number.isFinite(point.timestamp) && Number.isFinite(point.price));
+
+    return buildPriceSeries(priceInputs, timeRange, { fallbackPrice: athlete.price });
   }, [rawChartData, athlete?.price, timeRange]);
 
   const hasRealTrades = (tradeHistory?.volume ?? 0) > 0 || rawChartData.length > 1;
@@ -385,6 +381,7 @@ export default function AthleteDetail() {
                   formatTooltipLabel={formatTooltipLabel}
                   isLoading={historyLoading}
                   posts={athlete.posts}
+                  syncId="athlete-detail-chart"
                 />
               </Suspense>
             </div>

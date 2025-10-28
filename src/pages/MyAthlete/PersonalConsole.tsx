@@ -1,9 +1,7 @@
-import React, { useState, useMemo, useCallback, useRef, useId } from 'react';
+import React, { useState, useMemo, useCallback, useRef } from 'react';
 import { Plus, TrendingUp, Edit, Trash2, MessageSquare, DollarSign, Activity, Share2, MessageCircle } from 'lucide-react';
 import type { TimeRangeKey } from '@/utils/chartData';
-import { fillPriceGaps, getRangeWindow, dailyTicks, startOfUtcDay, endOfUtcDay } from '@/utils/chartData';
 import { formatNumber } from '@/lib/format';
-import { ComposedChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Bar, type TooltipProps } from 'recharts';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { EarningsSection } from '@/components/EarningsSection';
 import { Button } from '@/components/ui/button';
@@ -12,8 +10,6 @@ import { Badge } from '@/components/ui/badge';
 import { Athlete, Workout, Post } from '@/types';
 import { toast } from 'sonner';
 import { useUser } from '@/store/auth';
-import { StackedCircles, POS_NEON_COLOR } from '@/components/charts/StackedCircles';
-import { aggregatePosByDay } from '@/utils/chartData';
 import { supabase } from '@/integrations/supabase/client';
 import TokengatedChat from '@/components/TokengatedChat';
 import { useQueryClient } from '@tanstack/react-query';
@@ -35,21 +31,16 @@ import ConnectXButton from '@/components/social/ConnectXButton';
 import { useXConnection } from '@/hooks/useXConnection';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { AthleteTrade } from '@/hooks/useAthleteTrades';
-
-interface PriceHistoryPoint {
-  t: number;
-  price: number;
-  posCount?: number;
-  carried?: boolean;
-  lastTradeTime?: number;
-}
+import { featureFlags } from '@/lib/config/featureFlags';
+import AthletePriceChart from '@/components/charts/AthletePriceChart';
+import type { PriceSeriesPoint } from '@/lib/charting/engine';
 
 interface PersonalConsoleProps {
   athlete?: Athlete;
   workouts: Workout[];
   posts: Post[];
   athleteTrades: AthleteTrade[];
-  priceHistory: PriceHistoryPoint[];
+  priceSeries: PriceSeriesPoint[];
   editedProfile: EditableProfile;
   isEditing: boolean;
   savingProfile: boolean;
@@ -73,7 +64,7 @@ export function PersonalConsole({
   workouts,
   posts,
   athleteTrades,
-  priceHistory,
+  priceSeries,
   editedProfile,
   isEditing,
   savingProfile,
@@ -94,150 +85,31 @@ export function PersonalConsole({
   const user = useUser();
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<'workouts' | 'community' | 'messages' | 'earnings'>('workouts');
+  const availableRanges = useMemo<TimeRangeKey[]>(() => {
+    const ranges: TimeRangeKey[] = ['7d'];
+    if (featureFlags.show30d) ranges.push('30d');
+    if (featureFlags.showAll) ranges.push('all');
+    return ranges;
+  }, []);
+
   const [internalTimeRange, setInternalTimeRange] = useState<TimeRangeKey>('7d');
-  const activeTimeRange = externalTimeRange ?? internalTimeRange;
-  const handleTimeRangeChange = onTimeRangeChange ?? setInternalTimeRange;
+  const activeTimeRange = useMemo<TimeRangeKey>(() => {
+    const candidate = externalTimeRange ?? internalTimeRange;
+    return availableRanges.includes(candidate) ? candidate : availableRanges[0];
+  }, [availableRanges, externalTimeRange, internalTimeRange]);
+
+  const handleTimeRangeChange = useCallback((value: TimeRangeKey) => {
+    if (!availableRanges.includes(value)) return;
+    const setter = onTimeRangeChange ?? setInternalTimeRange;
+    setter(value);
+  }, [availableRanges, onTimeRangeChange]);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [workoutToDelete, setWorkoutToDelete] = useState<string | null>(null);
   const messagesSectionRef = useRef<HTMLDivElement | null>(null);
   const { isConnected: xConnected, loading: xLoading } = useXConnection();
 
-  const posDailyPoints = useMemo(
-    () => aggregatePosByDay(posts, 'all'),
-    [posts],
-  );
-
-  const posCountByDay = useMemo(
-    () => new Map(posDailyPoints.map((point) => [startOfUtcDay(point.dateMs), point.posCount])),
-    [posDailyPoints],
-  );
-
-  const filledPricePoints = useMemo(() => {
-    if (!athlete?.price) return [];
-    
-    // Convert priceHistory to trade-like format for fillPriceGaps
-    const tradeFormat = priceHistory.map(point => ({
-      created_at: new Date(point.t).toISOString(),
-      timestamp: point.t,
-      price_after: point.price,
-    }));
-    
-    return fillPriceGaps(tradeFormat, athlete.price, activeTimeRange);
-  }, [priceHistory, athlete?.price, activeTimeRange]);
-
-  const chartData = useMemo(() => {
-    const { start: windowStart, end: windowEnd } = getRangeWindow(activeTimeRange);
-    const dayWithPrice = new Set<number>();
-
-    const baseData = filledPricePoints.map((point) => {
-      const dayStart = startOfUtcDay(point.t);
-      dayWithPrice.add(dayStart);
-
-      return {
-        t: point.t,
-        price: point.price,
-        posCount: posCountByDay.get(dayStart) ?? 0,
-        carried: point.carried,
-        lastTradeTime: point.lastTradeTime,
-      };
-    });
-
-    // Calculate domain for PoS filtering
-    const pricePoints = baseData.filter(p => p.price != null && !p.carried).sort((a,b)=>a.t-b.t);
-    let domainStart: number;
-    let domainEnd: number;
-    
-    if (pricePoints.length === 0) {
-      domainStart = windowStart ?? Date.now() - 86_400_000;
-      domainEnd = windowEnd;
-    } else {
-      const firstTradeT = pricePoints[0].t;
-      const lastTradeT = pricePoints[pricePoints.length - 1].t;
-      
-      if (activeTimeRange === 'all') {
-        domainStart = startOfUtcDay(firstTradeT);
-        domainEnd = Math.max(lastTradeT, Date.now());
-      } else {
-        domainStart = windowStart!;
-        domainEnd = windowEnd;
-      }
-    }
-
-    // Filter PoS to domain range only
-    const posOnlyData = posDailyPoints
-      .filter((posPoint) => !dayWithPrice.has(posPoint.dateMs))
-      .filter((posPoint) => posPoint.dateMs >= domainStart && posPoint.dateMs <= domainEnd)
-      .map((posPoint) => ({
-        t: posPoint.dateMs,
-        price: null,
-        posCount: posPoint.posCount,
-        carried: undefined,
-        lastTradeTime: undefined,
-      }));
-
-    // Combine and sort strictly by timestamp (ascending)
-    return [...baseData, ...posOnlyData].sort((a, b) => a.t - b.t);
-  }, [filledPricePoints, posCountByDay, posDailyPoints, activeTimeRange]);
-
-  const posDomain = useMemo<[number, number]>(() => {
-    const maxPos = posDailyPoints.reduce((max, point) => Math.max(max, point.posCount), 0);
-    const upper = maxPos > 0 ? maxPos + 1 : 1;
-    return [0, upper];
-  }, [posDailyPoints]);
-
-  const xDomain = useMemo<[number, number]>(() => {
-    const DAY = 86_400_000;
-    const now = Date.now();
-    const { start: windowStart, end: windowEnd } = getRangeWindow(activeTimeRange, now);
-    
-    // Filter for price points only (price != null && !carried)
-    const pricePoints = chartData.filter((d) => d.price != null && !d.carried).sort((a,b)=>a.t-b.t);
-    
-    if (pricePoints.length === 0) {
-      return activeTimeRange === 'all' ? [now - DAY, now] : [windowStart || now - DAY, windowEnd];
-    }
-    
-    const firstPriceT = pricePoints[0].t;
-    const lastPriceT = pricePoints[pricePoints.length - 1].t;
-    
-    if (activeTimeRange === 'all') {
-      // ALL: start at first trade day, end at max(lastTrade, now)
-      const domainStart = startOfUtcDay(firstPriceT);
-      const domainEnd = Math.max(lastPriceT, now);
-      console.debug('[ChartDomain]', { page: 'PersonalConsole', range: activeTimeRange, domainStart, domainEnd, firstPriceT, lastPriceT, priceCount: pricePoints.length });
-      return [domainStart, domainEnd];
-    }
-    
-    // 30D: if first trade is within window, start at that trade day
-    if (activeTimeRange === '30d' && firstPriceT >= windowStart!) {
-      const domainStart = startOfUtcDay(firstPriceT);
-      const domainEnd = windowEnd;
-      console.debug('[ChartDomain]', { page: 'PersonalConsole', range: activeTimeRange, domainStart, domainEnd, firstPriceT, lastPriceT, priceCount: pricePoints.length });
-      return [domainStart, domainEnd];
-    }
-    
-    // 7d/30d: use full window range (UTC-aligned)
-    console.debug('[ChartDomain]', { page: 'PersonalConsole', range: activeTimeRange, domainStart: windowStart, domainEnd: windowEnd, firstPriceT, lastPriceT, priceCount: pricePoints.length });
-    return [windowStart!, windowEnd];
-  }, [chartData, activeTimeRange]);
-  
-  const yDomain = useMemo<[number, number]>(() => {
-    // Filter for actual price points (not carried, not null)
-    const pricePoints = chartData.filter((d) => d.price != null && !d.carried);
-    
-    if (pricePoints.length === 0) return [0, 1];
-    
-    const prices = pricePoints.map(p => p.price).filter(p => Number.isFinite(p)) as number[];
-    if (prices.length === 0) return [0, 1];
-    
-    const min = Math.min(...prices);
-    const max = Math.max(...prices);
-    const padding = (max - min) * 0.1 || max * 0.1 || 0.1;
-    
-    return [Math.max(0, min - padding), max + padding];
-  }, [chartData]);
-
-  const glowFilterId = useId().replace(/:/g, '');
+  const hasRealTrades = useMemo(() => priceSeries.some((point) => !point.carried), [priceSeries]);
+  const chartIsLoading = useMemo(() => priceSeries.length === 0 && athleteTrades.length === 0, [priceSeries.length, athleteTrades.length]);
 
   const formatXAxisTick = useCallback((value: number) => {
     const date = new Date(value);
@@ -253,41 +125,6 @@ export function PersonalConsole({
       minute: '2-digit',
     });
   }, []);
-
-  const renderTooltip = useCallback(({ active, label, payload }: TooltipProps<number, string>) => {
-    if (!active || !payload || payload.length === 0 || typeof label !== 'number') {
-      return null;
-    }
-
-    const priceEntry = payload.find((item) => item && item.dataKey === 'price');
-    const posEntry = payload.find((item) => item && item.dataKey === 'posCount');
-
-    const price = typeof priceEntry?.value === 'number' ? priceEntry.value : undefined;
-    const dataPoint = chartData.find(d => d.t === label);
-    const dateLabel = formatTooltipLabel(label);
-    const dayStart = startOfUtcDay(label);
-    const posCount =
-      typeof posEntry?.value === 'number' ? posEntry.value : posCountByDay.get(dayStart) ?? 0;
-
-    return (
-      <div className="rounded-lg border border-border/60 bg-card/95 backdrop-blur-sm px-3 py-2 shadow-xl">
-        <div className="text-xs font-medium text-muted-foreground mb-1">{dateLabel}</div>
-        {typeof price === 'number' && (
-          <div className="text-base font-bold text-foreground mb-1">${price.toFixed(4)}</div>
-        )}
-        {dataPoint?.carried && dataPoint.lastTradeTime && (
-          <div className="text-xs text-muted-foreground italic mb-1">
-            No trades — price carried from {new Date(dataPoint.lastTradeTime).toLocaleDateString()}
-          </div>
-        )}
-        <div className="flex items-center gap-1.5 text-xs">
-          <div className="h-2 w-2 rounded-full bg-primary/80" />
-          <span className="text-muted-foreground">PoS:</span>
-          <span className="font-semibold text-foreground">{posCount}</span>
-        </div>
-      </div>
-    );
-  }, [formatTooltipLabel, posCountByDay, chartData]);
 
   const handleDeleteClick = (workoutId: string) => {
     setWorkoutToDelete(workoutId);
@@ -355,7 +192,7 @@ export function PersonalConsole({
       ) : null}
 
       {/* Price Chart */}
-      {priceHistory.length > 0 && (
+      {priceSeries.length > 0 && (
         <Card className="glass-card">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -365,78 +202,28 @@ export function PersonalConsole({
           </CardHeader>
           <CardContent>
             <Tabs value={activeTimeRange} onValueChange={(value) => handleTimeRangeChange(value as TimeRangeKey)} className="mb-4">
-              <TabsList className="grid w-full max-w-md grid-cols-3">
-                <TabsTrigger value="7d">7D</TabsTrigger>
-                <TabsTrigger value="30d">30D</TabsTrigger>
-                <TabsTrigger value="all">All</TabsTrigger>
+              <TabsList className="flex w-full max-w-md gap-1">
+                <TabsTrigger value="7d" className="flex-1">7D</TabsTrigger>
+                {featureFlags.show30d ? (
+                  <TabsTrigger value="30d" className="flex-1">30D</TabsTrigger>
+                ) : null}
+                {featureFlags.showAll ? (
+                  <TabsTrigger value="all" className="flex-1">All</TabsTrigger>
+                ) : null}
               </TabsList>
             </Tabs>
-            <ResponsiveContainer width="100%" height={300}>
-              <ComposedChart data={chartData} margin={{ top: 24, right: 24, bottom: 56, left: 16 }}>
-                <defs>
-                  <filter id={`posGlow-${glowFilterId}`} x="-200%" y="-200%" width="500%" height="500%">
-                    <feGaussianBlur stdDeviation="5" result="coloredBlur" />
-                    <feMerge>
-                      <feMergeNode in="coloredBlur" />
-                      <feMergeNode in="SourceGraphic" />
-                    </feMerge>
-                  </filter>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.18} />
-                <XAxis
-                  dataKey="t"
-                  type="number"
-                  scale="time"
-                  domain={xDomain}
-                  ticks={dailyTicks(xDomain[0], xDomain[1])}
-                  allowDataOverflow
-                  padding={{ right: 18 }}
-                  tickFormatter={formatXAxisTick}
-                  tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
-                  stroke="hsl(var(--muted-foreground))"
-                  axisLine={false}
-                  tickLine={false}
-                  interval="preserveStartEnd"
-                />
-                <YAxis
-                  domain={yDomain}
-                  tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
-                  stroke="hsl(var(--muted-foreground))"
-                  tickFormatter={(value) => `$${value.toFixed(2)}`}
-                  width={64}
-                  axisLine={false}
-                  tickLine={false}
-                />
-                <YAxis yAxisId="pos" domain={posDomain} hide />
-                <RechartsTooltip content={renderTooltip} cursor={{ stroke: 'hsl(var(--border))', strokeDasharray: '3 3' }} />
-                <Bar
-                  dataKey="posCount"
-                  yAxisId="pos"
-                  fill="transparent"
-                  barSize={56}
-                  shape={
-                    <StackedCircles
-                      color={POS_NEON_COLOR}
-                      filterId={`posGlow-${glowFilterId}`}
-                      maxCircles={6}
-                      gap={8}
-                      radius={11}
-                      hitboxSize={56}
-                    />
-                  }
-                />
-                <Line
-                  type="monotone"
-                  dataKey="price"
-                  stroke={POS_NEON_COLOR}
-                  strokeWidth={2}
-                  strokeOpacity={0.65}
-                  dot={false}
-                  connectNulls
-                  strokeLinecap="round"
-                />
-              </ComposedChart>
-            </ResponsiveContainer>
+            <div className="h-72">
+              <AthletePriceChart
+                chartPoints={priceSeries}
+                hasRealTrades={hasRealTrades}
+                timeRange={activeTimeRange}
+                formatXAxisTick={formatXAxisTick}
+                formatTooltipLabel={formatTooltipLabel}
+                isLoading={chartIsLoading}
+                posts={posts}
+                syncId="myathlete-chart"
+              />
+            </div>
             
             {/* Token Stats - Compact list style below chart */}
             <div className="pt-4 border-t border-border">
