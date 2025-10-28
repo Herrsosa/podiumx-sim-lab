@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { WORLD_OUTLINE_PATH, generateGraticule } from '@/assets/world-outline';
+import { WORLD_FEATURES } from '@/assets/world-geo';
 
 export interface GlobeLocation {
   id: string;
@@ -73,8 +73,27 @@ export function PosGlobe({ locations, className = '' }: PosGlobeProps) {
     }).filter(Boolean) as Array<GlobeLocation & { x: number; y: number; size: number }>;
   }, [locations]);
 
-  // Generate graticule lines
-  const graticuleLines = useMemo(() => generateGraticule(radius, cx, cy), [radius, cx, cy]);
+  // Project world features
+  const worldPaths = useMemo(() => {
+    return WORLD_FEATURES.map((feature) => {
+      const points: Array<[number, number]> = [];
+      
+      for (const [lng, lat] of feature.coordinates) {
+        const projected = projectPoint(lat, lng);
+        if (projected) {
+          points.push(projected);
+        }
+      }
+      
+      if (points.length < 2) return null;
+      
+      const pathData = points.map((p, i) => 
+        `${i === 0 ? 'M' : 'L'}${p[0]},${p[1]}`
+      ).join(' ') + ' Z';
+      
+      return pathData;
+    }).filter(Boolean) as string[];
+  }, [radius, cx, cy]);
 
   const handleDotHover = (dot: typeof dots[0] | null, event?: React.MouseEvent) => {
     if (dot && event) {
@@ -110,26 +129,44 @@ export function PosGlobe({ locations, className = '' }: PosGlobeProps) {
 
         {/* Graticule (grid lines) */}
         <g className="opacity-10">
-          {graticuleLines.map((path, i) => (
-            <path
-              key={`grat-${i}`}
-              d={path}
-              stroke="hsl(var(--foreground))"
-              strokeWidth="0.5"
-              fill="none"
-            />
-          ))}
+          {/* Latitude lines */}
+          {[-60, -30, 0, 30, 60].map((lat) => {
+            const points: string[] = [];
+            for (let lng = -180; lng <= 180; lng += 5) {
+              const p = projectPoint(lat, lng);
+              if (p) points.push(`${p[0]},${p[1]}`);
+            }
+            if (points.length > 1) {
+              return <path key={`lat-${lat}`} d={`M${points.join(' L')}`} stroke="hsl(var(--foreground))" strokeWidth="0.5" fill="none" />;
+            }
+            return null;
+          })}
+          {/* Longitude lines */}
+          {[-120, -60, 0, 60, 120].map((lng) => {
+            const points: string[] = [];
+            for (let lat = -90; lat <= 90; lat += 5) {
+              const p = projectPoint(lat, lng);
+              if (p) points.push(`${p[0]},${p[1]}`);
+            }
+            if (points.length > 1) {
+              return <path key={`lng-${lng}`} d={`M${points.join(' L')}`} stroke="hsl(var(--foreground))" strokeWidth="0.5" fill="none" />;
+            }
+            return null;
+          })}
         </g>
 
-        {/* Continent outlines - scale from source viewbox (500x500, r=250) to our globe */}
-        <g transform={`translate(${cx - 250 * (radius / 250)}, ${cy - 250 * (radius / 250)}) scale(${radius / 250})`}>
-          <path
-            d={WORLD_OUTLINE_PATH}
-            stroke="hsl(var(--foreground))"
-            strokeWidth="1.5"
-            fill="none"
-            className="opacity-40"
-          />
+        {/* World landmasses */}
+        <g>
+          {worldPaths.map((path, i) => (
+            <path
+              key={`land-${i}`}
+              d={path}
+              stroke="hsl(var(--foreground))"
+              strokeWidth="1.5"
+              fill="hsl(var(--muted-foreground) / 0.15)"
+              className="opacity-60"
+            />
+          ))}
         </g>
 
         {/* Location dots */}
