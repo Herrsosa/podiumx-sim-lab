@@ -722,6 +722,31 @@ export type Database = {
           },
         ]
       }
+      prices_daily_mv: {
+        Row: {
+          athlete_id: string | null
+          carried: boolean | null
+          close: number | null
+          day_utc: string | null
+          volume: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "athlete_prices_athlete_id_fkey"
+            columns: ["athlete_id"]
+            isOneToOne: false
+            referencedRelation: "athlete_metrics_24h"
+            referencedColumns: ["athlete_id"]
+          },
+          {
+            foreignKeyName: "athlete_prices_athlete_id_fkey"
+            columns: ["athlete_id"]
+            isOneToOne: false
+            referencedRelation: "athlete_tokens"
+            referencedColumns: ["athlete_id"]
+          },
+        ]
+      }
       trades_norm: {
         Row: {
           athlete_id: string | null
@@ -844,6 +869,7 @@ export type Database = {
         }[]
       }
       get_user_balance: { Args: { p_athlete_id: string }; Returns: number }
+      refresh_prices_daily_mv: { Args: never; Returns: undefined }
       send_dm: {
         Args: {
           p_body: string
