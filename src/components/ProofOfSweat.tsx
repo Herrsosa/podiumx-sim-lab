@@ -77,7 +77,18 @@ export default function ProofOfSweat({
   // Use optimistic workouts for display
   const safeWorkouts = optimisticWorkouts;
 
-  const [openMonths, setOpenMonths] = useState<string[]>([]);
+  // Persist accordion state in sessionStorage
+  const storageKey = `pos-accordion-${athleteId || 'default'}`;
+  
+  const [openMonths, setOpenMonths] = useState<string[]>(() => {
+    if (!groupByMonth) return [];
+    try {
+      const stored = sessionStorage.getItem(storageKey);
+      return stored ? JSON.parse(stored) : [];
+    } catch {
+      return [];
+    }
+  });
 
   const monthlyGroups = useMemo(() => {
     if (!groupByMonth || safeWorkouts.length === 0) {
@@ -104,19 +115,33 @@ export default function ProofOfSweat({
     return Array.from(map.values()).sort((a, b) => (a.key > b.key ? -1 : 1));
   }, [groupByMonth, safeWorkouts]);
 
+  // Initialize openMonths on mount and persist changes
   useEffect(() => {
     if (!groupByMonth) return;
-    setOpenMonths((prev) => {
-      const existing = new Set(prev);
+    
+    const stored = openMonths.length > 0 ? openMonths : null;
+    
+    if (!stored) {
+      // First load - expand initial months
       const next: string[] = [];
       monthlyGroups.forEach((group, index) => {
-        if (existing.has(group.key) || index < initialExpandedMonths) {
+        if (index < initialExpandedMonths) {
           next.push(group.key);
         }
       });
-      return next;
-    });
+      setOpenMonths(next);
+    }
   }, [groupByMonth, monthlyGroups, initialExpandedMonths]);
+
+  // Persist to sessionStorage whenever openMonths changes
+  useEffect(() => {
+    if (!groupByMonth || openMonths.length === 0) return;
+    try {
+      sessionStorage.setItem(storageKey, JSON.stringify(openMonths));
+    } catch (err) {
+      console.warn('Failed to persist accordion state:', err);
+    }
+  }, [openMonths, storageKey, groupByMonth]);
 
   const renderWorkoutCard = (workout: Workout) => {
     const post = workoutPostMap.get(workout.id);

@@ -1,6 +1,6 @@
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
-import { useCallback, useEffect, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { useMyAthlete } from '@/hooks/useMyAthlete';
@@ -34,6 +34,7 @@ export default function LockerWorkouts({
   const { fetchNextPage, hasNextPage = false, isFetchingNextPage } = workoutsQuery;
   const isLoading = (!lockerAthleteId && athleteLoading) || workoutsQuery.isLoading;
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
+  const [intersectionFailed, setIntersectionFailed] = useState(false);
   const effectiveViewerHoldings = canEdit ? Number.MAX_SAFE_INTEGER : viewerHoldings;
   const headerTitle = canEdit
     ? 'My Workouts'
@@ -108,27 +109,41 @@ export default function LockerWorkouts({
     };
   }, [workoutItems, effectiveAthleteId]);
 
+  // Infinite scroll with IntersectionObserver (with fallback detection)
   useEffect(() => {
-    if (!hasNextPage) return;
+    if (!hasNextPage || intersectionFailed) return;
     const node = loadMoreRef.current;
     if (!node) return;
 
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const entry = entries[0];
-        if (entry.isIntersecting && !isFetchingNextPage) {
-          fetchNextPage();
+    try {
+      const observer = new IntersectionObserver(
+        (entries) => {
+          const entry = entries[0];
+          if (entry.isIntersecting && !isFetchingNextPage) {
+            fetchNextPage();
+          }
+        },
+        { rootMargin: '200px' },
+      );
+
+      observer.observe(node);
+
+      // Detect if IntersectionObserver fails (iOS low-power mode)
+      const timeout = setTimeout(() => {
+        if (hasNextPage && !isFetchingNextPage) {
+          setIntersectionFailed(true);
         }
-      },
-      { rootMargin: '200px' },
-    );
+      }, 3000);
 
-    observer.observe(node);
-
-    return () => {
-      observer.disconnect();
-    };
-  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
+      return () => {
+        observer.disconnect();
+        clearTimeout(timeout);
+      };
+    } catch (err) {
+      console.warn('IntersectionObserver failed:', err);
+      setIntersectionFailed(true);
+    }
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage, intersectionFailed]);
 
   if (isLoading) {
     return (
@@ -188,10 +203,25 @@ export default function LockerWorkouts({
         />
       )}
 
-      <div ref={loadMoreRef} className="h-8" aria-hidden="true" />
+      {!intersectionFailed && <div ref={loadMoreRef} className="h-8" aria-hidden="true" />}
+      
       {hasNextPage && (
-        <div className="flex items-center justify-center text-sm text-muted-foreground">
-          {isFetchingNextPage ? 'Loading more workouts…' : 'Scroll to load more'}
+        <div className="flex flex-col items-center gap-3">
+          {intersectionFailed || isFetchingNextPage ? (
+            <Button
+              onClick={() => fetchNextPage()}
+              disabled={isFetchingNextPage}
+              variant="outline"
+              size="lg"
+              className="w-full max-w-xs"
+            >
+              {isFetchingNextPage ? 'Loading more workouts…' : 'Load more workouts'}
+            </Button>
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              Scroll to load more
+            </p>
+          )}
         </div>
       )}
 
