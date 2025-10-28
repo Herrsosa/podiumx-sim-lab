@@ -20,9 +20,9 @@ import { useToast } from '@/hooks/use-toast';
 import EditWorkoutModal from './EditWorkoutModal';
 import { UnlockCard } from '@/components/myathlete/UnlockCard';
 import { LockBadge } from '@/components/myathlete/LockBadge';
-import { useQueryClient } from '@tanstack/react-query';
 import { EmptyState } from '@/components/ui/empty-state';
 import { useUser } from '@/store/auth';
+import type { WorkoutMutationResult } from '@/hooks/useWorkouts';
 
 interface ProofOfSweatProps {
   workouts?: Workout[];
@@ -31,7 +31,8 @@ interface ProofOfSweatProps {
   athleteName?: string;
   viewerHoldings?: number;
   onUnlock?: () => void;
-  onWorkoutDeleted?: () => void;
+  onWorkoutDeleted?: (workoutId: string) => void;
+  onWorkoutUpdated?: (result: WorkoutMutationResult) => void;
   onConnectStrava?: () => void;
   groupByMonth?: boolean;
   initialExpandedMonths?: number;
@@ -45,13 +46,13 @@ export default function ProofOfSweat({
   viewerHoldings = 0,
   onUnlock,
   onWorkoutDeleted,
+  onWorkoutUpdated,
   onConnectStrava,
   groupByMonth = false,
   initialExpandedMonths = 4,
 }: ProofOfSweatProps) {
   const user = useUser();
   const { toast } = useToast();
-  const queryClient = useQueryClient();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [workoutToDelete, setWorkoutToDelete] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
@@ -131,7 +132,7 @@ export default function ProofOfSweat({
       });
       setOpenMonths(next);
     }
-  }, [groupByMonth, monthlyGroups, initialExpandedMonths]);
+  }, [groupByMonth, monthlyGroups, initialExpandedMonths, openMonths]);
 
   // Persist to sessionStorage whenever openMonths changes
   useEffect(() => {
@@ -339,13 +340,9 @@ export default function ProofOfSweat({
         description: 'Your workout has been removed',
       });
 
-      // Invalidate queries to refetch fresh data
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['athletes'] }),
-        queryClient.invalidateQueries({ queryKey: ['posts'] }),
-      ]);
-
-      onWorkoutDeleted?.();
+      if (workoutToDelete) {
+        onWorkoutDeleted?.(workoutToDelete);
+      }
     } catch (error: unknown) {
       console.error('Error deleting workout:', error);
       
@@ -499,12 +496,14 @@ export default function ProofOfSweat({
             token_gated: Boolean(workoutToEdit.token_gated),
             image_url: workoutToEdit.image_url ?? undefined,
           }}
-          onSuccess={async () => {
-            await Promise.all([
-              queryClient.invalidateQueries({ queryKey: ['athletes'] }),
-              queryClient.invalidateQueries({ queryKey: ['posts'] }),
-            ]);
-            onWorkoutDeleted?.();
+          onSuccess={(result) => {
+            const updatedWorkout = result.workout.workout;
+            if (updatedWorkout) {
+              setOptimisticWorkouts((prev) =>
+                prev.map((w) => (w.id === result.workout.id ? { ...w, ...updatedWorkout } : w)),
+              );
+            }
+            onWorkoutUpdated?.(result);
           }}
         />
       )}

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import type { User } from '@supabase/supabase-js';
 
@@ -41,23 +41,15 @@ type UseXIdentityResult = {
 };
 
 export function useXIdentity(): UseXIdentityResult {
-  const [identity, setIdentity] = useState<XIdentity>(null);
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    let mounted = true;
-
-    const loadIdentity = async () => {
-      setIsLoading(true);
-
+  const query = useQuery<XIdentity | null>({
+    queryKey: ['identity', { provider: 'x' }],
+    staleTime: 5 * 60_000,
+    refetchOnWindowFocus: false,
+    queryFn: async () => {
       try {
         const { data, error } = await supabase.auth.getUser();
-        if (!mounted) return;
-
         if (error || !data?.user) {
-          setIdentity(null);
-          setIsLoading(false);
-          return;
+          return null;
         }
 
         const user: User = data.user;
@@ -65,17 +57,13 @@ export function useXIdentity(): UseXIdentityResult {
         const twIdentity = identities.find((item) => isTwitterIdentity(item));
 
         if (!isTwitterIdentity(twIdentity)) {
-          setIdentity(null);
-          setIsLoading(false);
-          return;
+          return null;
         }
 
         const identityData: TwitterIdentityData = twIdentity.identity_data ?? {};
         const username = getString(identityData.user_name) ?? getString(identityData.preferred_username);
         if (!username) {
-          setIdentity(null);
-          setIsLoading(false);
-          return;
+          return null;
         }
 
         const avatarUrl = getString(identityData.avatar_url);
@@ -85,7 +73,7 @@ export function useXIdentity(): UseXIdentityResult {
         const metadataFullName = getString(user.user_metadata?.full_name);
         const userLabel = metadataFullName ?? getString(user.email) ?? `user:${user.id.slice(0, 8)}…`;
 
-        setIdentity({
+        return {
           id: identityId,
           username,
           handle: username,
@@ -93,22 +81,16 @@ export function useXIdentity(): UseXIdentityResult {
           avatarUrl,
           userLabel,
           connected: true,
-        });
-        setIsLoading(false);
+        };
       } catch (err) {
-        if (!mounted) return;
         console.error('Failed to load X identity', err);
-        setIdentity(null);
-        setIsLoading(false);
+        return null;
       }
-    };
+    },
+  });
 
-    loadIdentity();
-
-    return () => {
-      mounted = false;
-    };
-  }, []);
-
-  return { identity, isLoading };
+  return {
+    identity: query.data ?? null,
+    isLoading: query.isLoading,
+  };
 }

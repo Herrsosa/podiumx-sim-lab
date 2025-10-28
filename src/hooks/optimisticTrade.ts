@@ -2,6 +2,7 @@ import type { QueryClient, QueryKey } from '@tanstack/react-query';
 import { costToBuy, payoutToSell, priceAt, FEE } from '@/utils/pricing';
 import type { Wallet, Position } from '@/types';
 import type { AthletePriceSnapshot } from './useAthletePrice';
+import { athletePriceQueryKey } from './useAthletePrice';
 import type { AccessTier } from './useAccessTier';
 import type { ChartSeries, TimeRange, TradePoint } from './useAthleteTradeHistory';
 
@@ -137,7 +138,8 @@ export function applyOptimisticTrade(params: OptimisticTradeParams): OptimisticT
 
   const previousWallet = queryClient.getQueryData<Wallet | null>(['wallet', userId]) ?? null;
   const previousPositions = queryClient.getQueryData<Record<string, Position> | null>(['positions', userId]) ?? null;
-  const previousPrice = queryClient.getQueryData<AthletePriceSnapshot | null>(['athlete-price', athleteId]) ?? null;
+  const priceKey = athletePriceQueryKey(athleteId);
+  const previousPrice = queryClient.getQueryData<AthletePriceSnapshot | null>(priceKey) ?? null;
   const previousAccess = queryClient.getQueryData<LockerAccessSnapshot | null>(['locker-access', userId, athleteId]) ?? null;
   const previousCharts = queryClient.getQueriesData<ChartSeries | undefined>({ queryKey: ['chart', athleteId] });
 
@@ -240,7 +242,7 @@ export function applyOptimisticTrade(params: OptimisticTradeParams): OptimisticT
 
   queryClient.setQueryData(['wallet', userId], nextWallet);
   queryClient.setQueryData(['positions', userId], nextPositions);
-  queryClient.setQueryData(['athlete-price', athleteId], nextPrice);
+  queryClient.setQueryData(priceKey, nextPrice);
 
   const currentBalance = previousAccess?.balance ?? (currentPosition?.quantity ?? 0);
   const balanceDelta = side === 'BUY' ? quantity : -quantity;
@@ -276,6 +278,7 @@ export function rollbackOptimisticTrade(queryClient: QueryClient, context: Optim
   if (!context.applied) return;
 
   const { userId, athleteId, previousWallet, previousPositions, previousPrice, previousAccess, previousCharts } = context;
+  const priceKey = athletePriceQueryKey(athleteId);
 
   if (previousWallet !== undefined) {
     queryClient.setQueryData(['wallet', userId], previousWallet ?? null);
@@ -284,7 +287,7 @@ export function rollbackOptimisticTrade(queryClient: QueryClient, context: Optim
     queryClient.setQueryData(['positions', userId], previousPositions ?? {});
   }
   if (previousPrice !== undefined) {
-    queryClient.setQueryData(['athlete-price', athleteId], previousPrice ?? null);
+    queryClient.setQueryData(priceKey, previousPrice ?? null);
   }
   if (previousAccess !== undefined) {
     queryClient.setQueryData(['locker-access', userId, athleteId], previousAccess ?? null);
@@ -302,6 +305,7 @@ export function reconcileTradeSuccess(
   payload: TradeServerEnvelope,
 ) {
   const { userId, athleteId } = context;
+  const priceKey = athletePriceQueryKey(athleteId);
 
   if (payload.wallet) {
     queryClient.setQueryData(['wallet', userId], payload.wallet);
@@ -310,7 +314,7 @@ export function reconcileTradeSuccess(
     queryClient.setQueryData(['positions', userId], payload.positions);
   }
   if (payload.athletePrice) {
-    queryClient.setQueryData(['athlete-price', athleteId], payload.athletePrice);
+    queryClient.setQueryData(priceKey, payload.athletePrice);
   }
   if (payload.access) {
     queryClient.setQueryData(['locker-access', userId, athleteId], payload.access);

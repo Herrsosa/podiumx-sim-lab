@@ -23,6 +23,7 @@ import EditWorkoutModal from '@/components/EditWorkoutModal';
 import { StravaCard } from '@/components/strava/StravaCard';
 import TokengatedChat from '@/components/TokengatedChat';
 import { useQueryClient } from '@tanstack/react-query';
+import type { InfiniteData } from '@tanstack/react-query';
 import { MobileActionBar } from '@/components/MobileActionBar';
 import { resolveImageUrl } from '@/utils/avatar';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
@@ -42,6 +43,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import type { MyAthletePageResult } from '@/hooks/useMyAthlete';
+import type { WorkoutMutationResult } from '@/hooks/useWorkouts';
 
 export default function MyAthletePage() {
   const user = useUser();
@@ -56,6 +59,31 @@ export default function MyAthletePage() {
   } = useMyAthlete();
   const { data: athleteTrades } = useAthleteTrades(user?.id || '');
   const queryClient = useQueryClient();
+  const updateMyAthleteCache = useCallback(
+    (mutator: (prev: MyAthletePageResult['athlete']) => MyAthletePageResult['athlete']) => {
+      if (!user?.id) return;
+      queryClient.setQueryData<InfiniteData<MyAthletePageResult> | undefined>(
+        ['my-athlete', user.id],
+        (current) => {
+          if (!current) return current;
+          const pages = current.pages.map((page) =>
+            page?.athlete
+              ? {
+                  ...page,
+                  athlete: mutator(page.athlete),
+                }
+              : page,
+          );
+
+          return {
+            ...current,
+            pages,
+          };
+        },
+      );
+    },
+    [queryClient, user?.id],
+  );
   const isDesktop = useMediaQuery('(min-width: 768px)', true);
   const [isEditing, setIsEditing] = useState(false);
   const [savingProfile, setSavingProfile] = useState(false);
@@ -268,10 +296,24 @@ export default function MyAthletePage() {
     }
   };
 
-  const handleWorkoutSuccess = useCallback(() => {
-    queryClient.invalidateQueries({ queryKey: ['my-athlete', user?.id] });
-    setAddWorkoutOpen(false);
-  }, [queryClient, user?.id]);
+  const handleWorkoutCreated = useCallback(
+    (result: WorkoutMutationResult) => {
+      updateMyAthleteCache((prev) => {
+        const workoutData = result.workout.workout;
+        const nextWorkouts = workoutData
+          ? [workoutData, ...prev.workouts.filter((workout) => workout.id !== workoutData.id)]
+          : prev.workouts;
+        const nextPosts = [result.post, ...prev.posts.filter((post) => post.id !== result.post.id)];
+        return {
+          ...prev,
+          workouts: nextWorkouts,
+          posts: nextPosts,
+        };
+      });
+      setAddWorkoutOpen(false);
+    },
+    [updateMyAthleteCache],
+  );
 
   const handleDeleteClick = (workoutId: string) => {
     setWorkoutToDelete(workoutId);
@@ -291,8 +333,11 @@ export default function MyAthletePage() {
 
       toast.success('Workout deleted');
       
-      // Refresh data
-      queryClient.invalidateQueries({ queryKey: ['my-athlete', user?.id] });
+      updateMyAthleteCache((prev) => ({
+        ...prev,
+        workouts: prev.workouts.filter((workout) => workout.id !== workoutToDelete),
+        posts: prev.posts.filter((post) => post.id !== workoutToDelete),
+      }));
     } catch (error: unknown) {
       toast.error((error as Error).message || 'Failed to delete workout');
     } finally {
@@ -358,7 +403,7 @@ export default function MyAthletePage() {
           open={addWorkoutOpen}
           onOpenChange={setAddWorkoutOpen}
           athleteId={user.id}
-          onSuccess={handleWorkoutSuccess}
+          onSuccess={handleWorkoutCreated}
         />
       )}
 
@@ -367,8 +412,19 @@ export default function MyAthletePage() {
           open={open}
           onOpenChange={setOpen}
           workoutPost={normalizedEditingWorkout}
-          onSuccess={() => {
-            queryClient.invalidateQueries({ queryKey: ['my-athlete', user?.id] });
+          onSuccess={(result) => {
+            updateMyAthleteCache((prev) => {
+              const updatedWorkout = result.workout.workout;
+              const nextWorkouts = updatedWorkout
+                ? prev.workouts.map((item) => (item.id === updatedWorkout.id ? { ...item, ...updatedWorkout } : item))
+                : prev.workouts;
+              const nextPosts = prev.posts.map((post) => (post.id === result.post.id ? result.post : post));
+              return {
+                ...prev,
+                workouts: nextWorkouts,
+                posts: nextPosts,
+              };
+            });
             setOpen(false);
           }}
         />

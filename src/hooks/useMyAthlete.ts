@@ -17,7 +17,7 @@ type ProfileSummary = Pick<
   'id' | 'username' | 'display_name' | 'sport' | 'avatar_url' | 'bio' | 'instagram_url' | 'strava_url' | 'created_at'
 >;
 
-type MyAthletePageResult = {
+export type MyAthletePageResult = {
   athlete: Athlete;
   nextPage?: number;
 };

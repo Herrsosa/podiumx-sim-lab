@@ -32,6 +32,8 @@ import { MobileActionBar } from '@/components/MobileActionBar';
 import { OptimizedImage } from '@/components/OptimizedImage';
 import { SelfMobileProfile } from '@/pages/AthleteDetailSelfMobile';
 import { buildPriceSeries } from '@/lib/charting/engine';
+import type { Athlete } from '@/types';
+import type { WorkoutMutationResult } from '@/hooks/useWorkouts';
 
 const AthletePriceChart = lazy(() => import('@/components/charts/AthletePriceChart'));
 
@@ -224,9 +226,63 @@ export default function AthleteDetail() {
     setShowTradeModal(false);
   };
 
-  const handleWorkoutSuccess = useCallback(async () => {
-    await queryClient.refetchQueries({ queryKey: ['athlete', slug] });
-  }, [queryClient, slug]);
+  const updateAthleteCache = useCallback(
+    (mutator: (prev: Athlete) => Athlete) => {
+      if (!slug) return;
+      queryClient.setQueryData<Athlete | null>(['athlete', slug], (current) => {
+        if (!current) return current;
+        return mutator(current);
+      });
+    },
+    [queryClient, slug],
+  );
+
+  const handleWorkoutCreated = useCallback(
+    (result: WorkoutMutationResult) => {
+      updateAthleteCache((prev) => {
+        const workoutData = result.workout.workout;
+        const nextWorkouts = workoutData
+          ? [workoutData, ...prev.workouts.filter((item) => item.id !== workoutData.id)]
+          : prev.workouts;
+        const nextPosts = [result.post, ...prev.posts.filter((post) => post.id !== result.post.id)];
+        return {
+          ...prev,
+          workouts: nextWorkouts,
+          posts: nextPosts,
+        };
+      });
+    },
+    [updateAthleteCache],
+  );
+
+  const handleWorkoutUpdated = useCallback(
+    (result: WorkoutMutationResult) => {
+      updateAthleteCache((prev) => {
+        const updatedWorkout = result.workout.workout;
+        const nextWorkouts = updatedWorkout
+          ? prev.workouts.map((item) => (item.id === updatedWorkout.id ? { ...item, ...updatedWorkout } : item))
+          : prev.workouts;
+        const nextPosts = prev.posts.map((post) => (post.id === result.post.id ? result.post : post));
+        return {
+          ...prev,
+          workouts: nextWorkouts,
+          posts: nextPosts,
+        };
+      });
+    },
+    [updateAthleteCache],
+  );
+
+  const handleWorkoutDeleted = useCallback(
+    (workoutId: string) => {
+      updateAthleteCache((prev) => ({
+        ...prev,
+        workouts: prev.workouts.filter((workout) => workout.id !== workoutId),
+        posts: prev.posts.filter((post) => post.id !== workoutId),
+      }));
+    },
+    [updateAthleteCache],
+  );
 
   const isOwnProfile = user?.id === athlete?.id;
 
@@ -714,7 +770,8 @@ export default function AthleteDetail() {
                       side: 'BUY',
                     });
                   }}
-                  onWorkoutDeleted={handleWorkoutSuccess}
+                  onWorkoutDeleted={handleWorkoutDeleted}
+                  onWorkoutUpdated={handleWorkoutUpdated}
                   onConnectStrava={isOwnProfile ? () => navigate('/my-athlete') : undefined}
                 />
                 
@@ -835,7 +892,7 @@ export default function AthleteDetail() {
       open={showAddWorkout}
       onOpenChange={setShowAddWorkout}
       athleteId={athlete.id}
-      onSuccess={handleWorkoutSuccess}
+      onSuccess={handleWorkoutCreated}
     />
   );
 
@@ -845,8 +902,8 @@ export default function AthleteDetail() {
         open={addWorkoutOpen}
         onOpenChange={setAddWorkoutOpen}
         athleteId={user.id}
-        onSuccess={() => {
-          queryClient.refetchQueries({ queryKey: ['athlete', slug] });
+        onSuccess={(result) => {
+          handleWorkoutCreated(result);
           setAddWorkoutOpen(false);
         }}
       />

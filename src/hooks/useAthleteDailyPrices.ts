@@ -20,6 +20,7 @@ export function useAthleteDailyPrices(athleteId: string | undefined, range: Time
 
       const { start } = getWindowUTC(range);
       // Type assertion needed until Supabase types sync with new materialized view
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       let query = (supabase as any)
         .from('prices_daily_mv')
         .select('athlete_id, day_utc, close, carried, volume')

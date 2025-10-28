@@ -17,8 +17,12 @@ export interface AthletePriceSnapshot {
   updatedAt: string | null;
 }
 
+export const athletePriceQueryKey = (athleteId: string | undefined) =>
+  ['athlete-price', { athleteId }] as const;
+
 export function useAthletePrice(athleteId: string | undefined) {
   const queryClient = useQueryClient();
+  const queryKey = athletePriceQueryKey(athleteId);
 
   useEffect(() => {
     if (!athleteId) return;
@@ -45,7 +49,7 @@ export function useAthletePrice(athleteId: string | undefined) {
 
           if (!snapshot) return;
 
-          const previous = queryClient.getQueryData<AthletePriceSnapshot | null>(['athlete-price', athleteId]);
+          const previous = queryClient.getQueryData<AthletePriceSnapshot | null>(queryKey);
 
           const formatted: AthletePriceSnapshot = {
             athleteId: snapshot.athlete_id ?? athleteId,
@@ -57,7 +61,7 @@ export function useAthletePrice(athleteId: string | undefined) {
             updatedAt: snapshot.created_at ?? null,
           };
 
-          queryClient.setQueryData(['athlete-price', athleteId], formatted);
+          queryClient.setQueryData(queryKey, formatted);
         },
       )
       .subscribe();
@@ -65,10 +69,10 @@ export function useAthletePrice(athleteId: string | undefined) {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [athleteId, queryClient]);
+  }, [athleteId, queryClient, queryKey]);
 
   return useQuery<AthletePriceSnapshot | null>({
-    queryKey: ['athlete-price', athleteId],
+    queryKey,
     enabled: !!athleteId,
     queryFn: async () => {
       if (!athleteId) return null;
@@ -109,9 +113,9 @@ export function useAthletePrice(athleteId: string | undefined) {
         updatedAt: token.created_at ?? null,
       };
 
-      queryClient.setQueryData(['athlete-price', athleteId], snapshot);
+      queryClient.setQueryData(queryKey, snapshot);
       return snapshot;
     },
-    staleTime: 10_000,
+    staleTime: 60_000,
   });
 }

@@ -3,11 +3,23 @@ import { Plus } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
+import type { InfiniteData } from '@tanstack/react-query';
 import { useMyAthlete } from '@/hooks/useMyAthlete';
+import type { MyAthletePageResult } from '@/hooks/useMyAthlete';
 import ProofOfSweat from '@/components/ProofOfSweat';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useWorkouts } from '@/hooks/useWorkouts';
+import {
+  useWorkouts,
+  addWorkoutToCache,
+  replaceWorkoutInCache,
+  removeWorkoutFromCache,
+  type WorkoutMutationResult,
+  type WorkoutViewerRole,
+} from '@/hooks/useWorkouts';
 import AddWorkoutModal from '@/components/AddWorkoutModal';
+import type { Athlete } from '@/types';
+
+const PAGE_SIZE = 30;
 
 interface LockerWorkoutsProps {
   athleteId?: string;
@@ -30,7 +42,14 @@ export default function LockerWorkouts({
   const effectiveAthleteId = lockerAthleteId ?? athlete?.id;
   const effectiveAthleteName = lockerAthleteName ?? athlete?.name ?? 'Athlete';
   const canEdit = isOwnerProp ?? (!lockerAthleteId && Boolean(athlete?.id));
-  const workoutsQuery = useWorkouts(effectiveAthleteId, { pageSize: 30 });
+  const viewerRole = useMemo<WorkoutViewerRole>(() => {
+    if (canEdit) return 'owner';
+    if (viewerHoldings >= 10) return 'backer';
+    if (viewerHoldings >= 1) return 'supporter';
+    return 'fan';
+  }, [canEdit, viewerHoldings]);
+
+  const workoutsQuery = useWorkouts(effectiveAthleteId, { pageSize: PAGE_SIZE, viewerRole });
   const { fetchNextPage, hasNextPage = false, isFetchingNextPage } = workoutsQuery;
   const isLoading = (!lockerAthleteId && athleteLoading) || workoutsQuery.isLoading;
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
@@ -71,13 +90,92 @@ export default function LockerWorkouts({
     [canEdit, searchParams, setSearchParams],
   );
 
-  const handleWorkoutSuccess = useCallback(async () => {
-    if (!canEdit) return;
-    await Promise.all([
-      queryClient.invalidateQueries({ queryKey: ['workouts'] }),
-      queryClient.invalidateQueries({ queryKey: ['my-athlete'] }),
-    ]);
-  }, [canEdit, queryClient]);
+  const workoutsKeyParams = useMemo(
+    () => ({ athleteId: effectiveAthleteId, viewerRole, pageSize: PAGE_SIZE }),
+    [effectiveAthleteId, viewerRole],
+  );
+
+  const updateMyAthleteCache = useCallback(
+    (mutator: (prev: Athlete) => Athlete) => {
+      if (!canEdit || !athlete?.id) return;
+      queryClient.setQueryData<InfiniteData<MyAthletePageResult> | undefined>(
+        ['my-athlete', athlete.id],
+        (current) => {
+          if (!current) return current;
+
+          const pages = current.pages.map((page) => {
+            if (!page?.athlete) return page;
+            return {
+              ...page,
+              athlete: mutator(page.athlete),
+            };
+          });
+
+          return {
+            ...current,
+            pages,
+          };
+        },
+      );
+    },
+    [athlete?.id, canEdit, queryClient],
+  );
+
+  const handleWorkoutCreated = useCallback(
+    (result: WorkoutMutationResult) => {
+      if (!effectiveAthleteId) return;
+      addWorkoutToCache(queryClient, workoutsKeyParams, result.workout);
+
+      updateMyAthleteCache((prev) => {
+        const createdWorkout = result.workout.workout;
+        const nextWorkouts = createdWorkout
+          ? [createdWorkout, ...prev.workouts.filter((w) => w.id !== createdWorkout.id)]
+          : prev.workouts;
+        const nextPosts = [result.post, ...prev.posts.filter((post) => post.id !== result.post.id)];
+        return {
+          ...prev,
+          workouts: nextWorkouts,
+          posts: nextPosts,
+        };
+      });
+    },
+    [effectiveAthleteId, queryClient, updateMyAthleteCache, workoutsKeyParams],
+  );
+
+  const handleWorkoutUpdated = useCallback(
+    (result: WorkoutMutationResult) => {
+      if (!effectiveAthleteId) return;
+      replaceWorkoutInCache(queryClient, workoutsKeyParams, result.workout);
+
+      updateMyAthleteCache((prev) => {
+        const updatedWorkout = result.workout.workout;
+        const nextWorkouts = updatedWorkout
+          ? prev.workouts.map((item) => (item.id === updatedWorkout.id ? { ...item, ...updatedWorkout } : item))
+          : prev.workouts;
+        const nextPosts = prev.posts.map((post) => (post.id === result.post.id ? result.post : post));
+        return {
+          ...prev,
+          workouts: nextWorkouts,
+          posts: nextPosts,
+        };
+      });
+    },
+    [effectiveAthleteId, queryClient, updateMyAthleteCache, workoutsKeyParams],
+  );
+
+  const handleWorkoutDeleted = useCallback(
+    (workoutId: string) => {
+      if (!effectiveAthleteId) return;
+      removeWorkoutFromCache(queryClient, workoutsKeyParams, workoutId);
+
+      updateMyAthleteCache((prev) => ({
+        ...prev,
+        workouts: prev.workouts.filter((workout) => workout.id !== workoutId),
+        posts: prev.posts.filter((post) => post.id !== workoutId),
+      }));
+    },
+    [effectiveAthleteId, queryClient, updateMyAthleteCache, workoutsKeyParams],
+  );
 
   const workoutItems = useMemo(
     () => workoutsQuery.workouts ?? [],
@@ -198,6 +296,8 @@ export default function LockerWorkouts({
           posts={posts}
           workouts={workouts}
           viewerHoldings={effectiveViewerHoldings}
+          onWorkoutDeleted={handleWorkoutDeleted}
+          onWorkoutUpdated={handleWorkoutUpdated}
           groupByMonth
           initialExpandedMonths={4}
         />
@@ -230,7 +330,7 @@ export default function LockerWorkouts({
           open={isAddWorkoutOpen}
           onOpenChange={handleModalOpenChange}
           athleteId={effectiveAthleteId}
-          onSuccess={handleWorkoutSuccess}
+          onSuccess={handleWorkoutCreated}
         />
       )}
     </div>

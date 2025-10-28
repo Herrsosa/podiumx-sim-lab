@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { priceAt } from '@/utils/pricing';
 import type { Database } from '@/integrations/supabase/types';
-import type { AthletePriceSnapshot } from './useAthletePrice';
+import { athletePriceQueryKey, type AthletePriceSnapshot } from './useAthletePrice';
 
 export type TimeRange = '24h' | '7d' | '30d' | 'all';
 
@@ -81,6 +81,8 @@ export function useAthleteTradeHistory(athleteId: string | undefined, range: Tim
   useEffect(() => {
     if (!athleteId) return;
 
+    const priceKey = athletePriceQueryKey(athleteId);
+
       const flushPendingTicks = () => {
         const ticks = pendingTicksRef.current;
         pendingTicksRef.current = [];
@@ -89,7 +91,7 @@ export function useAthleteTradeHistory(athleteId: string | undefined, range: Tim
         if (ticks.length === 0) return;
 
         const latest = ticks[ticks.length - 1];
-        queryClient.setQueryData<AthletePriceSnapshot | null>(['athlete-price', athleteId], () => latest);
+        queryClient.setQueryData<AthletePriceSnapshot | null>(priceKey, () => latest);
 
         queryClient.setQueryData<ChartSeries | undefined>(['chart', athleteId, range], (current) => {
           if (!current) return current;
@@ -138,7 +140,7 @@ export function useAthleteTradeHistory(athleteId: string | undefined, range: Tim
             snapshot.created_at ??
             null;
 
-          const previous = queryClient.getQueryData<AthletePriceSnapshot | null>(['athlete-price', athleteId]);
+          const previous = queryClient.getQueryData<AthletePriceSnapshot | null>(priceKey);
           const curve =
             snapshot.curve_a !== undefined || snapshot.curve_b !== undefined || snapshot.curve_c !== undefined
               ? {
