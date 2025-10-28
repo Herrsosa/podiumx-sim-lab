@@ -23,6 +23,7 @@ import { LockBadge } from '@/components/myathlete/LockBadge';
 import { EmptyState } from '@/components/ui/empty-state';
 import { useUser } from '@/store/auth';
 import type { WorkoutMutationResult } from '@/hooks/useWorkouts';
+import { SupabaseResponsiveImage } from '@/components/SupabaseResponsiveImage';
 
 interface ProofOfSweatProps {
   workouts?: Workout[];
@@ -188,14 +189,14 @@ export default function ProofOfSweat({
               <>
                 {mediaUrl && (
                   <div className="mb-3 w-full max-w-[160px]">
-                    <div className="relative aspect-square overflow-hidden rounded-lg border border-border/40 bg-muted/30">
-                      <img
-                        src={mediaUrl}
-                        alt={`${workout.type} workout media`}
-                        className="h-full w-full object-cover"
-                        loading="lazy"
-                      />
-                    </div>
+                    <SupabaseResponsiveImage
+                      src={mediaUrl}
+                      alt={`${workout.type} workout media`}
+                      widths={[160, 240, 320]}
+                      sizes="(max-width: 768px) 45vw, 160px"
+                      aspectRatio={1}
+                      className="w-full rounded-lg border border-border/40 bg-muted/30"
+                    />
                   </div>
                 )}
                 <div className="mb-2 grid grid-cols-2 gap-x-4 gap-y-1 text-sm md:grid-cols-4">

@@ -13,7 +13,7 @@ import { useUser } from '@/store/auth';
 import { supabase } from '@/integrations/supabase/client';
 import TokengatedChat from '@/components/TokengatedChat';
 import { useQueryClient } from '@tanstack/react-query';
-import { resolveImageUrl } from '@/utils/avatar';
+import { SupabaseResponsiveImage } from '@/components/SupabaseResponsiveImage';
 import { ProfileDetailsCard } from '@/components/my-athlete/ProfileDetailsCard';
 import type { EditableProfile } from '@/pages/my-athletes/types';
 import {
@@ -433,20 +433,26 @@ function WorkoutCard({
           {workout.mediaUrl && (
             <div className="mt-2">
               {workout.mediaType === 'image' ? (
-                <img
-                  src={resolveImageUrl(workout.mediaUrl, { width: 360 })}
-                  alt="Workout"
-                  width={360}
-                  height={240}
-                  loading="lazy"
-                  className="h-32 w-48 rounded-lg object-cover"
+                <SupabaseResponsiveImage
+                  src={workout.mediaUrl}
+                  alt={`${workout.type} workout media`}
+                  widths={[200, 320, 480]}
+                  sizes="(max-width: 768px) 60vw, 192px"
+                  aspectRatio={3 / 2}
+                  className="w-48 overflow-hidden rounded-lg border border-border/40 bg-muted/30"
                 />
               ) : (
-                <video
-                  src={workout.mediaUrl}
-                  className="h-32 w-48 rounded-lg object-cover"
-                  controls
-                />
+                <div
+                  className="w-48 overflow-hidden rounded-lg border border-border/40 bg-muted/30"
+                  style={{ aspectRatio: 3 / 2 }}
+                >
+                  <video
+                    src={workout.mediaUrl}
+                    className="h-full w-full object-cover"
+                    controls
+                    preload="metadata"
+                  />
+                </div>
               )}
             </div>
           )}
