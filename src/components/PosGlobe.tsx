@@ -121,15 +121,14 @@ export function PosGlobe({ locations, className = '' }: PosGlobeProps) {
           ))}
         </g>
 
-        {/* Continent outlines - using embedded path with proper transform */}
-        <g transform={`translate(${cx}, ${cy}) scale(${radius / 180})`}>
+        {/* Continent outlines - scale from source viewbox (500x500, r=250) to our globe */}
+        <g transform={`translate(${cx - 250 * (radius / 250)}, ${cy - 250 * (radius / 250)}) scale(${radius / 250})`}>
           <path
             d={WORLD_OUTLINE_PATH}
             stroke="hsl(var(--foreground))"
-            strokeWidth="1"
+            strokeWidth="1.5"
             fill="none"
-            className="opacity-30"
-            transform="translate(-180, -90)"
+            className="opacity-40"
           />
         </g>
 
