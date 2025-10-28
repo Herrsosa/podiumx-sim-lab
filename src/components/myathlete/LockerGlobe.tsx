@@ -1,4 +1,4 @@
-import { PosGlobe } from '@/components/PosGlobe';
+import { MapboxGlobe } from '@/components/MapboxGlobe';
 import { useGlobeData } from '@/hooks/useGlobeData';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -46,9 +46,7 @@ export default function LockerGlobe({ athleteId, athleteName }: LockerGlobeProps
         </p>
       </div>
 
-      <div className="bg-muted/30 rounded-lg p-4">
-        <PosGlobe locations={locations || []} className="max-w-2xl mx-auto" />
-      </div>
+      <MapboxGlobe locations={locations || []} className="max-w-2xl mx-auto" />
 
       {locations && locations.length > 0 && (
         <div className="mt-6 grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
