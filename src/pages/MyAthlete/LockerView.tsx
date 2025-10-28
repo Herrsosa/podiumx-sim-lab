@@ -6,11 +6,12 @@ import { useUser } from '@/store/auth';
 import { useAccessTier } from '@/hooks/useAccessTier';
 
 const LockerWorkouts = lazy(() => import('@/components/myathlete/LockerWorkouts'));
+const LockerGlobe = lazy(() => import('@/components/myathlete/LockerGlobe'));
 const LockerResources = lazy(() => import('@/components/myathlete/LockerResources'));
 const LockerChat = lazy(() => import('@/components/myathlete/LockerChat'));
 const LockerMessages = lazy(() => import('@/components/myathlete/LockerMessages'));
 
-export type LockerTab = 'workouts' | 'resources' | 'chat' | 'messages';
+export type LockerTab = 'workouts' | 'globe' | 'resources' | 'chat' | 'messages';
 
 interface LockerViewProps {
   athleteId?: string;
@@ -46,15 +47,16 @@ export function LockerView({ athleteId, athleteName, athleteSlug, initialTab }: 
       <Tabs
         value={activeTab}
         onValueChange={(value) => {
-          const tab = ['workouts', 'resources', 'chat', 'messages'].includes(value as LockerTab)
+          const tab = ['workouts', 'globe', 'resources', 'chat', 'messages'].includes(value as LockerTab)
             ? (value as LockerTab)
             : 'workouts';
           setActiveTab(tab);
         }}
         className="w-full"
       >
-        <TabsList className="grid w-full grid-cols-4 sticky top-0 z-20 bg-background/95 backdrop-blur-sm">
+        <TabsList className="grid w-full grid-cols-5 sticky top-0 z-20 bg-background/95 backdrop-blur-sm">
           <TabsTrigger value="workouts">Workouts</TabsTrigger>
+          <TabsTrigger value="globe">Globe</TabsTrigger>
           <TabsTrigger value="resources">Resources</TabsTrigger>
           <TabsTrigger value="chat">Chat</TabsTrigger>
           <TabsTrigger value="messages">Messages</TabsTrigger>
@@ -74,6 +76,10 @@ export function LockerView({ athleteId, athleteName, athleteSlug, initialTab }: 
               isOwner={isOwner}
               viewerHoldings={viewerHoldings}
             />
+          </TabsContent>
+
+          <TabsContent value="globe">
+            <LockerGlobe athleteId={effectiveAthleteId} athleteName={effectiveName} />
           </TabsContent>
 
           <TabsContent value="resources">

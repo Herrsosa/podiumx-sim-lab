@@ -527,8 +527,15 @@ export type Database = {
         Row: {
           author_id: string
           created_at: string
+          has_location: boolean | null
           id: string
           image_url: string | null
+          location_city: string | null
+          location_country: string | null
+          location_country_code: string | null
+          location_geohash: string | null
+          location_lat: number | null
+          location_lng: number | null
           min_tokens_required: number
           strava_activity_id: number | null
           text: string | null
@@ -539,8 +546,15 @@ export type Database = {
         Insert: {
           author_id: string
           created_at?: string
+          has_location?: boolean | null
           id?: string
           image_url?: string | null
+          location_city?: string | null
+          location_country?: string | null
+          location_country_code?: string | null
+          location_geohash?: string | null
+          location_lat?: number | null
+          location_lng?: number | null
           min_tokens_required?: number
           strava_activity_id?: number | null
           text?: string | null
@@ -551,8 +565,15 @@ export type Database = {
         Update: {
           author_id?: string
           created_at?: string
+          has_location?: boolean | null
           id?: string
           image_url?: string | null
+          location_city?: string | null
+          location_country?: string | null
+          location_country_code?: string | null
+          location_geohash?: string | null
+          location_lat?: number | null
+          location_lng?: number | null
           min_tokens_required?: number
           strava_activity_id?: number | null
           text?: string | null
