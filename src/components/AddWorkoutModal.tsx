@@ -12,6 +12,8 @@ import { CelebrationModal } from './CelebrationModal';
 import { celebrateAura } from '@/lib/celebrate';
 import type { WorkoutMutationResult } from '@/hooks/useWorkouts';
 import { mapPostRowToLockerWorkout, mapPostRowToPost } from '@/hooks/useWorkouts';
+import { LocationInput } from './LocationInput';
+import type { LocationResult } from '@/hooks/useLocationSearch';
 
 interface AddWorkoutModalProps {
   open: boolean;
@@ -24,6 +26,7 @@ export default function AddWorkoutModal({ open, onOpenChange, athleteId, onSucce
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [mediaFile, setMediaFile] = useState<File | null>(null);
+  const [location, setLocation] = useState<LocationResult | null>(null);
   const [showCelebration, setShowCelebration] = useState(false);
   
   const [formData, setFormData] = useState({
@@ -81,7 +84,7 @@ export default function AddWorkoutModal({ open, onOpenChange, athleteId, onSucce
       const minTokensRequired =
         visibility === 'supporters' ? 1 : visibility === 'backers' ? 10 : 0;
 
-      // Insert post
+      // Insert post with location data
       const { data: insertData, error: postError } = await supabase
         .from('posts')
         .insert({
@@ -92,6 +95,13 @@ export default function AddWorkoutModal({ open, onOpenChange, athleteId, onSucce
           token_gated: visibility !== 'public',
           visibility,
           min_tokens_required: minTokensRequired,
+          location_city: location?.city || null,
+          location_country: location?.country || null,
+          location_country_code: location?.country_code || null,
+          location_geohash: location?.cell_id || null,
+          location_lat: location?.lat || null,
+          location_lng: location?.lng || null,
+          has_location: Boolean(location),
         })
         .select('id, created_at, author_id, workout_json, image_url, text, visibility, min_tokens_required, token_gated, strava_activity_id')
         .single();
@@ -120,6 +130,7 @@ export default function AddWorkoutModal({ open, onOpenChange, athleteId, onSucce
         notes: '',
         visibility: 'public',
       });
+      setLocation(null);
       setMediaFile(null);
     } catch (error: unknown) {
       console.error('Error posting workout:', error);
@@ -227,6 +238,13 @@ export default function AddWorkoutModal({ open, onOpenChange, athleteId, onSucce
                 rows={3}
               />
             </div>
+
+            <LocationInput
+              value={location}
+              onChange={setLocation}
+              label="Location"
+              placeholder="Search for city..."
+            />
 
             <div>
               <Label htmlFor="media">Media Upload</Label>

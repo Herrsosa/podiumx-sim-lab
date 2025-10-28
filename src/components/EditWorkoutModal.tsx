@@ -13,6 +13,8 @@ import { useUser } from '@/store/auth';
 import { Workout } from '@/types';
 import type { WorkoutMutationResult } from '@/hooks/useWorkouts';
 import { mapPostRowToLockerWorkout, mapPostRowToPost } from '@/hooks/useWorkouts';
+import { LocationInput } from './LocationInput';
+import type { LocationResult } from '@/hooks/useLocationSearch';
 
 interface EditWorkoutModalProps {
   open: boolean;
@@ -32,6 +34,7 @@ export default function EditWorkoutModal({ open, onOpenChange, workoutPost, onSu
   const [loading, setLoading] = useState(false);
   const [newMediaFile, setNewMediaFile] = useState<File | null>(null);
   const [mediaPreviewUrl, setMediaPreviewUrl] = useState<string | null>(workoutPost.image_url || null);
+  const [location, setLocation] = useState<LocationResult | null>(null);
   
   const workout = (workoutPost.workout_json && typeof workoutPost.workout_json === 'object' && !Array.isArray(workoutPost.workout_json)) 
     ? workoutPost.workout_json as Partial<Workout>
@@ -134,7 +137,7 @@ export default function EditWorkoutModal({ open, onOpenChange, workoutPost, onSu
         notes: formData.notes,
       };
 
-      // Update post in DB
+      // Update post in DB with location data
       const { data: updatedRow, error } = await supabase
         .from('posts')
         .update({
@@ -142,6 +145,13 @@ export default function EditWorkoutModal({ open, onOpenChange, workoutPost, onSu
           text: formData.notes,
           token_gated: formData.tokenGated,
           image_url: imageUrl,
+          location_city: location?.city || null,
+          location_country: location?.country || null,
+          location_country_code: location?.country_code || null,
+          location_geohash: location?.cell_id || null,
+          location_lat: location?.lat || null,
+          location_lng: location?.lng || null,
+          has_location: Boolean(location),
         })
         .eq('id', workoutPost.id)
         .select('id, created_at, author_id, workout_json, image_url, text, visibility, min_tokens_required, token_gated, strava_activity_id')
@@ -263,6 +273,13 @@ export default function EditWorkoutModal({ open, onOpenChange, workoutPost, onSu
               rows={3}
             />
           </div>
+
+          <LocationInput
+            value={location}
+            onChange={setLocation}
+            label="Location"
+            placeholder="Search for city..."
+          />
 
           <div>
             <Label>Media</Label>
