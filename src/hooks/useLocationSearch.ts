@@ -33,21 +33,17 @@ export function useLocationSearch() {
       setError(null);
 
       try {
-        const url = new URL(
-          `https://ssnehmposgsczoadycms.supabase.co/functions/v1/location-search`
-        );
-        url.searchParams.set('q', debouncedQuery);
+        const { data, error } = await supabase.functions.invoke('location-search', {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ q: debouncedQuery }),
+        });
 
-        const response = await fetch(url.toString());
+        if (error) throw error;
 
-        if (!response.ok) {
-          throw new Error(`Search failed: ${response.statusText}`);
-        }
-
-        const data = await response.json();
-        if (data.error) throw new Error(data.error);
-
-        setResults((data as { results: LocationResult[] }).results || []);
+        setResults(data?.results || []);
       } catch (err) {
         console.error('Location search error:', err);
         setError(err instanceof Error ? err.message : 'Failed to search locations');
