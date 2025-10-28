@@ -1,32 +1,78 @@
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
-import { useCallback } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
+import type { InfiniteData } from '@tanstack/react-query';
 import { useMyAthlete } from '@/hooks/useMyAthlete';
+import type { MyAthletePageResult } from '@/hooks/useMyAthlete';
 import ProofOfSweat from '@/components/ProofOfSweat';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useWorkouts } from '@/hooks/useWorkouts';
+import {
+  useWorkouts,
+  addWorkoutToCache,
+  replaceWorkoutInCache,
+  removeWorkoutFromCache,
+  type WorkoutMutationResult,
+  type WorkoutViewerRole,
+} from '@/hooks/useWorkouts';
 import AddWorkoutModal from '@/components/AddWorkoutModal';
+import type { Athlete } from '@/types';
 
-export default function LockerWorkouts() {
+const PAGE_SIZE = 30;
+
+interface LockerWorkoutsProps {
+  athleteId?: string;
+  athleteName?: string;
+  isOwner?: boolean;
+  viewerHoldings?: number;
+}
+
+export default function LockerWorkouts({
+  athleteId: lockerAthleteId,
+  athleteName: lockerAthleteName,
+  isOwner: isOwnerProp,
+  viewerHoldings = 0,
+}: LockerWorkoutsProps = {}) {
   const [searchParams, setSearchParams] = useSearchParams();
   const { data: athleteData, isLoading: athleteLoading } = useMyAthlete();
   const athlete = athleteData?.athlete;
   const queryClient = useQueryClient();
   const isAddWorkoutOpen = searchParams.get('add-workout') === 'true';
-  const workoutsQuery = useWorkouts(athlete?.id, { pageSize: 50 });
-  const isLoading = athleteLoading || workoutsQuery.isLoading;
+  const effectiveAthleteId = lockerAthleteId ?? athlete?.id;
+  const effectiveAthleteName = lockerAthleteName ?? athlete?.name ?? 'Athlete';
+  const canEdit = isOwnerProp ?? (!lockerAthleteId && Boolean(athlete?.id));
+  const viewerRole = useMemo<WorkoutViewerRole>(() => {
+    if (canEdit) return 'owner';
+    if (viewerHoldings >= 10) return 'backer';
+    if (viewerHoldings >= 1) return 'supporter';
+    return 'fan';
+  }, [canEdit, viewerHoldings]);
+
+  const workoutsQuery = useWorkouts(effectiveAthleteId, { pageSize: PAGE_SIZE, viewerRole });
+  const { fetchNextPage, hasNextPage = false, isFetchingNextPage } = workoutsQuery;
+  const isLoading = (!lockerAthleteId && athleteLoading) || workoutsQuery.isLoading;
+  const loadMoreRef = useRef<HTMLDivElement | null>(null);
+  const [intersectionFailed, setIntersectionFailed] = useState(false);
+  const effectiveViewerHoldings = canEdit ? Number.MAX_SAFE_INTEGER : viewerHoldings;
+  const headerTitle = canEdit
+    ? 'My Workouts'
+    : `${effectiveAthleteName}'s Workouts`;
+  const headerDescription = canEdit
+    ? 'Manage your workout posts and set access levels'
+    : 'Catch the latest training sessions shared with supporters';
 
   const openAddWorkoutModal = useCallback(() => {
+    if (!canEdit) return;
     if (isAddWorkoutOpen) return;
     const nextParams = new URLSearchParams(searchParams);
     nextParams.set('add-workout', 'true');
     setSearchParams(nextParams);
-  }, [isAddWorkoutOpen, searchParams, setSearchParams]);
+  }, [canEdit, isAddWorkoutOpen, searchParams, setSearchParams]);
 
   const handleModalOpenChange = useCallback(
     (open: boolean) => {
+      if (!canEdit) return;
       const currentlyOpen = searchParams.get('add-workout') === 'true';
       if (open === currentlyOpen) return;
 
@@ -41,15 +87,161 @@ export default function LockerWorkouts() {
       nextParams.delete('add-workout');
       setSearchParams(nextParams, { replace: true });
     },
-    [searchParams, setSearchParams],
+    [canEdit, searchParams, setSearchParams],
   );
 
-  const handleWorkoutSuccess = useCallback(async () => {
-    await Promise.all([
-      queryClient.invalidateQueries({ queryKey: ['workouts'] }),
-      queryClient.invalidateQueries({ queryKey: ['my-athlete'] }),
-    ]);
-  }, [queryClient]);
+  const workoutsKeyParams = useMemo(
+    () => ({ athleteId: effectiveAthleteId, viewerRole, pageSize: PAGE_SIZE }),
+    [effectiveAthleteId, viewerRole],
+  );
+
+  const updateMyAthleteCache = useCallback(
+    (mutator: (prev: Athlete) => Athlete) => {
+      if (!canEdit || !athlete?.id) return;
+      queryClient.setQueryData<InfiniteData<MyAthletePageResult> | undefined>(
+        ['my-athlete', athlete.id],
+        (current) => {
+          if (!current) return current;
+
+          const pages = current.pages.map((page) => {
+            if (!page?.athlete) return page;
+            return {
+              ...page,
+              athlete: mutator(page.athlete),
+            };
+          });
+
+          return {
+            ...current,
+            pages,
+          };
+        },
+      );
+    },
+    [athlete?.id, canEdit, queryClient],
+  );
+
+  const handleWorkoutCreated = useCallback(
+    (result: WorkoutMutationResult) => {
+      if (!effectiveAthleteId) return;
+      addWorkoutToCache(queryClient, workoutsKeyParams, result.workout);
+
+      updateMyAthleteCache((prev) => {
+        const createdWorkout = result.workout.workout;
+        const nextWorkouts = createdWorkout
+          ? [createdWorkout, ...prev.workouts.filter((w) => w.id !== createdWorkout.id)]
+          : prev.workouts;
+        const nextPosts = [result.post, ...prev.posts.filter((post) => post.id !== result.post.id)];
+        return {
+          ...prev,
+          workouts: nextWorkouts,
+          posts: nextPosts,
+        };
+      });
+    },
+    [effectiveAthleteId, queryClient, updateMyAthleteCache, workoutsKeyParams],
+  );
+
+  const handleWorkoutUpdated = useCallback(
+    (result: WorkoutMutationResult) => {
+      if (!effectiveAthleteId) return;
+      replaceWorkoutInCache(queryClient, workoutsKeyParams, result.workout);
+
+      updateMyAthleteCache((prev) => {
+        const updatedWorkout = result.workout.workout;
+        const nextWorkouts = updatedWorkout
+          ? prev.workouts.map((item) => (item.id === updatedWorkout.id ? { ...item, ...updatedWorkout } : item))
+          : prev.workouts;
+        const nextPosts = prev.posts.map((post) => (post.id === result.post.id ? result.post : post));
+        return {
+          ...prev,
+          workouts: nextWorkouts,
+          posts: nextPosts,
+        };
+      });
+    },
+    [effectiveAthleteId, queryClient, updateMyAthleteCache, workoutsKeyParams],
+  );
+
+  const handleWorkoutDeleted = useCallback(
+    (workoutId: string) => {
+      if (!effectiveAthleteId) return;
+      removeWorkoutFromCache(queryClient, workoutsKeyParams, workoutId);
+
+      updateMyAthleteCache((prev) => ({
+        ...prev,
+        workouts: prev.workouts.filter((workout) => workout.id !== workoutId),
+        posts: prev.posts.filter((post) => post.id !== workoutId),
+      }));
+    },
+    [effectiveAthleteId, queryClient, updateMyAthleteCache, workoutsKeyParams],
+  );
+
+  const workoutItems = useMemo(
+    () => workoutsQuery.workouts ?? [],
+    [workoutsQuery.workouts]
+  );
+  
+
+  const { workouts, posts } = useMemo(() => {
+    const assembledWorkouts = workoutItems
+      .map((item) => item.workout)
+      .filter((w): w is NonNullable<typeof w> => Boolean(w));
+
+    const assembledPosts = workoutItems.map((item) => ({
+      id: item.id,
+      created_at: item.createdAt,
+      author_id: effectiveAthleteId,
+      workout_json: item.workout,
+      image_url: item.imageUrl,
+      text: item.notes,
+      token_gated: item.visibility !== 'public',
+      strava_activity_id: null,
+      visibility: item.visibility,
+      min_tokens_required: item.minTokensRequired,
+    }));
+
+    return {
+      workouts: assembledWorkouts,
+      posts: assembledPosts,
+    };
+  }, [workoutItems, effectiveAthleteId]);
+
+  // Infinite scroll with IntersectionObserver (with fallback detection)
+  useEffect(() => {
+    if (!hasNextPage || intersectionFailed) return;
+    const node = loadMoreRef.current;
+    if (!node) return;
+
+    try {
+      const observer = new IntersectionObserver(
+        (entries) => {
+          const entry = entries[0];
+          if (entry.isIntersecting && !isFetchingNextPage) {
+            fetchNextPage();
+          }
+        },
+        { rootMargin: '200px' },
+      );
+
+      observer.observe(node);
+
+      // Detect if IntersectionObserver fails (iOS low-power mode)
+      const timeout = setTimeout(() => {
+        if (hasNextPage && !isFetchingNextPage) {
+          setIntersectionFailed(true);
+        }
+      }, 3000);
+
+      return () => {
+        observer.disconnect();
+        clearTimeout(timeout);
+      };
+    } catch (err) {
+      console.warn('IntersectionObserver failed:', err);
+      setIntersectionFailed(true);
+    }
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage, intersectionFailed]);
 
   if (isLoading) {
     return (
@@ -60,7 +252,7 @@ export default function LockerWorkouts() {
     );
   }
 
-  if (!athlete) {
+  if (!effectiveAthleteId) {
     return (
       <div className="p-6 text-muted-foreground">
         Unable to load athlete workouts.
@@ -68,65 +260,79 @@ export default function LockerWorkouts() {
     );
   }
 
-  const workoutItems = workoutsQuery.data ?? [];
-  const workouts = workoutItems
-    .map((item) => item.workout)
-    .filter((w): w is NonNullable<typeof w> => Boolean(w));
-
-  const posts = workoutItems.map((item) => ({
-    id: item.id,
-    created_at: item.createdAt,
-    author_id: athlete.id,
-    workout_json: item.workout,
-    image_url: item.imageUrl,
-    text: item.notes,
-    token_gated: item.visibility !== 'public',
-    strava_activity_id: null,
-    visibility: item.visibility,
-    min_tokens_required: item.minTokensRequired,
-  }));
-
   return (
     <div className="space-y-6 p-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-semibold">My Workouts</h2>
+          <h2 className="text-xl font-semibold">{headerTitle}</h2>
           <p className="text-sm text-muted-foreground">
-            Manage your workout posts and set access levels
+            {headerDescription}
           </p>
         </div>
-        <Button onClick={openAddWorkoutModal}>
-          <Plus className="mr-2 h-4 w-4" />
-          Add Workout
-        </Button>
+        {canEdit && (
+          <Button onClick={openAddWorkoutModal}>
+            <Plus className="mr-2 h-4 w-4" />
+            Add Workout
+          </Button>
+        )}
       </div>
 
       {workouts.length === 0 ? (
         <div className="flex min-h-[300px] items-center justify-center rounded-lg border border-dashed">
           <div className="text-center">
             <p className="mb-4 text-muted-foreground">No workouts yet</p>
-            <Button onClick={openAddWorkoutModal}>
-              <Plus className="mr-2 h-4 w-4" />
-              Add Your First Workout
-            </Button>
+            {canEdit && (
+              <Button onClick={openAddWorkoutModal}>
+                <Plus className="mr-2 h-4 w-4" />
+                Add Your First Workout
+              </Button>
+            )}
           </div>
         </div>
       ) : (
         <ProofOfSweat
-          athleteId={athlete.id}
-          athleteName={athlete.name}
+          athleteId={effectiveAthleteId}
+          athleteName={effectiveAthleteName}
           posts={posts}
           workouts={workouts}
-          viewerHoldings={Number.MAX_SAFE_INTEGER}
+          viewerHoldings={effectiveViewerHoldings}
+          onWorkoutDeleted={handleWorkoutDeleted}
+          onWorkoutUpdated={handleWorkoutUpdated}
+          groupByMonth
+          initialExpandedMonths={4}
         />
       )}
 
-      <AddWorkoutModal
-        open={isAddWorkoutOpen}
-        onOpenChange={handleModalOpenChange}
-        athleteId={athlete.id}
-        onSuccess={handleWorkoutSuccess}
-      />
+      {!intersectionFailed && <div ref={loadMoreRef} className="h-8" aria-hidden="true" />}
+      
+      {hasNextPage && (
+        <div className="flex flex-col items-center gap-3">
+          {intersectionFailed || isFetchingNextPage ? (
+            <Button
+              onClick={() => fetchNextPage()}
+              disabled={isFetchingNextPage}
+              variant="outline"
+              size="lg"
+              className="w-full max-w-xs"
+            >
+              {isFetchingNextPage ? 'Loading more workouts…' : 'Load more workouts'}
+            </Button>
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              Scroll to load more
+            </p>
+          )}
+        </div>
+      )}
+
+      {canEdit && (
+        <AddWorkoutModal
+          open={isAddWorkoutOpen}
+          onOpenChange={handleModalOpenChange}
+          athleteId={effectiveAthleteId}
+          onSuccess={handleWorkoutCreated}
+        />
+      )}
     </div>
   );
 }

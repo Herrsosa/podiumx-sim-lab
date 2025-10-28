@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback, useEffect } from 'react';
+import { useState, useMemo, useCallback, useEffect, startTransition } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search } from 'lucide-react';
 import { Input } from '@/components/ui/input';
@@ -13,6 +13,8 @@ import { H1, Body } from '@/components/ui/typography';
 import { EmptyState } from '@/components/ui/empty-state';
 import { CardSkeleton } from '@/components/ui/skeletons';
 import { useAuthLoading, useUser } from '@/store/auth';
+import { useDebouncedValue } from '@/hooks/useDebouncedValue';
+import { queryClient } from '@/lib/queryClient';
 
 const SPORTS: Sport[] = ['Running', 'HYROX', 'Cycling', 'Triathlon', 'CrossFit', 'Swimming', 'Trail Run', 'Rowing'];
 
@@ -23,6 +25,9 @@ export default function Marketplace() {
   const [search, setSearch] = useState('');
   const [selectedSport, setSelectedSport] = useState<Sport | 'All'>('All');
   const [pendingSlug, setPendingSlug] = useState<string | null>(null);
+  
+  // Debounce search to reduce re-renders
+  const debouncedSearch = useDebouncedValue(search, 300);
 
   const {
     data: athletes,
@@ -32,8 +37,16 @@ export default function Marketplace() {
     hasNextPage,
   } = usePaginatedAthletes();
 
-  const prefetchAthleteDetail = useCallback(() => {
+  const prefetchAthleteDetail = useCallback((athleteId?: string) => {
     void import('./AthleteDetail');
+    
+    // Prefetch athlete data on hover
+    if (athleteId) {
+      queryClient.prefetchQuery({
+        queryKey: ['athlete', athleteId],
+        staleTime: 60_000,
+      });
+    }
   }, []);
 
   const handleAthleteClick = useCallback((slug: string) => {
@@ -71,7 +84,7 @@ export default function Marketplace() {
 
   const filteredAthletes = useMemo(() => {
     if (!Array.isArray(athletes)) return [];
-    const lowered = search.trim().toLowerCase();
+    const lowered = debouncedSearch.trim().toLowerCase();
     const userId = user?.id;
 
     return athletes.filter((athlete) => {
@@ -80,7 +93,7 @@ export default function Marketplace() {
       const matchesSport = selectedSport === 'All' || athlete.sport === selectedSport;
       return matchesSearch && matchesSport;
     });
-  }, [athletes, search, selectedSport, user?.id]);
+  }, [athletes, debouncedSearch, selectedSport, user?.id]);
 
   const athleteIds = useMemo(() => filteredAthletes.map((a) => a.id), [filteredAthletes]);
 
@@ -97,7 +110,7 @@ export default function Marketplace() {
   }, [hasNextPage, fetchNextPage]);
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="container mx-auto px-4 py-8 page-transition">
       {/* Header */}
       <div className="mb-8">
         <div className="flex items-center justify-between mb-2">
@@ -116,7 +129,12 @@ export default function Marketplace() {
           <Input
             placeholder="Search athletes..."
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) => {
+              const value = e.target.value;
+              startTransition(() => {
+                setSearch(value);
+              });
+            }}
             className="pl-9"
             aria-label="Search athletes"
           />
@@ -160,7 +178,7 @@ export default function Marketplace() {
                 athlete={athlete}
                 chartData={series}
                 onClick={() => athlete.slug && handleAthleteClick(athlete.slug)}
-                onMouseEnter={prefetchAthleteDetail}
+                onMouseEnter={() => prefetchAthleteDetail(athlete.id)}
               />
             );
           })}

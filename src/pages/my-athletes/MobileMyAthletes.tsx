@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Athlete, Workout, Post } from '@/types';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import type { TimeRangeKey } from '@/utils/chartData';
 import {
   Accordion,
   AccordionContent,
@@ -12,36 +13,27 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import ProofOfSweat from '@/components/ProofOfSweat';
 import { Skeleton } from '@/components/ui/skeleton';
-import TokengatedChat from '@/components/TokengatedChat';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
-import { ArrowDownRight, ArrowUpRight, MessageSquare, Plus, TrendingUp } from 'lucide-react';
-import { ResponsiveContainer, ComposedChart, Line, Bar, XAxis, YAxis, Tooltip as RechartsTooltip } from 'recharts';
-import { POS_NEON_COLOR, StackedCircles } from '@/components/charts/StackedCircles';
-import type { TooltipProps } from 'recharts';
+import { Activity, ArrowDownRight, ArrowUpRight, Plus, TrendingUp } from 'lucide-react';
 import { MOBILE_TAB_KEYS } from './mobile-config';
-export { MOBILE_TAB_KEYS } from './mobile-config';
 import { ProfileDetailsCard } from '@/components/my-athlete/ProfileDetailsCard';
 import type { EditableProfile } from '@/pages/my-athletes/types';
-
-type ChartDatum = {
-  t: number;
-  price: number | null;
-  posCount: number;
-};
-
-type TooltipContent = NonNullable<TooltipProps<number, number | string>['content']>;
+import ConnectXButton from '@/components/social/ConnectXButton';
+import { useXConnection } from '@/hooks/useXConnection';
+import { MobileActionBar } from '@/components/MobileActionBar';
+import LockerMessages from '@/components/myathlete/LockerMessages';
+import LockerWorkouts from '@/components/myathlete/LockerWorkouts';
+import { featureFlags } from '@/lib/config/featureFlags';
+import AthletePriceChart from '@/components/charts/AthletePriceChart';
+import type { PriceSeriesPoint } from '@/lib/charting/engine';
 
 interface MobileMyAthletesProps {
   athlete?: Athlete;
   workouts: Workout[];
   posts: Post[];
-  chartData: ChartDatum[];
-  renderTooltip: TooltipContent;
-  posDomain: [number, number];
-  xDomain: [number, number];
-  glowFilterId: string;
+  priceSeries: PriceSeriesPoint[];
+  hasRealTrades: boolean;
   trades?: Array<Record<string, unknown>>;
   onAddWorkout: () => void;
   editedProfile: EditableProfile;
@@ -56,6 +48,8 @@ interface MobileMyAthletesProps {
   hasNextPage?: boolean;
   fetchNextPage?: () => void;
   isFetchingNextPage?: boolean;
+  timeRange?: TimeRangeKey;
+  onTimeRangeChange?: (range: TimeRangeKey) => void;
 }
 
 const currencyFormatter = new Intl.NumberFormat('en-US', {
@@ -75,11 +69,8 @@ export default function MobileMyAthletes({
   athlete,
   workouts,
   posts,
-  chartData,
-  renderTooltip,
-  posDomain,
-  xDomain,
-  glowFilterId,
+  priceSeries,
+  hasRealTrades,
   trades = [],
   onAddWorkout,
   editedProfile,
@@ -94,8 +85,21 @@ export default function MobileMyAthletes({
   hasNextPage = false,
   fetchNextPage,
   isFetchingNextPage = false,
+  timeRange = '7d',
+  onTimeRangeChange,
 }: MobileMyAthletesProps) {
   const [activeTab, setActiveTab] = useState<(typeof MOBILE_TAB_KEYS)[number]>('overview');
+  const [consoleTab, setConsoleTab] = useState<'personal' | 'locker'>('personal');
+  const { isConnected: xConnected, loading: xLoading } = useXConnection();
+
+  const chartRangeOptions = useMemo<TimeRangeKey[]>(() => {
+    const ranges: TimeRangeKey[] = ['7d'];
+    if (featureFlags.show30d) ranges.push('30d');
+    if (featureFlags.showAll) ranges.push('all');
+    return ranges;
+  }, []);
+
+  const safeChartRange = chartRangeOptions.includes(timeRange) ? timeRange : '7d';
 
   const priceChange = athlete?.change24h ?? 0;
   const isPriceUp = priceChange >= 0;
@@ -123,21 +127,56 @@ export default function MobileMyAthletes({
 
     const sections = [
       {
-        title: 'Profile',
+        title: 'Personal',
         content: (
-          <ProfileDetailsCard
-            variant="mobile"
-            className="shadow-none"
-            athlete={athlete}
-            editedProfile={editedProfile}
-            isEditing={isEditingProfile}
-            savingProfile={savingProfile}
-            onStartEdit={onStartEditProfile}
-            onCancelEdit={onCancelEditProfile}
-            onSave={onSaveProfile}
-            onFieldChange={onProfileFieldChange}
-            onAvatarSelect={onAvatarSelect}
-          />
+          <div className="space-y-4">
+            <Tabs value={consoleTab} onValueChange={(v) => setConsoleTab(v as 'personal' | 'locker')}>
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="personal">Settings</TabsTrigger>
+                <TabsTrigger value="locker">Locker</TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="personal" className="space-y-4 mt-4">
+                <ProfileDetailsCard
+                  variant="mobile"
+                  className="shadow-none"
+                  athlete={athlete}
+                  editedProfile={editedProfile}
+                  isEditing={isEditingProfile}
+                  savingProfile={savingProfile}
+                  onStartEdit={onStartEditProfile}
+                  onCancelEdit={onCancelEditProfile}
+                  onSave={onSaveProfile}
+                  onFieldChange={onProfileFieldChange}
+                  onAvatarSelect={onAvatarSelect}
+                />
+                
+                {/* X.com Integration */}
+                {xLoading ? (
+                  <Card className="shadow-none">
+                    <CardContent className="p-4">
+                      <h4 className="text-sm font-medium mb-3">X.com Integration</h4>
+                      <Skeleton className="h-8 w-32" />
+                    </CardContent>
+                  </Card>
+                ) : !xConnected ? (
+                  <Card className="shadow-none">
+                    <CardContent className="p-4 space-y-2">
+                      <h4 className="text-sm font-medium">X.com Integration</h4>
+                      <p className="text-xs text-muted-foreground">
+                        Connect your X account to display your handle and increase credibility.
+                      </p>
+                      <ConnectXButton />
+                    </CardContent>
+                  </Card>
+                ) : null}
+              </TabsContent>
+              
+              <TabsContent value="locker" className="mt-4">
+                <LockerWorkouts />
+              </TabsContent>
+            </Tabs>
+          </div>
         ),
       },
       {
@@ -183,6 +222,7 @@ export default function MobileMyAthletes({
     return sections;
   }, [
     athlete,
+    consoleTab,
     editedProfile,
     isEditingProfile,
     onStartEditProfile,
@@ -194,6 +234,8 @@ export default function MobileMyAthletes({
     onAddWorkout,
     posts,
     workouts,
+    xConnected,
+    xLoading,
   ]);
 
   if (!athlete) {
@@ -260,44 +302,46 @@ export default function MobileMyAthletes({
 
           <TabsContent value="chart" className="min-w-0 space-y-4">
             <Card>
-              <CardContent className="p-0">
-                {chartData.length === 0 ? (
+              <CardContent className="p-4">
+                {onTimeRangeChange && (
+                  <Tabs
+                    value={safeChartRange}
+                    onValueChange={(value) => {
+                      const next = value as TimeRangeKey;
+                      if (!chartRangeOptions.includes(next)) return;
+                      onTimeRangeChange(next);
+                    }}
+                    className="mb-4"
+                  >
+                    <TabsList className="flex w-full gap-1">
+                      <TabsTrigger value="7d" className="flex-1">7D</TabsTrigger>
+                      {featureFlags.show30d ? (
+                        <TabsTrigger value="30d" className="flex-1">30D</TabsTrigger>
+                      ) : null}
+                      {featureFlags.showAll ? (
+                        <TabsTrigger value="all" className="flex-1">All</TabsTrigger>
+                      ) : null}
+                    </TabsList>
+                  </Tabs>
+                )}
+                
+                {priceSeries.length === 0 ? (
                   <div className="space-y-3 p-6 text-center text-sm text-muted-foreground">
                     <TrendingUp className="mx-auto h-8 w-8 text-muted-foreground" />
                     <p>Add workouts and trades to see your progress charted here.</p>
                   </div>
                 ) : (
                   <div className="h-[260px] w-full">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <ComposedChart data={chartData} margin={{ top: 16, right: 12, bottom: 8, left: 12 }}>
-                        <defs>
-                          <filter id={`posGlowMobile-${glowFilterId}`} x="-50%" y="-50%" width="200%" height="200%">
-                            <feDropShadow dx="0" dy="2" stdDeviation="6" floodColor="rgba(59,130,246,0.35)" />
-                          </filter>
-                        </defs>
-                        <XAxis
-                          dataKey="t"
-                          domain={xDomain}
-                          type="number"
-                          tickFormatter={(value: number) => new Date(value).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
-                          tickLine={false}
-                          axisLine={false}
-                          tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }}
-                          interval="preserveStartEnd"
-                        />
-                        <YAxis domain={['auto', 'auto']} tickLine={false} axisLine={false} tick={false} />
-                        <YAxis yAxisId="pos" domain={posDomain} hide />
-                        <RechartsTooltip content={renderTooltip} />
-                        <Bar
-                          dataKey="posCount"
-                          yAxisId="pos"
-                          fill="transparent"
-                          barSize={48}
-                          shape={<StackedCircles color={POS_NEON_COLOR} filterId={`posGlowMobile-${glowFilterId}`} maxCircles={4} gap={8} radius={10} hitboxSize={40} />}
-                        />
-                        <Line type="monotone" dataKey="price" stroke={POS_NEON_COLOR} strokeWidth={2} dot={false} connectNulls />
-                      </ComposedChart>
-                    </ResponsiveContainer>
+                    <AthletePriceChart
+                      chartPoints={priceSeries}
+                      hasRealTrades={hasRealTrades}
+                      timeRange={safeChartRange}
+                      formatXAxisTick={(value) => new Date(value).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                      formatTooltipLabel={(value) => new Date(value).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                      isLoading={isLoading}
+                      posts={posts}
+                      syncId="myathlete-chart"
+                    />
                   </div>
                 )}
               </CardContent>
@@ -321,10 +365,9 @@ export default function MobileMyAthletes({
                 </CardContent>
               </Card>
             ) : (
-              <ScrollArea className="max-h-[420px]">
-                <div className="space-y-3 pr-2">
-                  {trades.map((trade, index) => {
-                    const side = (trade.side as string) ?? 'buy';
+              <div className="max-h-[420px] space-y-3 overflow-y-auto pr-2">
+                {trades.map((trade, index) => {
+                      const side = (trade.side as string) ?? 'buy';
                     const isBuy = side === 'buy';
                     const qty = Number(trade.qty ?? 0);
                     const gross = Number(trade.gross_amount ?? 0);
@@ -352,9 +395,8 @@ export default function MobileMyAthletes({
                         </CardContent>
                       </Card>
                     );
-                  })}
-                </div>
-              </ScrollArea>
+                })}
+              </div>
             )}
           </TabsContent>
 
@@ -399,38 +441,28 @@ export default function MobileMyAthletes({
             )}
           </TabsContent>
 
-          <TabsContent value="dm" className="min-w-0 space-y-4">
-            <Card>
-              <CardContent className="space-y-3 p-6">
-                <div className="flex items-center gap-3">
-                  <MessageSquare className="h-5 w-5 text-primary" />
-                  <div>
-                    <p className="font-medium text-foreground">Direct Messages</p>
-                    <p className="text-sm text-muted-foreground">Reach your supporters directly and share exclusive updates.</p>
-                  </div>
-                </div>
-                <TokengatedChat
-                  athleteId={athlete.id}
-                  athleteName={athlete.name}
-                  userHoldings={1}
-                  onBuyClick={() => {}}
-                />
-              </CardContent>
-            </Card>
+          <TabsContent value="dm" className="min-w-0">
+            <LockerMessages 
+              athleteId={athlete.id} 
+              athleteName={athlete.name}
+              mode="embedded"
+            />
           </TabsContent>
         </Tabs>
       </main>
 
-      <footer className="sticky bottom-0 z-30 border-t border-border/60 bg-background/85 px-4 py-3 backdrop-blur">
-        <div className="grid grid-cols-2 gap-3">
-          <Button type="button" className="h-12 text-base font-semibold">
-            Buy / Sell
-          </Button>
-          <Button type="button" variant="secondary" className="h-12 text-base font-semibold">
-            Follow
-          </Button>
-        </div>
-      </footer>
+      <MobileActionBar
+        actions={[
+          {
+            id: 'add-pos',
+            label: 'Add Proof of Sweat',
+            icon: <Activity className="h-5 w-5" />,
+            onPress: onAddWorkout,
+            variant: 'primary',
+            ariaLabel: 'Add proof-of-sweat workout',
+          },
+        ]}
+      />
     </div>
   );
 }

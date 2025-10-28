@@ -1,4 +1,4 @@
-import { useEffect, useState, Suspense, lazy } from "react";
+import { useEffect, Suspense, lazy } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -18,6 +18,8 @@ import { queryClient } from "@/lib/queryClient";
 import { useOnboardingStatus } from "@/hooks/useOnboardingStatus";
 import { AuthProvider } from "@/providers/AuthProvider";
 import { useAuthLoading, useUser } from "@/store/auth";
+import { ErrorBoundary } from "@/components/ui/error-boundary";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
 
 // Lazy load heavy pages
 const Onboarding = lazy(() => import("./pages/Onboarding"));
@@ -42,11 +44,19 @@ function RouteGuard({ requireAuth = false, children }: RouteGuardProps) {
   const isProtected = requireAuth;
 
   if (loading) {
-    return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <LoadingSpinner size="lg" />
+      </div>
+    );
   }
 
   if (user && onboardingIsLoading) {
-    return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <LoadingSpinner size="lg" />
+      </div>
+    );
   }
 
   if (!user) {
@@ -81,7 +91,11 @@ function AppContent() {
       <Route path="/auth/callback" element={<AuthCallback />} />
       <Route path="/onboarding" element={
         <RouteGuard requireAuth>
-          <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Loading...</div>}>
+          <Suspense fallback={
+            <div className="min-h-screen flex items-center justify-center">
+              <LoadingSpinner size="lg" />
+            </div>
+          }>
             <Onboarding />
           </Suspense>
         </RouteGuard>
@@ -105,7 +119,11 @@ function AppContent() {
       <Route path="/portfolio" element={
         <RouteGuard requireAuth>
           <Navigation />
-          <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Loading...</div>}>
+          <Suspense fallback={
+            <div className="min-h-screen flex items-center justify-center">
+              <LoadingSpinner size="lg" />
+            </div>
+          }>
             <Portfolio />
           </Suspense>
         </RouteGuard>
@@ -114,7 +132,11 @@ function AppContent() {
       <Route path="/my-athlete/overview" element={
         <RouteGuard requireAuth>
           <Navigation />
-          <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Loading...</div>}>
+          <Suspense fallback={
+            <div className="min-h-screen flex items-center justify-center">
+              <LoadingSpinner size="lg" />
+            </div>
+          }>
             <MyAthletePage />
           </Suspense>
         </RouteGuard>
@@ -122,7 +144,11 @@ function AppContent() {
       <Route path="/my-athlete/locker" element={
         <RouteGuard requireAuth>
           <Navigation />
-          <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Loading...</div>}>
+          <Suspense fallback={
+            <div className="min-h-screen flex items-center justify-center">
+              <LoadingSpinner size="lg" />
+            </div>
+          }>
             <MyAthleteLocker />
           </Suspense>
         </RouteGuard>
@@ -130,7 +156,11 @@ function AppContent() {
       <Route path="/my-athlete/locker/:section" element={
         <RouteGuard requireAuth>
           <Navigation />
-          <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Loading...</div>}>
+          <Suspense fallback={
+            <div className="min-h-screen flex items-center justify-center">
+              <LoadingSpinner size="lg" />
+            </div>
+          }>
             <MyAthleteLocker />
           </Suspense>
         </RouteGuard>
@@ -138,7 +168,11 @@ function AppContent() {
       <Route path="/my-athlete/locker/:section/:conversationId" element={
         <RouteGuard requireAuth>
           <Navigation />
-          <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Loading...</div>}>
+          <Suspense fallback={
+            <div className="min-h-screen flex items-center justify-center">
+              <LoadingSpinner size="lg" />
+            </div>
+          }>
             <MyAthleteLocker />
           </Suspense>
         </RouteGuard>
@@ -159,11 +193,13 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <AuthProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <AppContent />
-        </BrowserRouter>
+        <ErrorBoundary>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <AppContent />
+          </BrowserRouter>
+        </ErrorBoundary>
       </AuthProvider>
     </TooltipProvider>
   </QueryClientProvider>

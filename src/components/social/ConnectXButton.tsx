@@ -1,8 +1,15 @@
 import { useState } from 'react';
-import { Button } from '@/components/ui/button';
+import { Button, type ButtonProps } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 
-export default function ConnectXButton() {
+interface ConnectXButtonProps {
+  label?: string;
+  className?: string;
+  buttonProps?: Omit<ButtonProps, 'onClick' | 'children' | 'className'>;
+}
+
+export default function ConnectXButton({ label = 'Connect X', className, buttonProps }: ConnectXButtonProps) {
   const [loading, setLoading] = useState(false);
 
   const handleClick = async () => {
@@ -11,6 +18,7 @@ export default function ConnectXButton() {
       provider: 'twitter',
       options: { redirectTo: `${window.location.origin}/auth/callback` },
     });
+
     if (error) {
       console.error('X linking failed', error);
       alert('Could not start X linking. Please try again.');
@@ -19,8 +27,13 @@ export default function ConnectXButton() {
   };
 
   return (
-    <Button onClick={handleClick} disabled={loading} className="w-full md:w-auto">
-      {loading ? 'Opening X…' : 'Connect X'}
+    <Button
+      onClick={handleClick}
+      disabled={loading}
+      className={cn('w-full md:w-auto', className)}
+      {...buttonProps}
+    >
+      {loading ? 'Opening X…' : label}
     </Button>
   );
 }

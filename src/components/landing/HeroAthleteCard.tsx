@@ -3,7 +3,8 @@ import { TrendingDown, TrendingUp } from "lucide-react";
 import { Link } from "react-router-dom";
 import type { Athlete } from "@/types";
 import { formatPrice } from "@/lib/format";
-import { resolveAvatarUrl } from "@/utils/avatar";
+import { getAvatarAsset, resolveAvatarUrl } from "@/utils/avatar";
+import { OptimizedImage } from "@/components/OptimizedImage";
 
 interface HeroAthleteCardProps {
   athlete: Athlete;
@@ -22,12 +23,13 @@ export function HeroAthleteCard({ athlete, index }: HeroAthleteCardProps) {
       >
         <div className="relative h-[60%]">
           <div className="absolute inset-0 bg-gradient-to-b from-transparent via-background/30 to-background" />
-          <img
+          <OptimizedImage
             src={resolveAvatarUrl(athlete.avatar, { size: 320 })}
+            webpSrc={getAvatarAsset(athlete.avatar)?.webp}
             alt={athlete.name}
             width={320}
             height={320}
-            loading="lazy"
+            eager
             className="h-full w-full object-cover"
           />
 

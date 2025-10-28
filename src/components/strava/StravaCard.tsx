@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ChevronDown, ChevronUp, Activity, BarChart3, Play, Link as LinkIcon, Settings, ExternalLink } from "lucide-react";
-import { useStravaConnection } from "@/hooks/useStravaConnection";
+import { useStravaConnection, stravaConnectionQueryKey } from "@/hooks/useStravaConnection";
 import { useActivities } from "@/hooks/useActivities";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
@@ -14,6 +14,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { prepareStravaAuthorizeUrl } from "@/utils/stravaAuth";
+import { useUser } from "@/store/auth";
 
 interface StravaCardProps {
   className?: string;
@@ -41,6 +42,8 @@ type ActivityRecord = {
 
 export function StravaCard({ className }: StravaCardProps) {
   const { data: connection, isLoading: connectionLoading } = useStravaConnection();
+  const user = useUser();
+  const userId = user?.id;
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const [collapsed, setCollapsed] = useState(false);
@@ -280,7 +283,11 @@ export function StravaCard({ className }: StravaCardProps) {
   const handleDisconnect = async () => {
     try {
       await supabase.from("oauth_connections").delete().eq("provider", "strava");
-      await queryClient.invalidateQueries({ queryKey: ["strava-connection"] });
+      if (userId) {
+        await queryClient.invalidateQueries({ queryKey: stravaConnectionQueryKey(userId) });
+      } else {
+        await queryClient.invalidateQueries({ queryKey: ["connections"] });
+      }
       toast({ title: "Disconnected from Strava" });
     } catch (error) {
       const message = error instanceof Error ? error.message : "Something went wrong";
@@ -316,13 +323,19 @@ export function StravaCard({ className }: StravaCardProps) {
 
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["activities"] }),
-        queryClient.invalidateQueries({ queryKey: ["strava-connection"] }),
+        userId
+          ? queryClient.invalidateQueries({ queryKey: stravaConnectionQueryKey(userId) })
+          : queryClient.invalidateQueries({ queryKey: ["connections"] }),
       ]);
     } catch (error) {
       const message = error instanceof Error ? error.message : "Could not import Strava activities.";
 
       if (message.toLowerCase().includes("strava authorization has expired")) {
-        await queryClient.invalidateQueries({ queryKey: ["strava-connection"] });
+        if (userId) {
+          await queryClient.invalidateQueries({ queryKey: stravaConnectionQueryKey(userId) });
+        } else {
+          await queryClient.invalidateQueries({ queryKey: ["connections"] });
+        }
       }
 
       toast({

@@ -151,6 +151,76 @@ export type Database = {
           },
         ]
       }
+      athlete_prices: {
+        Row: {
+          athlete_earnings: number
+          athlete_id: string
+          client_request_id: string | null
+          created_at: string
+          curve_a: number | null
+          curve_b: number | null
+          curve_c: number | null
+          gross_amount: number
+          id: string
+          price: number
+          side: Database["public"]["Enums"]["trade_side"]
+          supply: number
+          treasury_balance: number
+        }
+        Insert: {
+          athlete_earnings: number
+          athlete_id: string
+          client_request_id?: string | null
+          created_at?: string
+          curve_a?: number | null
+          curve_b?: number | null
+          curve_c?: number | null
+          gross_amount: number
+          id?: string
+          price: number
+          side: Database["public"]["Enums"]["trade_side"]
+          supply: number
+          treasury_balance: number
+        }
+        Update: {
+          athlete_earnings?: number
+          athlete_id?: string
+          client_request_id?: string | null
+          created_at?: string
+          curve_a?: number | null
+          curve_b?: number | null
+          curve_c?: number | null
+          gross_amount?: number
+          id?: string
+          price?: number
+          side?: Database["public"]["Enums"]["trade_side"]
+          supply?: number
+          treasury_balance?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "athlete_prices_athlete_id_fkey"
+            columns: ["athlete_id"]
+            isOneToOne: false
+            referencedRelation: "athlete_metrics_24h"
+            referencedColumns: ["athlete_id"]
+          },
+          {
+            foreignKeyName: "athlete_prices_athlete_id_fkey"
+            columns: ["athlete_id"]
+            isOneToOne: false
+            referencedRelation: "athlete_tokens"
+            referencedColumns: ["athlete_id"]
+          },
+          {
+            foreignKeyName: "athlete_prices_client_request_id_fkey"
+            columns: ["client_request_id"]
+            isOneToOne: false
+            referencedRelation: "trades"
+            referencedColumns: ["client_request_id"]
+          },
+        ]
+      }
       athlete_tokens: {
         Row: {
           a: number
@@ -162,6 +232,7 @@ export type Database = {
           supply: number
           symbol: string
           treasury_balance: number
+          updated_at: string | null
         }
         Insert: {
           a?: number
@@ -173,6 +244,7 @@ export type Database = {
           supply?: number
           symbol: string
           treasury_balance?: number
+          updated_at?: string | null
         }
         Update: {
           a?: number
@@ -184,12 +256,13 @@ export type Database = {
           supply?: number
           symbol?: string
           treasury_balance?: number
+          updated_at?: string | null
         }
         Relationships: [
           {
             foreignKeyName: "athlete_tokens_athlete_id_profiles_id_fk"
             columns: ["athlete_id"]
-            isOneToOne: false
+            isOneToOne: true
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -422,26 +495,29 @@ export type Database = {
       }
       oauth_states: {
         Row: {
+          app_url: string | null
           created_at: string
           expires_at: string
           id: string
-          provider: string
+          provider: string | null
           state: string
           user_id: string
         }
         Insert: {
+          app_url?: string | null
           created_at?: string
           expires_at?: string
           id?: string
-          provider: string
+          provider?: string | null
           state: string
           user_id: string
         }
         Update: {
+          app_url?: string | null
           created_at?: string
           expires_at?: string
           id?: string
-          provider?: string
+          provider?: string | null
           state?: string
           user_id?: string
         }
@@ -542,6 +618,7 @@ export type Database = {
       trades: {
         Row: {
           athlete_id: string
+          client_request_id: string | null
           created_at: string
           fee: number
           gross_amount: number
@@ -555,6 +632,7 @@ export type Database = {
         }
         Insert: {
           athlete_id: string
+          client_request_id?: string | null
           created_at?: string
           fee: number
           gross_amount: number
@@ -568,6 +646,7 @@ export type Database = {
         }
         Update: {
           athlete_id?: string
+          client_request_id?: string | null
           created_at?: string
           fee?: number
           gross_amount?: number
@@ -637,9 +716,34 @@ export type Database = {
           {
             foreignKeyName: "athlete_tokens_athlete_id_profiles_id_fk"
             columns: ["athlete_id"]
-            isOneToOne: false
+            isOneToOne: true
             referencedRelation: "profiles"
             referencedColumns: ["id"]
+          },
+        ]
+      }
+      prices_daily_mv: {
+        Row: {
+          athlete_id: string | null
+          carried: boolean | null
+          close: number | null
+          day_utc: string | null
+          volume: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "athlete_prices_athlete_id_fkey"
+            columns: ["athlete_id"]
+            isOneToOne: false
+            referencedRelation: "athlete_metrics_24h"
+            referencedColumns: ["athlete_id"]
+          },
+          {
+            foreignKeyName: "athlete_prices_athlete_id_fkey"
+            columns: ["athlete_id"]
+            isOneToOne: false
+            referencedRelation: "athlete_tokens"
+            referencedColumns: ["athlete_id"]
           },
         ]
       }
@@ -710,15 +814,16 @@ export type Database = {
       }
     }
     Functions: {
-      cleanup_expired_oauth_states: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
+      cleanup_expired_oauth_states: { Args: never; Returns: undefined }
       execute_trade_transaction: {
         Args: {
           p_athlete_id: string
+          p_curve_a: number
+          p_curve_b: number
+          p_curve_c: number
           p_fee: number
           p_gross_amount: number
+          p_idempotency_key: string
           p_net_amount: number
           p_new_athlete_earnings: number
           p_new_price: number
@@ -731,7 +836,7 @@ export type Database = {
         Returns: undefined
       }
       get_dm_conversations: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           conversation_id: string
           last_message: string
@@ -763,10 +868,8 @@ export type Database = {
           spark7d: number[]
         }[]
       }
-      get_user_balance: {
-        Args: { p_athlete_id: string }
-        Returns: number
-      }
+      get_user_balance: { Args: { p_athlete_id: string }; Returns: number }
+      refresh_prices_daily_mv: { Args: never; Returns: undefined }
       send_dm: {
         Args: {
           p_body: string
@@ -775,10 +878,7 @@ export type Database = {
         }
         Returns: string
       }
-      start_dm: {
-        Args: { p_other_user_id: string }
-        Returns: string
-      }
+      start_dm: { Args: { p_other_user_id: string }; Returns: string }
     }
     Enums: {
       trade_side: "BUY" | "SELL"

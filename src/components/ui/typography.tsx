@@ -9,7 +9,7 @@ export const H1 = forwardRef<HTMLHeadingElement, HeadingProps>(
   ({ className, ...props }, ref) => (
     <h1
       ref={ref}
-      className={cn("text-5xl font-semibold tracking-tight text-foreground", className)}
+      className={cn("text-4xl md:text-5xl font-bold tracking-tight text-foreground", className)}
       {...props}
     />
   )
@@ -20,18 +20,29 @@ export const H2 = forwardRef<HTMLHeadingElement, HeadingProps>(
   ({ className, ...props }, ref) => (
     <h2
       ref={ref}
-      className={cn("text-4xl font-semibold tracking-tight text-foreground", className)}
+      className={cn("text-3xl md:text-4xl font-bold tracking-tight text-foreground", className)}
       {...props}
     />
   )
 );
 H2.displayName = "H2";
 
+export const H3 = forwardRef<HTMLHeadingElement, HeadingProps>(
+  ({ className, ...props }, ref) => (
+    <h3
+      ref={ref}
+      className={cn("text-2xl md:text-3xl font-semibold tracking-tight text-foreground", className)}
+      {...props}
+    />
+  )
+);
+H3.displayName = "H3";
+
 export const SectionTitle = forwardRef<HTMLHeadingElement, HeadingProps>(
   ({ className, ...props }, ref) => (
     <h3
       ref={ref}
-      className={cn("text-2xl font-semibold tracking-tight text-foreground", className)}
+      className={cn("text-xl md:text-2xl font-semibold tracking-tight text-foreground", className)}
       {...props}
     />
   )
@@ -42,7 +53,7 @@ export const Body = forwardRef<HTMLParagraphElement, TextProps>(
   ({ className, ...props }, ref) => (
     <p
       ref={ref}
-      className={cn("text-[15px] leading-relaxed text-muted-foreground", className)}
+      className={cn("text-base leading-7 text-muted-foreground", className)}
       {...props}
     />
   )
@@ -53,9 +64,20 @@ export const Small = forwardRef<HTMLSpanElement, SpanProps>(
   ({ className, ...props }, ref) => (
     <span
       ref={ref}
-      className={cn("text-[12px] font-medium leading-relaxed text-muted-foreground", className)}
+      className={cn("text-sm leading-6 text-muted-foreground", className)}
       {...props}
     />
   )
 );
 Small.displayName = "Small";
+
+export const Label = forwardRef<HTMLSpanElement, SpanProps>(
+  ({ className, ...props }, ref) => (
+    <span
+      ref={ref}
+      className={cn("text-xs font-medium uppercase tracking-wider text-muted-foreground", className)}
+      {...props}
+    />
+  )
+);
+Label.displayName = "Label";

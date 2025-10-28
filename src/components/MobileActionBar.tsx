@@ -39,18 +39,18 @@ export function MobileActionBar({ actions, className }: MobileActionBarProps) {
   return (
     <div
       className={cn(
-        'pointer-events-none fixed inset-x-0 bottom-0 z-40 flex justify-center md:hidden',
+        'pointer-events-none fixed inset-x-0 bottom-0 z-[1000] flex justify-center md:hidden',
         className,
       )}
     >
-      <div className="pointer-events-auto flex w-full max-w-xl items-center gap-3 rounded-t-2xl border border-border/40 bg-background/95 px-4 pt-3 pb-[calc(env(safe-area-inset-bottom,0px)+12px)] shadow-lg backdrop-blur">
+      <div className="pointer-events-auto flex w-full max-w-xl items-center gap-3 rounded-t-2xl border border-border/40 bg-background/95 px-4 pt-3 pb-[max(env(safe-area-inset-bottom,0px),12px)] shadow-lg backdrop-blur-md">
         {actions.map(({ id, label, icon, onPress, ariaLabel, variant = 'primary' }) => (
           <button
             key={id}
             type="button"
             aria-label={ariaLabel ?? label}
             className={cn(
-              'flex-1 h-12 min-h-[48px] rounded-full px-3 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2',
+              'flex-1 h-12 min-h-[48px] rounded-full px-3 text-sm font-semibold transition-all active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2',
               variantStyles[variant],
             )}
             onClick={() => {

@@ -1,59 +1,189 @@
+import { useEffect, useMemo, useRef } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { priceAt } from '@/utils/pricing';
 import type { Database } from '@/integrations/supabase/types';
+import { athletePriceQueryKey, type AthletePriceSnapshot } from './useAthletePrice';
 
-type TimeRange = '24h' | '7d' | '30d' | 'all';
+export type TimeRange = '24h' | '7d' | '30d' | 'all';
 
-interface TradePoint {
+export interface TradePoint {
   timestamp: number;
   price: number;
 }
 
+export interface ChartSeries {
+  data: TradePoint[];
+  changePct: number;
+  volume: number;
+}
+
+export const RANGE_WINDOWS: Record<Exclude<TimeRange, 'all'>, number> = {
+  '24h': 24,
+  '7d': 168,
+  '30d': 720,
+};
+
+const MAX_POINTS = 240;
+
+type PriceRow = Database['public']['Tables']['athlete_prices']['Row'];
+
+type RealtimePricePayload = Partial<PriceRow> & {
+  updated_at?: string | null;
+  updatedAt?: string | null;
+  reserve?: number | null;
+  athleteRevenue?: number | null;
+};
+
+export const trimToWindow = (points: TradePoint[], range: TimeRange) => {
+  if (range === 'all') return points;
+  const hours = RANGE_WINDOWS[range];
+  const cutoff = Date.now() - hours * 60 * 60 * 1000;
+  return points.filter((point) => point.timestamp >= cutoff);
+};
+
+const samplePoints = (points: TradePoint[]) => {
+  if (points.length <= MAX_POINTS) {
+    return points;
+  }
+  const step = Math.ceil(points.length / MAX_POINTS);
+  const sampled = points.filter((_, index) => index % step === 0);
+  const lastPoint = points[points.length - 1];
+  if (sampled[sampled.length - 1]?.timestamp !== lastPoint.timestamp) {
+    sampled.push(lastPoint);
+  }
+  return sampled;
+};
+
+export const recalcSeries = (points: TradePoint[], volume: number): ChartSeries => {
+  if (points.length === 0) {
+    return { data: [], changePct: 0, volume: 0 };
+  }
+
+  const sorted = [...points].sort((a, b) => a.timestamp - b.timestamp);
+  const sampled = samplePoints(sorted);
+  const firstPrice = sampled[0]?.price ?? 0;
+  const lastPrice = sampled[sampled.length - 1]?.price ?? 0;
+  const changePct = firstPrice > 0 ? ((lastPrice - firstPrice) / firstPrice) * 100 : 0;
+
+  return {
+    data: sampled,
+    changePct,
+    volume,
+  };
+};
+
 export function useAthleteTradeHistory(athleteId: string | undefined, range: TimeRange = '24h') {
   const queryClient = useQueryClient();
+  const pendingTicksRef = useRef<AthletePriceSnapshot[]>([]);
+  const flushTimeoutRef = useRef<number>();
 
-  // Subscribe to real-time trade updates
   useEffect(() => {
     if (!athleteId) return;
 
+    const priceKey = athletePriceQueryKey(athleteId);
+
+      const flushPendingTicks = () => {
+        const ticks = pendingTicksRef.current;
+        pendingTicksRef.current = [];
+        flushTimeoutRef.current = undefined;
+
+        if (ticks.length === 0) return;
+
+        const latest = ticks[ticks.length - 1];
+        queryClient.setQueryData<AthletePriceSnapshot | null>(priceKey, () => latest);
+
+        queryClient.setQueryData<ChartSeries | undefined>(['chart', athleteId, range], (current) => {
+          if (!current) return current;
+
+          const basePoints = [...current.data];
+          const appendedPoints = ticks.reduce<TradePoint[]>((acc, tick) => {
+            const timestamp = tick.updatedAt ? new Date(tick.updatedAt).getTime() : Date.now();
+            if (!Number.isFinite(timestamp)) {
+              return acc;
+            }
+            return [...acc, { timestamp, price: tick.price }];
+          }, basePoints);
+
+          const deduped = Array.from(new Map(appendedPoints.map((point) => [point.timestamp, point])).values()).sort(
+            (a, b) => a.timestamp - b.timestamp,
+          );
+
+          const windowed = trimToWindow(deduped, range);
+          return recalcSeries(windowed, current.volume);
+        });
+      };
+
+    const scheduleFlush = () => {
+      if (flushTimeoutRef.current !== undefined) return;
+      flushTimeoutRef.current = window.setTimeout(flushPendingTicks, 120);
+    };
+
     const channel = supabase
-      .channel('trade-updates')
+      .channel(`price-stream:${athleteId}`)
       .on(
         'postgres_changes',
         {
           event: 'INSERT',
           schema: 'public',
-          table: 'trades',
-          filter: `athlete_id=eq.${athleteId}`
+          table: 'athlete_prices',
+          filter: `athlete_id=eq.${athleteId}`,
         },
-        () => {
-          // Invalidate and refetch the trade history when a new trade occurs
-          queryClient.invalidateQueries({ 
-            queryKey: ['athlete-trade-history', athleteId, range] 
-          });
-        }
+        (payload) => {
+          const snapshot = payload.new as RealtimePricePayload | null;
+
+          if (!snapshot) return;
+
+          const updatedAt =
+            snapshot.updated_at ??
+            snapshot.updatedAt ??
+            snapshot.created_at ??
+            null;
+
+          const previous = queryClient.getQueryData<AthletePriceSnapshot | null>(priceKey);
+          const curve =
+            snapshot.curve_a !== undefined || snapshot.curve_b !== undefined || snapshot.curve_c !== undefined
+              ? {
+                  a: Number(snapshot.curve_a ?? previous?.curve.a ?? 0.0002),
+                  b: Number(snapshot.curve_b ?? previous?.curve.b ?? 0.02),
+                  c: Number(snapshot.curve_c ?? previous?.curve.c ?? 1),
+                }
+              : previous?.curve ?? { a: 0.0002, b: 0.02, c: 1 };
+
+          const formatted: AthletePriceSnapshot = {
+            athleteId: snapshot.athlete_id ?? athleteId,
+            price: Number(snapshot.price ?? previous?.price ?? 0),
+            supply: Number(snapshot.supply ?? previous?.supply ?? 0),
+            reserve: Number(snapshot.reserve ?? snapshot.treasury_balance ?? previous?.reserve ?? 0),
+            athleteRevenue: Number(snapshot.athleteRevenue ?? snapshot.athlete_earnings ?? previous?.athleteRevenue ?? 0),
+            updatedAt,
+            curve,
+          };
+
+          pendingTicksRef.current.push(formatted);
+          scheduleFlush();
+        },
       )
       .subscribe();
 
     return () => {
       supabase.removeChannel(channel);
+      if (flushTimeoutRef.current !== undefined) {
+        window.clearTimeout(flushTimeoutRef.current);
+      }
+      pendingTicksRef.current = [];
+      flushTimeoutRef.current = undefined;
     };
-  }, [athleteId, range, queryClient]);
+  }, [athleteId, queryClient, range]);
 
-  return useQuery({
-    queryKey: ['athlete-trade-history', athleteId, range],
+  const result = useQuery<ChartSeries>({
+    queryKey: ['chart', athleteId, range],
+    enabled: !!athleteId,
+    staleTime: 15 * 60_000,
     queryFn: async () => {
       if (!athleteId) return { data: [], changePct: 0, volume: 0 };
 
       const now = new Date();
-      const rangeHours: Record<Exclude<TimeRange, 'all'>, number> = {
-        '24h': 24,
-        '7d': 168,
-        '30d': 720,
-      };
-
       let query = supabase
         .from('trades')
         .select('created_at, price_after, qty, gross_amount, net_amount')
@@ -61,12 +191,11 @@ export function useAthleteTradeHistory(athleteId: string | undefined, range: Tim
         .order('created_at', { ascending: true });
 
       if (range !== 'all') {
-        const hoursAgo = rangeHours[range];
+        const hoursAgo = RANGE_WINDOWS[range];
         const startTime = new Date(now.getTime() - hoursAgo * 60 * 60 * 1000);
         query = query.gte('created_at', startTime.toISOString());
       }
 
-      // Fetch all trades for this athlete in the time range
       const { data: trades, error } = await query;
 
       if (error) {
@@ -74,7 +203,6 @@ export function useAthleteTradeHistory(athleteId: string | undefined, range: Tim
         return { data: [], changePct: 0, volume: 0 };
       }
 
-      // Calculate volume from all trades in range
       type TradeRow = Pick<
         Database['public']['Tables']['trades']['Row'],
         'created_at' | 'price_after' | 'qty' | 'gross_amount' | 'net_amount'
@@ -84,12 +212,12 @@ export function useAthleteTradeHistory(athleteId: string | undefined, range: Tim
 
       const volume = tradeRows.reduce((sum, trade) => {
         const gross = Number(trade.gross_amount);
-        if (Number.isFinite(gross) && gross > 0) {
+        if (Number.isFinite(gross) && gross !== 0) {
           return sum + Math.abs(gross);
         }
 
         const net = Number(trade.net_amount);
-        if (Number.isFinite(net) && net > 0) {
+        if (Number.isFinite(net) && net !== 0) {
           return sum + Math.abs(net);
         }
 
@@ -103,13 +231,12 @@ export function useAthleteTradeHistory(athleteId: string | undefined, range: Tim
       }, 0);
 
       if (!trades || trades.length === 0) {
-        // No trades yet - fetch current token data to show current price
         const { data: token } = await supabase
           .from('athlete_tokens')
           .select('supply, a, b, c')
           .eq('athlete_id', athleteId)
           .single();
-        
+
         if (token) {
           const curve = {
             a: token.a || 0.0002,
@@ -117,18 +244,10 @@ export function useAthleteTradeHistory(athleteId: string | undefined, range: Tim
             c: token.c || 1,
           };
           const currentPrice = priceAt(token.supply || 0, curve);
-          
-          // Return a single point for the current price
-          return {
-            data: [{
-              timestamp: now.getTime(),
-              price: currentPrice,
-            }],
-            changePct: 0,
-            volume: 0,
-          };
+
+          return recalcSeries([{ timestamp: now.getTime(), price: currentPrice }], 0);
         }
-        
+
         return { data: [], changePct: 0, volume: 0 };
       }
 
@@ -144,25 +263,17 @@ export function useAthleteTradeHistory(athleteId: string | undefined, range: Tim
         .filter((point): point is TradePoint => Boolean(point))
         .sort((a, b) => a.timestamp - b.timestamp);
 
-      // Down-sample if needed to keep chart performant
-      const MAX_POINTS = 240;
-      let sampledPoints = points;
-      if (points.length > MAX_POINTS) {
-        const step = Math.ceil(points.length / MAX_POINTS);
-        sampledPoints = points.filter((_, index) => index % step === 0);
-        const lastPoint = points[points.length - 1];
-        if (sampledPoints[sampledPoints.length - 1]?.timestamp !== lastPoint.timestamp) {
-          sampledPoints = [...sampledPoints, lastPoint];
-        }
-      }
+      const windowed = trimToWindow(points, range);
 
-      // Calculate price change percentage
-      const firstPrice = sampledPoints[0]?.price || 0;
-      const lastPrice = sampledPoints[sampledPoints.length - 1]?.price || 0;
-      const changePct = firstPrice > 0 ? ((lastPrice - firstPrice) / firstPrice) * 100 : 0;
-
-      return { data: sampledPoints, changePct, volume };
+      return recalcSeries(windowed, volume);
     },
-    enabled: !!athleteId,
   });
+
+  return useMemo(
+    () => ({
+      ...result,
+      data: result.data ?? { data: [], changePct: 0, volume: 0 },
+    }),
+    [result],
+  );
 }

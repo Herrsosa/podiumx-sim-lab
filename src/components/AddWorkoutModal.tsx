@@ -10,12 +10,14 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { CelebrationModal } from './CelebrationModal';
 import { celebrateAura } from '@/lib/celebrate';
+import type { WorkoutMutationResult } from '@/hooks/useWorkouts';
+import { mapPostRowToLockerWorkout, mapPostRowToPost } from '@/hooks/useWorkouts';
 
 interface AddWorkoutModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   athleteId: string;
-  onSuccess: () => void;
+  onSuccess: (result: WorkoutMutationResult) => void;
 }
 
 export default function AddWorkoutModal({ open, onOpenChange, athleteId, onSuccess }: AddWorkoutModalProps) {
@@ -80,7 +82,7 @@ export default function AddWorkoutModal({ open, onOpenChange, athleteId, onSucce
         visibility === 'supporters' ? 1 : visibility === 'backers' ? 10 : 0;
 
       // Insert post
-      const { error: postError } = await supabase
+      const { data: insertData, error: postError } = await supabase
         .from('posts')
         .insert({
           author_id: athleteId,
@@ -90,14 +92,22 @@ export default function AddWorkoutModal({ open, onOpenChange, athleteId, onSucce
           token_gated: visibility !== 'public',
           visibility,
           min_tokens_required: minTokensRequired,
-        });
+        })
+        .select('id, created_at, author_id, workout_json, image_url, text, visibility, min_tokens_required, token_gated, strava_activity_id')
+        .single();
 
       if (postError) throw postError;
+      if (!insertData) throw new Error('Workout was created but details are missing');
 
       setShowCelebration(true);
       celebrateAura();
 
-      onSuccess();
+      const workout = mapPostRowToLockerWorkout(
+        insertData as Parameters<typeof mapPostRowToLockerWorkout>[0],
+      );
+      const post = mapPostRowToPost(insertData as Parameters<typeof mapPostRowToPost>[0]);
+
+      onSuccess({ workout, post });
       onOpenChange(false);
       
       // Reset form

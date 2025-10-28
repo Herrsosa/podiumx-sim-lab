@@ -5,6 +5,7 @@ import { Card } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { useMyAthlete } from '@/hooks/useMyAthlete';
 
 const LockerWorkouts = lazy(() => import('@/components/myathlete/LockerWorkouts'));
 const LockerResources = lazy(() => import('@/components/myathlete/LockerResources'));
@@ -22,6 +23,7 @@ export default function Locker() {
   const [searchParams] = useSearchParams();
   const params = useParams<{ section?: string; conversationId?: string }>();
   const navigate = useNavigate();
+  const { data: athleteData, isLoading } = useMyAthlete();
 
   const sectionFromParams = params.section;
   const fallbackFromQuery = searchParams.get('tab');
@@ -46,6 +48,24 @@ export default function Locker() {
         : `/my-athlete/locker/${nextTab}`;
     navigate(nextPath);
   };
+
+  if (isLoading) {
+    return (
+      <div className="container mx-auto max-w-6xl space-y-6 px-4 py-8">
+        <Skeleton className="h-96 w-full" />
+      </div>
+    );
+  }
+
+  if (!athleteData?.athlete) {
+    return (
+      <div className="container mx-auto max-w-6xl space-y-6 px-4 py-8">
+        <p className="text-center text-muted-foreground">Unable to load athlete data</p>
+      </div>
+    );
+  }
+
+  const { athlete } = athleteData;
 
   return (
     <div className="container mx-auto max-w-6xl space-y-6 px-4 py-8">
@@ -84,11 +104,15 @@ export default function Locker() {
             </TabsContent>
 
             <TabsContent value="chat">
-              <LockerChat />
+              <LockerChat
+                athleteId={athlete.id}
+                athleteName={athlete.name}
+                athleteSlug={athlete.slug}
+              />
             </TabsContent>
 
             <TabsContent value="messages">
-              <LockerMessages />
+              <LockerMessages athleteId={athlete.id} athleteName={athlete.name} />
             </TabsContent>
           </Suspense>
         </Tabs>

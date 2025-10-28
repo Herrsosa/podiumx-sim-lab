@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Activity, CheckCircle2, XCircle, Play, Calendar, MapPin, Heart, TrendingUp } from 'lucide-react';
-import { useStravaConnection } from '@/hooks/useStravaConnection';
+import { useStravaConnection, stravaConnectionQueryKey } from '@/hooks/useStravaConnection';
 import { useActivities } from '@/hooks/useActivities';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -11,10 +11,13 @@ import { useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { Skeleton } from '@/components/ui/skeleton';
 import { prepareStravaAuthorizeUrl } from '@/utils/stravaAuth';
+import { useUser } from '@/store/auth';
 
 export default function StravaTraining() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const user = useUser();
+  const userId = user?.id;
   const { data: connection, isLoading: connectionLoading } = useStravaConnection();
   const { data: activities, isLoading: activitiesLoading } = useActivities();
   const [importing, setImporting] = useState(false);
@@ -53,7 +56,11 @@ export default function StravaTraining() {
 
       if (error) throw error;
 
-      queryClient.invalidateQueries({ queryKey: ['strava-connection'] });
+      if (userId) {
+        queryClient.invalidateQueries({ queryKey: stravaConnectionQueryKey(userId) });
+      } else {
+        queryClient.invalidateQueries({ queryKey: ['connections'] });
+      }
       
       toast({
         title: 'Disconnected',
@@ -88,7 +95,9 @@ export default function StravaTraining() {
 
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ['activities'] }),
-        queryClient.invalidateQueries({ queryKey: ['strava-connection'] }),
+        userId
+          ? queryClient.invalidateQueries({ queryKey: stravaConnectionQueryKey(userId) })
+          : queryClient.invalidateQueries({ queryKey: ['connections'] }),
       ]);
 
       toast({
@@ -100,7 +109,11 @@ export default function StravaTraining() {
       const message = (error instanceof Error ? error.message : null) || 'Failed to import Strava activities';
 
       if (message.toLowerCase().includes('strava authorization has expired')) {
-        await queryClient.invalidateQueries({ queryKey: ['strava-connection'] });
+        if (userId) {
+          await queryClient.invalidateQueries({ queryKey: stravaConnectionQueryKey(userId) });
+        } else {
+          await queryClient.invalidateQueries({ queryKey: ['connections'] });
+        }
       }
 
       toast({

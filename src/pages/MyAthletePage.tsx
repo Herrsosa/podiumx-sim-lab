@@ -1,6 +1,7 @@
-import { useState, useMemo, useCallback, useEffect, useId, useRef } from 'react';
+import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
+import type { TimeRangeKey } from '@/utils/chartData';
 import { Plus, TrendingUp, Edit, Trash2, MessageSquare, DollarSign, Activity, Share2, MessageCircle } from 'lucide-react';
-import { ComposedChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Bar, type TooltipProps } from 'recharts';
+import { useSearchParams } from 'react-router-dom';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { EarningsSection } from '@/components/EarningsSection';
 import { Button } from '@/components/ui/button';
@@ -16,21 +17,22 @@ import { useMyAthlete } from '@/hooks/useMyAthlete';
 import { useAthleteTrades } from '@/hooks/useAthleteTrades';
 import { useWorkoutEditor } from '@/hooks/useWorkoutEditor';
 import { useUser } from '@/store/auth';
-import { StackedCircles, POS_NEON_COLOR } from '@/components/charts/StackedCircles';
-import { aggregatePosByDay, startOfUtcDay } from '@/utils/chartData';
-
 import { supabase } from '@/integrations/supabase/client';
 import AddWorkoutModal from '@/components/AddWorkoutModal';
 import EditWorkoutModal from '@/components/EditWorkoutModal';
 import { StravaCard } from '@/components/strava/StravaCard';
 import TokengatedChat from '@/components/TokengatedChat';
 import { useQueryClient } from '@tanstack/react-query';
+import type { InfiniteData } from '@tanstack/react-query';
 import { MobileActionBar } from '@/components/MobileActionBar';
-import { resolveImageUrl } from '@/utils/avatar';
+import { SupabaseResponsiveImage } from '@/components/SupabaseResponsiveImage';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import MobileMyAthletes from '@/pages/my-athletes/MobileMyAthletes';
 import { ProfileDetailsCard } from '@/components/my-athlete/ProfileDetailsCard';
 import type { EditableProfile } from '@/pages/my-athletes/types';
+import { PersonalConsole } from '@/pages/MyAthlete/PersonalConsole';
+import { LockerView } from '@/pages/MyAthlete/LockerView';
+import { buildPriceSeries, type PriceSeriesPoint } from '@/lib/charting/engine';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -41,9 +43,12 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import type { MyAthletePageResult } from '@/hooks/useMyAthlete';
+import type { WorkoutMutationResult } from '@/hooks/useWorkouts';
 
 export default function MyAthletePage() {
   const user = useUser();
+  const [searchParams, setSearchParams] = useSearchParams();
   const {
     data: myAthletePage,
     pages,
@@ -54,6 +59,31 @@ export default function MyAthletePage() {
   } = useMyAthlete();
   const { data: athleteTrades } = useAthleteTrades(user?.id || '');
   const queryClient = useQueryClient();
+  const updateMyAthleteCache = useCallback(
+    (mutator: (prev: MyAthletePageResult['athlete']) => MyAthletePageResult['athlete']) => {
+      if (!user?.id) return;
+      queryClient.setQueryData<InfiniteData<MyAthletePageResult> | undefined>(
+        ['my-athlete', user.id],
+        (current) => {
+          if (!current) return current;
+          const pages = current.pages.map((page) =>
+            page?.athlete
+              ? {
+                  ...page,
+                  athlete: mutator(page.athlete),
+                }
+              : page,
+          );
+
+          return {
+            ...current,
+            pages,
+          };
+        },
+      );
+    },
+    [queryClient, user?.id],
+  );
   const isDesktop = useMediaQuery('(min-width: 768px)', true);
   const [isEditing, setIsEditing] = useState(false);
   const [savingProfile, setSavingProfile] = useState(false);
@@ -62,6 +92,13 @@ export default function MyAthletePage() {
   const [workoutToDelete, setWorkoutToDelete] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'workouts' | 'community' | 'messages' | 'earnings'>('workouts');
   const [newAvatarFile, setNewAvatarFile] = useState<File | null>(null);
+  const [chartTimeRange, setChartTimeRange] = useState<TimeRangeKey>('7d');
+  
+  // Tab management: "personal" or "locker"
+  const currentTab = searchParams.get('tab') || 'personal';
+  const setTab = (tab: 'personal' | 'locker') => {
+    setSearchParams({ tab });
+  };
   const messagesSectionRef = useRef<HTMLDivElement | null>(null);
 
   const [editedProfile, setEditedProfile] = useState<EditableProfile>({
@@ -118,6 +155,21 @@ export default function MyAthletePage() {
     [],
   );
 
+  const handleAvatarFileSelected = useCallback(
+    (file: File | null) => {
+      if (!file) {
+        setNewAvatarFile(null);
+        updateEditedProfile({ avatar: myAthletePage?.athlete?.avatar ?? '' });
+        return;
+      }
+
+      setNewAvatarFile(file);
+      const previewUrl = URL.createObjectURL(file);
+      updateEditedProfile({ avatar: previewUrl });
+    },
+    [myAthletePage?.athlete?.avatar, updateEditedProfile],
+  );
+
   const workouts = useMemo(() => {
     const allPosts = pages.flatMap(p => p?.athlete?.posts ?? []);
     return allPosts.map(post => ({
@@ -145,154 +197,34 @@ export default function MyAthletePage() {
     };
   }, [editingWorkout]);
 
-  const priceHistory = useMemo(() => {
-    const athlete = myAthletePage?.athlete;
-    if (!user?.id || !athleteTrades || !athlete) return [];
+  const priceInputs = useMemo(() => {
+    if (!athleteTrades) return [];
+    return athleteTrades
+      .map((trade) => {
+        const timestamp = typeof trade.timestamp === 'number'
+          ? trade.timestamp
+          : new Date(trade.created_at).getTime();
+        const price = Number(trade.price_after);
+        if (!Number.isFinite(timestamp) || !Number.isFinite(price)) {
+          return null;
+        }
+        return { timestamp, price };
+      })
+      .filter((entry): entry is { timestamp: number; price: number } => entry !== null);
+  }, [athleteTrades]);
 
-    const tradesByDay = new Map<number, { t: number; price: number }>();
-
-    for (const trade of athleteTrades) {
-      const rawTimestamp = trade.timestamp;
-      const t = new Date(rawTimestamp).getTime();
-      if (!Number.isFinite(t)) {
-        continue;
-      }
-
-      const price =
-        typeof trade.price_after === 'number'
-          ? trade.price_after
-          : Number(trade.price_after);
-
-      const resolvedPrice = Number.isFinite(price) ? price : athlete.price;
-      const dayStart = startOfUtcDay(t);
-      const existing = tradesByDay.get(dayStart);
-
-      if (!existing || t > existing.t) {
-        tradesByDay.set(dayStart, {
-          t,
-          price: resolvedPrice,
-        });
-      }
-    }
-
-    const nowMs = Date.now();
-    const nowDay = startOfUtcDay(nowMs);
-    const latestForToday = tradesByDay.get(nowDay);
-    if (!latestForToday || nowMs > latestForToday.t) {
-      tradesByDay.set(nowDay, {
-        t: nowMs,
-        price: athlete.price,
-      });
-    }
-
-    return Array.from(tradesByDay.values()).sort((a, b) => a.t - b.t);
-  }, [user?.id, athleteTrades, myAthletePage]);
-
-  const posDailyPoints = useMemo(
-    () => aggregatePosByDay(myAthletePage?.athlete?.posts, 'all'),
-    [myAthletePage?.athlete?.posts],
-  );
-
-  const posCountByDay = useMemo(
-    () => new Map(posDailyPoints.map((point) => [startOfUtcDay(point.dateMs), point.posCount])),
-    [posDailyPoints],
-  );
-
-  const chartData = useMemo(() => {
-    const dayWithPrice = new Set<number>();
-
-    const baseData = priceHistory.map((point) => {
-      const dayStart = startOfUtcDay(point.t);
-      dayWithPrice.add(dayStart);
-
-      return {
-        t: point.t,
-        price: point.price,
-        posCount: posCountByDay.get(dayStart) ?? 0,
-      };
+  const filledPricePoints = useMemo(() => {
+    return buildPriceSeries(priceInputs, chartTimeRange, {
+      fallbackPrice: myAthletePage?.athlete?.price,
     });
-
-    const posOnlyData = posDailyPoints
-      .filter((posPoint) => !dayWithPrice.has(posPoint.dateMs))
-      .map((posPoint) => ({
-        t: posPoint.dateMs,
-        price: null,
-        posCount: posPoint.posCount,
-      }));
-
-    return [...baseData, ...posOnlyData].sort((a, b) => a.t - b.t);
-  }, [posCountByDay, posDailyPoints, priceHistory]);
-
-  const posDomain = useMemo<[number, number]>(() => {
-    const maxPos = posDailyPoints.reduce((max, point) => Math.max(max, point.posCount), 0);
-    const upper = maxPos > 0 ? maxPos + 1 : 1;
-    return [0, upper];
-  }, [posDailyPoints]);
-
-  const xDomain = useMemo<[number, number]>(() => {
-    if (chartData.length === 0) {
-      const now = Date.now();
-      const dayMs = 24 * 60 * 60 * 1000;
-      return [now - dayMs, now + dayMs];
-    }
-    const dayMs = 24 * 60 * 60 * 1000;
-    const min = chartData[0].t;
-    const max = chartData[chartData.length - 1].t;
-    return [min - dayMs * 0.5, max + dayMs * 0.75];
-  }, [chartData]);
-
-  const glowFilterId = useId().replace(/:/g, '');
-
-  const formatXAxisTick = useCallback((value: number) => {
-    const date = new Date(value);
-    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-  }, []);
-
-  const formatTooltipLabel = useCallback((value: number) => {
-    const date = new Date(value);
-    return date.toLocaleString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
+  }, [priceInputs, myAthletePage?.athlete?.price, chartTimeRange]);
+  const priceSeries = useMemo<PriceSeriesPoint[]>(() => {
+    return buildPriceSeries(priceInputs, chartTimeRange, {
+      fallbackPrice: myAthletePage?.athlete?.price,
     });
-  }, []);
+  }, [priceInputs, myAthletePage?.athlete?.price, chartTimeRange]);
 
-  const renderTooltip = useCallback(({ active, label, payload }: TooltipProps<number, string>) => {
-    if (!active || !payload || payload.length === 0 || typeof label !== 'number') {
-      return null;
-    }
-
-    const priceEntry = payload.find((item) => item && item.dataKey === 'price');
-    const posEntry = payload.find((item) => item && item.dataKey === 'posCount');
-
-    const price = typeof priceEntry?.value === 'number' ? priceEntry.value : undefined;
-    const dateLabel = formatTooltipLabel(label);
-    const dayStart = startOfUtcDay(label);
-    const posCount =
-      typeof posEntry?.value === 'number' ? posEntry.value : posCountByDay.get(dayStart) ?? 0;
-
-    return (
-      <div className="rounded-lg border border-border/60 bg-card/90 px-3 py-2 shadow-lg">
-        <div className="text-xs text-muted-foreground">{dateLabel}</div>
-        {typeof price === 'number' && (
-          <div className="text-sm font-semibold text-foreground">${price.toFixed(4)}</div>
-        )}
-        <div className="mt-1 text-xs text-muted-foreground">
-          PoS: <span className="font-medium text-foreground">{posCount}</span>
-        </div>
-      </div>
-    );
-  }, [formatTooltipLabel, posCountByDay]);
-
-  const handleAvatarFileSelected = useCallback(
-    (file: File | null) => {
-      if (!file) return;
-      setNewAvatarFile(file);
-      updateEditedProfile({ avatar: URL.createObjectURL(file) });
-    },
-    [updateEditedProfile],
-  );
+  const hasRealPriceHistory = useMemo(() => priceSeries.some((point) => !point.carried), [priceSeries]);
 
   const handleStartEditProfile = useCallback(() => {
     resetEditedProfile();
@@ -364,10 +296,24 @@ export default function MyAthletePage() {
     }
   };
 
-  const handleWorkoutSuccess = useCallback(() => {
-    queryClient.invalidateQueries({ queryKey: ['my-athlete', user?.id] });
-    setAddWorkoutOpen(false);
-  }, [queryClient, user?.id]);
+  const handleWorkoutCreated = useCallback(
+    (result: WorkoutMutationResult) => {
+      updateMyAthleteCache((prev) => {
+        const workoutData = result.workout.workout;
+        const nextWorkouts = workoutData
+          ? [workoutData, ...prev.workouts.filter((workout) => workout.id !== workoutData.id)]
+          : prev.workouts;
+        const nextPosts = [result.post, ...prev.posts.filter((post) => post.id !== result.post.id)];
+        return {
+          ...prev,
+          workouts: nextWorkouts,
+          posts: nextPosts,
+        };
+      });
+      setAddWorkoutOpen(false);
+    },
+    [updateMyAthleteCache],
+  );
 
   const handleDeleteClick = (workoutId: string) => {
     setWorkoutToDelete(workoutId);
@@ -387,8 +333,11 @@ export default function MyAthletePage() {
 
       toast.success('Workout deleted');
       
-      // Refresh data
-      queryClient.invalidateQueries({ queryKey: ['my-athlete', user?.id] });
+      updateMyAthleteCache((prev) => ({
+        ...prev,
+        workouts: prev.workouts.filter((workout) => workout.id !== workoutToDelete),
+        posts: prev.posts.filter((post) => post.id !== workoutToDelete),
+      }));
     } catch (error: unknown) {
       toast.error((error as Error).message || 'Failed to delete workout');
     } finally {
@@ -445,6 +394,8 @@ export default function MyAthletePage() {
     }, 100);
   }, []);
 
+  const isMobile = !isDesktop;
+
   const modalStack = (
     <>
       {user && (
@@ -452,7 +403,7 @@ export default function MyAthletePage() {
           open={addWorkoutOpen}
           onOpenChange={setAddWorkoutOpen}
           athleteId={user.id}
-          onSuccess={handleWorkoutSuccess}
+          onSuccess={handleWorkoutCreated}
         />
       )}
 
@@ -461,8 +412,19 @@ export default function MyAthletePage() {
           open={open}
           onOpenChange={setOpen}
           workoutPost={normalizedEditingWorkout}
-          onSuccess={() => {
-            queryClient.invalidateQueries({ queryKey: ['my-athlete', user?.id] });
+          onSuccess={(result) => {
+            updateMyAthleteCache((prev) => {
+              const updatedWorkout = result.workout.workout;
+              const nextWorkouts = updatedWorkout
+                ? prev.workouts.map((item) => (item.id === updatedWorkout.id ? { ...item, ...updatedWorkout } : item))
+                : prev.workouts;
+              const nextPosts = prev.posts.map((post) => (post.id === result.post.id ? result.post : post));
+              return {
+                ...prev,
+                workouts: nextWorkouts,
+                posts: nextPosts,
+              };
+            });
             setOpen(false);
           }}
         />
@@ -497,12 +459,11 @@ export default function MyAthletePage() {
           athlete={myAthletePage?.athlete}
           workouts={workouts}
           posts={myAthletePage?.athlete?.posts ?? []}
-          chartData={chartData}
-          renderTooltip={renderTooltip}
-          posDomain={posDomain}
-          xDomain={xDomain}
-          glowFilterId={glowFilterId}
+          priceSeries={priceSeries}
+          hasRealTrades={hasRealPriceHistory}
           trades={athleteTrades ?? []}
+          timeRange={chartTimeRange}
+          onTimeRangeChange={setChartTimeRange}
           onAddWorkout={() => setAddWorkoutOpen(true)}
           editedProfile={editedProfile}
           isEditingProfile={isEditing}
@@ -524,247 +485,67 @@ export default function MyAthletePage() {
 
   return (
     <>
-      <div className="container mx-auto px-4 pb-32 pt-8 md:pb-8">
+      <div className="container mx-auto px-4 pb-32 pt-8 md:pb-8 overflow-x-hidden">
       <div className="mb-8">
         <h1 className="mb-2 text-4xl font-bold">My Athlete Profile</h1>
         <p className="text-muted-foreground">Manage your profile and workout timeline</p>
       </div>
 
-      <ProfileDetailsCard
-        className="mb-6"
-        athlete={myAthletePage?.athlete}
-        editedProfile={editedProfile}
-        isEditing={isEditing}
-        savingProfile={savingProfile}
-        onStartEdit={handleStartEditProfile}
-        onCancelEdit={handleCancelEditProfile}
-        onSave={handleSaveProfile}
-        onFieldChange={updateEditedProfile}
-        onAvatarSelect={handleAvatarFileSelected}
-      />
-
-      {/* Price Chart - Only for Athletes */}
-      {myAthletePage?.athlete && priceHistory.length > 0 && (
-        <Card className="glass-card mb-6">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <TrendingUp className="h-5 w-5" />
-              PodiumPass Price Chart
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid gap-4 sm:grid-cols-3 mb-6">
-              <div>
-                <p className="text-sm text-muted-foreground">Current Price</p>
-                <p className="text-2xl font-bold">${myAthletePage?.athlete?.price.toFixed(4)}</p>
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Market Cap</p>
-                <p className="text-2xl font-bold">${myAthletePage?.athlete?.marketCap.toFixed(2)}</p>
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">24h Volume</p>
-                <p className="text-2xl font-bold">${myAthletePage?.athlete?.volume24h.toFixed(2)}</p>
-              </div>
-            </div>
-            <ResponsiveContainer width="100%" height={300}>
-              <ComposedChart data={chartData} margin={{ top: 24, right: 24, bottom: 56, left: 16 }}>
-                <defs>
-                  <filter id={`posGlow-${glowFilterId}`} x="-200%" y="-200%" width="500%" height="500%">
-                    <feGaussianBlur stdDeviation="5" result="coloredBlur" />
-                    <feMerge>
-                      <feMergeNode in="coloredBlur" />
-                      <feMergeNode in="SourceGraphic" />
-                    </feMerge>
-                  </filter>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.18} />
-                <XAxis
-                  dataKey="t"
-                  type="number"
-                  scale="time"
-                  domain={xDomain}
-                  padding={{ right: 18 }}
-                  tickFormatter={formatXAxisTick}
-                  tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
-                  stroke="hsl(var(--muted-foreground))"
-                  axisLine={false}
-                  tickLine={false}
-                />
-                <YAxis
-                  domain={['auto', 'auto']}
-                  tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
-                  stroke="hsl(var(--muted-foreground))"
-                  tickFormatter={(value) => `$${value.toFixed(2)}`}
-                  width={60}
-                  axisLine={false}
-                  tickLine={false}
-                />
-                <YAxis yAxisId="pos" domain={posDomain} hide />
-                <RechartsTooltip content={renderTooltip} cursor={{ stroke: 'hsl(var(--border))', strokeDasharray: '3 3' }} />
-                <Bar
-                  dataKey="posCount"
-                  yAxisId="pos"
-                  fill="transparent"
-                  barSize={56}
-                  shape={
-                    <StackedCircles
-                      color={POS_NEON_COLOR}
-                      filterId={`posGlow-${glowFilterId}`}
-                      maxCircles={6}
-                      gap={8}
-                      radius={11}
-                      hitboxSize={56}
-                    />
-                  }
-                />
-                <Line
-                  type="monotone"
-                  dataKey="price"
-                  stroke={POS_NEON_COLOR}
-                  strokeWidth={2}
-                  strokeOpacity={0.65}
-                  dot={false}
-                  connectNulls
-                  strokeLinecap="round"
-                />
-              </ComposedChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Tabs for Workouts, Community Chat, Messages, and Earnings */}
-      <Tabs
-        value={activeTab}
-        onValueChange={(value) => setActiveTab(value as 'workouts' | 'community' | 'messages' | 'earnings')}
-        className="w-full"
-      >
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="workouts">Workout Timeline</TabsTrigger>
-          <TabsTrigger value="community" className="gap-2">
-            <MessageSquare className="h-4 w-4" />
-            Community Chat
-          </TabsTrigger>
-          <TabsTrigger value="messages" className="gap-2">
-            <MessageSquare className="h-4 w-4" />
-            Direct Messages
-          </TabsTrigger>
-          <TabsTrigger value="earnings" className="gap-2">
-            <DollarSign className="h-4 w-4" />
-            Earnings
-          </TabsTrigger>
+      {/* Top-level tabs: Personal vs View Locker */}
+      <Tabs value={currentTab} onValueChange={(v) => setTab(v as 'personal' | 'locker')} className="w-full mb-6">
+        <TabsList className="grid w-full grid-cols-2 max-w-md">
+          <TabsTrigger value="personal">Personal</TabsTrigger>
+          <TabsTrigger value="locker">View Locker</TabsTrigger>
         </TabsList>
 
-        {/* Workouts Tab */}
-        <TabsContent value="workouts">
-          <Card className="glass-card">
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle>Workout Timeline</CardTitle>
-                <Button className="gap-2" onClick={() => setAddWorkoutOpen(true)}>
-                  <Plus className="h-4 w-4" />
-                  Add Workout
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent>
-              {!workouts || workouts.length === 0 ? (
-                <div className="py-16 text-center text-muted-foreground">
-                  No workouts yet. Add your first workout to get started!
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {workouts.map((workout) => (
-                    <WorkoutCard
-                      key={workout.id}
-                      workout={workout}
-                      onEdit={() => handleEditWorkout(workout)}
-                      onDelete={() => handleDeleteClick(workout.id)}
-                    />
-                  ))}
-                </div>
-              )}
-              {hasNextPage && (
-                <div className="flex justify-center py-6">
-                  <Button onClick={() => fetchNextPage()} disabled={isFetchingNextPage}>
-                    {isFetchingNextPage ? 'Loading...' : 'Load More'}
-                  </Button>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-          <StravaCard className="mt-4" />
+        <TabsContent value="personal" className="mt-6">
+          <PersonalConsole
+            athlete={myAthletePage?.athlete}
+            workouts={workouts}
+            posts={myAthletePage?.athlete?.posts ?? []}
+            athleteTrades={athleteTrades ?? []}
+            priceSeries={priceSeries}
+            editedProfile={editedProfile}
+            isEditing={isEditing}
+            savingProfile={savingProfile}
+            onStartEditProfile={handleStartEditProfile}
+            onCancelEditProfile={handleCancelEditProfile}
+            onSaveProfile={handleSaveProfile}
+            onProfileFieldChange={updateEditedProfile}
+            onAvatarSelect={handleAvatarFileSelected}
+            onWorkoutEdit={handleEditWorkout}
+            onWorkoutDelete={(id) => {
+              setWorkoutToDelete(id);
+              setDeleteDialogOpen(true);
+            }}
+            onAddWorkout={() => setAddWorkoutOpen(true)}
+            hasNextPage={Boolean(hasNextPage)}
+            fetchNextPage={hasNextPage ? () => { void fetchNextPage(); } : undefined}
+            isFetchingNextPage={isFetchingNextPage}
+            timeRange={chartTimeRange}
+            onTimeRangeChange={setChartTimeRange}
+          />
         </TabsContent>
 
-        {/* Community Chat Tab */}
-        <TabsContent value="community">
-          {myAthletePage && user && (
-            <TokengatedChat
-              athleteId={user.id}
-              athleteName={myAthletePage?.athlete?.name || ''}
-              userHoldings={1}
-              onBuyClick={() => {}}
-            />
-          )}
-        </TabsContent>
-
-        {/* Messages Tab */}
-        <TabsContent value="messages">
-          <div ref={messagesSectionRef}>
-            <Card className="glass-card p-8 text-center">
-              <p className="text-muted-foreground">Direct messages feature coming soon!</p>
-            </Card>
-          </div>
-        </TabsContent>
-
-        {/* Earnings Tab */}
-        <TabsContent value="earnings">
-          <Card className="glass-card">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <DollarSign className="h-5 w-5" />
-                Athlete Earnings
-              </CardTitle>
-              <p className="text-sm text-muted-foreground">
-                Track your earnings from trading fees on your PodiumPass
-              </p>
-            </CardHeader>
-            <CardContent>
-              <EarningsSection athleteId={user?.id} />
-            </CardContent>
-          </Card>
+        <TabsContent value="locker" className="mt-6">
+          <LockerView athleteId={user?.id} athleteName={myAthletePage?.athlete?.name} />
         </TabsContent>
       </Tabs>
 
-      <MobileActionBar
-        actions={[
-          {
-            id: 'my-athlete-log-pos',
-            label: 'Log PoS',
-            icon: <Activity className="h-4 w-4" aria-hidden="true" />,
-            variant: 'primary',
-            onPress: handleMobileLogPos,
-            ariaLabel: 'Log proof-of-sweat workout',
-          },
-          {
-            id: 'my-athlete-share',
-            label: 'Share',
-            icon: <Share2 className="h-4 w-4" aria-hidden="true" />,
-            variant: 'secondary',
-            onPress: handleMobileShare,
-            ariaLabel: 'Share your athlete profile',
-          },
-          {
-            id: 'my-athlete-message',
-            label: 'Message',
-            icon: <MessageCircle className="h-4 w-4" aria-hidden="true" />,
-            variant: 'ghost',
-            onPress: handleMobileMessage,
-            ariaLabel: 'Open messages',
-          },
-        ]}
-      />
+      {isMobile && (
+        <MobileActionBar
+          actions={[
+            {
+              id: 'add-pos',
+              label: 'Add Proof of Sweat',
+              icon: <Activity className="h-5 w-5" aria-hidden="true" />,
+              variant: 'primary',
+              onPress: handleMobileLogPos,
+              ariaLabel: 'Add proof-of-sweat workout',
+            },
+          ]}
+        />
+      )}
     </div>
       {modalStack}
     </>
@@ -821,20 +602,26 @@ function WorkoutCard({
           {workout.mediaUrl && (
             <div className="mt-2">
               {workout.mediaType === 'image' ? (
-                <img
-                  src={resolveImageUrl(workout.mediaUrl, { width: 360 })}
-                  alt="Workout"
-                  width={360}
-                  height={240}
-                  loading="lazy"
-                  className="h-32 w-48 rounded-lg object-cover"
+                <SupabaseResponsiveImage
+                  src={workout.mediaUrl}
+                  alt={`${workout.type} workout media`}
+                  widths={[200, 320, 480]}
+                  sizes="(max-width: 768px) 60vw, 192px"
+                  aspectRatio={3 / 2}
+                  className="w-48 overflow-hidden rounded-lg border border-border/40 bg-muted/30"
                 />
               ) : (
-                <video
-                  src={workout.mediaUrl}
-                  className="h-32 w-48 rounded-lg object-cover"
-                  controls
-                />
+                <div
+                  className="w-48 overflow-hidden rounded-lg border border-border/40 bg-muted/30"
+                  style={{ aspectRatio: 3 / 2 }}
+                >
+                  <video
+                    src={workout.mediaUrl}
+                    className="h-full w-full object-cover"
+                    controls
+                    preload="metadata"
+                  />
+                </div>
               )}
             </div>
           )}

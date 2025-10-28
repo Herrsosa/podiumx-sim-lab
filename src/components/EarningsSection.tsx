@@ -4,7 +4,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { useAthleteEarnings } from '@/hooks/useAthleteEarnings';
 import { formatMoney, formatNumber, safeNumber } from '@/lib/format';
 
-type TimeRange = '24h' | '7d' | '30d' | 'all';
+type TimeRange = '7d' | '30d' | 'all';
 
 export function EarningsSection({ athleteId }: { athleteId?: string }) {
   const [range, setRange] = useState<TimeRange>('all');
@@ -30,7 +30,7 @@ export function EarningsSection({ athleteId }: { athleteId?: string }) {
   return (
     <div className="space-y-4">
       <div className="flex gap-2">
-        {(['24h', '7d', '30d', 'all'] as TimeRange[]).map((r) => (
+        {(['7d', '30d', 'all'] as TimeRange[]).map((r) => (
           <Button
             key={r}
             variant={range === r ? 'default' : 'outline'}

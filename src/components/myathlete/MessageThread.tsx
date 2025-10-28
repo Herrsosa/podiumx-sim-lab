@@ -14,9 +14,10 @@ import { FixedSizeList as List, ListChildComponentProps } from 'react-window';
 interface MessageThreadProps {
   conversationId: string;
   onBack: () => void;
+  title?: string;
 }
 
-export function MessageThread({ conversationId, onBack }: MessageThreadProps) {
+export function MessageThread({ conversationId, onBack, title = 'Messages' }: MessageThreadProps) {
   const user = useUser();
   const [messageInput, setMessageInput] = useState('');
   const listRef = useRef<List>(null);
@@ -62,7 +63,7 @@ export function MessageThread({ conversationId, onBack }: MessageThreadProps) {
         <Button variant="ghost" size="icon" onClick={onBack} className="md:hidden">
           <ArrowLeft className="h-5 w-5" />
         </Button>
-        <h3 className="font-semibold">Messages</h3>
+        <h3 className="font-semibold">{title}</h3>
       </div>
 
       {/* Messages */}

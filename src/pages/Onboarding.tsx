@@ -65,9 +65,8 @@ export default function Onboarding() {
   const [handleValidationStatus, setHandleValidationStatus] = useState<'idle' | 'checking' | 'available' | 'taken'>('idle');
   const [handleValidationError, setHandleValidationError] = useState<string | null>(null);
 
-  // Fan name validation
-  const [nameValidationStatus, setNameValidationStatus] = useState<'idle' | 'checking' | 'available' | 'taken'>('idle');
-  const [nameValidationError, setNameValidationError] = useState<string | null>(null);
+  // Fan name validation - not needed for fans, just check if filled
+  const isFanNameValid = name.trim().length > 0;
 
   useEffect(() => {
     const handler = setTimeout(async () => {
@@ -520,9 +519,7 @@ export default function Onboarding() {
                   placeholder="Your name"
                 />
                 <div className="text-xs text-muted-foreground h-4 mt-1">
-                  {nameValidationStatus === 'checking' && 'Checking availability...'}
-                  {nameValidationStatus === 'taken' && <span className="text-destructive">{nameValidationError}</span>}
-                  {nameValidationStatus === 'available' && <span className="text-green-500">Name is available!</span>}
+                  {name.trim().length > 0 && <span className="text-green-500">Looks good!</span>}
                 </div>
               </div>
 
@@ -539,7 +536,7 @@ export default function Onboarding() {
 
               <Button 
                 onClick={handleFanProfileNext} 
-                disabled={nameValidationStatus !== 'available' || submitting}
+                disabled={!isFanNameValid || submitting}
                 className="w-full"
               >
                 {submitting ? 'Saving...' : 'Continue'}

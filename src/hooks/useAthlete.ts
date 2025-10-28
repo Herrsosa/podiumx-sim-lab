@@ -3,9 +3,9 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Athlete, Sport, Workout, Post } from '@/types';
 import { athleteAvatars } from '@/utils/athleteAvatars';
-import { priceAt } from '@/utils/pricing';
 import { resolveAvatarUrl } from '@/utils/avatar';
 import { useAthleteMetrics } from './useAthleteMetrics';
+import { useAthletePrice } from './useAthletePrice';
 import type { Database } from '@/integrations/supabase/types';
 
 type PostRow = Database['public']['Tables']['posts']['Row'];
@@ -23,35 +23,23 @@ export function useAthlete(slug: string) {
       if (profileError) throw profileError;
       if (!profile) return null;
 
-      const { data: token, error: tokenError } = await supabase
-        .from('athlete_tokens')
-        .select('athlete_id, supply, a, b, c, treasury_balance, athlete_earnings')
-        .eq('athlete_id', profile.id)
-        .single();
-
-      if (tokenError) throw tokenError;
-
       const { data: posts, error: postsError } = await supabase
         .from('posts')
-        .select('id, created_at, author_id, workout_json, image_url, text, token_gated, strava_activity_id, visibility, min_tokens_required')
+        .select(
+          'id, created_at, author_id, workout_json, image_url, text, token_gated, strava_activity_id, visibility, min_tokens_required',
+        )
         .eq('author_id', profile.id)
         .order('created_at', { ascending: false })
         .limit(100);
 
       if (postsError) throw postsError;
 
-      // Calculate current price from bonding curve
-      const supply = token?.supply || 0;
-      const a = token?.a || 0.0002;
-      const b = token?.b || 0.02;
-      const c = token?.c || 1;
-      const price = priceAt(supply, { a, b, c });
-      const marketCap = price * supply;
+      const rawPosts: PostRow[] = (posts ?? []) as PostRow[];
 
-      const typedPosts: Post[] = (posts ?? []).map((post: any) => ({
+      const typedPosts: Post[] = rawPosts.map((post) => ({
         id: post.id,
         created_at: post.created_at,
-        workout_json: post.workout_json as Workout | Record<string, unknown> | null,
+        workout_json: (post.workout_json as Workout | Record<string, unknown> | null) ?? null,
         image_url: post.image_url,
         text: post.text,
         token_gated: Boolean(post.token_gated),
@@ -61,7 +49,6 @@ export function useAthlete(slug: string) {
         min_tokens_required: post.min_tokens_required || 0,
       }));
 
-      // Convert posts to workouts format
       const workouts = typedPosts
         .filter((p) => p.workout_json && typeof p.workout_json === 'object' && !Array.isArray(p.workout_json))
         .map((p) => ({
@@ -83,11 +70,11 @@ export function useAthlete(slug: string) {
           instagram: profile.instagram_url || undefined,
           strava: profile.strava_url || undefined,
         },
-        supply,
-        reserve: token?.treasury_balance || 0,
-        price,
-        marketCap,
-        athleteRevenue: token?.athlete_earnings || 0,
+        supply: 0,
+        reserve: 0,
+        price: 0,
+        marketCap: 0,
+        athleteRevenue: 0,
         change24h: 0,
         volume24h: 0,
         workouts,
@@ -104,29 +91,44 @@ export function useAthlete(slug: string) {
     return id ? [id] : undefined;
   }, [queryResult.data?.id]);
 
+  const { data: priceSnapshot, isLoading: priceLoading, isFetching: priceFetching } = useAthletePrice(
+    queryResult.data?.id,
+  );
+
   const { data: metricsMap, isLoading: metricsLoading, isFetching: metricsFetching } = useAthleteMetrics(
     '24h',
-    athleteIdForMetrics
+    athleteIdForMetrics,
   );
 
   const athleteWithMetrics = useMemo(() => {
     if (!queryResult.data) return undefined;
 
-    const metrics = metricsMap?.get(queryResult.data.id);
-    if (!metrics) return queryResult.data;
+    const enriched: Athlete = priceSnapshot
+      ? {
+          ...queryResult.data,
+          supply: priceSnapshot.supply,
+          reserve: priceSnapshot.reserve,
+          price: priceSnapshot.price,
+          marketCap: priceSnapshot.price * priceSnapshot.supply,
+          athleteRevenue: priceSnapshot.athleteRevenue,
+        }
+      : queryResult.data;
+
+    const metrics = metricsMap?.get(enriched.id);
+    if (!metrics) return enriched;
 
     return {
-      ...queryResult.data,
+      ...enriched,
       change24h: metrics.changePct,
       volume24h: metrics.volume,
     };
-  }, [queryResult.data, metricsMap]);
+  }, [queryResult.data, priceSnapshot, metricsMap]);
 
   return {
     ...queryResult,
     data: athleteWithMetrics,
-    isLoading: queryResult.isLoading || metricsLoading,
-    isFetching: queryResult.isFetching || metricsFetching,
-    isPending: queryResult.isPending || metricsLoading,
+    isLoading: queryResult.isLoading || metricsLoading || priceLoading,
+    isFetching: queryResult.isFetching || metricsFetching || priceFetching,
+    isPending: queryResult.isPending || metricsLoading || priceLoading,
   };
 }

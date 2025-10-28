@@ -1,13 +1,6 @@
 import { Athlete, Trade, Wallet, UserProfile, Workout } from '@/types';
 import { priceAt } from './pricing';
-import nilsAvatar from '@/assets/athletes/nils.jpg';
-import maraAvatar from '@/assets/athletes/mara.jpg';
-import leoAvatar from '@/assets/athletes/leo.jpg';
-import avaAvatar from '@/assets/athletes/ava.jpg';
-import kaiAvatar from '@/assets/athletes/kai.jpg';
-import rioAvatar from '@/assets/athletes/rio.jpg';
-import zaraAvatar from '@/assets/athletes/zara.jpg';
-import maxAvatar from '@/assets/athletes/max.jpg';
+import { athleteAvatarAssets } from '@/utils/athleteAvatars';
 
 const ATHLETE_DATA: Omit<Athlete, 'supply' | 'reserve' | 'price' | 'marketCap' | 'athleteRevenue' | 'change24h' | 'volume24h' | 'workouts' | 'posts'>[] = [
   {
@@ -15,7 +8,7 @@ const ATHLETE_DATA: Omit<Athlete, 'supply' | 'reserve' | 'price' | 'marketCap' |
     slug: 'nils',
     name: 'Nils Bergström',
     sport: 'Running',
-    avatar: nilsAvatar,
+    avatar: athleteAvatarAssets.nils.src,
     bio: 'Marathon specialist with 2:15 PR. Training for Berlin 2025.',
     location: 'Stockholm, Sweden',
     socials: { instagram: '@nilsruns', strava: 'nils-bergstrom' },
@@ -25,7 +18,7 @@ const ATHLETE_DATA: Omit<Athlete, 'supply' | 'reserve' | 'price' | 'marketCap' |
     slug: 'mara',
     name: 'Mara Chen',
     sport: 'HYROX',
-    avatar: maraAvatar,
+    avatar: athleteAvatarAssets.mara.src,
     bio: 'Elite HYROX athlete. 2x World Championships podium.',
     location: 'Singapore',
     socials: { instagram: '@marahyrox', twitter: '@marac' },
@@ -35,7 +28,7 @@ const ATHLETE_DATA: Omit<Athlete, 'supply' | 'reserve' | 'price' | 'marketCap' |
     slug: 'leo',
     name: 'Leo Martinez',
     sport: 'Cycling',
-    avatar: leoAvatar,
+    avatar: athleteAvatarAssets.leo.src,
     bio: 'Professional cyclist. Climbing specialist, mountain lover.',
     location: 'Barcelona, Spain',
     socials: { instagram: '@leocycles', strava: 'leo-martinez' },
@@ -45,7 +38,7 @@ const ATHLETE_DATA: Omit<Athlete, 'supply' | 'reserve' | 'price' | 'marketCap' |
     slug: 'ava',
     name: 'Ava Thompson',
     sport: 'Triathlon',
-    avatar: avaAvatar,
+    avatar: athleteAvatarAssets.ava.src,
     bio: 'Ironman 70.3 champion. Swim-bike-run enthusiast.',
     location: 'Boulder, USA',
     socials: { instagram: '@avatri', strava: 'ava-thompson' },
@@ -55,7 +48,7 @@ const ATHLETE_DATA: Omit<Athlete, 'supply' | 'reserve' | 'price' | 'marketCap' |
     slug: 'kai',
     name: 'Kai Anderson',
     sport: 'CrossFit',
-    avatar: kaiAvatar,
+    avatar: athleteAvatarAssets.kai.src,
     bio: 'CrossFit Games veteran. Strength meets conditioning.',
     location: 'Auckland, New Zealand',
     socials: { instagram: '@kaicf', twitter: '@kaianderson' },
@@ -65,7 +58,7 @@ const ATHLETE_DATA: Omit<Athlete, 'supply' | 'reserve' | 'price' | 'marketCap' |
     slug: 'rio',
     name: 'Rio Silva',
     sport: 'Swimming',
-    avatar: rioAvatar,
+    avatar: athleteAvatarAssets.rio.src,
     bio: 'Olympic swimmer. 100m freestyle specialist.',
     location: 'Rio de Janeiro, Brazil',
     socials: { instagram: '@rioswims' },
@@ -75,7 +68,7 @@ const ATHLETE_DATA: Omit<Athlete, 'supply' | 'reserve' | 'price' | 'marketCap' |
     slug: 'zara',
     name: 'Zara Williams',
     sport: 'Trail Run',
-    avatar: zaraAvatar,
+    avatar: athleteAvatarAssets.zara.src,
     bio: 'Ultra-runner. UTMB finisher. Mountains are my playground.',
     location: 'Chamonix, France',
     socials: { instagram: '@zaratrails', strava: 'zara-williams' },
@@ -85,7 +78,7 @@ const ATHLETE_DATA: Omit<Athlete, 'supply' | 'reserve' | 'price' | 'marketCap' |
     slug: 'max',
     name: 'Max Jensen',
     sport: 'Rowing',
-    avatar: maxAvatar,
+    avatar: athleteAvatarAssets.max.src,
     bio: 'Competitive rower. 2k PR: 6:15. Erg life.',
     location: 'Copenhagen, Denmark',
     socials: { instagram: '@maxrows', twitter: '@maxjensen' },

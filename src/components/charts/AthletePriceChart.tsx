@@ -1,40 +1,64 @@
 import { memo, useMemo, useId, useCallback } from 'react';
-import { ComposedChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, ReferenceDot, Bar, type TooltipProps } from 'recharts';
-import { ChartSkeleton } from '@/components/ui/skeletons';
+import { ComposedChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Bar, type TooltipProps } from 'recharts';
+import { Skeleton } from '@/components/ui/skeleton';
 import type { Post } from '@/types';
 import { StackedCircles, POS_NEON_COLOR } from './StackedCircles';
-import { aggregatePosByDay, startOfUtcDay } from '@/utils/chartData';
+import { featureFlags } from '@/lib/config/featureFlags';
+import {
+  buildPoSSeries,
+  formatTooltip as defaultFormatTooltip,
+  getDailyTicks,
+  getDomain,
+  type PoSSeriesPoint,
+} from '@/lib/charting/engine';
 
 type ChartPoint = {
   t: number;
   price: number;
+  carried?: boolean;
+  lastTradeTime?: number;
 };
 
 interface AthletePriceChartProps {
   chartPoints: ChartPoint[];
-  firstTradePoint: ChartPoint | null;
   hasRealTrades: boolean;
-  timeRange: '24h' | '7d' | '30d' | 'all';
+  timeRange: '7d' | '30d' | 'all';
   formatXAxisTick: (value: number) => string;
-  formatTooltipLabel: (value: number) => string;
+  formatTooltipLabel?: (value: number) => string;
   isLoading: boolean;
+  isFetching?: boolean;
   posts?: Post[];
+  syncId?: string | null;
 }
 
 const AthletePriceChart = memo(({
   chartPoints,
-  firstTradePoint,
   hasRealTrades,
   timeRange,
   formatXAxisTick,
-  formatTooltipLabel,
+  formatTooltipLabel = defaultFormatTooltip,
   isLoading,
+  isFetching = false,
   posts,
+  syncId = null,
 }: AthletePriceChartProps) => {
-  const posDailyPoints = useMemo(() => aggregatePosByDay(posts, timeRange), [posts, timeRange]);
+  const startOfDay = useCallback((timestamp: number) => {
+    const date = new Date(timestamp);
+    date.setUTCHours(0, 0, 0, 0);
+    return date.getTime();
+  }, []);
+
+  const posSeries = useMemo<PoSSeriesPoint[]>(() => {
+    if (!posts || !featureFlags.showPoS) return [];
+    const entries = posts
+      .filter((post) => post?.workout_json)
+      .map((post) => ({ timestamp: new Date(post.created_at).getTime(), count: 1 }));
+    return buildPoSSeries(entries, timeRange);
+  }, [posts, timeRange]);
+
   const posCountByDay = useMemo(
-    () => new Map(posDailyPoints.map((point) => [startOfUtcDay(point.dateMs), point.posCount])),
-    [posDailyPoints],
+    () => new Map(posSeries.map((point) => [point.t, point.posCount])),
+    [posSeries],
   );
 
   const chartData = useMemo(() => {
@@ -43,46 +67,63 @@ const AthletePriceChart = memo(({
     const baseData = chartPoints
       .filter((point) => Number.isFinite(point.t))
       .map((point) => {
-        const dayStart = startOfUtcDay(point.t);
+        const dayStart = startOfDay(point.t);
         dayWithPrice.add(dayStart);
 
         return {
           t: point.t,
           price: point.price,
           posCount: posCountByDay.get(dayStart) ?? 0,
+          carried: point.carried,
+          lastTradeTime: point.lastTradeTime,
         };
       });
 
-    const posOnlyData = posDailyPoints
-      .filter((posPoint) => Number.isFinite(posPoint.dateMs) && !dayWithPrice.has(posPoint.dateMs))
+    const posOnlyData = posSeries
+      .filter((posPoint) => Number.isFinite(posPoint.t) && !dayWithPrice.has(posPoint.t))
       .map((posPoint) => ({
-        t: posPoint.dateMs,
+        t: posPoint.t,
         price: null,
         posCount: posPoint.posCount,
+        carried: undefined,
+        lastTradeTime: undefined,
       }));
 
     return [...baseData, ...posOnlyData].sort((a, b) => a.t - b.t);
-  }, [chartPoints, posCountByDay, posDailyPoints]);
+  }, [chartPoints, posCountByDay, posSeries, startOfDay]);
 
   const posDomain = useMemo<[number, number]>(() => {
-    const maxPos = posDailyPoints.reduce((max, point) => Math.max(max, point.posCount), 0);
+    const maxPos = posSeries.reduce((max, point) => Math.max(max, point.posCount), 0);
     const upper = maxPos > 0 ? maxPos + 1 : 1;
     return [0, upper];
-  }, [posDailyPoints]);
+  }, [posSeries]);
 
   const glowFilterId = useId().replace(/:/g, '');
 
-  const xDomain = useMemo<[number, number]>(() => {
-    if (chartData.length === 0) {
-      const now = Date.now();
-      const dayMs = 24 * 60 * 60 * 1000;
-      return [now - dayMs, now + dayMs];
+  const xDomain = useMemo<[number, number]>(() => getDomain(timeRange, chartPoints), [chartPoints, timeRange]);
+
+  const xTicks = useMemo<number[] | undefined>(() => {
+    if (timeRange === 'all') {
+      return undefined;
     }
-    const dayMs = 24 * 60 * 60 * 1000;
-    const min = chartData[0].t;
-    const max = chartData[chartData.length - 1].t;
-    return [min - dayMs * 0.5, max + dayMs * 0.75];
-  }, [chartData]);
+    return getDailyTicks(xDomain);
+  }, [timeRange, xDomain]);
+  
+  const yDomain = useMemo<[number, number]>(() => {
+    // Filter for actual price points (not carried, not null)
+    const pricePoints = chartPoints.filter((p) => p.price != null && !p.carried);
+    
+    if (pricePoints.length === 0) return [0, 1];
+    
+    const prices = pricePoints.map(p => p.price).filter(p => Number.isFinite(p));
+    if (prices.length === 0) return [0, 1];
+    
+    const min = Math.min(...prices);
+    const max = Math.max(...prices);
+    const padding = (max - min) * 0.1 || max * 0.1 || 0.1;
+    
+    return [Math.max(0, min - padding), max + padding];
+  }, [chartPoints]);
 
   const renderTooltip = useCallback(({ active, label, payload }: TooltipProps<number, string>) => {
     if (!active || !payload || payload.length === 0 || typeof label !== 'number') {
@@ -93,40 +134,47 @@ const AthletePriceChart = memo(({
     const posEntry = payload.find((item) => item && item.dataKey === 'posCount');
 
     const price = typeof priceEntry?.value === 'number' ? priceEntry.value : undefined;
+    const dataPoint = chartData.find(d => d.t === label);
     const dateLabel = formatTooltipLabel(label);
-    const dayStart = startOfUtcDay(label);
+    const dayStart = startOfDay(label);
     const posCount =
       typeof posEntry?.value === 'number' ? posEntry.value : posCountByDay.get(dayStart) ?? 0;
 
     return (
-      <div className="rounded-lg border border-border/60 bg-card/90 px-3 py-2 shadow-lg">
-        <div className="text-xs text-muted-foreground">{dateLabel}</div>
+      <div className="rounded-lg border border-border/60 bg-card/95 backdrop-blur-sm px-3 py-2 shadow-xl">
+        <div className="text-xs font-medium text-muted-foreground mb-1">{dateLabel}</div>
         {typeof price === 'number' && (
-          <div className="text-sm font-semibold text-foreground">${price.toFixed(4)}</div>
+          <div className="text-base font-bold text-foreground mb-1">${price.toFixed(4)}</div>
         )}
-        <div className="mt-1 text-xs text-muted-foreground">
-          PoS: <span className="font-medium text-foreground">{posCount}</span>
+        {dataPoint?.carried && dataPoint.lastTradeTime && (
+          <div className="text-xs text-muted-foreground italic mb-1">
+            No trades — price carried from {new Date(dataPoint.lastTradeTime).toLocaleDateString()}
+          </div>
+        )}
+        <div className="flex items-center gap-1.5 text-xs">
+          <div className="h-2 w-2 rounded-full bg-primary/80" />
+          <span className="text-muted-foreground">PoS:</span>
+          <span className="font-semibold text-foreground">{posCount}</span>
         </div>
       </div>
     );
-  }, [formatTooltipLabel, posCountByDay]);
+  }, [formatTooltipLabel, posCountByDay, chartData,startOfDay]);
 
-  if (isLoading) {
-    return <ChartSkeleton className="h-full" />;
-  }
-
-  if (chartPoints.length === 0) {
-    return (
-      <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
-        No trades yet
-      </div>
-    );
-  }
+  const isBusy = isLoading || isFetching;
 
   return (
     <div style={{ position: 'relative', width: '100%', height: '100%' }}>
+      {isBusy ? (
+        <div className="pointer-events-none absolute inset-0 px-6 pt-6 pb-10">
+          <Skeleton className="h-full w-full rounded-lg opacity-70" />
+        </div>
+      ) : null}
       <ResponsiveContainer width="100%" height="100%">
-        <ComposedChart data={chartData} margin={{ top: 24, right: 24, bottom: 56, left: 16 }}>
+        <ComposedChart
+          data={chartData}
+          margin={{ top: 24, right: 24, bottom: 56, left: 16 }}
+          syncId={syncId ?? undefined}
+        >
           <defs>
             <filter id={`posGlow-${glowFilterId}`} x="-200%" y="-200%" width="500%" height="500%">
               <feGaussianBlur stdDeviation="5" result="coloredBlur" />
@@ -136,72 +184,70 @@ const AthletePriceChart = memo(({
               </feMerge>
             </filter>
           </defs>
-          <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.18} />
+          <CartesianGrid 
+            strokeDasharray="3 3" 
+            stroke="hsl(var(--border))" 
+            opacity={0.15} 
+            vertical={false}
+          />
           <XAxis
             dataKey="t"
             type="number"
             scale="time"
             domain={xDomain}
-            padding={{ right: 18 }}
+            ticks={xTicks}
             tickFormatter={formatXAxisTick}
             tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
             stroke="hsl(var(--muted-foreground))"
             axisLine={false}
             tickLine={false}
+            interval="preserveStartEnd"
+            allowDataOverflow
           />
           <YAxis
-            domain={['auto', 'auto']}
+            domain={yDomain}
             tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
             stroke="hsl(var(--muted-foreground))"
             tickFormatter={(value) => `$${value.toFixed(2)}`}
-            width={60}
+            width={64}
             axisLine={false}
             tickLine={false}
           />
           <YAxis yAxisId="pos" domain={posDomain} hide />
-          <RechartsTooltip content={renderTooltip} cursor={{ stroke: 'hsl(var(--border))', strokeDasharray: '3 3' }} />
-          <Bar
-            dataKey="posCount"
-            yAxisId="pos"
-            fill="transparent"
-            barSize={56}
-            shape={
-              <StackedCircles
-                color={POS_NEON_COLOR}
-                filterId={`posGlow-${glowFilterId}`}
-                maxCircles={6}
-                gap={8}
-                radius={11}
-                hitboxSize={56}
-              />
-            }
+          <RechartsTooltip 
+            content={renderTooltip} 
+            cursor={{ stroke: 'hsl(var(--primary))', strokeWidth: 1, strokeDasharray: '5 5', opacity: 0.5 }} 
+            animationDuration={200}
           />
+          {featureFlags.showPoS ? (
+            <Bar
+              dataKey="posCount"
+              yAxisId="pos"
+              fill="transparent"
+              barSize={56}
+              shape={
+                <StackedCircles
+                  color={POS_NEON_COLOR}
+                  filterId={`posGlow-${glowFilterId}`}
+                  maxCircles={6}
+                  gap={8}
+                  radius={11}
+                  hitboxSize={56}
+                />
+              }
+            />
+          ) : null}
           <Line
             type="monotone"
             dataKey="price"
             stroke={POS_NEON_COLOR}
-            strokeWidth={2}
-            strokeOpacity={0.65}
+            strokeWidth={3}
+            strokeOpacity={0.8}
             dot={false}
             connectNulls
             strokeLinecap="round"
+            animationDuration={500}
           />
-          {hasRealTrades && firstTradePoint && chartPoints.length > 0 && (
-            <ReferenceDot
-              x={firstTradePoint.t}
-              y={firstTradePoint.price}
-              r={6}
-              stroke="hsl(var(--background))"
-              strokeWidth={2}
-              fill={POS_NEON_COLOR}
-              label={{
-                value: 'First trade',
-                position: 'top',
-                fill: 'hsl(var(--muted-foreground))',
-                fontSize: 12,
-              }}
-            />
-          )}
         </ComposedChart>
       </ResponsiveContainer>
     </div>

@@ -3,9 +3,9 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Lock, Calendar, Activity, Clock, Zap } from 'lucide-react';
-import { resolveImageUrl } from '@/utils/avatar';
 import { useUser } from '@/store/auth';
 import { Post, Workout } from '@/types';
+import { SupabaseResponsiveImage } from '@/components/SupabaseResponsiveImage';
 
 interface WorkoutPostsProps {
   athleteId: string;
@@ -91,13 +91,14 @@ export default function WorkoutPosts({
               {/* Media */}
               {post.image_url && (
                 <div className="relative">
-                  <img
-                    src={resolveImageUrl(post.image_url, { width: 960 })}
+                  <SupabaseResponsiveImage
+                    src={post.image_url}
                     alt="Workout"
-                    width={960}
-                    height={480}
-                    loading="lazy"
-                    className={`h-64 w-full object-cover ${!canView ? 'blur-lg' : ''}`}
+                    widths={[480, 720, 960, 1280]}
+                    sizes="(max-width: 768px) 100vw, 960px"
+                    aspectRatio={2}
+                    className="w-full"
+                    imgClassName={!canView ? 'blur-lg' : undefined}
                   />
                   {!canView && (
                     <div className="absolute inset-0 flex items-center justify-center bg-black/50">

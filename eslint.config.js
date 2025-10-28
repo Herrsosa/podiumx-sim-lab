@@ -21,6 +21,22 @@ export default tseslint.config(
       ...reactHooks.configs.recommended.rules,
       "react-refresh/only-export-components": ["warn", { allowConstantExport: true }],
       "@typescript-eslint/no-unused-vars": "off",
+      "@typescript-eslint/no-explicit-any": "error",
+    },
+  },
+  {
+    files: [
+      "src/components/ui/badge.tsx",
+      "src/components/ui/button.tsx",
+      "src/components/ui/form.tsx",
+      "src/components/ui/navigation-menu.tsx",
+      "src/components/ui/sidebar.tsx",
+      "src/components/ui/sonner.tsx",
+      "src/components/ui/toggle.tsx",
+    ],
+    rules: {
+      // TODO(cdex): move shared helpers out of component modules to re-enable this.
+      "react-refresh/only-export-components": "off",
     },
   },
 );

@@ -11,6 +11,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useUser } from '@/store/auth';
 import { Workout } from '@/types';
+import type { WorkoutMutationResult } from '@/hooks/useWorkouts';
+import { mapPostRowToLockerWorkout, mapPostRowToPost } from '@/hooks/useWorkouts';
 
 interface EditWorkoutModalProps {
   open: boolean;
@@ -21,7 +23,7 @@ interface EditWorkoutModalProps {
     token_gated: boolean;
     image_url?: string;
   };
-  onSuccess: () => void;
+  onSuccess: (result: WorkoutMutationResult) => void;
 }
 
 export default function EditWorkoutModal({ open, onOpenChange, workoutPost, onSuccess }: EditWorkoutModalProps) {
@@ -133,7 +135,7 @@ export default function EditWorkoutModal({ open, onOpenChange, workoutPost, onSu
       };
 
       // Update post in DB
-      const { error } = await supabase
+      const { data: updatedRow, error } = await supabase
         .from('posts')
         .update({
           workout_json: updatedWorkoutJson,
@@ -141,16 +143,24 @@ export default function EditWorkoutModal({ open, onOpenChange, workoutPost, onSu
           token_gated: formData.tokenGated,
           image_url: imageUrl,
         })
-        .eq('id', workoutPost.id);
+        .eq('id', workoutPost.id)
+        .select('id, created_at, author_id, workout_json, image_url, text, visibility, min_tokens_required, token_gated, strava_activity_id')
+        .single();
 
       if (error) throw error;
+      if (!updatedRow) throw new Error('Failed to load updated workout');
 
       toast({
         title: 'Workout updated!',
         description: 'Your changes have been saved',
       });
 
-      onSuccess();
+      const mappedWorkout = mapPostRowToLockerWorkout(
+        updatedRow as Parameters<typeof mapPostRowToLockerWorkout>[0],
+      );
+      const mappedPost = mapPostRowToPost(updatedRow as Parameters<typeof mapPostRowToPost>[0]);
+
+      onSuccess({ workout: mappedWorkout, post: mappedPost });
       onOpenChange(false);
     } catch (error: unknown) {
       console.error('Error updating workout:', error);

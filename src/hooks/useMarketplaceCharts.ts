@@ -45,8 +45,10 @@ function createSparklinePoints(prices: number[]): MarketplaceChartPoint[] {
 
 export function useMarketplaceCharts(athleteIds: string[]) {
   const dedupedIds = useMemo(() => normaliseIds(athleteIds), [athleteIds]);
+  
+  // Only fetch metrics for visible athletes (optimization)
   const metricsQuery = useAthleteMetrics('24h', dedupedIds, {
-    enabled: dedupedIds.length > 0,
+    enabled: dedupedIds.length > 0 && dedupedIds.length <= 50, // Limit to prevent massive queries
   });
 
   const charts = useMemo<MarketplaceCharts>(() => {
