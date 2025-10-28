@@ -242,37 +242,35 @@ export function useWorkouts(
         total: count ?? items.length,
       };
     },
-    onError: (error) => {
-      const message = error instanceof Error ? error.message : 'Please try again.';
-      toast({
-        title: 'Unable to load workouts',
-        description: message,
-        variant: 'destructive',
-        action: createElement(
-          ToastAction,
-          {
-            altText: 'Retry',
-            onClick: () =>
-              queryClient
-                .refetchQueries({ queryKey, type: 'active' })
-                .catch((err) => console.error('Failed to retry workouts query', err)),
-          },
-          'Retry',
-        ),
-      });
-    },
   });
 
+  // Handle errors in component
+  if (queryResult.error) {
+    const message = queryResult.error instanceof Error ? queryResult.error.message : 'Please try again.';
+    toast({
+      title: 'Unable to load workouts',
+      description: message,
+      variant: 'destructive',
+      action: {
+        label: 'Retry',
+        onClick: () =>
+          queryClient
+            .refetchQueries({ queryKey, type: 'active' })
+            .catch((err) => console.error('Failed to retry workouts query', err)),
+      } as any,
+    });
+  }
+
   const workouts =
-    queryResult.data?.pages.flatMap((page) => page.items) ?? [];
+    queryResult.data?.pages.flatMap((page) => (page as WorkoutsPage).items) ?? [];
 
   return {
     ...queryResult,
     workouts,
     pages: queryResult.data?.pages ?? [],
     totalCount:
-      queryResult.data?.pages.slice(-1)[0]?.total ??
-      queryResult.data?.pages[0]?.total ??
+      (queryResult.data?.pages.slice(-1)[0] as WorkoutsPage | undefined)?.total ??
+      (queryResult.data?.pages[0] as WorkoutsPage | undefined)?.total ??
       workouts.length,
   };
 }

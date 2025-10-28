@@ -25,8 +25,8 @@ export function useDailyPrices(athleteId: string | undefined, startDayISO: strin
         return [];
       }
 
-      const { data, error } = await supabase
-        .from<DailyRow>('prices_daily_mv')
+      const { data, error } = await (supabase as any)
+        .from('prices_daily_mv')
         .select('athlete_id, day_utc, close, carried, volume')
         .eq('athlete_id', athleteId)
         .gte('day_utc', startDayISO)
@@ -37,7 +37,7 @@ export function useDailyPrices(athleteId: string | undefined, startDayISO: strin
         throw error;
       }
 
-      const rows = data ?? [];
+      const rows = (data ?? []) as DailyRow[];
       return rows
         .map((row) => {
           const timestamp = Date.parse(row.day_utc);
