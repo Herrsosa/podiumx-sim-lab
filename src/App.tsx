@@ -28,6 +28,7 @@ const Portfolio = lazy(() => import("./pages/Portfolio"));
 const Marketplace = lazy(() => import("./pages/Marketplace"));
 const MyAthletePage = lazy(() => import("./pages/MyAthletePage"));
 const MyAthleteLocker = lazy(() => import("./pages/MyAthlete/Locker"));
+const GlobeDemo = lazy(() => import("./pages/GlobeDemo"));
 
 interface RouteGuardProps {
   requireAuth?: boolean;
@@ -184,6 +185,15 @@ function AppContent() {
         </RouteGuard>
       } />
       <Route path="/linked/strava" element={<StravaLinkedResult />} />
+      <Route path="/globe-demo" element={
+        <Suspense fallback={
+          <div className="min-h-screen flex items-center justify-center">
+            <LoadingSpinner size="lg" />
+          </div>
+        }>
+          <GlobeDemo />
+        </Suspense>
+      } />
       <Route path="*" element={<NotFound />} />
     </Routes>
   );
