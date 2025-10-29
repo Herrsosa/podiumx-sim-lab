@@ -1,8 +1,9 @@
-import { PosGlobe } from '@/components/PosGlobe';
+import { MiniGlobe } from '@/components/MiniGlobe';
 import { useGlobeData } from '@/hooks/useGlobeData';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Globe as GlobeIcon } from 'lucide-react';
+import { useState } from 'react';
 
 interface LockerGlobeProps {
   athleteId: string;
@@ -11,6 +12,7 @@ interface LockerGlobeProps {
 
 export default function LockerGlobe({ athleteId, athleteName }: LockerGlobeProps) {
   const { data: locations, isLoading, error } = useGlobeData(athleteId);
+  const [rotation, setRotation] = useState<[number, number, number]>([0, -20, 0]);
 
   if (isLoading) {
     return (
@@ -36,6 +38,13 @@ export default function LockerGlobe({ athleteId, athleteName }: LockerGlobeProps
     );
   }
 
+  // Convert locations to pins
+  const pins = locations?.map(loc => ({
+    lon: loc.lng,
+    lat: loc.lat,
+    count: loc.count
+  })) || [];
+
   return (
     <div className="p-6">
       <div className="flex items-center gap-2 mb-4">
@@ -46,8 +55,14 @@ export default function LockerGlobe({ athleteId, athleteName }: LockerGlobeProps
         </p>
       </div>
 
-      <div className="bg-muted/30 rounded-lg p-4">
-        <PosGlobe locations={locations || []} className="max-w-2xl mx-auto" />
+      <div className="bg-muted/30 rounded-lg p-4 flex justify-center">
+        <MiniGlobe 
+          rotation={rotation}
+          pins={pins}
+          width={600}
+          height={600}
+          className="w-full md:w-auto"
+        />
       </div>
 
       {locations && locations.length > 0 && (
