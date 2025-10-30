@@ -18,6 +18,8 @@ export function useChartPosts(athleteId: string | undefined, startDate?: number)
     queryFn: async (): Promise<Post[]> => {
       if (!athleteId) return [];
 
+      console.log('[useChartPosts] Fetching posts for athlete:', athleteId, 'startDate:', startDate);
+
       let query = supabase
         .from('posts')
         .select('id, created_at, author_id, workout_json, image_url, text, token_gated, strava_activity_id, visibility, min_tokens_required')
@@ -28,6 +30,7 @@ export function useChartPosts(athleteId: string | undefined, startDate?: number)
       // Filter by start date if provided
       if (startDate) {
         const startDateISO = new Date(startDate).toISOString();
+        console.log('[useChartPosts] Filtering by start date:', startDateISO);
         query = query.gte('created_at', startDateISO);
       }
 
@@ -36,6 +39,9 @@ export function useChartPosts(athleteId: string | undefined, startDate?: number)
       if (error) throw error;
 
       const rows = (data ?? []) as PostRow[];
+      console.log('[useChartPosts] Fetched', rows.length, 'workout posts');
+      console.log('[useChartPosts] Posts:', rows.map(r => ({ id: r.id, created_at: r.created_at })));
+      
       return rows.map((row) => ({
         id: row.id,
         created_at: row.created_at,
