@@ -247,17 +247,16 @@ export function useWorkouts(
   // Handle errors in component
   if (queryResult.error) {
     const message = queryResult.error instanceof Error ? queryResult.error.message : 'Please try again.';
+    const handleRetry = () =>
+      queryClient
+        .refetchQueries({ queryKey, type: 'active' })
+        .catch((err) => console.error('Failed to retry workouts query', err));
+
     toast({
       title: 'Unable to load workouts',
       description: message,
       variant: 'destructive',
-      action: {
-        label: 'Retry',
-        onClick: () =>
-          queryClient
-            .refetchQueries({ queryKey, type: 'active' })
-            .catch((err) => console.error('Failed to retry workouts query', err)),
-      } as any,
+      action: createElement(ToastAction, { altText: 'Retry loading workouts', onClick: handleRetry }, 'Retry'),
     });
   }
 

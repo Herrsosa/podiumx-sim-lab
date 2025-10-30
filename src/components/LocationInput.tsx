@@ -40,7 +40,7 @@ export function LocationInput({
     const newQuery = e.target.value;
     setQuery(newQuery);
     setShowDropdown(newQuery.length >= 2);
-    
+
     // Clear selection if user types after selecting
     if (value && newQuery !== `${value.city}, ${value.country}`) {
       onChange(null);
@@ -59,14 +59,15 @@ export function LocationInput({
     setShowDropdown(false);
   };
 
-  // Update input when value changes externally
+  // Keep the input in sync when `value` changes externally.
+  // IMPORTANT: we no longer read `query` here; that removes the missing-deps warning.
   useEffect(() => {
     if (value) {
       setQuery(`${value.city}, ${value.country}`);
-    } else if (!query) {
+    } else {
       setQuery('');
     }
-  }, [value]);
+  }, [value, setQuery]);
 
   return (
     <div className={className}>
@@ -75,7 +76,7 @@ export function LocationInput({
         {label}
         <span className="text-muted-foreground font-normal ml-1">(optional)</span>
       </Label>
-      
+
       <div ref={wrapperRef} className="relative">
         <div className="relative">
           <Input
@@ -87,7 +88,7 @@ export function LocationInput({
             onFocus={() => query.length >= 2 && setShowDropdown(true)}
             className="pr-16"
           />
-          
+
           <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
             {isLoading && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
             {value && (
@@ -97,6 +98,8 @@ export function LocationInput({
                 size="sm"
                 className="h-6 w-6 p-0"
                 onClick={handleClear}
+                aria-label="Clear selected location"
+                title="Clear selected location"
               >
                 <X className="h-3.5 w-3.5" />
               </Button>

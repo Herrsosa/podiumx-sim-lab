@@ -25,7 +25,7 @@ export function useDailyPrices(athleteId: string | undefined, startDayISO: strin
         return [];
       }
 
-      const { data, error } = await (supabase as any)
+      const { data, error } = await supabase
         .from('prices_daily_mv')
         .select('athlete_id, day_utc, close, carried, volume')
         .eq('athlete_id', athleteId)

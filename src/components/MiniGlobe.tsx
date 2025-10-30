@@ -1,6 +1,9 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import * as d3 from 'd3';
 import { feature } from 'topojson-client';
+import type { Feature, FeatureCollection, Geometry } from 'geojson';
+import type { Topology } from 'topojson-specification';
+import type { GeoPermissibleObjects } from 'd3-geo';
 
 interface Pin {
   lon: number;
@@ -18,17 +21,20 @@ interface MiniGlobeProps {
   interactive?: boolean;
 }
 
-export function MiniGlobe({ 
-  rotation: initialRotation = [0, -20, 0], 
-  pins = [], 
-  width = 600, 
+// Accept either a single Feature or a FeatureCollection
+type WorldGeo = Feature<Geometry> | FeatureCollection<Geometry>;
+
+export function MiniGlobe({
+  rotation: initialRotation = [0, -20, 0],
+  pins = [],
+  width = 600,
   height = 600,
   className = '',
   spinSpeedDegPerSec = 6,
-  interactive = true
+  interactive = true,
 }: MiniGlobeProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [worldData, setWorldData] = useState<any>(null);
+  const [worldData, setWorldData] = useState<WorldGeo | null>(null);
   const [rotation, setRotation] = useState<[number, number, number]>(initialRotation);
   const [isDragging, setIsDragging] = useState(false);
   const [lastDragTime, setLastDragTime] = useState(0);
@@ -38,12 +44,14 @@ export function MiniGlobe({
   // Load world topology data
   useEffect(() => {
     fetch('https://cdn.jsdelivr.net/npm/world-atlas@2/land-110m.json')
-      .then(res => res.json())
-      .then(topology => {
-        const land = feature(topology, topology.objects.land);
+      .then((res) => res.json())
+      .then((topology: unknown) => {
+        // We only care that there's an objects.land; rely on topojson to convert it.
+        const topo = topology as Topology & { objects: { land: unknown } };
+        const land = feature(topo, topo.objects.land) as WorldGeo;
         setWorldData(land);
       })
-      .catch(err => console.error('Failed to load world data:', err));
+      .catch((err) => console.error('Failed to load world data:', err));
   }, []);
 
   // Render function
@@ -54,7 +62,7 @@ export function MiniGlobe({
     const context = canvas.getContext('2d');
     if (!context) return;
 
-    // Set up high DPI rendering
+    // High-DPI rendering
     const dpr = window.devicePixelRatio || 1;
     canvas.width = width * dpr;
     canvas.height = height * dpr;
@@ -62,11 +70,12 @@ export function MiniGlobe({
     canvas.style.height = `${height}px`;
     context.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-    // Clear canvas
+    // Clear
     context.clearRect(0, 0, width, height);
 
-    // Create projection
-    const projection = d3.geoOrthographic()
+    // Projection
+    const projection = d3
+      .geoOrthographic()
       .scale(width / 2.2)
       .translate([width / 2, height / 2])
       .rotate(rotation)
@@ -75,14 +84,14 @@ export function MiniGlobe({
 
     const path = d3.geoPath(projection, context);
 
-    // Draw sphere outline
+    // Sphere outline
     context.beginPath();
     path({ type: 'Sphere' });
     context.strokeStyle = 'rgba(255, 255, 255, 0.12)';
     context.lineWidth = 2;
     context.stroke();
 
-    // Draw graticule (optional, very faint)
+    // Graticule
     const graticule = d3.geoGraticule();
     context.beginPath();
     path(graticule());
@@ -90,29 +99,29 @@ export function MiniGlobe({
     context.lineWidth = 0.5;
     context.stroke();
 
-    // Draw land (coastlines only)
+    // Land (coastlines)
     context.beginPath();
-    path(worldData);
+    path(worldData as unknown as GeoPermissibleObjects);
     context.strokeStyle = 'rgba(255, 255, 255, 0.85)';
     context.lineWidth = 2;
     context.fillStyle = 'transparent';
     context.stroke();
 
-    // Draw pins (on top)
-    pins.forEach(pin => {
+    // Pins (front side only)
+    pins.forEach((pin) => {
       const coords = projection([pin.lon, pin.lat]);
-      if (!coords) return; // Back side, skip
-      
+      if (!coords) return;
+
       const [x, y] = coords;
-      
-      // Draw halo for contrast
+
+      // Halo
       context.beginPath();
       context.arc(x, y, 6, 0, 2 * Math.PI);
       context.strokeStyle = 'rgba(255, 255, 255, 0.7)';
       context.lineWidth = 2;
       context.stroke();
-      
-      // Draw filled pin
+
+      // Dot
       context.beginPath();
       context.arc(x, y, 3.5, 0, 2 * Math.PI);
       context.fillStyle = '#4da3ff';
@@ -125,12 +134,12 @@ export function MiniGlobe({
     render();
   }, [render]);
 
-  // Auto-spin animation
+  // Auto-spin
   useEffect(() => {
     if (!spinSpeedDegPerSec || isDragging) return;
 
     const timeSinceLastDrag = Date.now() - lastDragTime;
-    if (timeSinceLastDrag < 1000) return; // Wait 1s after drag
+    if (timeSinceLastDrag < 1000) return; // wait 1s after drag
 
     let lastTime = Date.now();
 
@@ -139,11 +148,7 @@ export function MiniGlobe({
       const dt = (now - lastTime) / 1000;
       lastTime = now;
 
-      setRotation(([lambda, phi, gamma]) => [
-        lambda + spinSpeedDegPerSec * dt,
-        phi,
-        gamma
-      ]);
+      setRotation(([lambda, phi, gamma]) => [lambda + spinSpeedDegPerSec * dt, phi, gamma]);
 
       animationRef.current = requestAnimationFrame(animate);
     };
@@ -151,67 +156,72 @@ export function MiniGlobe({
     animationRef.current = requestAnimationFrame(animate);
 
     return () => {
-      if (animationRef.current) {
-        cancelAnimationFrame(animationRef.current);
-      }
+      if (animationRef.current) cancelAnimationFrame(animationRef.current);
     };
   }, [spinSpeedDegPerSec, isDragging, lastDragTime]);
 
   // Drag handlers
-  const handlePointerDown = useCallback((e: React.PointerEvent<HTMLCanvasElement>) => {
-    if (!interactive) return;
-    
-    const canvas = canvasRef.current;
-    if (!canvas) return;
+  const handlePointerDown = useCallback(
+    (e: React.PointerEvent<HTMLCanvasElement>) => {
+      if (!interactive) return;
 
-    canvas.setPointerCapture(e.pointerId);
-    setIsDragging(true);
-    dragStartRef.current = {
-      x: e.clientX,
-      y: e.clientY,
-      rotation: [...rotation]
-    };
-    e.preventDefault();
-  }, [interactive, rotation]);
+      const canvas = canvasRef.current;
+      if (!canvas) return;
 
-  const handlePointerMove = useCallback((e: React.PointerEvent<HTMLCanvasElement>) => {
-    if (!isDragging || !dragStartRef.current) return;
+      canvas.setPointerCapture(e.pointerId);
+      setIsDragging(true);
+      dragStartRef.current = {
+        x: e.clientX,
+        y: e.clientY,
+        rotation: [...rotation],
+      };
+      e.preventDefault();
+    },
+    [interactive, rotation]
+  );
 
-    const dx = e.clientX - dragStartRef.current.x;
-    const dy = e.clientY - dragStartRef.current.y;
-    const R = width / 2.2;
+  const handlePointerMove = useCallback(
+    (e: React.PointerEvent<HTMLCanvasElement>) => {
+      if (!isDragging || !dragStartRef.current) return;
 
-    const lambda = dragStartRef.current.rotation[0] + (dx * 360) / (R * Math.PI);
-    const phi = Math.max(-89, Math.min(89, 
-      dragStartRef.current.rotation[1] - (dy * 360) / (R * Math.PI)
-    ));
+      const dx = e.clientX - dragStartRef.current.x;
+      const dy = e.clientY - dragStartRef.current.y;
+      const R = width / 2.2;
 
-    setRotation([lambda, phi, 0]);
-  }, [isDragging, width]);
+      const lambda = dragStartRef.current.rotation[0] + (dx * 360) / (R * Math.PI);
+      const phi = Math.max(-89, Math.min(89, dragStartRef.current.rotation[1] - (dy * 360) / (R * Math.PI)));
 
-  const handlePointerUp = useCallback((e: React.PointerEvent<HTMLCanvasElement>) => {
-    if (!isDragging) return;
+      setRotation([lambda, phi, 0]);
+    },
+    [isDragging, width]
+  );
 
-    const canvas = canvasRef.current;
-    if (canvas) {
-      canvas.releasePointerCapture(e.pointerId);
-    }
-    
-    setIsDragging(false);
-    setLastDragTime(Date.now());
-    dragStartRef.current = null;
-  }, [isDragging]);
+  const handlePointerUp = useCallback(
+    (e: React.PointerEvent<HTMLCanvasElement>) => {
+      if (!isDragging) return;
+
+      const canvas = canvasRef.current;
+      if (canvas) {
+        canvas.releasePointerCapture(e.pointerId);
+      }
+
+      setIsDragging(false);
+      setLastDragTime(Date.now());
+      dragStartRef.current = null;
+    },
+    [isDragging]
+  );
 
   return (
-    <canvas 
-      ref={canvasRef} 
+    <canvas
+      ref={canvasRef}
       className={className}
-      style={{ 
-        maxWidth: '100%', 
+      style={{
+        maxWidth: '100%',
         height: 'auto',
         cursor: interactive ? (isDragging ? 'grabbing' : 'grab') : 'default',
         touchAction: 'none',
-        userSelect: 'none'
+        userSelect: 'none',
       }}
       onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}

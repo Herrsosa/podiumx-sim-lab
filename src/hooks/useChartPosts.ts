@@ -42,11 +42,11 @@ export function useChartPosts(athleteId: string | undefined, startDate?: number)
       console.log('[useChartPosts] Fetched', rows.length, 'workout posts');
       console.log('[useChartPosts] Posts:', rows.map(r => ({ id: r.id, created_at: r.created_at })));
       
-      return rows.map((row) => ({
+      return rows.map<Post>((row) => ({
         id: row.id,
         created_at: row.created_at,
         author_id: row.author_id,
-        workout_json: row.workout_json as any,
+        workout_json: (row.workout_json as Post['workout_json']) ?? null,
         image_url: row.image_url,
         text: row.text,
         token_gated: Boolean(row.token_gated),
