@@ -50,10 +50,17 @@ const AthletePriceChart = memo(({
 
   const posSeries = useMemo<PoSSeriesPoint[]>(() => {
     if (!posts || !featureFlags.showPoS) return [];
-    const entries = posts
-      .filter((post) => post?.workout_json)
-      .map((post) => ({ timestamp: new Date(post.created_at).getTime(), count: 1 }));
-    return buildPoSSeries(entries, timeRange);
+    const workoutPosts = posts.filter((post) => post?.workout_json);
+    console.log('[AthletePriceChart] Total posts:', posts.length);
+    console.log('[AthletePriceChart] Workout posts:', workoutPosts.length);
+    const entries = workoutPosts.map((post) => ({ 
+      timestamp: new Date(post.created_at).getTime(), 
+      count: 1 
+    }));
+    console.log('[AthletePriceChart] PoS entries:', entries);
+    const series = buildPoSSeries(entries, timeRange);
+    console.log('[AthletePriceChart] PoS series after buildPoSSeries:', series);
+    return series;
   }, [posts, timeRange]);
 
   const posCountByDay = useMemo(
