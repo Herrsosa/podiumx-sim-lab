@@ -502,8 +502,7 @@ export default function MyAthletePage() {
           <PersonalConsole
             athlete={myAthletePage?.athlete}
             workouts={workouts}
-            posts={myAthletePage?.athlete?.posts ?? []}
-            athleteTrades={athleteTrades ?? []}
+          athleteTrades={athleteTrades ?? []}
             priceSeries={priceSeries}
             editedProfile={editedProfile}
             isEditing={isEditing}

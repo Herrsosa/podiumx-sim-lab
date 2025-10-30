@@ -27,6 +27,8 @@ import LockerWorkouts from '@/components/myathlete/LockerWorkouts';
 import { featureFlags } from '@/lib/config/featureFlags';
 import AthletePriceChart from '@/components/charts/AthletePriceChart';
 import type { PriceSeriesPoint } from '@/lib/charting/engine';
+import { getWindowUTC } from '@/lib/charting/engine';
+import { useChartPosts } from '@/hooks/useChartPosts';
 
 interface MobileMyAthletesProps {
   athlete?: Athlete;
@@ -100,6 +102,14 @@ export default function MobileMyAthletes({
   }, []);
 
   const safeChartRange = chartRangeOptions.includes(timeRange) ? timeRange : '7d';
+
+  const chartWindow = useMemo(() => getWindowUTC(safeChartRange), [safeChartRange]);
+  const chartStartDate = chartWindow.start;
+  const {
+    data: chartPosts = [],
+    isLoading: isLoadingChartPosts,
+    isFetching: isFetchingChartPosts,
+  } = useChartPosts(athlete?.id, chartStartDate);
 
   const priceChange = athlete?.change24h ?? 0;
   const isPriceUp = priceChange >= 0;
@@ -338,8 +348,9 @@ export default function MobileMyAthletes({
                       timeRange={safeChartRange}
                       formatXAxisTick={(value) => new Date(value).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
                       formatTooltipLabel={(value) => new Date(value).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                      isLoading={isLoading}
-                      posts={posts}
+                      isLoading={isLoading || isLoadingChartPosts}
+                      isFetching={isFetchingChartPosts}
+                      posts={chartPosts}
                       syncId="myathlete-chart"
                     />
                   </div>

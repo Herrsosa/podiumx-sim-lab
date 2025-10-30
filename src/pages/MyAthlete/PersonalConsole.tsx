@@ -7,7 +7,7 @@ import { EarningsSection } from '@/components/EarningsSection';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Athlete, Workout, Post } from '@/types';
+import { Athlete, Workout } from '@/types';
 import { toast } from 'sonner';
 import { useUser } from '@/store/auth';
 import { supabase } from '@/integrations/supabase/client';
@@ -34,11 +34,12 @@ import type { AthleteTrade } from '@/hooks/useAthleteTrades';
 import { featureFlags } from '@/lib/config/featureFlags';
 import AthletePriceChart from '@/components/charts/AthletePriceChart';
 import type { PriceSeriesPoint } from '@/lib/charting/engine';
+import { getWindowUTC } from '@/lib/charting/engine';
+import { useChartPosts } from '@/hooks/useChartPosts';
 
 interface PersonalConsoleProps {
   athlete?: Athlete;
   workouts: Workout[];
-  posts: Post[];
   athleteTrades: AthleteTrade[];
   priceSeries: PriceSeriesPoint[];
   editedProfile: EditableProfile;
@@ -62,7 +63,6 @@ interface PersonalConsoleProps {
 export function PersonalConsole({
   athlete,
   workouts,
-  posts,
   athleteTrades,
   priceSeries,
   editedProfile,
@@ -109,7 +109,19 @@ export function PersonalConsole({
   const { isConnected: xConnected, loading: xLoading } = useXConnection();
 
   const hasRealTrades = useMemo(() => priceSeries.some((point) => !point.carried), [priceSeries]);
-  const chartIsLoading = useMemo(() => priceSeries.length === 0 && athleteTrades.length === 0, [priceSeries.length, athleteTrades.length]);
+  const chartWindow = useMemo(() => getWindowUTC(activeTimeRange), [activeTimeRange]);
+  const chartStartDate = chartWindow.start;
+
+  const {
+    data: chartPosts = [],
+    isLoading: isLoadingChartPosts,
+    isFetching: isFetchingChartPosts,
+  } = useChartPosts(athlete?.id, chartStartDate);
+
+  const chartIsLoading = useMemo(
+    () => (priceSeries.length === 0 && athleteTrades.length === 0) || isLoadingChartPosts,
+    [athleteTrades.length, isLoadingChartPosts, priceSeries.length],
+  );
 
   const formatXAxisTick = useCallback((value: number) => {
     const date = new Date(value);
@@ -220,7 +232,8 @@ export function PersonalConsole({
                 formatXAxisTick={formatXAxisTick}
                 formatTooltipLabel={formatTooltipLabel}
                 isLoading={chartIsLoading}
-                posts={posts}
+                posts={chartPosts}
+                isFetching={isFetchingChartPosts}
                 syncId="myathlete-chart"
               />
             </div>
