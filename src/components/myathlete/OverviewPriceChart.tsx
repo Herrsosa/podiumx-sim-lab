@@ -46,6 +46,8 @@ export function OverviewPriceChart({
   
   // Fetch all workout posts for the chart (not paginated)
   const { data: chartPosts = [] } = useChartPosts(athlete.id, start);
+  
+  console.log('[OverviewPriceChart] chartPosts from hook:', chartPosts.length, 'athlete.posts:', athlete.posts?.length);
 
   const chartPoints = useMemo(() => {
     const priceInputs = trades
