@@ -1,6 +1,7 @@
 import { useCallback, useMemo, useState } from 'react';
 import type { Athlete } from '@/types';
 import { useAthleteTrades } from '@/hooks/useAthleteTrades';
+import { useChartPosts } from '@/hooks/useChartPosts';
 import AthletePriceChart from '@/components/charts/AthletePriceChart';
 import type { TimeRangeKey } from '@/utils/chartData';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -42,6 +43,9 @@ export function OverviewPriceChart({
   const { start } = useMemo(() => getWindowUTC(activeTimeRange), [activeTimeRange]);
   
   const { data: trades = [], isLoading, isFetching } = useAthleteTrades(athlete.id, start);
+  
+  // Fetch all workout posts for the chart (not paginated)
+  const { data: chartPosts = [] } = useChartPosts(athlete.id, start);
 
   const chartPoints = useMemo(() => {
     const priceInputs = trades
@@ -100,7 +104,7 @@ export function OverviewPriceChart({
           formatTooltipLabel={formatTooltipLabel}
           isLoading={isLoading}
           isFetching={isFetching}
-          posts={athlete.posts}
+          posts={chartPosts}
           syncId="myathlete-chart"
         />
       </div>
