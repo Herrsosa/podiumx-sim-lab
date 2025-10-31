@@ -31,9 +31,10 @@ import { useUser } from '@/store/auth';
 import { MobileActionBar } from '@/components/MobileActionBar';
 import { OptimizedImage } from '@/components/OptimizedImage';
 import { SelfMobileProfile } from '@/pages/AthleteDetailSelfMobile';
-import { buildPriceSeries } from '@/lib/charting/engine';
+import { buildPriceSeries, getWindowUTC } from '@/lib/charting/engine';
 import type { Athlete } from '@/types';
 import type { WorkoutMutationResult } from '@/hooks/useWorkouts';
+import { useChartPosts } from '@/hooks/useChartPosts';
 
 const AthletePriceChart = lazy(() => import('@/components/charts/AthletePriceChart'));
 
@@ -86,6 +87,12 @@ export default function AthleteDetail() {
 
   // Fetch real trade history data
   const { data: tradeHistory, isLoading: historyLoading } = useAthleteTradeHistory(athlete?.id, timeRange);
+  const chartWindow = useMemo(() => getWindowUTC(timeRange), [timeRange]);
+  const {
+    data: chartPosts = [],
+    isLoading: isLoadingChartPosts,
+    isFetching: isFetchingChartPosts,
+  } = useChartPosts(athlete?.id, chartWindow.start);
 
   const rawChartData = useMemo(() => {
     if (!tradeHistory?.data || tradeHistory.data.length === 0) {
@@ -435,8 +442,9 @@ export default function AthleteDetail() {
                   timeRange={timeRange}
                   formatXAxisTick={formatXAxisTick}
                   formatTooltipLabel={formatTooltipLabel}
-                  isLoading={historyLoading}
-                  posts={athlete.posts}
+                  isLoading={historyLoading || isLoadingChartPosts}
+                  isFetching={isFetchingChartPosts}
+                  posts={chartPosts}
                   syncId="athlete-detail-chart"
                 />
               </Suspense>
