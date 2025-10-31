@@ -33,15 +33,20 @@ export default function StravaLinkedResult() {
     setMessage(null);
 
     (async () => {
+      console.log('[StravaLinkedResult] Calling edge function with code:', code?.substring(0, 10) + '...', 'state:', state?.substring(0, 10) + '...');
+      
       const { data, error } = await supabase.functions.invoke("strava-oauth-exchange", {
         body: { code, state },
       });
+
+      console.log('[StravaLinkedResult] Edge function response:', { data, error });
 
       if (!isMounted) return;
 
       if (error || (data && "error" in data)) {
         const reason =
           error?.message ?? (data && "error" in data ? String(data.error) : null);
+        console.error('[StravaLinkedResult] Connection failed:', reason, error);
         setStatus("error");
         setMessage(reason ?? "We could not connect to Strava. Please try again.");
         toast({
