@@ -31,7 +31,8 @@ import { useUser } from '@/store/auth';
 import { MobileActionBar } from '@/components/MobileActionBar';
 import { OptimizedImage } from '@/components/OptimizedImage';
 import { SelfMobileProfile } from '@/pages/AthleteDetailSelfMobile';
-import { buildPriceSeries, getWindowUTC } from '@/lib/charting/engine';
+import { getWindowUTC } from '@/lib/charting/engine';
+import { ensureMs } from '@/lib/charting/seriesUtils';
 import type { Athlete } from '@/types';
 import type { WorkoutMutationResult } from '@/hooks/useWorkouts';
 import { useChartPosts } from '@/hooks/useChartPosts';
@@ -85,8 +86,26 @@ export default function AthleteDetail() {
     return trades.filter((t) => t.athleteId === athlete.id).slice(0, 100);
   }, [trades, athlete?.id]);
 
+  const signupAtMs = useMemo(() => {
+    const timestamp = athlete?.tokenCreatedAt ?? athlete?.createdAt;
+    if (!timestamp) return null;
+    const parsed = Date.parse(timestamp);
+    return Number.isFinite(parsed) ? parsed : null;
+  }, [athlete?.createdAt, athlete?.tokenCreatedAt]);
+
+  const latestPricePoint = useMemo(() => {
+    if (!athlete) return null;
+    if (!Number.isFinite(athlete.price)) return null;
+    const parsed = athlete.priceUpdatedAt ? Date.parse(athlete.priceUpdatedAt) : Number.NaN;
+    const timestamp = Number.isFinite(parsed) ? parsed : Date.now();
+    return { price: athlete.price, t: timestamp };
+  }, [athlete]);
+
   // Fetch real trade history data
-  const { data: tradeHistory, isLoading: historyLoading } = useAthleteTradeHistory(athlete?.id, timeRange);
+  const { data: tradeHistory, isLoading: historyLoading } = useAthleteTradeHistory(athlete?.id, timeRange, {
+    signupAt: signupAtMs,
+    latestPrice: latestPricePoint,
+  });
   const chartWindow = useMemo(() => getWindowUTC(timeRange), [timeRange]);
   const {
     data: chartPosts = [],
@@ -101,27 +120,16 @@ export default function AthleteDetail() {
 
     return tradeHistory.data
       .map((point) => {
-        const t = new Date(point.timestamp).getTime();
-        if (!Number.isFinite(t)) {
+        const timestamp = ensureMs(point.timestamp);
+        if (!Number.isFinite(timestamp)) {
           return null;
         }
-        return {
-          t,
-          price: point.price,
-        };
+        return { t: timestamp, price: point.price };
       })
       .filter((point): point is { t: number; price: number } => point !== null);
   }, [tradeHistory]);
 
-  const chartPoints = useMemo(() => {
-    if (!athlete?.price) return [];
-
-    const priceInputs = rawChartData
-      .map((point) => ({ timestamp: point.t, price: point.price }))
-      .filter((point) => Number.isFinite(point.timestamp) && Number.isFinite(point.price));
-
-    return buildPriceSeries(priceInputs, timeRange, { fallbackPrice: athlete.price });
-  }, [rawChartData, athlete?.price, timeRange]);
+  const chartPoints = useMemo(() => rawChartData, [rawChartData]);
 
   const hasRealTrades = (tradeHistory?.volume ?? 0) > 0 || rawChartData.length > 1;
   const displayChartPoints = chartPoints;

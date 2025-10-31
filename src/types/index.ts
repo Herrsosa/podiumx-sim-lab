@@ -22,6 +22,9 @@ export interface Athlete {
   volume24h: number;
   workouts: Workout[];
   posts: Post[];
+  createdAt?: string;
+  priceUpdatedAt?: string | null;
+  tokenCreatedAt?: string | null;
 }
 
 export interface Post {

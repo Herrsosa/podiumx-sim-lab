@@ -4,6 +4,17 @@ import { supabase } from '@/integrations/supabase/client';
 import { priceAt } from '@/utils/pricing';
 import type { Database } from '@/integrations/supabase/types';
 import { athletePriceQueryKey, type AthletePriceSnapshot } from './useAthletePrice';
+import { featureFlags } from '@/lib/config/featureFlags';
+import {
+  clampToSignup,
+  stitchLatest,
+  filterPointsByRange,
+  toChartPoints,
+  toTradePoints,
+  getRangeStart,
+  ensureMs,
+  type ChartPoint,
+} from '@/lib/charting/seriesUtils';
 
 export type TimeRange = '24h' | '7d' | '30d' | 'all';
 
@@ -35,11 +46,19 @@ type RealtimePricePayload = Partial<PriceRow> & {
   athleteRevenue?: number | null;
 };
 
-export const trimToWindow = (points: TradePoint[], range: TimeRange) => {
-  if (range === 'all') return points;
-  const hours = RANGE_WINDOWS[range];
-  const cutoff = Date.now() - hours * 60 * 60 * 1000;
-  return points.filter((point) => point.timestamp >= cutoff);
+export interface UseAthleteTradeHistoryOptions {
+  signupAt?: number | null;
+  latestPrice?: { price: number; t: number | null } | null;
+}
+
+export const trimToWindow = (points: TradePoint[], range: TimeRange, signupAtMs?: number | null) => {
+  if (range === 'all' && !signupAtMs) {
+    return points;
+  }
+
+  const chartPoints = toChartPoints(points);
+  const filtered = filterPointsByRange(chartPoints, getRangeStart(range, signupAtMs), Date.now());
+  return toTradePoints(filtered);
 };
 
 const samplePoints = (points: TradePoint[]) => {
@@ -73,11 +92,37 @@ export const recalcSeries = (points: TradePoint[], volume: number): ChartSeries 
   };
 };
 
-export function useAthleteTradeHistory(athleteId: string | undefined, range: TimeRange = '24h') {
+export function useAthleteTradeHistory(
+  athleteId: string | undefined,
+  range: TimeRange = '24h',
+  options: UseAthleteTradeHistoryOptions = {},
+) {
   const queryClient = useQueryClient();
   const pendingTicksRef = useRef<AthletePriceSnapshot[]>([]);
   const flushTimeoutRef = useRef<number>();
-  const tradeHistoryQueryKey = useMemo(() => ['chart', athleteId, range] as const, [athleteId, range]);
+  const signupAtMs = useMemo(() => {
+    if (options.signupAt == null || !Number.isFinite(options.signupAt)) return null;
+    return ensureMs(Number(options.signupAt));
+  }, [options.signupAt]);
+
+  const latestPricePoint = useMemo(() => {
+    const latest = options.latestPrice;
+    if (!latest || !Number.isFinite(latest.price)) return null;
+    const timestamp = latest.t != null && Number.isFinite(latest.t) ? ensureMs(Number(latest.t)) : Date.now();
+    return { price: latest.price, t: timestamp };
+  }, [options.latestPrice]);
+
+  const tradeHistoryQueryKey = useMemo(
+    () => ['athleteChart', athleteId, range, signupAtMs, latestPricePoint?.t ?? null, latestPricePoint?.price ?? null] as const,
+    [athleteId, range, signupAtMs, latestPricePoint?.t, latestPricePoint?.price],
+  );
+
+  useEffect(() => {
+    if (!athleteId) return;
+    queryClient.removeQueries({ queryKey: ['prices', athleteId], exact: false });
+    queryClient.removeQueries({ queryKey: ['athletePrices', athleteId], exact: false });
+    queryClient.removeQueries({ queryKey: ['chart', athleteId], exact: false });
+  }, [athleteId, queryClient]);
 
   useEffect(() => {
     if (!athleteId) return;
@@ -110,7 +155,7 @@ export function useAthleteTradeHistory(athleteId: string | undefined, range: Tim
             (a, b) => a.timestamp - b.timestamp,
           );
 
-          const windowed = trimToWindow(deduped, range);
+          const windowed = trimToWindow(deduped, range, signupAtMs);
           return recalcSeries(windowed, current.volume);
         });
       };
@@ -175,27 +220,31 @@ export function useAthleteTradeHistory(athleteId: string | undefined, range: Tim
       pendingTicksRef.current = [];
       flushTimeoutRef.current = undefined;
     };
-  }, [athleteId, queryClient, range, tradeHistoryQueryKey]);
+  }, [athleteId, queryClient, range, signupAtMs, tradeHistoryQueryKey]);
 
   const result = useQuery<ChartSeries>({
     queryKey: tradeHistoryQueryKey,
     enabled: !!athleteId,
-    staleTime: range === 'all' ? 5 * 60_000 : 60_000,
-    gcTime: 10 * 60_000,
+    staleTime: 30_000,
+    gcTime: 5 * 60_000,
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
     queryFn: async () => {
       if (!athleteId) return { data: [], changePct: 0, volume: 0 };
 
-      const now = new Date();
+      const now = Date.now();
+      const rangeStart = getRangeStart(range, signupAtMs);
+      const rangeEnd = now;
+
       let query = supabase
         .from('trades')
         .select('created_at, price_after, qty, gross_amount, net_amount')
         .eq('athlete_id', athleteId)
         .order('created_at', { ascending: true });
 
-      if (range !== 'all') {
-        const hoursAgo = RANGE_WINDOWS[range];
-        const startTime = new Date(now.getTime() - hoursAgo * 60 * 60 * 1000);
-        query = query.gte('created_at', startTime.toISOString());
+      if (range !== 'all' || signupAtMs != null) {
+        const startIso = new Date(Math.min(rangeStart, now)).toISOString();
+        query = query.gte('created_at', startIso);
       }
 
       const { data: trades, error } = await query;
@@ -212,7 +261,59 @@ export function useAthleteTradeHistory(athleteId: string | undefined, range: Tim
 
       const tradeRows = (trades ?? []) as TradeRow[];
 
-      const volume = tradeRows.reduce((sum, trade) => {
+      const chartPoints: ChartPoint[] = tradeRows
+        .map((trade) => {
+          const timestamp = trade.created_at ? ensureMs(Date.parse(trade.created_at)) : Number.NaN;
+          const price = Number(trade.price_after);
+          if (!Number.isFinite(timestamp) || !Number.isFinite(price)) {
+            return null;
+          }
+          return { t: timestamp, price };
+        })
+        .filter((point): point is ChartPoint => Boolean(point))
+        .sort((a, b) => a.t - b.t);
+
+      let clamped = chartPoints;
+      if (featureFlags.chartClampToSignup && signupAtMs) {
+        clamped = clampToSignup(clamped, signupAtMs);
+      }
+
+      let stitched = clamped;
+      if (featureFlags.chartStitchLatest && latestPricePoint) {
+        stitched = stitchLatest(clamped, latestPricePoint);
+      }
+
+      let rangeFiltered = filterPointsByRange(stitched, rangeStart, rangeEnd);
+
+      if (rangeFiltered.length > 0 && range !== 'all') {
+        const startCandidate = ensureMs(rangeStart);
+        const firstPoint = rangeFiltered[0];
+        if (firstPoint.t > startCandidate) {
+          rangeFiltered = [{ t: startCandidate, price: firstPoint.price }, ...rangeFiltered];
+        }
+      }
+
+      if (rangeFiltered.length === 0) {
+        if (latestPricePoint && latestPricePoint.t >= rangeStart && latestPricePoint.t <= rangeEnd) {
+          if (process.env.NODE_ENV !== 'production') {
+            console.log('[ChartDiag] empty series -> stitched latest only');
+          }
+          return recalcSeries([{ timestamp: latestPricePoint.t, price: latestPricePoint.price }], 0);
+        }
+
+        if (process.env.NODE_ENV !== 'production') {
+          console.log('[ChartDiag] empty series -> no latest point available');
+        }
+
+        return { data: [], changePct: 0, volume: 0 };
+      }
+
+      const windowedVolume = tradeRows.reduce((sum, trade) => {
+        const timestamp = trade.created_at ? ensureMs(Date.parse(trade.created_at)) : Number.NaN;
+        if (!Number.isFinite(timestamp) || timestamp < rangeStart || timestamp > rangeEnd) {
+          return sum;
+        }
+
         const gross = Number(trade.gross_amount);
         if (Number.isFinite(gross) && gross !== 0) {
           return sum + Math.abs(gross);
@@ -225,49 +326,27 @@ export function useAthleteTradeHistory(athleteId: string | undefined, range: Tim
 
         const price = Number(trade.price_after);
         const qty = Number(trade.qty);
-        if (Number.isFinite(price) && Number.isFinite(qty)) {
+        if (Number.isFinite(price) && Number.isFinite(qty) && qty !== 0) {
           return sum + Math.abs(price * qty);
         }
 
         return sum;
       }, 0);
 
-      if (!trades || trades.length === 0) {
-        const { data: token } = await supabase
-          .from('athlete_tokens')
-          .select('supply, a, b, c')
-          .eq('athlete_id', athleteId)
-          .single();
+      const tradePoints = toTradePoints(rangeFiltered);
 
-        if (token) {
-          const curve = {
-            a: token.a || 0.0002,
-            b: token.b || 0.02,
-            c: token.c || 1,
-          };
-          const currentPrice = priceAt(token.supply || 0, curve);
-
-          return recalcSeries([{ timestamp: now.getTime(), price: currentPrice }], 0);
-        }
-
-        return { data: [], changePct: 0, volume: 0 };
+      if (process.env.NODE_ENV !== 'production') {
+        const first = rangeFiltered?.[0];
+        const last = rangeFiltered?.[rangeFiltered.length - 1];
+        console.log('[ChartDiag] athleteId=', athleteId);
+        console.log('[ChartDiag] range=', range, 'signupAtMs=', signupAtMs, signupAtMs ? new Date(signupAtMs).toISOString() : null);
+        console.log('[ChartDiag] points(raw)->', chartPoints.length);
+        console.log('[ChartDiag] clamped->', clamped.length);
+        console.log('[ChartDiag] stitched->', stitched.length);
+        console.log('[ChartDiag] rangeFiltered->', rangeFiltered.length, 'first=', first?.t && new Date(first.t).toISOString(), 'last=', last?.t && new Date(last.t).toISOString(), 'lastPrice=', last?.price);
       }
 
-      const points: TradePoint[] = tradeRows
-        .map((trade) => {
-          const timestamp = new Date(trade.created_at).getTime();
-          const price = Number(trade.price_after);
-          if (!Number.isFinite(timestamp) || Number.isNaN(price)) {
-            return null;
-          }
-          return { timestamp, price };
-        })
-        .filter((point): point is TradePoint => Boolean(point))
-        .sort((a, b) => a.timestamp - b.timestamp);
-
-      const windowed = trimToWindow(points, range);
-
-      return recalcSeries(windowed, volume);
+      return recalcSeries(tradePoints, windowedVolume);
     },
   });
 

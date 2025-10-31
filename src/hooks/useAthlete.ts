@@ -81,6 +81,8 @@ export function useAthlete(slug: string) {
         volume24h: 0,
         workouts,
         posts: typedPosts,
+        createdAt: profile.created_at || undefined,
+        priceUpdatedAt: null,
       };
 
       return athlete;
@@ -113,6 +115,8 @@ export function useAthlete(slug: string) {
           price: priceSnapshot.price,
           marketCap: priceSnapshot.price * priceSnapshot.supply,
           athleteRevenue: priceSnapshot.athleteRevenue,
+          priceUpdatedAt: priceSnapshot.updatedAt ?? null,
+          tokenCreatedAt: priceSnapshot.tokenCreatedAt ?? queryResult.data.tokenCreatedAt,
         }
       : queryResult.data;
 

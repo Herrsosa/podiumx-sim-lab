@@ -15,6 +15,7 @@ export interface AthletePriceSnapshot {
     c: number;
   };
   updatedAt: string | null;
+  tokenCreatedAt: string | null;
 }
 
 export const athletePriceQueryKey = (athleteId: string | undefined) =>
@@ -74,44 +75,73 @@ export function useAthletePrice(athleteId: string | undefined) {
   return useQuery<AthletePriceSnapshot | null>({
     queryKey,
     enabled: !!athleteId,
+    staleTime: 30_000,
+    gcTime: 5 * 60_000,
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
     queryFn: async () => {
       if (!athleteId) return null;
 
-      const { data: token, error } = await supabase
-        .from('athlete_tokens')
-        .select('athlete_id, supply, a, b, c, treasury_balance, athlete_earnings, created_at')
-        .eq('athlete_id', athleteId)
-        .maybeSingle();
+      const [{ data: token, error: tokenError }, { data: latestPriceRows, error: priceError }] = await Promise.all([
+        supabase
+          .from('athlete_tokens')
+          .select('athlete_id, supply, a, b, c, treasury_balance, athlete_earnings, created_at')
+          .eq('athlete_id', athleteId)
+          .maybeSingle(),
+        supabase
+          .from('athlete_prices')
+          .select('price, supply, treasury_balance, athlete_earnings, curve_a, curve_b, curve_c, created_at')
+          .eq('athlete_id', athleteId)
+          .order('created_at', { ascending: false })
+          .limit(1),
+      ]);
 
-      if (error) {
-        console.error('Failed to fetch athlete price snapshot', error);
-        throw error;
+      if (tokenError) {
+        console.error('Failed to fetch athlete token snapshot', tokenError);
+        throw tokenError;
+      }
+
+      if (priceError) {
+        console.error('Failed to fetch latest athlete price', priceError);
+        throw priceError;
       }
 
       if (!token) return null;
 
-      const price =
-        token.supply != null
-          ? priceAt(token.supply, {
-              a: token.a ?? 0.0002,
-              b: token.b ?? 0.02,
-              c: token.c ?? 1,
-            })
-          : 0;
+      const latestPriceRow = latestPriceRows?.[0] ?? null;
+
+      const curve = {
+        a: latestPriceRow?.curve_a ?? token.a ?? 0.0002,
+        b: latestPriceRow?.curve_b ?? token.b ?? 0.02,
+        c: latestPriceRow?.curve_c ?? token.c ?? 1,
+      };
+
+      const price = latestPriceRow?.price ?? (token.supply != null ? priceAt(token.supply, curve) : 0);
+      const supply = latestPriceRow?.supply ?? token.supply ?? 0;
+      const reserve = latestPriceRow?.treasury_balance ?? token.treasury_balance ?? 0;
+      const athleteRevenue = latestPriceRow?.athlete_earnings ?? token.athlete_earnings ?? 0;
+      const updatedAt = latestPriceRow?.created_at ?? token.created_at ?? null;
+      const tokenCreatedAt = token.created_at ?? null;
 
       const snapshot: AthletePriceSnapshot = {
         athleteId: token.athlete_id,
         price,
-        supply: token.supply ?? 0,
-        reserve: token.treasury_balance ?? 0,
-        athleteRevenue: token.athlete_earnings ?? 0,
-        curve: {
-          a: token.a ?? 0.0002,
-          b: token.b ?? 0.02,
-          c: token.c ?? 1,
-        },
-        updatedAt: token.created_at ?? null,
+        supply,
+        reserve,
+        athleteRevenue,
+        curve,
+        updatedAt,
+        tokenCreatedAt,
       };
+
+      if (process.env.NODE_ENV !== 'production') {
+        console.log('[PriceDiag] latest price snapshot', {
+          athleteId: snapshot.athleteId,
+          price: snapshot.price,
+          updatedAt: snapshot.updatedAt,
+          tokenCreatedAt: snapshot.tokenCreatedAt,
+        });
+      }
 
       queryClient.setQueryData(queryKey, snapshot);
       return snapshot;

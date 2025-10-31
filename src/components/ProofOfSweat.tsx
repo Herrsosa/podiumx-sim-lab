@@ -181,6 +181,22 @@ export default function ProofOfSweat({
     }
   }, [openMonths, storageKey, groupByMonth]);
 
+  const handleDeleteClick = useCallback((workoutId: string) => {
+    setWorkoutToDelete(workoutId);
+    setDeleteDialogOpen(true);
+  }, []);
+
+  const handleEditClick = useCallback(
+    (workout: Workout) => {
+      const post = workoutPostMap.get(workout.id);
+      if (post) {
+        setWorkoutToEdit(post);
+        setEditModalOpen(true);
+      }
+    },
+    [workoutPostMap],
+  );
+
   const renderWorkoutCard = useCallback(
     (workout: Workout) => {
       const post = workoutPostMap.get(workout.id);
@@ -299,28 +315,12 @@ export default function ProofOfSweat({
     [athleteName, canDelete, handleDeleteClick, handleEditClick, onUnlock, viewerHoldings, workoutPostMap],
   );
 
-  const handleEditClick = useCallback(
-    (workout: Workout) => {
-      const post = workoutPostMap.get(workout.id);
-      if (post) {
-        setWorkoutToEdit(post);
-        setEditModalOpen(true);
-      }
-    },
-    [workoutPostMap],
-  );
-
   const handleEditModalChange = (open: boolean) => {
     setEditModalOpen(open);
     if (!open) {
       setWorkoutToEdit(null);
     }
   };
-
-  const handleDeleteClick = useCallback((workoutId: string) => {
-    setWorkoutToDelete(workoutId);
-    setDeleteDialogOpen(true);
-  }, []);
 
   const handleConfirmDelete = async () => {
     if (!workoutToDelete) return;

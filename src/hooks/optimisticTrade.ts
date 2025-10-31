@@ -141,7 +141,7 @@ export function applyOptimisticTrade(params: OptimisticTradeParams): OptimisticT
   const priceKey = athletePriceQueryKey(athleteId);
   const previousPrice = queryClient.getQueryData<AthletePriceSnapshot | null>(priceKey) ?? null;
   const previousAccess = queryClient.getQueryData<LockerAccessSnapshot | null>(['locker-access', userId, athleteId]) ?? null;
-  const previousCharts = queryClient.getQueriesData<ChartSeries | undefined>({ queryKey: ['chart', athleteId] });
+  const previousCharts = queryClient.getQueriesData<ChartSeries | undefined>({ queryKey: ['athleteChart', athleteId] });
 
   if (!previousWallet || !previousPrice) {
     return {
@@ -327,7 +327,7 @@ export function reconcileTradeSuccess(
     };
 
     queryClient
-      .getQueriesData<ChartSeries | undefined>({ queryKey: ['chart', athleteId] })
+      .getQueriesData<ChartSeries | undefined>({ queryKey: ['athleteChart', athleteId] })
       .forEach(([key, series]) => {
         const range = key[2] as TimeRange | undefined;
         const updated = updateChartSeries(series, range, point, payload.priceTick?.grossAmount ?? 0);
