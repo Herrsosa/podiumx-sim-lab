@@ -256,19 +256,8 @@ export function StravaCard({ className }: StravaCardProps) {
   const canToggleActivityView = !!activities && activities.length > 3;
 
   const handleConnect = async () => {
-    const clientId = import.meta.env.VITE_STRAVA_CLIENT_ID as string | undefined;
-
-    if (!clientId) {
-      toast({
-        title: "Strava unavailable",
-        description: "Missing Strava client configuration",
-        variant: "destructive",
-      });
-      return;
-    }
-
     try {
-      const authorizeUrl = await prepareStravaAuthorizeUrl(clientId);
+      const authorizeUrl = await prepareStravaAuthorizeUrl();
       window.location.href = authorizeUrl;
     } catch (error) {
       console.error("Failed to initiate Strava authorization:", error);
@@ -281,13 +270,39 @@ export function StravaCard({ className }: StravaCardProps) {
   };
 
   const handleDisconnect = async () => {
+    if (!userId) {
+      toast({
+        title: "Unable to disconnect",
+        description: "Sign in to manage Strava connections.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
-      await supabase.from("oauth_connections").delete().eq("provider", "strava");
-      if (userId) {
-        await queryClient.invalidateQueries({ queryKey: stravaConnectionQueryKey(userId) });
-      } else {
-        await queryClient.invalidateQueries({ queryKey: ["connections"] });
-      }
+      const [{ error: oauthError }, { error: integrationError }] = await Promise.all([
+        supabase
+          .from("oauth_connections")
+          .delete()
+          .eq("provider", "strava")
+          .eq("user_id", userId),
+        supabase
+          .from("athlete_integrations")
+          .delete()
+          .eq("athlete_id", userId)
+          .eq("service", "strava"),
+      ]);
+
+      if (oauthError) throw oauthError;
+      if (integrationError) throw integrationError;
+
+      queryClient.setQueryData(stravaConnectionQueryKey(userId), null);
+
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: stravaConnectionQueryKey(userId) }),
+        queryClient.invalidateQueries({ queryKey: ["activities"] }),
+      ]);
+
       toast({ title: "Disconnected from Strava" });
     } catch (error) {
       const message = error instanceof Error ? error.message : "Something went wrong";
