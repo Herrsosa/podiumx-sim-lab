@@ -210,16 +210,21 @@ export default function Onboarding() {
       if (avatarFile) {
         const fileExt = avatarFile.name.split('.').pop();
         const fileName = `${user.id}/${Date.now()}.${fileExt}`;
-        const { error: uploadError } = await supabase.storage
+        const { data: uploadData, error: uploadError } = await supabase.storage
           .from('avatars')
           .upload(fileName, avatarFile);
 
-        if (uploadError) throw uploadError;
-
-        const { data: urlData } = supabase.storage
-          .from('avatars')
-          .getPublicUrl(fileName);
-        avatarUrl = urlData.publicUrl;
+        if (uploadError) {
+          const message = uploadError.message?.toLowerCase() ?? '';
+          if (uploadError.status === 404 || message.includes('bucket not found')) {
+            console.warn('[onboarding] avatars bucket missing, skipping upload');
+          } else {
+            throw uploadError;
+          }
+        } else if (uploadData) {
+          const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(uploadData.path);
+          avatarUrl = urlData.publicUrl;
+        }
       }
 
       const safeUsername = name.toLowerCase().replace(/\s+/g, '').slice(0, 24);
@@ -272,39 +277,54 @@ export default function Onboarding() {
   };
 
   const handleAthleteComplete = async () => {
-    if (!user) {
-      toast.error("You must be logged in to complete onboarding");
-      return;
-    }
-
     setSubmitting(true);
     try {
-      let avatarUrl = avatar;
+      const { data: authData, error: authError } = await supabase.auth.getUser();
+      if (authError || !authData?.user) {
+        throw new Error('You must be logged in to complete onboarding');
+      }
+
+      const uid = authData.user.id;
+
+      let avatarUrl: string | null = null;
+      if (avatar && !avatar.startsWith('blob:')) {
+        avatarUrl = avatar;
+      }
+
       if (avatarFile) {
-        const fileExt = avatarFile.name.split('.').pop();
-        const fileName = `${user.id}/${Date.now()}.${fileExt}`;
-        const { error: uploadError } = await supabase.storage
-          .from('avatars')
-          .upload(fileName, avatarFile);
+        try {
+          const key = `${uid}/profile.jpg`;
+          const { error: uploadError } = await supabase.storage.from('avatars').upload(key, avatarFile, {
+            upsert: true,
+            contentType: avatarFile.type || 'image/jpeg',
+          });
 
-        if (uploadError) throw uploadError;
-
-        const { data: urlData } = supabase.storage
-          .from('avatars')
-          .getPublicUrl(fileName);
-        avatarUrl = urlData.publicUrl;
+          if (uploadError) {
+            const message = uploadError.message?.toLowerCase() ?? '';
+            if (uploadError.status === 404 || message.includes('bucket not found')) {
+              console.warn('[onboarding] avatars bucket missing, continuing without upload');
+            } else {
+              throw uploadError;
+            }
+          } else {
+            const { data: publicData } = supabase.storage.from('avatars').getPublicUrl(key);
+            avatarUrl = publicData.publicUrl;
+          }
+        } catch (uploadErr) {
+          console.warn('Avatar upload failed, continuing with default.', uploadErr);
+        }
       }
 
       // 1. Upsert profile
       const { error: profileError } = await supabase
         .from('profiles')
         .upsert({
-          id: user.id,
+          id: uid,
           display_name: name,
           username: handle.replace('@', ''),
           sport,
           bio,
-          avatar_url: avatarUrl || null,
+          avatar_url: avatarUrl,
           role: 'athlete',
           onboarding_completed: false,
         });
@@ -315,7 +335,7 @@ export default function Onboarding() {
       const { error: tokenError } = await supabase
         .from('athlete_tokens')
         .insert({
-          athlete_id: user.id,
+          athlete_id: uid,
           symbol: handle.replace('@', '').toUpperCase(),
           supply: 0,
           a: 0.0002,
@@ -331,7 +351,7 @@ export default function Onboarding() {
       const { error: walletError } = await supabase
         .from('wallets')
         .insert({
-          user_id: user.id,
+          user_id: uid,
           balance: 1000,
         });
 
@@ -350,7 +370,7 @@ export default function Onboarding() {
       const { error: postError } = await supabase
         .from('posts')
         .insert({
-          author_id: user.id,
+          author_id: uid,
           text: notes,
           workout_json: workoutData,
         });
@@ -359,14 +379,13 @@ export default function Onboarding() {
 
       await markOnboardingComplete();
 
-      // Clear onboarding state from localStorage
       setOnboardingRole(null);
 
-      toast.success("Welcome to PodiumX! 🎉");
+      toast.success('Welcome to PodiumX! 🎉');
       navigate('/portfolio', { replace: true });
     } catch (error: unknown) {
       console.error('Onboarding error:', error);
-      toast.error(error instanceof Error ? error.message : "Failed to complete onboarding");
+      toast.error(error instanceof Error ? error.message : 'Failed to complete onboarding');
     } finally {
       setSubmitting(false);
     }

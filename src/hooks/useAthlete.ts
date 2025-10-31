@@ -13,6 +13,8 @@ type PostRow = Database['public']['Tables']['posts']['Row'];
 export function useAthlete(slug: string) {
   const queryResult = useQuery({
     queryKey: ['athlete', slug],
+    staleTime: 10 * 60_000,
+    gcTime: 30 * 60_000,
     queryFn: async () => {
       const { data: profile, error: profileError } = await supabase
         .from('profiles')

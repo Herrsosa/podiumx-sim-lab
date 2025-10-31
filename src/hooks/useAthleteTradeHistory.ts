@@ -77,6 +77,7 @@ export function useAthleteTradeHistory(athleteId: string | undefined, range: Tim
   const queryClient = useQueryClient();
   const pendingTicksRef = useRef<AthletePriceSnapshot[]>([]);
   const flushTimeoutRef = useRef<number>();
+  const tradeHistoryQueryKey = useMemo(() => ['chart', athleteId, range] as const, [athleteId, range]);
 
   useEffect(() => {
     if (!athleteId) return;
@@ -93,7 +94,7 @@ export function useAthleteTradeHistory(athleteId: string | undefined, range: Tim
         const latest = ticks[ticks.length - 1];
         queryClient.setQueryData<AthletePriceSnapshot | null>(priceKey, () => latest);
 
-        queryClient.setQueryData<ChartSeries | undefined>(['chart', athleteId, range], (current) => {
+        queryClient.setQueryData<ChartSeries | undefined>(tradeHistoryQueryKey, (current) => {
           if (!current) return current;
 
           const basePoints = [...current.data];
@@ -174,12 +175,13 @@ export function useAthleteTradeHistory(athleteId: string | undefined, range: Tim
       pendingTicksRef.current = [];
       flushTimeoutRef.current = undefined;
     };
-  }, [athleteId, queryClient, range]);
+  }, [athleteId, queryClient, range, tradeHistoryQueryKey]);
 
   const result = useQuery<ChartSeries>({
-    queryKey: ['chart', athleteId, range],
+    queryKey: tradeHistoryQueryKey,
     enabled: !!athleteId,
-    staleTime: 15 * 60_000,
+    staleTime: range === 'all' ? 5 * 60_000 : 60_000,
+    gcTime: 10 * 60_000,
     queryFn: async () => {
       if (!athleteId) return { data: [], changePct: 0, volume: 0 };
 
