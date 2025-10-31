@@ -1,10 +1,8 @@
 import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
 import type { InfiniteData, QueryClient } from '@tanstack/react-query';
-import { createElement } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import type { Workout, Post } from '@/types';
 import { useToast } from '@/hooks/use-toast';
-import { ToastAction } from '@/components/ui/toast';
 import type { Database } from '@/integrations/supabase/types';
 
 export type WorkoutVisibility = 'public' | 'supporters' | 'backers';
@@ -247,16 +245,10 @@ export function useWorkouts(
   // Handle errors in component
   if (queryResult.error) {
     const message = queryResult.error instanceof Error ? queryResult.error.message : 'Please try again.';
-    const handleRetry = () =>
-      queryClient
-        .refetchQueries({ queryKey, type: 'active' })
-        .catch((err) => console.error('Failed to retry workouts query', err));
-
     toast({
       title: 'Unable to load workouts',
       description: message,
       variant: 'destructive',
-      action: createElement(ToastAction, { altText: 'Retry loading workouts', onClick: handleRetry }, 'Retry'),
     });
   }
 
