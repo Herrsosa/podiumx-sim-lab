@@ -60,6 +60,7 @@ export function useAthletePrice(athleteId: string | undefined) {
             athleteRevenue: Number(snapshot.athlete_earnings ?? 0),
             curve: previous?.curve ?? { a: 0.0002, b: 0.02, c: 1 },
             updatedAt: snapshot.created_at ?? null,
+            tokenCreatedAt: previous?.tokenCreatedAt ?? null,
           };
 
           queryClient.setQueryData(queryKey, formatted);
@@ -146,6 +147,5 @@ export function useAthletePrice(athleteId: string | undefined) {
       queryClient.setQueryData(queryKey, snapshot);
       return snapshot;
     },
-    staleTime: 60_000,
   });
 }

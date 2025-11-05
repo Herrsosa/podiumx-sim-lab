@@ -204,6 +204,7 @@ export function useAthleteTradeHistory(
             athleteRevenue: Number(snapshot.athleteRevenue ?? snapshot.athlete_earnings ?? previous?.athleteRevenue ?? 0),
             updatedAt,
             curve,
+            tokenCreatedAt: previous?.tokenCreatedAt ?? null,
           };
 
           pendingTicksRef.current.push(formatted);

@@ -43,8 +43,6 @@ const getWorkoutIcon = (type: Workout['type']) => {
   switch (type) {
     case 'Run':
     case 'HYROX':
-    case 'Trail Run':
-    case 'Rowing':
       return <Activity className="h-4 w-4" />;
     case 'Swim':
       return <Zap className="h-4 w-4" />;

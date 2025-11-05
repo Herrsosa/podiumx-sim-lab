@@ -216,7 +216,7 @@ export default function Onboarding() {
 
         if (uploadError) {
           const message = uploadError.message?.toLowerCase() ?? '';
-          if (uploadError.status === 404 || message.includes('bucket not found')) {
+          if (message.includes('bucket not found') || message.includes('not found')) {
             console.warn('[onboarding] avatars bucket missing, skipping upload');
           } else {
             throw uploadError;
@@ -301,7 +301,7 @@ export default function Onboarding() {
 
           if (uploadError) {
             const message = uploadError.message?.toLowerCase() ?? '';
-            if (uploadError.status === 404 || message.includes('bucket not found')) {
+            if (message.includes('bucket not found') || message.includes('not found')) {
               console.warn('[onboarding] avatars bucket missing, continuing without upload');
             } else {
               throw uploadError;

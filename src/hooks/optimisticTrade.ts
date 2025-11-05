@@ -238,6 +238,7 @@ export function applyOptimisticTrade(params: OptimisticTradeParams): OptimisticT
     athleteRevenue: newAthleteRevenue,
     curve,
     updatedAt: new Date().toISOString(),
+    tokenCreatedAt: previousPrice?.tokenCreatedAt ?? null,
   };
 
   queryClient.setQueryData(['wallet', userId], nextWallet);
