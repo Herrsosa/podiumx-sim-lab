@@ -5,6 +5,8 @@ import {
   filterPointsByRange,
   ensureMs,
   getRangeStart,
+  getPaddedDomain,
+  ensureMinimumPoints,
   type ChartPoint,
 } from '@/lib/charting/seriesUtils';
 
@@ -133,5 +135,74 @@ describe('getRangeStart', () => {
     const start = getRangeStart('7d', now - 30 * 24 * 60 * 60 * 1000);
     const expected = now - 7 * 24 * 60 * 60 * 1000;
     expect(Math.abs(start - expected)).toBeLessThanOrEqual(1_000);
+  });
+});
+
+describe('getPaddedDomain', () => {
+  it('adds padding when min !== max', () => {
+    const points: ChartPoint[] = [
+      { t: 1000, price: 10 },
+      { t: 2000, price: 20 },
+    ];
+    const [min, max] = getPaddedDomain(points);
+    
+    expect(min).toBeLessThan(10);
+    expect(max).toBeGreaterThan(20);
+    expect(min).toBeGreaterThanOrEqual(0); // USD never goes below 0
+  });
+
+  it('handles min === max with explicit padding', () => {
+    const points: ChartPoint[] = [
+      { t: 1000, price: 15 },
+      { t: 2000, price: 15 },
+    ];
+    const [min, max] = getPaddedDomain(points);
+    
+    expect(min).toBeLessThan(15);
+    expect(max).toBeGreaterThan(15);
+    const pad = Math.max(1, 15 * 0.02);
+    expect(max - min).toBeGreaterThanOrEqual(pad);
+  });
+
+  it('never returns negative min for USD', () => {
+    const points: ChartPoint[] = [{ t: 1000, price: 0.01 }];
+    const [min] = getPaddedDomain(points);
+    
+    expect(min).toBeGreaterThanOrEqual(0);
+  });
+
+  it('filters out carried points when computing domain', () => {
+    const points: ChartPoint[] = [
+      { t: 1000, price: 10, carried: false },
+      { t: 2000, price: 100, carried: true }, // Should be ignored
+      { t: 3000, price: 20, carried: false },
+    ];
+    const [min, max] = getPaddedDomain(points);
+    
+    // Domain should be based on 10-20 range, not 10-100
+    expect(max).toBeLessThan(30);
+  });
+});
+
+describe('ensureMinimumPoints', () => {
+  it('synthesizes a previous point when only one point exists', () => {
+    const points: ChartPoint[] = [{ t: 5000, price: 25 }];
+    const result = ensureMinimumPoints(points);
+    
+    expect(result).toHaveLength(2);
+    expect(result[0].t).toBeLessThan(5000);
+    expect(result[0].price).toBe(25);
+    expect(result[0].carried).toBe(true);
+    expect(result[1]).toEqual(points[0]);
+  });
+
+  it('returns original array when multiple points exist', () => {
+    const points: ChartPoint[] = [
+      { t: 1000, price: 10 },
+      { t: 2000, price: 20 },
+    ];
+    const result = ensureMinimumPoints(points);
+    
+    expect(result).toBe(points);
   });
 });

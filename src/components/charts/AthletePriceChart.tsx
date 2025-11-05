@@ -11,6 +11,7 @@ import {
   getDomain,
   type PoSSeriesPoint,
 } from '@/lib/charting/engine';
+import { getPaddedDomain, ensureMinimumPoints } from '@/lib/charting/seriesUtils';
 
 type ChartPoint = {
   t: number;
@@ -86,20 +87,7 @@ const computePosDomain = (posSeries: PoSSeriesPoint[]): [number, number] => {
   return [0, upper];
 };
 
-const computeYDomain = (chartPoints: ChartPoint[]): [number, number] => {
-  const pricePoints = chartPoints.filter((p) => p.price != null && !p.carried);
-
-  if (pricePoints.length === 0) return [0, 1];
-
-  const prices = pricePoints.map((p) => p.price).filter((value): value is number => Number.isFinite(value));
-  if (prices.length === 0) return [0, 1];
-
-  const min = Math.min(...prices);
-  const max = Math.max(...prices);
-  const padding = (max - min) * 0.1 || max * 0.1 || 0.1;
-
-  return [Math.max(0, min - padding), max + padding];
-};
+// Removed: now using getPaddedDomain from seriesUtils.ts
 
 const computeXTicks = (range: TimeRangeKey, domain: [number, number]): number[] | undefined => {
   if (range === 'all') {
@@ -134,7 +122,7 @@ const AthletePriceChart = memo(({
   posts,
   syncId = null,
 }: AthletePriceChartProps) => {
-  const memoEnabled = featureFlags.perfChartMemo !== false;
+  const memoEnabled = featureFlags.perfChartMemo;
   const showPoS = featureFlags.showPoS;
 
   const startOfDay = useCallback((timestamp: number) => {
@@ -150,10 +138,15 @@ const AthletePriceChart = memo(({
   const posCountByDay = memoEnabled ? memoizedPosCountByDay : buildPosCountMap(posSeries);
 
   const memoizedChartData = useMemo(
-    () => buildChartData(chartPoints, posSeries, memoizedPosCountByDay, startOfDay),
+    () => {
+      const baseData = buildChartData(chartPoints, posSeries, memoizedPosCountByDay, startOfDay);
+      return ensureMinimumPoints(baseData);
+    },
     [chartPoints, memoizedPosCountByDay, posSeries, startOfDay],
   );
-  const chartData = memoEnabled ? memoizedChartData : buildChartData(chartPoints, posSeries, posCountByDay, startOfDay);
+  const chartData = memoEnabled 
+    ? memoizedChartData 
+    : ensureMinimumPoints(buildChartData(chartPoints, posSeries, posCountByDay, startOfDay));
 
   const posDomainMemo = useMemo(() => computePosDomain(posSeries), [posSeries]);
   const posDomain = memoEnabled ? posDomainMemo : computePosDomain(posSeries);
@@ -166,8 +159,14 @@ const AthletePriceChart = memo(({
   const xTicksMemo = useMemo(() => computeXTicks(timeRange, xDomainMemo), [timeRange, xDomainMemo]);
   const xTicks = memoEnabled ? xTicksMemo : computeXTicks(timeRange, xDomain);
 
-  const yDomainMemo = useMemo(() => computeYDomain(chartPoints), [chartPoints]);
-  const yDomain = memoEnabled ? yDomainMemo : computeYDomain(chartPoints);
+  // Convert ChartDataPoint[] to ChartPoint[] for domain calculation
+  const chartPointsForDomain = useMemo(
+    () => chartData.map(({ t, price, carried, lastTradeTime }) => ({ t, price: price ?? 0, carried, lastTradeTime })),
+    [chartData]
+  );
+  
+  const yDomainMemo = useMemo(() => getPaddedDomain(chartPointsForDomain), [chartPointsForDomain]);
+  const yDomain = memoEnabled ? yDomainMemo : getPaddedDomain(chartPointsForDomain);
 
   const chartDataLookup = useMemo(() => buildChartLookup(chartData), [chartData]);
 

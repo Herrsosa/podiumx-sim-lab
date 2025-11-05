@@ -99,3 +99,47 @@ export const mapPostsToPoS = (posts: Post[] | undefined): Array<{ timestamp: num
   (posts ?? [])
     .filter((post) => post?.workout_json)
     .map((post) => ({ timestamp: new Date(post.created_at).getTime(), count: 1 }));
+
+/**
+ * Compute padded Y-axis domain with guards for edge cases
+ * Ensures visible lines even when min===max or very small ranges
+ */
+export const getPaddedDomain = (points: ChartPoint[]): [number, number] => {
+  const pricePoints = points.filter((p) => p.price != null && !p.carried);
+  
+  if (pricePoints.length === 0) return [0, 1];
+  
+  const prices = pricePoints.map((p) => p.price).filter((value): value is number => Number.isFinite(value));
+  if (prices.length === 0) return [0, 1];
+  
+  const min = Math.min(...prices);
+  const max = Math.max(...prices);
+  
+  // Handle min===max case with explicit padding
+  if (min === max) {
+    const pad = Math.max(1, max * 0.02);
+    return [Math.max(0, min - pad), max + pad];
+  }
+  
+  // Normal case: add 3% padding
+  const padding = (max - min) * 0.03;
+  return [Math.max(0, min - padding), max + padding];
+};
+
+/**
+ * Guard against single-point datasets by synthesizing a previous point
+ * This ensures a visible line segment renders instead of just a dot
+ * Generic type allows working with ChartPoint or extended types like ChartDataPoint
+ */
+export const ensureMinimumPoints = <T extends ChartPoint>(points: T[]): T[] => {
+  if (points.length === 1) {
+    const singlePoint = points[0];
+    const syntheticPoint = {
+      ...singlePoint,
+      t: singlePoint.t - 1000,
+      carried: true,
+    };
+    return [syntheticPoint as T, singlePoint];
+  }
+  return points;
+};
