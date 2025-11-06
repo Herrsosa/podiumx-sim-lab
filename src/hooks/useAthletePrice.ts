@@ -124,6 +124,10 @@ export function useAthletePrice(athleteId: string | undefined) {
       const updatedAt = latestPriceRow?.created_at ?? token.created_at ?? null;
       const tokenCreatedAt = token.created_at ?? null;
 
+      // Normalize UTC timestamps to ms
+      const updatedAtMs = updatedAt ? new Date(updatedAt).getTime() : null;
+      const tokenCreatedAtMs = tokenCreatedAt ? new Date(tokenCreatedAt).getTime() : null;
+
       const snapshot: AthletePriceSnapshot = {
         athleteId: token.athlete_id,
         price,
@@ -131,8 +135,8 @@ export function useAthletePrice(athleteId: string | undefined) {
         reserve,
         athleteRevenue,
         curve,
-        updatedAt,
-        tokenCreatedAt,
+        updatedAt: updatedAtMs ? new Date(updatedAtMs).toISOString() : null,
+        tokenCreatedAt: tokenCreatedAtMs ? new Date(tokenCreatedAtMs).toISOString() : null,
       };
 
       if (process.env.NODE_ENV !== 'production') {

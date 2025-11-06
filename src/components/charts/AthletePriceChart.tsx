@@ -11,7 +11,14 @@ import {
   getDomain,
   type PoSSeriesPoint,
 } from '@/lib/charting/engine';
-import { getPaddedDomain, ensureMinimumPoints } from '@/lib/charting/seriesUtils';
+import {
+  getPaddedDomain,
+  ensureMinimumPoints,
+  filterPointsByRange,
+  stitchLatest,
+  getRangeStart,
+  type XY,
+} from '@/lib/charting/seriesUtils';
 
 type ChartPoint = {
   t: number;
@@ -137,16 +144,76 @@ const AthletePriceChart = memo(({
   const memoizedPosCountByDay = useMemo(() => buildPosCountMap(posSeries), [posSeries]);
   const posCountByDay = memoEnabled ? memoizedPosCountByDay : buildPosCountMap(posSeries);
 
+  // Apply range filtering, stitching, and minimum point guards
   const memoizedChartData = useMemo(
     () => {
       const baseData = buildChartData(chartPoints, posSeries, memoizedPosCountByDay, startOfDay);
-      return ensureMinimumPoints(baseData);
+      
+      // Convert to XY format for new helpers
+      const xyPoints = baseData.map(p => ({ x: p.t, y: p.price ?? 0 }));
+      
+      const now = Date.now();
+      const [start, end] =
+        timeRange === "7d" ? [getRangeStart(now, 7), now]
+        : timeRange === "30d" ? [getRangeStart(now, 30), now]
+        : [0, now]; // "All" - let existing getDomain handle this
+      
+      let visible = xyPoints;
+      
+      // Only apply range filtering for 7d/30d (not "all")
+      if (timeRange !== 'all') {
+        visible = filterPointsByRange(xyPoints, start, end);
+        
+        // Stitch latest point if available
+        const lastBase = xyPoints[xyPoints.length - 1];
+        if (lastBase) {
+          visible = stitchLatest(visible, lastBase, end);
+        }
+      }
+      
+      visible = ensureMinimumPoints(visible);
+      
+      // Convert back to ChartDataPoint format
+      return visible.map((p, idx) => ({
+        t: p.x,
+        price: p.y,
+        posCount: baseData[idx]?.posCount ?? 0,
+        carried: baseData[idx]?.carried,
+        lastTradeTime: baseData[idx]?.lastTradeTime,
+      }));
     },
-    [chartPoints, memoizedPosCountByDay, posSeries, startOfDay],
+    [chartPoints, memoizedPosCountByDay, posSeries, startOfDay, timeRange],
   );
+  
   const chartData = memoEnabled 
     ? memoizedChartData 
-    : ensureMinimumPoints(buildChartData(chartPoints, posSeries, posCountByDay, startOfDay));
+    : (() => {
+        const baseData = buildChartData(chartPoints, posSeries, posCountByDay, startOfDay);
+        const xyPoints = baseData.map(p => ({ x: p.t, y: p.price ?? 0 }));
+        const now = Date.now();
+        const [start, end] =
+          timeRange === "7d" ? [getRangeStart(now, 7), now]
+          : timeRange === "30d" ? [getRangeStart(now, 30), now]
+          : [0, now];
+        
+        let visible = xyPoints;
+        if (timeRange !== 'all') {
+          visible = filterPointsByRange(xyPoints, start, end);
+          const lastBase = xyPoints[xyPoints.length - 1];
+          if (lastBase) {
+            visible = stitchLatest(visible, lastBase, end);
+          }
+        }
+        visible = ensureMinimumPoints(visible);
+        
+        return visible.map((p, idx) => ({
+          t: p.x,
+          price: p.y,
+          posCount: baseData[idx]?.posCount ?? 0,
+          carried: baseData[idx]?.carried,
+          lastTradeTime: baseData[idx]?.lastTradeTime,
+        }));
+      })();
 
   const posDomainMemo = useMemo(() => computePosDomain(posSeries), [posSeries]);
   const posDomain = memoEnabled ? posDomainMemo : computePosDomain(posSeries);
@@ -159,14 +226,31 @@ const AthletePriceChart = memo(({
   const xTicksMemo = useMemo(() => computeXTicks(timeRange, xDomainMemo), [timeRange, xDomainMemo]);
   const xTicks = memoEnabled ? xTicksMemo : computeXTicks(timeRange, xDomain);
 
-  // Convert ChartDataPoint[] to ChartPoint[] for domain calculation
-  const chartPointsForDomain = useMemo(
-    () => chartData.map(({ t, price, carried, lastTradeTime }) => ({ t, price: price ?? 0, carried, lastTradeTime })),
-    [chartData]
-  );
+  // Calculate Y domain from chart data
+  const yDomainMemo = useMemo(() => {
+    const ys = chartData.map(p => p.price ?? 0).filter(y => Number.isFinite(y));
+    const yMin = ys.length ? Math.min(...ys) : 0;
+    const yMax = ys.length ? Math.max(...ys) : 1;
+    const [domainMin, domainMax] = getPaddedDomain(yMin, yMax, { floorAtZero: true });
+    
+    console.log("[Chart]", { 
+      range: timeRange, 
+      count: chartData.length, 
+      yMin, 
+      yMax, 
+      domainMin, 
+      domainMax 
+    });
+    
+    return [domainMin, domainMax] as const;
+  }, [chartData, timeRange]);
   
-  const yDomainMemo = useMemo(() => getPaddedDomain(chartPointsForDomain), [chartPointsForDomain]);
-  const yDomain = memoEnabled ? yDomainMemo : getPaddedDomain(chartPointsForDomain);
+  const yDomain = memoEnabled ? yDomainMemo : (() => {
+    const ys = chartData.map(p => p.price ?? 0).filter(y => Number.isFinite(y));
+    const yMin = ys.length ? Math.min(...ys) : 0;
+    const yMax = ys.length ? Math.max(...ys) : 1;
+    return getPaddedDomain(yMin, yMax, { floorAtZero: true });
+  })();
 
   const chartDataLookup = useMemo(() => buildChartLookup(chartData), [chartData]);
 
@@ -278,7 +362,8 @@ const AthletePriceChart = memo(({
             allowDataOverflow
           />
           <YAxis
-            domain={yDomain}
+            domain={[yDomain[0], yDomain[1]]}
+            allowDataOverflow={false}
             tick={axisTickStyle}
             stroke="hsl(var(--muted-foreground))"
             tickFormatter={formatPriceTick}

@@ -7,11 +7,8 @@ import { athletePriceQueryKey, type AthletePriceSnapshot } from './useAthletePri
 import { featureFlags } from '@/lib/config/featureFlags';
 import {
   clampToSignup,
-  stitchLatest,
-  filterPointsByRange,
   toChartPoints,
   toTradePoints,
-  getRangeStart,
   ensureMs,
   type ChartPoint,
 } from '@/lib/charting/seriesUtils';
@@ -56,9 +53,17 @@ export const trimToWindow = (points: TradePoint[], range: TimeRange, signupAtMs?
     return points;
   }
 
-  const chartPoints = toChartPoints(points);
-  const filtered = filterPointsByRange(chartPoints, getRangeStart(range, signupAtMs), Date.now());
-  return toTradePoints(filtered);
+  const now = Date.now();
+  const startFromRange =
+    range === '24h' ? now - 24 * 60 * 60 * 1000
+    : range === '7d' ? now - 7 * 24 * 60 * 60 * 1000
+    : range === '30d' ? now - 30 * 24 * 60 * 60 * 1000
+    : Number.NEGATIVE_INFINITY;
+
+  const signup = signupAtMs != null ? ensureMs(Number(signupAtMs)) : Number.NEGATIVE_INFINITY;
+  const rangeStart = Math.max(startFromRange, signup);
+  
+  return points.filter(p => p.timestamp >= rangeStart && p.timestamp <= now);
 };
 
 const samplePoints = (points: TradePoint[]) => {
@@ -234,7 +239,14 @@ export function useAthleteTradeHistory(
       if (!athleteId) return { data: [], changePct: 0, volume: 0 };
 
       const now = Date.now();
-      const rangeStart = getRangeStart(range, signupAtMs);
+      const startFromRange =
+        range === '24h' ? now - 24 * 60 * 60 * 1000
+        : range === '7d' ? now - 7 * 24 * 60 * 60 * 1000
+        : range === '30d' ? now - 30 * 24 * 60 * 60 * 1000
+        : Number.NEGATIVE_INFINITY;
+
+      const signup = signupAtMs != null ? ensureMs(Number(signupAtMs)) : Number.NEGATIVE_INFINITY;
+      const rangeStart = Math.max(startFromRange, signup);
       const rangeEnd = now;
 
       let query = supabase
@@ -281,10 +293,16 @@ export function useAthleteTradeHistory(
 
       let stitched = clamped;
       if (featureFlags.chartStitchLatest && latestPricePoint) {
-        stitched = stitchLatest(clamped, latestPricePoint);
+        const lastPoint = clamped[clamped.length - 1];
+        if (!lastPoint || latestPricePoint.t > lastPoint.t) {
+          stitched = [...clamped, { t: latestPricePoint.t, price: latestPricePoint.price }];
+        }
       }
 
-      let rangeFiltered = filterPointsByRange(stitched, rangeStart, rangeEnd);
+      let rangeFiltered = stitched.filter(point => {
+        const t = ensureMs(Number(point.t));
+        return t >= rangeStart && t <= rangeEnd;
+      });
 
       if (rangeFiltered.length > 0 && range !== 'all') {
         const startCandidate = ensureMs(rangeStart);
