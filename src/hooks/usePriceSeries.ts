@@ -7,7 +7,7 @@ export type TF = '24h' | '7d' | '30d' | 'all';
 type TradeRow = Database['public']['Tables']['trades']['Row'];
 
 export type PriceSeriesPoint = {
-  timestamp: string;
+  timestamp: number;
   price: number;
   grossAmount: number;
 };
@@ -49,11 +49,14 @@ async function fetchPriceSeries(athleteId: string, from: string | null, to: stri
     throw error;
   }
 
-  return (data as Pick<TradeRow, 'created_at' | 'price_after' | 'gross_amount'>[] | null | undefined)?.map((row) => ({
-    timestamp: row.created_at,
-    price: Number(row.price_after ?? 0),
-    grossAmount: Number(row.gross_amount ?? 0),
-  })) ?? [];
+  return (data as Pick<TradeRow, 'created_at' | 'price_after' | 'gross_amount'>[] | null | undefined)?.map((row) => {
+    const timestamp = new Date(row.created_at).getTime();
+    return {
+      timestamp: Number.isFinite(timestamp) ? timestamp : Date.now(),
+      price: Number(row.price_after ?? 0),
+      grossAmount: Number(row.gross_amount ?? 0),
+    };
+  }) ?? [];
 }
 
 export function usePriceSeries(athleteId: string | undefined, tf: TF) {

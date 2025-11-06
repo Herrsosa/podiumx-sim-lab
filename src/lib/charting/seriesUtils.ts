@@ -14,55 +14,69 @@ export type LatestPricePoint = {
   t: number;
 };
 
-export const ensureMs = (ts: number): number => (ts < 1_000_000_000_000 ? ts * 1000 : ts);
+export const ensureMs = (t: number | string | Date | null | undefined): number => {
+  if (t == null) return NaN;
+  if (t instanceof Date) return t.getTime();
+  if (typeof t === 'string') {
+    const parsed = Date.parse(t);
+    return Number.isFinite(parsed) ? parsed : NaN;
+  }
+  // number: treat < 10^11 as seconds, else ms
+  return t < 1e11 ? Math.round(t * 1000) : t;
+};
 
 // Pad domain with guards for flat lines and never < 0 for USD charts
-export function getPaddedDomain(min: number, max: number, { floorAtZero = true }: { floorAtZero?: boolean } = {}) {
-  if (!isFinite(min) || !isFinite(max)) return [0, 1] as const;
-  if (min === max) {
-    const pad = Math.max(0.02 * (min || 1), 0.01); // 2% or ≥ 0.01
-    const lo = floorAtZero ? Math.max(0, min - pad) : min - pad;
-    return [lo, max + pad] as const;
+export const getPaddedDomain = (
+  yMinRaw: number | undefined,
+  yMaxRaw: number | undefined,
+  opts: { floorAtZero?: boolean } = {}
+): [number, number] => {
+  const yMin = Number.isFinite(yMinRaw!) ? (yMinRaw as number) : 0;
+  const yMax = Number.isFinite(yMaxRaw!) ? (yMaxRaw as number) : 0;
+  if (yMax <= yMin) {
+    const base = yMin || 1;
+    const pad = Math.max(base * 0.02, 0.01);
+    return opts.floorAtZero ? [0, base + pad] : [base - pad, base + pad];
   }
-  const span = max - min;
-  const pad = Math.max(0.03 * span, 0.01); // 3% or ≥ 0.01
-  const lo = floorAtZero ? Math.max(0, min - pad) : min - pad;
-  return [lo, max + pad] as const;
-}
+  const pad = (yMax - yMin) * 0.05;
+  const min = opts.floorAtZero ? Math.max(0, yMin - pad) : yMin - pad;
+  return [min, yMax + pad];
+};
 
 // Ensure at least two points so Recharts draws a visible segment
-export function ensureMinimumPoints<T extends XY>(points: T[], synthDeltaMs = 60_000): T[] {
-  if (points.length >= 2) return points;
-  if (points.length === 0) return points;
-  const only = points[0];
-  const prevX = Math.max(0, only.x - synthDeltaMs);
-  const prevY = only.y;
-  const prev = { ...only, x: prevX, y: prevY } as T;
-  return [prev, only];
-}
+export const ensureMinimumPoints = <T extends XY>(pts: T[], end: number): T[] => {
+  if (pts.length >= 2) return pts;
+  if (pts.length === 1) return [{ ...pts[0], x: end - 1 } as T, pts[0]];
+  // zero points → synthesize a flat zero line (or tiny epsilon to avoid flat domain)
+  return [{ x: end - 1, y: 0.0001 } as T, { x: end, y: 0.0001 } as T];
+};
 
 // Range filter by UTC ms
-export function filterPointsByRange<T extends XY>(pts: T[], startMs: number, endMs: number): T[] {
-  return pts.filter(p => p.x >= startMs && p.x <= endMs);
-}
+export const filterPointsByRange = <T extends XY>(pts: T[], start: number, end: number): T[] =>
+  pts.filter(p => Number.isFinite(p.x) && p.x >= start && p.x <= end);
 
 // Always stitch latest after range filter so last visible value is shown
-export function stitchLatest<T extends XY>(pts: T[], latest: T | null, endMs: number): T[] {
-  if (!latest) return pts;
+export const stitchLatest = <T extends XY>(pts: T[], latest: { t: number; price: number } | null): T[] => {
+  if (!latest || !Number.isFinite(latest.t) || !Number.isFinite(latest.price)) return pts;
   const last = pts[pts.length - 1];
-  if (!last || latest.x > last.x) {
-    const stitched = { ...latest, x: Math.min(endMs, Date.now()) } as T;
-    return [...pts, stitched];
+  // Only add if latest is newer than the last point or there are no points
+  if (!last || latest.t > last.x) {
+    return [...pts, { x: latest.t, y: latest.price } as T];
   }
   return pts;
-}
+};
 
 export function getRangeStart(nowUtcMs: number, days: number) {
   return nowUtcMs - days * 24 * 60 * 60 * 1000;
 }
 
+export const clampToSignup = <T extends XY>(pts: T[], signupAtMs?: number | null): T[] => {
+  if (!signupAtMs || !Number.isFinite(signupAtMs)) return pts;
+  return pts.filter(p => p.x >= signupAtMs);
+};
+
 // Legacy compatibility functions
-export function clampToSignup(points: ChartPoint[], signupAtMs?: number | null): ChartPoint[] {
+export function clampToSignupLegacy(points: ChartPoint[], signupAtMs?: number | null): ChartPoint[] {
   if (!signupAtMs || !Number.isFinite(signupAtMs)) {
     return points;
   }

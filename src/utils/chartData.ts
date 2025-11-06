@@ -13,27 +13,14 @@ export function endOfUtcDay(timestamp: number): number {
   return date.getTime();
 }
 
-export function getRangeWindow(range: TimeRangeKey, now: number = Date.now()): { start?: number; end: number } {
-  const dayMs = 86_400_000;
-  
-  if (range === '7d') {
-    // 7 days: start 6 days back at UTC midnight, end at UTC end of today
-    return { 
-      start: startOfUtcDay(now - 6 * dayMs), 
-      end: endOfUtcDay(now) 
-    };
-  }
-  
-  if (range === '30d') {
-    // 30 days: start 29 days back at UTC midnight, end at UTC end of today
-    return { 
-      start: startOfUtcDay(now - 29 * dayMs), 
-      end: endOfUtcDay(now) 
-    };
-  }
-  
-  // ALL: no start, end at now
-  return { start: undefined, end: now };
+export function getRangeWindow(range: TimeRangeKey, now: number = Date.now()): { start: number; end: number } {
+  const end = endOfUtcDay(now);
+  const day = 24 * 60 * 60 * 1000;
+
+  if (range === '7d')  return { start: end - 7 * day,  end };
+  if (range === '30d') return { start: end - 30 * day, end };
+  // 'all' → let filtering include everything
+  return { start: Number.NEGATIVE_INFINITY, end };
 }
 
 export function startOfUtcDay(timestamp: number): number {
@@ -76,10 +63,7 @@ export function aggregatePosByDay(
     if (!Number.isFinite(createdAt)) {
       continue;
     }
-    if (start && createdAt < start) {
-      continue;
-    }
-    if (createdAt > end) {
+    if (createdAt < start || createdAt > end) {
       continue;
     }
 
@@ -112,7 +96,8 @@ export function fillPriceGaps(
   timeRange: TimeRangeKey,
   now: number = Date.now()
 ): TradePoint[] {
-  const { start: windowStart, end: windowEnd } = getRangeWindow(timeRange, now);
+  const { start, end: windowEnd } = getRangeWindow(timeRange, now);
+  const windowStart = start === Number.NEGATIVE_INFINITY ? 0 : start;
   
   // Parse all trades
   const allTrades: Array<{ t: number; price: number }> = [];
@@ -143,7 +128,7 @@ export function fillPriceGaps(
     relevantTrades = allTrades;
   } else {
     // Include trades before window for seeding
-    relevantTrades = allTrades.filter(tr => tr.t <= windowEnd!);
+    relevantTrades = allTrades.filter(tr => tr.t <= windowEnd);
   }
   
   if (relevantTrades.length === 0) {
@@ -160,8 +145,8 @@ export function fillPriceGaps(
     seriesEnd = Math.max(relevantTrades[relevantTrades.length - 1].t, now);
   } else {
     // Window-based: start at windowStart (already UTC aligned), end at windowEnd
-    seriesStart = windowStart!;
-    seriesEnd = windowEnd!;
+    seriesStart = windowStart;
+    seriesEnd = windowEnd;
   }
   
   // Find seed price for window start

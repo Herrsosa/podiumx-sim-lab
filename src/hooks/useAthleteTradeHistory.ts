@@ -288,7 +288,9 @@ export function useAthleteTradeHistory(
 
       let clamped = chartPoints;
       if (featureFlags.chartClampToSignup && signupAtMs) {
-        clamped = clampToSignup(clamped, signupAtMs);
+        const xyPoints = clamped.map(p => ({ x: p.t, y: p.price }));
+        const clampedXY = clampToSignup(xyPoints, signupAtMs);
+        clamped = clampedXY.map(p => ({ t: p.x, price: p.y }));
       }
 
       let stitched = clamped;

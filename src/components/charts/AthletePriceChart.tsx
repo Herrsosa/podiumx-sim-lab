@@ -156,22 +156,25 @@ const AthletePriceChart = memo(({
       const [start, end] =
         timeRange === "7d" ? [getRangeStart(now, 7), now]
         : timeRange === "30d" ? [getRangeStart(now, 30), now]
-        : [0, now]; // "All" - let existing getDomain handle this
+        : [Number.NEGATIVE_INFINITY, now]; // "All" - include everything
       
-      let visible = xyPoints;
+      let visible = filterPointsByRange(xyPoints, start, end);
       
-      // Only apply range filtering for 7d/30d (not "all")
-      if (timeRange !== 'all') {
-        visible = filterPointsByRange(xyPoints, start, end);
-        
-        // Stitch latest point if available
-        const lastBase = xyPoints[xyPoints.length - 1];
-        if (lastBase) {
-          visible = stitchLatest(visible, lastBase, end);
-        }
+      // Stitch latest point if available
+      const lastBase = xyPoints[xyPoints.length - 1];
+      if (lastBase) {
+        visible = stitchLatest(visible, { t: lastBase.x, price: lastBase.y });
       }
       
-      visible = ensureMinimumPoints(visible);
+      visible = ensureMinimumPoints(visible, end);
+      
+      console.log("[Chart]", { 
+        range: timeRange, 
+        start: start === Number.NEGATIVE_INFINITY ? 'ALL' : new Date(start).toISOString(), 
+        end: new Date(end).toISOString(), 
+        count: visible.length, 
+        baseCount: xyPoints.length 
+      });
       
       // Convert back to ChartDataPoint format
       return visible.map((p, idx) => ({
@@ -194,17 +197,14 @@ const AthletePriceChart = memo(({
         const [start, end] =
           timeRange === "7d" ? [getRangeStart(now, 7), now]
           : timeRange === "30d" ? [getRangeStart(now, 30), now]
-          : [0, now];
+          : [Number.NEGATIVE_INFINITY, now];
         
-        let visible = xyPoints;
-        if (timeRange !== 'all') {
-          visible = filterPointsByRange(xyPoints, start, end);
-          const lastBase = xyPoints[xyPoints.length - 1];
-          if (lastBase) {
-            visible = stitchLatest(visible, lastBase, end);
-          }
+        let visible = filterPointsByRange(xyPoints, start, end);
+        const lastBase = xyPoints[xyPoints.length - 1];
+        if (lastBase) {
+          visible = stitchLatest(visible, { t: lastBase.x, price: lastBase.y });
         }
-        visible = ensureMinimumPoints(visible);
+        visible = ensureMinimumPoints(visible, end);
         
         return visible.map((p, idx) => ({
           t: p.x,
@@ -228,16 +228,18 @@ const AthletePriceChart = memo(({
 
   // Calculate Y domain from chart data
   const yDomainMemo = useMemo(() => {
-    const ys = chartData.map(p => p.price ?? 0).filter(y => Number.isFinite(y));
-    const yMin = ys.length ? Math.min(...ys) : 0;
-    const yMax = ys.length ? Math.max(...ys) : 1;
-    const [domainMin, domainMax] = getPaddedDomain(yMin, yMax, { floorAtZero: true });
+    const ys = chartData.map(p => p.price ?? 0).filter(Number.isFinite);
+    const [domainMin, domainMax] = getPaddedDomain(
+      ys.length ? Math.min(...ys) : undefined,
+      ys.length ? Math.max(...ys) : undefined,
+      { floorAtZero: true }
+    );
     
-    console.log("[Chart]", { 
+    console.log("[Chart] domain", { 
       range: timeRange, 
       count: chartData.length, 
-      yMin, 
-      yMax, 
+      yMin: ys.length ? Math.min(...ys) : 'none',
+      yMax: ys.length ? Math.max(...ys) : 'none',
       domainMin, 
       domainMax 
     });
@@ -246,10 +248,12 @@ const AthletePriceChart = memo(({
   }, [chartData, timeRange]);
   
   const yDomain = memoEnabled ? yDomainMemo : (() => {
-    const ys = chartData.map(p => p.price ?? 0).filter(y => Number.isFinite(y));
-    const yMin = ys.length ? Math.min(...ys) : 0;
-    const yMax = ys.length ? Math.max(...ys) : 1;
-    return getPaddedDomain(yMin, yMax, { floorAtZero: true });
+    const ys = chartData.map(p => p.price ?? 0).filter(Number.isFinite);
+    return getPaddedDomain(
+      ys.length ? Math.min(...ys) : undefined,
+      ys.length ? Math.max(...ys) : undefined,
+      { floorAtZero: true }
+    );
   })();
 
   const chartDataLookup = useMemo(() => buildChartLookup(chartData), [chartData]);
@@ -363,7 +367,7 @@ const AthletePriceChart = memo(({
           />
           <YAxis
             domain={[yDomain[0], yDomain[1]]}
-            allowDataOverflow={false}
+            allowDataOverflow
             tick={axisTickStyle}
             stroke="hsl(var(--muted-foreground))"
             tickFormatter={formatPriceTick}
