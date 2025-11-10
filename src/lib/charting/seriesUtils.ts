@@ -51,17 +51,18 @@ export const ensureMinimumPoints = <T extends XY>(pts: T[], end: number): T[] =>
   return [{ x: end - 1, y: 0.0001 } as T, { x: end, y: 0.0001 } as T];
 };
 
-// Range filter by UTC ms
+// Range filter by UTC ms (normalize to ms first)
 export const filterPointsByRange = <T extends XY>(pts: T[], start: number, end: number): T[] =>
-  pts.filter(p => Number.isFinite(p.x) && p.x >= start && p.x <= end);
+  pts.map(p => ({...p as any, x: toMs(p.x) } as T)).filter(p => p.x >= start && p.x <= end);
 
-// Always stitch latest after range filter so last visible value is shown
+// Always stitch latest after range filter so last visible value is shown (normalize to ms)
 export const stitchLatest = <T extends XY>(pts: T[], latest: { t: number; price: number } | null): T[] => {
   if (!latest || !Number.isFinite(latest.t) || !Number.isFinite(latest.price)) return pts;
+  const latestMs = { t: toMs(latest.t), price: latest.price };
   const last = pts[pts.length - 1];
   // Only add if latest is newer than the last point or there are no points
-  if (!last || latest.t > last.x) {
-    return [...pts, { x: latest.t, y: latest.price } as T];
+  if (!last || latestMs.t > last.x) {
+    return [...pts, { x: latestMs.t, y: latestMs.price } as T];
   }
   return pts;
 };
@@ -98,3 +99,8 @@ export const toLatestPricePoint = (
   const t = Number.isFinite(timestamp) ? timestamp : Date.now();
   return { price: latest.price, t };
 };
+
+// Timestamp unit diagnostics
+export function isMs(ts: number) { return ts > 1e11; }    // rough cutoff
+export function isSec(ts: number) { return ts > 1e9 && ts < 1e11; }
+export function toMs(ts: number) { return isSec(ts) ? ts * 1000 : ts; }
