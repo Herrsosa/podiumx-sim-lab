@@ -62,12 +62,13 @@ export function buildPriceSeries(
   const fallbackPrice = options.fallbackPrice;
   const { start: windowStart, end: windowEnd } = getWindowUTC(range, now);
 
-  const trades = prices
+  // Normalize ALL trades to milliseconds
+  const allTrades = prices
     .filter((entry) => Number.isFinite(entry.timestamp) && Number.isFinite(entry.price))
     .map((entry) => ({ t: ensureMs(Number(entry.timestamp)), price: Number(entry.price) }))
     .sort((a, b) => a.t - b.t);
 
-  if (trades.length === 0) {
+  if (allTrades.length === 0) {
     if (typeof fallbackPrice === 'number' && Number.isFinite(fallbackPrice)) {
       if (range === 'all') {
         const base = startOfUtcDay(now);
@@ -84,73 +85,55 @@ export function buildPriceSeries(
     return [];
   }
 
-  const relevantTrades = range === 'all' ? trades : trades.filter((trade) => trade.t <= windowEnd);
-
-  if (relevantTrades.length === 0) {
-    if (typeof fallbackPrice === 'number') {
-      if (range === 'all') {
-        const base = startOfUtcDay(now);
-        return [{ t: base, price: fallbackPrice, carried: true, lastTradeTime: base }];
-      }
-      const start = windowStart ?? startOfUtcDay(trades[0].t);
-      const end = windowEnd;
-      const points: PriceSeriesPoint[] = [];
-      for (let t = start; t <= end; t += DAY_MS) {
-        points.push({
-          t,
-          price: fallbackPrice,
-          carried: true,
-          lastTradeTime: trades[0].t,
-        });
-      }
-      return points;
-    }
-    return [];
-  }
-
+  // For 7d/30d ranges, we need to consider ALL historical trades to carry forward prices
+  // Find the last trade before or at the window end
   let seriesStart: number;
   let seriesEnd: number;
-
-  if (range === 'all') {
-    seriesStart = startOfUtcDay(relevantTrades[0].t);
-    seriesEnd = Math.max(relevantTrades[relevantTrades.length - 1].t, now);
-  } else {
-    seriesStart = windowStart ?? startOfUtcDay(relevantTrades[0].t);
-    seriesEnd = windowEnd;
-  }
-
   let seedPrice: number;
   let seedTradeTime: number;
   let shouldSeedAtStart = false;
 
   if (range === 'all') {
-    seedPrice = relevantTrades[0].price;
-    seedTradeTime = relevantTrades[0].t;
+    seriesStart = startOfUtcDay(allTrades[0].t);
+    seriesEnd = endOfUtcDay(now);
+    seedPrice = allTrades[0].price;
+    seedTradeTime = allTrades[0].t;
   } else {
-    const beforeStart = relevantTrades.filter((trade) => trade.t <= seriesStart);
-    if (beforeStart.length > 0) {
-      const lastBefore = beforeStart[beforeStart.length - 1];
+    // For windowed ranges (7d, 30d)
+    const start = windowStart ?? startOfUtcDay(now - 7 * DAY_MS);
+    const end = windowEnd;
+    seriesStart = start;
+    seriesEnd = end;
+
+    // Find the last trade BEFORE the window starts (to carry forward its price)
+    const tradesBeforeWindow = allTrades.filter((trade) => trade.t < start);
+    const tradesInOrBeforeEnd = allTrades.filter((trade) => trade.t <= end);
+    
+    if (tradesBeforeWindow.length > 0) {
+      // Use the last trade before window as seed
+      const lastBefore = tradesBeforeWindow[tradesBeforeWindow.length - 1];
       seedPrice = lastBefore.price;
       seedTradeTime = lastBefore.t;
       shouldSeedAtStart = true;
+    } else if (tradesInOrBeforeEnd.length > 0) {
+      // Use first trade in window
+      const firstInWindow = tradesInOrBeforeEnd[0];
+      seedPrice = firstInWindow.price;
+      seedTradeTime = firstInWindow.t;
+      seriesStart = Math.max(start, startOfUtcDay(firstInWindow.t));
+    } else if (typeof fallbackPrice === 'number') {
+      // No trades at all in or before window
+      seedPrice = fallbackPrice;
+      seedTradeTime = start;
+      shouldSeedAtStart = true;
     } else {
-      const firstInWindow = relevantTrades.find((trade) => trade.t >= seriesStart);
-      if (firstInWindow) {
-        seedPrice = firstInWindow.price;
-        seedTradeTime = firstInWindow.t;
-        seriesStart = firstInWindow.t;
-      } else if (typeof fallbackPrice === 'number') {
-        seedPrice = fallbackPrice;
-        seedTradeTime = seriesStart;
-        shouldSeedAtStart = true;
-      } else {
-        return [];
-      }
+      return [];
     }
   }
 
   const series: PriceSeriesPoint[] = [];
 
+  // Add seed point at window start if needed
   if (shouldSeedAtStart && range !== 'all') {
     series.push({
       t: seriesStart,
@@ -160,22 +143,21 @@ export function buildPriceSeries(
     });
   }
 
+  // Process day-by-day from start to end
   let tCursor = startOfUtcDay(seriesStart);
   if (tCursor < seriesStart) tCursor += DAY_MS;
 
   let lastPrice = seedPrice;
   let lastTradeTime = seedTradeTime;
+  
+  // Process all trades up to series end
+  const relevantTrades = allTrades.filter((trade) => trade.t >= seriesStart && trade.t <= seriesEnd);
   let tradeIndex = 0;
-
-  while (tradeIndex < relevantTrades.length && relevantTrades[tradeIndex].t <= seriesStart) {
-    lastPrice = relevantTrades[tradeIndex].price;
-    lastTradeTime = relevantTrades[tradeIndex].t;
-    tradeIndex++;
-  }
 
   while (tCursor <= seriesEnd) {
     let hadTrade = false;
 
+    // Process all trades on this day
     while (tradeIndex < relevantTrades.length && relevantTrades[tradeIndex].t <= tCursor) {
       lastPrice = relevantTrades[tradeIndex].price;
       lastTradeTime = relevantTrades[tradeIndex].t;
@@ -186,8 +168,8 @@ export function buildPriceSeries(
     series.push({
       t: tCursor,
       price: lastPrice,
-      carried: !hadTrade && (series.length > 0 || shouldSeedAtStart),
-      lastTradeTime: hadTrade ? undefined : lastTradeTime,
+      carried: !hadTrade,
+      lastTradeTime: hadTrade ? tCursor : lastTradeTime,
     });
 
     tCursor += DAY_MS;

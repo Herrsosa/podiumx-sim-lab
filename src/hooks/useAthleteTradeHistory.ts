@@ -239,28 +239,13 @@ export function useAthleteTradeHistory(
       if (!athleteId) return { data: [], changePct: 0, volume: 0 };
 
       const now = Date.now();
-      const startFromRange =
-        range === '24h' ? now - 24 * 60 * 60 * 1000
-        : range === '7d' ? now - 7 * 24 * 60 * 60 * 1000
-        : range === '30d' ? now - 30 * 24 * 60 * 60 * 1000
-        : Number.NEGATIVE_INFINITY;
 
-      const signup = signupAtMs != null ? ensureMs(Number(signupAtMs)) : Number.NEGATIVE_INFINITY;
-      const rangeStart = Math.max(startFromRange, signup);
-      const rangeEnd = now;
-
-      let query = supabase
+      // Fetch ALL trades (don't filter by range - we need historical context for price carrying)
+      const { data: trades, error } = await supabase
         .from('trades')
         .select('created_at, price_after, qty, gross_amount, net_amount')
         .eq('athlete_id', athleteId)
         .order('created_at', { ascending: true });
-
-      if (range !== 'all' || signupAtMs != null) {
-        const startIso = new Date(Math.min(rangeStart, now)).toISOString();
-        query = query.gte('created_at', startIso);
-      }
-
-      const { data: trades, error } = await query;
 
       if (error) {
         console.error('Error fetching trade history:', error);
@@ -286,49 +271,60 @@ export function useAthleteTradeHistory(
         .filter((point): point is ChartPoint => Boolean(point))
         .sort((a, b) => a.t - b.t);
 
-      let clamped = chartPoints;
-      if (featureFlags.chartClampToSignup && signupAtMs) {
-        const xyPoints = clamped.map(p => ({ x: p.t, y: p.price }));
-        const clampedXY = clampToSignup(xyPoints, signupAtMs);
-        clamped = clampedXY.map(p => ({ t: p.x, price: p.y }));
+      // Calculate the range window
+      const startFromRange =
+        range === '24h' ? now - 24 * 60 * 60 * 1000
+        : range === '7d' ? now - 7 * 24 * 60 * 60 * 1000
+        : range === '30d' ? now - 30 * 24 * 60 * 60 * 1000
+        : Number.NEGATIVE_INFINITY;
+
+      const signup = signupAtMs != null ? ensureMs(Number(signupAtMs)) : Number.NEGATIVE_INFINITY;
+      const rangeStart = Math.max(startFromRange, signup);
+      const rangeEnd = now;
+
+      // Find the last trade BEFORE the range window to carry its price forward
+      const tradesBeforeWindow = chartPoints.filter(p => p.t < rangeStart);
+      const seedPrice = tradesBeforeWindow.length > 0 
+        ? tradesBeforeWindow[tradesBeforeWindow.length - 1].price 
+        : latestPricePoint?.price;
+
+      // For the visible window, we need at least one point
+      let visiblePoints = chartPoints.filter(p => p.t >= rangeStart && p.t <= rangeEnd);
+
+      // If we have a seed price but no points in the window, add a carried point at the start
+      if (visiblePoints.length === 0 && seedPrice != null && Number.isFinite(seedPrice)) {
+        visiblePoints = [{ t: rangeStart, price: seedPrice }];
+      } else if (visiblePoints.length > 0 && seedPrice != null && visiblePoints[0].t > rangeStart) {
+        // Add seed price at start of window if first point is after the start
+        visiblePoints = [{ t: rangeStart, price: seedPrice }, ...visiblePoints];
       }
 
-      let stitched = clamped;
+      // Stitch latest point if needed
       if (featureFlags.chartStitchLatest && latestPricePoint) {
-        const lastPoint = clamped[clamped.length - 1];
+        const lastPoint = visiblePoints[visiblePoints.length - 1];
         if (!lastPoint || latestPricePoint.t > lastPoint.t) {
-          stitched = [...clamped, { t: latestPricePoint.t, price: latestPricePoint.price }];
+          visiblePoints = [...visiblePoints, { t: latestPricePoint.t, price: latestPricePoint.price }];
         }
       }
 
-      let rangeFiltered = stitched.filter(point => {
-        const t = ensureMs(Number(point.t));
-        return t >= rangeStart && t <= rangeEnd;
-      });
-
-      if (rangeFiltered.length > 0 && range !== 'all') {
-        const startCandidate = ensureMs(rangeStart);
-        const firstPoint = rangeFiltered[0];
-        if (firstPoint.t > startCandidate) {
-          rangeFiltered = [{ t: startCandidate, price: firstPoint.price }, ...rangeFiltered];
-        }
-      }
-
-      if (rangeFiltered.length === 0) {
-        if (latestPricePoint && latestPricePoint.t >= rangeStart && latestPricePoint.t <= rangeEnd) {
+      // If still no points, use latest as fallback
+      if (visiblePoints.length === 0 && latestPricePoint) {
+        if (latestPricePoint.t >= rangeStart && latestPricePoint.t <= rangeEnd) {
           if (process.env.NODE_ENV !== 'production') {
             console.log('[ChartDiag] empty series -> stitched latest only');
           }
           return recalcSeries([{ timestamp: latestPricePoint.t, price: latestPricePoint.price }], 0);
         }
+      }
 
+      if (visiblePoints.length === 0) {
         if (process.env.NODE_ENV !== 'production') {
-          console.log('[ChartDiag] empty series -> no latest point available');
+          console.log('[ChartDiag] empty series -> no data available');
         }
-
         return { data: [], changePct: 0, volume: 0 };
       }
 
+      // Calculate volume for trades within the window
       const windowedVolume = tradeRows.reduce((sum, trade) => {
         const timestamp = trade.created_at ? ensureMs(Date.parse(trade.created_at)) : Number.NaN;
         if (!Number.isFinite(timestamp) || timestamp < rangeStart || timestamp > rangeEnd) {
@@ -354,17 +350,16 @@ export function useAthleteTradeHistory(
         return sum;
       }, 0);
 
-      const tradePoints = toTradePoints(rangeFiltered);
+      const tradePoints = toTradePoints(visiblePoints);
 
       if (process.env.NODE_ENV !== 'production') {
-        const first = rangeFiltered?.[0];
-        const last = rangeFiltered?.[rangeFiltered.length - 1];
+        const first = visiblePoints?.[0];
+        const last = visiblePoints?.[visiblePoints.length - 1];
         console.log('[ChartDiag] athleteId=', athleteId);
         console.log('[ChartDiag] range=', range, 'signupAtMs=', signupAtMs, signupAtMs ? new Date(signupAtMs).toISOString() : null);
-        console.log('[ChartDiag] points(raw)->', chartPoints.length);
-        console.log('[ChartDiag] clamped->', clamped.length);
-        console.log('[ChartDiag] stitched->', stitched.length);
-        console.log('[ChartDiag] rangeFiltered->', rangeFiltered.length, 'first=', first?.t && new Date(first.t).toISOString(), 'last=', last?.t && new Date(last.t).toISOString(), 'lastPrice=', last?.price);
+        console.log('[ChartDiag] all trades count=', chartPoints.length);
+        console.log('[ChartDiag] seedPrice=', seedPrice, 'from', tradesBeforeWindow.length, 'before window');
+        console.log('[ChartDiag] visible points=', visiblePoints.length, 'first=', first?.t && new Date(first.t).toISOString(), 'last=', last?.t && new Date(last.t).toISOString(), 'lastPrice=', last?.price);
       }
 
       return recalcSeries(tradePoints, windowedVolume);
