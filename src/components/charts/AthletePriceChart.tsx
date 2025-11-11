@@ -161,7 +161,7 @@ const AthletePriceChart = memo(({
         : timeRange === "30d" ? [getRangeStart(now, 30), now]
         : [Number.NEGATIVE_INFINITY, now]; // "All" - include everything
       
-      // DIAGNOSTICS
+      // DIAGNOSTICS - Detect timestamp unit mismatches
       console.log("[ChartDiag] range", timeRange);
       console.log("[ChartDiag] series len", xyPoints.length);
       if (xyPoints.length) {
@@ -169,26 +169,51 @@ const AthletePriceChart = memo(({
         const minX = Math.min(...xs), maxX = Math.max(...xs);
         console.log("[ChartDiag] series x min/max", minX, maxX, 
                     "units?", isMs(minX) ? "ms" : isSec(minX) ? "sec" : "other");
+        console.log("[ChartDiag] series x min/max (ISO)", new Date(minX).toISOString(), new Date(maxX).toISOString());
       }
       
       const lastBase = xyPoints[xyPoints.length - 1];
       const latestPoint = lastBase ? { t: lastBase.x, price: lastBase.y } : null;
       console.log("[ChartDiag] latestPoint", latestPoint?.t, latestPoint?.price, 
                   latestPoint ? (isMs(latestPoint.t) ? "ms" : isSec(latestPoint.t) ? "sec" : "other") : "none");
-      console.log("[ChartDiag] posts", posts?.length ?? 0, 
-        posts?.slice(0,3)?.map(p => ({ created_at: p.created_at, x: new Date(p.created_at).getTime() })) ?? []);
+      if (latestPoint) {
+        console.log("[ChartDiag] latestPoint (ISO)", new Date(latestPoint.t).toISOString());
+      }
+      
+      // Check PoS/workout post timestamps
+      if (posts && posts.length > 0) {
+        const postSample = posts.slice(0, 3).map(p => {
+          const ts = new Date(p.created_at).getTime();
+          return {
+            created_at: p.created_at,
+            x: ts,
+            units: isMs(ts) ? "ms" : isSec(ts) ? "sec" : "other",
+            iso: new Date(ts).toISOString()
+          };
+        });
+        console.log("[ChartDiag] posts sample", posts.length, postSample);
+      } else {
+        console.log("[ChartDiag] posts", 0);
+      }
       
       let visible = filterPointsByRange(xyPoints, start, end);
+      console.log("[ChartDiag] after range filter", visible.length);
       
       // Stitch latest point if available
+      const beforeStitch = visible.length;
       if (latestPoint) {
         visible = stitchLatest(visible, latestPoint);
       }
+      const stitched = visible.length > beforeStitch;
+      console.log("[ChartDiag] stitchLatest", stitched ? "ADDED" : "skipped", "count now", visible.length);
       
       visible = ensureMinimumPoints(visible, end);
+      console.log("[ChartDiag] after ensureMinimumPoints", visible.length);
       
-      console.log("[ChartDiag] after filter", visible.length);
-      console.log("[ChartDiag] start/end (ISO)", start === Number.NEGATIVE_INFINITY ? 'ALL' : new Date(start).toISOString(), new Date(end).toISOString());
+      console.log("[ChartDiag] start/end (ISO)", 
+        start === Number.NEGATIVE_INFINITY ? 'ALL' : new Date(start).toISOString(), 
+        new Date(end).toISOString());
+      
       if (visible.length > 0) {
         const lastVisible = visible[visible.length - 1];
         console.log("[ChartDiag] last visible x (ISO)", new Date(lastVisible.x).toISOString(), "y", lastVisible.y);

@@ -47,6 +47,12 @@ export function getWindowUTC(range: TimeRangeKey, now: number = Date.now()): { s
   return { start, end };
 }
 
+// Normalize timestamp to milliseconds (handles seconds/ms ambiguity)
+const ensureMs = (ts: number): number => {
+  // Treat values < 10^11 as seconds, otherwise as ms
+  return ts < 1e11 ? Math.round(ts * 1000) : ts;
+};
+
 export function buildPriceSeries(
   prices: PriceInput[],
   range: TimeRangeKey,
@@ -58,7 +64,7 @@ export function buildPriceSeries(
 
   const trades = prices
     .filter((entry) => Number.isFinite(entry.timestamp) && Number.isFinite(entry.price))
-    .map((entry) => ({ t: Number(entry.timestamp), price: Number(entry.price) }))
+    .map((entry) => ({ t: ensureMs(Number(entry.timestamp)), price: Number(entry.price) }))
     .sort((a, b) => a.t - b.t);
 
   if (trades.length === 0) {
@@ -199,7 +205,7 @@ export function buildPoSSeries(
   const counts = new Map<number, number>();
 
   entries.forEach((entry) => {
-    const timestamp = Number(entry.timestamp);
+    const timestamp = ensureMs(Number(entry.timestamp));
     if (!Number.isFinite(timestamp)) {
       return;
     }
