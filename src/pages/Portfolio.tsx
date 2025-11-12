@@ -30,6 +30,44 @@ export default function Portfolio() {
   const { data: athletes, isLoading: athletesLoading } = useAthletesByIds(athleteIds);
   const { data: userTrades, isLoading: tradesLoading } = useUserTrades();
 
+  // All hooks MUST be before any conditional returns
+  const renderValue = useCallback(
+    (value: number | null | undefined, formatter = formatMoney) =>
+      safeNumber(value) ? formatter(value!) : <span title="No data yet">—</span>,
+    []
+  );
+
+  const renderSignedMoney = useCallback((value: number | null | undefined) => {
+    if (!safeNumber(value)) {
+      return <span title="No data yet">—</span>;
+    }
+
+    const absolute = formatMoney(Math.abs(value!));
+    const sanitized = absolute.startsWith('-') ? absolute.slice(1) : absolute;
+    const sign = value! >= 0 ? '+' : '-';
+
+    return (
+      <>
+        {sign}
+        {sanitized}
+      </>
+    );
+  }, []);
+
+  const renderPercent = useCallback((value: number | null | undefined) => {
+    if (!safeNumber(value)) {
+      return <span title="No data yet">—</span>;
+    }
+
+    const sign = value! >= 0 ? '+' : '';
+    return (
+      <>
+        {sign}
+        {value!.toFixed(2)}%
+      </>
+    );
+  }, []);
+
   // Calculate realized PnL from trades - MUST be before any conditional returns
   const realizedPnL = useMemo(() => {
     if (!userTrades || userTrades.length === 0) return 0;
@@ -109,42 +147,6 @@ export default function Portfolio() {
 
   const totalPnL = unrealizedPnL + realizedPnL;
 
-  const renderValue = useCallback(
-    (value: number | null | undefined, formatter = formatMoney) =>
-      safeNumber(value) ? formatter(value!) : <span title="No data yet">—</span>,
-    []
-  );
-
-  const renderSignedMoney = useCallback((value: number | null | undefined) => {
-    if (!safeNumber(value)) {
-      return <span title="No data yet">—</span>;
-    }
-
-    const absolute = formatMoney(Math.abs(value!));
-    const sanitized = absolute.startsWith('-') ? absolute.slice(1) : absolute;
-    const sign = value! >= 0 ? '+' : '-';
-
-    return (
-      <>
-        {sign}
-        {sanitized}
-      </>
-    );
-  }, []);
-
-  const renderPercent = useCallback((value: number | null | undefined) => {
-    if (!safeNumber(value)) {
-      return <span title="No data yet">—</span>;
-    }
-
-    const sign = value! >= 0 ? '+' : '';
-    return (
-      <>
-        {sign}
-        {value!.toFixed(2)}%
-      </>
-    );
-  }, []);
 
   const hasClosedTrades = Boolean(userTrades?.some((trade) => trade.type === 'sell'));
   const percentChange = safeNumber(totalCostBasis) && totalCostBasis > 0 ? (totalPnL / totalCostBasis) * 100 : null;
