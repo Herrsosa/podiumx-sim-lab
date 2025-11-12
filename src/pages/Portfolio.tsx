@@ -109,10 +109,13 @@ export default function Portfolio() {
 
   const totalPnL = unrealizedPnL + realizedPnL;
 
-  const renderValue = (value: number | null | undefined, formatter = formatMoney) =>
-    safeNumber(value) ? formatter(value!) : <span title="No data yet">—</span>;
+  const renderValue = useCallback(
+    (value: number | null | undefined, formatter = formatMoney) =>
+      safeNumber(value) ? formatter(value!) : <span title="No data yet">—</span>,
+    []
+  );
 
-  const renderSignedMoney = (value: number | null | undefined) => {
+  const renderSignedMoney = useCallback((value: number | null | undefined) => {
     if (!safeNumber(value)) {
       return <span title="No data yet">—</span>;
     }
@@ -127,9 +130,9 @@ export default function Portfolio() {
         {sanitized}
       </>
     );
-  };
+  }, []);
 
-  const renderPercent = (value: number | null | undefined) => {
+  const renderPercent = useCallback((value: number | null | undefined) => {
     if (!safeNumber(value)) {
       return <span title="No data yet">—</span>;
     }
@@ -141,7 +144,7 @@ export default function Portfolio() {
         {value!.toFixed(2)}%
       </>
     );
-  };
+  }, []);
 
   const hasClosedTrades = Boolean(userTrades?.some((trade) => trade.type === 'sell'));
   const percentChange = safeNumber(totalCostBasis) && totalCostBasis > 0 ? (totalPnL / totalCostBasis) * 100 : null;
