@@ -5,6 +5,7 @@ export const featureFlags = {
   chartClampToSignup: true,
   chartStitchLatest: true,
   perfChartMemo: true,
+  enableVirtualScroll: true,
 } as const;
 
 export type FeatureFlagKey = keyof typeof featureFlags;

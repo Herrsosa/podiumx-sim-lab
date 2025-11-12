@@ -1,5 +1,6 @@
-import { useCallback, useMemo } from 'react';
+import { useCallback, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { FixedSizeList as List } from 'react-window';
 import { DollarSign, TrendingUp, TrendingDown, Coins, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -16,9 +17,11 @@ import { useAthletesByIds } from '@/hooks/useAthletesByIds';
 import { useUserTrades } from '@/hooks/useTrades';
 import { exportPositionsToCSV, exportTradesToCSV } from '@/utils/csvExport';
 import { AddFundsDialog } from '@/components/funding/AddFundsDialog';
+import { featureFlags } from '@/lib/config/featureFlags';
 
 export default function Portfolio() {
   const navigate = useNavigate();
+  const listRef = useRef<List>(null);
   const prefetchAthleteDetail = useCallback(() => {
     void import('./AthleteDetail');
   }, []);
@@ -180,6 +183,75 @@ export default function Portfolio() {
     exportTradesToCSV(exportData);
   };
 
+  const ROW_HEIGHT = 80;
+
+  const PositionRow = useCallback(
+    ({ index, style }: { index: number; style: React.CSSProperties }) => {
+      const position = positions[index];
+      const athlete = athletes?.find((a) => a.id === position.athleteId);
+      if (!athlete) return null;
+
+      const costBasis = position.avgCost * position.quantity;
+      const currentValue = position.currentPrice * position.quantity;
+      const pnlColor = safeNumber(position.pnl)
+        ? position.pnl >= 0
+          ? 'text-success'
+          : 'text-destructive'
+        : 'text-muted-foreground';
+      const pnlClass = `font-bold ${pnlColor}`;
+
+      return (
+        <div
+          style={style}
+          className="border-b border-border/40 hover:bg-muted/50 cursor-pointer"
+          onMouseEnter={prefetchAthleteDetail}
+          onClick={() => {
+            prefetchAthleteDetail();
+            navigate(`/athlete/${athlete.slug}`);
+          }}
+        >
+          <div className="flex items-center px-4 h-full gap-4">
+            <div className="flex items-center gap-3 flex-1 min-w-0">
+              <UserAvatar
+                src={athlete.avatar}
+                alt={athlete.name}
+                size={40}
+                className="ring-2 ring-primary/20 flex-shrink-0"
+              />
+              <div className="min-w-0">
+                <div className="font-semibold truncate">{athlete.name}</div>
+                <Badge variant="secondary" className="text-xs">
+                  {athlete.sport}
+                </Badge>
+              </div>
+            </div>
+            <div className="text-right font-medium hidden sm:block w-20">
+              {renderValue(position.quantity, formatNumber)}
+            </div>
+            <div className="text-right hidden md:block w-24">
+              {renderValue(position.avgCost)}
+            </div>
+            <div className="text-right hidden lg:block w-28">
+              {renderValue(position.currentPrice)}
+            </div>
+            <div className="text-right font-medium hidden md:block w-28">
+              {renderValue(currentValue)}
+            </div>
+            <div className="text-right w-32">
+              <div className={pnlClass.replace('font-bold', 'font-semibold text-sm sm:text-base')}>
+                {renderSignedMoney(position.pnl)}
+                <div className={`text-xs ${pnlColor}`}>
+                  {renderPercent(position.pnlPercent)}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    },
+    [positions, athletes, prefetchAthleteDetail, navigate, renderValue, renderSignedMoney, renderPercent]
+  );
+
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="mb-8 flex items-center justify-between">
@@ -318,6 +390,29 @@ export default function Portfolio() {
               secondaryCtaLabel="Buy First Token"
               onSecondaryCta={() => navigate('/marketplace')}
             />
+          ) : featureFlags.enableVirtualScroll ? (
+            <div>
+              <div className="flex items-center px-4 py-3 border-b border-border/60 bg-muted/30 text-sm font-medium text-muted-foreground">
+                <div className="flex-1">Athlete</div>
+                <div className="text-right hidden sm:block w-20">Qty</div>
+                <div className="text-right hidden md:block w-24">Avg Cost</div>
+                <div className="text-right hidden lg:block w-28">Current Price</div>
+                <div className="text-right hidden md:block w-28">Value</div>
+                <div className="text-right w-32">P&L</div>
+              </div>
+              <div tabIndex={0} role="table" aria-label="Portfolio positions table">
+                <List
+                  ref={listRef}
+                  height={Math.min(600, positions.length * ROW_HEIGHT)}
+                  itemCount={positions.length}
+                  itemSize={ROW_HEIGHT}
+                  width="100%"
+                  overscanCount={4}
+                >
+                  {PositionRow}
+                </List>
+              </div>
+            </div>
           ) : (
             <Table>
               <TableHeader>
