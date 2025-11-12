@@ -856,6 +856,26 @@ export type Database = {
         }
         Returns: undefined
       }
+      get_athletes_batch: {
+        Args: { _ids: string[] }
+        Returns: {
+          a: number
+          athlete_earnings: number
+          avatar_url: string
+          b: number
+          bio: string
+          c: number
+          created_at: string
+          display_name: string
+          id: string
+          instagram_url: string
+          sport: string
+          strava_url: string
+          supply: number
+          treasury_balance: number
+          username: string
+        }[]
+      }
       get_dm_conversations: {
         Args: never
         Returns: {

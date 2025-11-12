@@ -8,9 +8,25 @@ import { resolveAvatarUrl } from '@/utils/avatar';
 import { useAthleteMetrics } from './useAthleteMetrics';
 import type { Database } from '@/integrations/supabase/types';
 
-type ProfileRow = Database['public']['Tables']['profiles']['Row'];
-type TokenRow = Database['public']['Tables']['athlete_tokens']['Row'];
 type PostRow = Database['public']['Tables']['posts']['Row'];
+
+type BatchAthleteRow = {
+  id: string;
+  username: string;
+  display_name: string | null;
+  sport: string | null;
+  avatar_url: string | null;
+  bio: string | null;
+  instagram_url: string | null;
+  strava_url: string | null;
+  created_at: string;
+  supply: number;
+  a: number;
+  b: number;
+  c: number;
+  treasury_balance: number;
+  athlete_earnings: number;
+};
 
 export function useAthletesByIds(athleteIds: string[]) {
   const { data: metricsMap, isLoading: metricsLoading, isFetching: metricsFetching } = useAthleteMetrics(
@@ -23,19 +39,12 @@ export function useAthletesByIds(athleteIds: string[]) {
     queryFn: async () => {
       if (!athleteIds || athleteIds.length === 0) return [];
 
-      const { data: profiles, error: profilesError} = await supabase
-        .from('profiles')
-        .select('id, username, display_name, sport, avatar_url, bio, instagram_url, strava_url, created_at')
-        .in('id', athleteIds);
+      // Use batch RPC to get combined profile + token data
+      const { data, error } = await supabase.rpc('get_athletes_batch', { _ids: athleteIds });
 
-      if (profilesError) throw profilesError;
+      if (error) throw error;
 
-      const { data: tokens, error: tokensError } = await supabase
-        .from('athlete_tokens')
-        .select('athlete_id, supply, a, b, c, treasury_balance, athlete_earnings')
-        .in('athlete_id', athleteIds);
-
-      if (tokensError) throw tokensError;
+      const rows = (data || []) as BatchAthleteRow[];
 
       const postsLimit = Math.min(Math.max(athleteIds.length * 25, 50), 500);
 
@@ -63,21 +72,13 @@ export function useAthletesByIds(athleteIds: string[]) {
         min_tokens_required: post.min_tokens_required || 0,
       }));
 
-      const profileRows: ProfileRow[] = (profiles ?? []) as ProfileRow[];
-      const tokenRows: TokenRow[] = (tokens ?? []) as TokenRow[];
-
-      // Combine profile + token data
-      const athletes: Athlete[] = profileRows.map((profile) => {
-        const token = tokenRows.find((row) => row.athlete_id === profile.id);
-        const athletePosts = typedPosts.filter((p) => p.author_id === profile.id);
+      // Combine batch data with posts
+      const athletes: Athlete[] = rows.map((row) => {
+        const athletePosts = typedPosts.filter((p) => p.author_id === row.id);
 
         // Calculate current price from bonding curve
-        const supply = token?.supply || 0;
-        const a = token?.a || 0.0002;
-        const b = token?.b || 0.02;
-        const c = token?.c || 1;
-        const price = priceAt(supply, { a, b, c });
-        const marketCap = price * supply;
+        const price = priceAt(row.supply, { a: row.a, b: row.b, c: row.c });
+        const marketCap = price * row.supply;
 
         // Convert posts to workouts format
         const workouts = athletePosts
@@ -87,25 +88,25 @@ export function useAthletesByIds(athleteIds: string[]) {
             ...(post.workout_json as Workout),
           }));
 
-        const avatarSource = athleteAvatars[profile.username] ?? profile.avatar_url;
+        const avatarSource = athleteAvatars[row.username] ?? row.avatar_url;
 
         return {
-          id: profile.id,
-          slug: profile.username,
-          name: profile.display_name || profile.username,
-          sport: (profile.sport || 'Other') as Sport,
+          id: row.id,
+          slug: row.username,
+          name: row.display_name || row.username,
+          sport: (row.sport || 'Other') as Sport,
           avatar: resolveAvatarUrl(avatarSource, { size: 128 }),
-          bio: profile.bio || '',
+          bio: row.bio || '',
           location: '',
           socials: {
-            instagram: profile.instagram_url || undefined,
-            strava: profile.strava_url || undefined,
+            instagram: row.instagram_url || undefined,
+            strava: row.strava_url || undefined,
           },
-          supply,
-          reserve: token?.treasury_balance || 0,
+          supply: row.supply,
+          reserve: row.treasury_balance,
           price,
           marketCap,
-          athleteRevenue: token?.athlete_earnings || 0,
+          athleteRevenue: row.athlete_earnings,
           change24h: 0,
           volume24h: 0,
           workouts,

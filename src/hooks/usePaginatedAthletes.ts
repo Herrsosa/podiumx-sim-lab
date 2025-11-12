@@ -3,10 +3,28 @@ import { useMemo } from 'react';
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Athlete, Sport } from '@/types';
+import { resolveAvatarUrl } from '@/utils/avatar';
 import { athleteAvatars } from '@/utils/athleteAvatars';
 import { priceAt } from '@/utils/pricing';
-import { resolveAvatarUrl } from '@/utils/avatar';
 import { useAthleteMetrics } from './useAthleteMetrics';
+
+type BatchAthleteRow = {
+  id: string;
+  username: string;
+  display_name: string | null;
+  sport: string | null;
+  avatar_url: string | null;
+  bio: string | null;
+  instagram_url: string | null;
+  strava_url: string | null;
+  created_at: string;
+  supply: number;
+  a: number;
+  b: number;
+  c: number;
+  treasury_balance: number;
+  athlete_earnings: number;
+};
 
 const PAGE_SIZE = 12;
 
@@ -17,57 +35,47 @@ export function usePaginatedAthletes() {
       const from = pageParam * PAGE_SIZE;
       const to = from + PAGE_SIZE - 1;
 
-      const { data: profiles, error: profilesError } = await supabase
+      // Fetch profile IDs first for pagination
+      const { data: profileIds, error: idsError } = await supabase
         .from('profiles')
-        .select('id, username, display_name, sport, avatar_url, bio, instagram_url, strava_url, created_at')
+        .select('id')
         .order('created_at', { ascending: false })
         .range(from, to);
 
-      if (profilesError) throw profilesError;
+      if (idsError) throw idsError;
 
-      const athleteIds = profiles.map((p) => p.id);
+      const ids = profileIds.map((p) => p.id);
 
-      const { data: tokens, error: tokensError } = await supabase
-        .from('athlete_tokens')
-        .select('athlete_id, supply, a, b, c, treasury_balance, athlete_earnings')
-        .in('athlete_id', athleteIds);
+      // Use batch RPC to get combined profile + token data
+      const { data, error } = await supabase.rpc('get_athletes_batch', { _ids: ids });
 
-      if (tokensError) throw tokensError;
+      if (error) throw error;
 
-      const tokensList = tokens ?? [];
-      const tokenMap = new Map(tokensList.map((token) => [token.athlete_id, token]));
+      const rows = (data || []) as BatchAthleteRow[];
 
       // Combine profile + token data (posts are intentionally omitted for marketplace views)
-      const athletes: Athlete[] = profiles.map((profile) => {
-        const token = tokenMap.get(profile.id);
-
-        // Calculate current price from bonding curve
-        const supply = token?.supply || 0;
-        const a = token?.a || 0.0002;
-        const b = token?.b || 0.02;
-        const c = token?.c || 1;
-        const price = priceAt(supply, { a, b, c });
-        const marketCap = price * supply;
-
-        const avatarSource = athleteAvatars[profile.username] ?? profile.avatar_url;
+      const athletes: Athlete[] = rows.map((row) => {
+        const price = priceAt(row.supply, { a: row.a, b: row.b, c: row.c });
+        const marketCap = price * row.supply;
+        const avatarSource = athleteAvatars[row.username] ?? row.avatar_url;
 
         return {
-          id: profile.id,
-          slug: profile.username,
-          name: profile.display_name || profile.username,
-          sport: (profile.sport || 'Other') as Sport,
+          id: row.id,
+          slug: row.username,
+          name: row.display_name || row.username,
+          sport: (row.sport || 'Other') as Sport,
           avatar: resolveAvatarUrl(avatarSource, { size: 160 }),
-          bio: profile.bio || '',
+          bio: row.bio || '',
           location: '',
           socials: {
-            instagram: profile.instagram_url || undefined,
-            strava: profile.strava_url || undefined,
+            instagram: row.instagram_url || undefined,
+            strava: row.strava_url || undefined,
           },
-          supply,
-          reserve: token?.treasury_balance || 0,
+          supply: row.supply,
+          reserve: row.treasury_balance,
           price,
           marketCap,
-          athleteRevenue: token?.athlete_earnings || 0,
+          athleteRevenue: row.athlete_earnings,
           change24h: 0,
           volume24h: 0,
           workouts: [],
@@ -77,7 +85,7 @@ export function usePaginatedAthletes() {
 
       return {
         athletes,
-        nextPage: profiles.length === PAGE_SIZE ? pageParam + 1 : undefined,
+        nextPage: profileIds.length === PAGE_SIZE ? pageParam + 1 : undefined,
       };
     },
     getNextPageParam: (lastPage) => lastPage.nextPage,
