@@ -53,7 +53,7 @@ export const ensureMinimumPoints = <T extends XY>(pts: T[], end: number): T[] =>
 
 // Range filter by UTC ms (normalize to ms first)
 export const filterPointsByRange = <T extends XY>(pts: T[], start: number, end: number): T[] =>
-  pts.map(p => ({...p as any, x: toMs(p.x) } as T)).filter(p => p.x >= start && p.x <= end);
+  pts.map(p => ({...p, x: toMs(p.x) } as T)).filter(p => p.x >= start && p.x <= end);
 
 // Always stitch latest after range filter so last visible value is shown (normalize to ms)
 export const stitchLatest = <T extends XY>(pts: T[], latest: { t: number; price: number } | null): T[] => {
