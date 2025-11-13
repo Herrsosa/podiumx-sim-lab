@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback, useRef } from 'react';
+import React, { useState, useMemo, useCallback, useRef, Suspense, lazy } from 'react';
 import { Plus, TrendingUp, Edit, Trash2, MessageSquare, DollarSign, Activity, Share2, MessageCircle } from 'lucide-react';
 import type { TimeRangeKey } from '@/utils/chartData';
 import { formatNumber } from '@/lib/format';
@@ -12,6 +12,7 @@ import { toast } from 'sonner';
 import { useUser } from '@/store/auth';
 import { supabase } from '@/integrations/supabase/client';
 import TokengatedChat from '@/components/TokengatedChat';
+const LockerMessages = lazy(() => import('@/components/myathlete/LockerMessages'));
 import { useQueryClient } from '@tanstack/react-query';
 import { SupabaseResponsiveImage } from '@/components/SupabaseResponsiveImage';
 import { ProfileDetailsCard } from '@/components/my-athlete/ProfileDetailsCard';
@@ -354,9 +355,18 @@ export function PersonalConsole({
 
         <TabsContent value="messages">
           <div ref={messagesSectionRef}>
-            <Card className="glass-card p-8 text-center">
-              <p className="text-muted-foreground">Direct messages feature coming soon!</p>
-            </Card>
+            <Suspense
+              fallback={(
+                <Card className="glass-card p-6">
+                  <Skeleton className="h-64 w-full" />
+                </Card>
+              )}
+            >
+              <LockerMessages
+                athleteId={user?.id}
+                athleteName={athlete?.name}
+              />
+            </Suspense>
           </div>
         </TabsContent>
 
