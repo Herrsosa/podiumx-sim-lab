@@ -1,11 +1,11 @@
 # Strava Integration Setup Guide
 
-This guide explains how to set up the Strava integration for PodiumX.
+This guide explains how to set up the Strava integration for Athlyst.
 
 ## Prerequisites
 
 - A Strava account
-- A deployed PodiumX application (or local development environment)
+- A deployed Athlyst application (or local development environment)
 - Access to your Supabase project dashboard
 
 ## Step 1: Create a Strava API Application
@@ -13,7 +13,7 @@ This guide explains how to set up the Strava integration for PodiumX.
 1. Go to [Strava API Settings](https://www.strava.com/settings/api)
 2. Click "Create Application" or "My API Application"
 3. Fill in the application details:
-   - **Application Name**: PodiumX (or your preferred name)
+   - **Application Name**: Athlyst (or your preferred name)
    - **Category**: Choose the most appropriate category
    - **Club**: Optional
    - **Website**: Your application URL

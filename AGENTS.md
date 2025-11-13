@@ -4,7 +4,7 @@
 
 \## 1) What this project is (Context)
 
-\- \*\*PodiumX\*\*: a web app where athletes mint tokens, share “Proof-of-Sweat” posts (workouts/media), and fans trade those tokens on a bonding-curve marketplace.
+\- \*\*Athlyst\*\*: a web app where athletes mint tokens, share “Proof-of-Sweat” posts (workouts/media), and fans trade those tokens on a bonding-curve marketplace.
 
 \- Core flows: auth → create/view athlete profiles → post workouts (manual + Strava/Garmin sync) → marketplace buy/sell → token-gated chat/content.
 

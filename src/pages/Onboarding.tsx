@@ -381,7 +381,7 @@ export default function Onboarding() {
 
       setOnboardingRole(null);
 
-      toast.success('Welcome to PodiumX! 🎉');
+      toast.success('Welcome to Athlyst! 🎉');
       navigate('/portfolio', { replace: true });
     } catch (error: unknown) {
       console.error('Onboarding error:', error);
@@ -433,7 +433,7 @@ export default function Onboarding() {
           )}
 
           <CardTitle className="text-3xl">
-            {step === 'ROLE_SELECTION' && "Welcome to PodiumX"}
+            {step === 'ROLE_SELECTION' && "Welcome to Athlyst"}
             {step === 'FAN_PROFILE' && "Create Your Profile"}
             {step === 'FAN_WALLET' && "Setup Your Wallet"}
             {step === 'FAN_EXPLORE' && "Discover Athletes"}

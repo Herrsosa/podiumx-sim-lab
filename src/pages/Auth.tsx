@@ -118,7 +118,7 @@ export default function Auth() {
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
       <Card className="w-full max-w-md">
         <CardHeader>
-          <CardTitle className="text-2xl text-center">PodiumX</CardTitle>
+          <CardTitle className="text-2xl text-center">Athlyst</CardTitle>
           <CardDescription className="text-center">
             Join the athlete token marketplace
           </CardDescription>

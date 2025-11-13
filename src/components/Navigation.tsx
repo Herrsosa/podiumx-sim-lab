@@ -68,7 +68,7 @@ export default function Navigation() {
             <div className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-xl bg-primary">
               <TrendingUp className="h-4 w-4 sm:h-6 sm:w-6 text-primary-foreground" />
             </div>
-            <span className="text-base sm:text-xl font-bold">PodiumX</span>
+            <span className="text-base sm:text-xl font-bold">Athlyst</span>
           </Link>
 
           {/* Nav Links */}
@@ -150,11 +150,6 @@ export default function Navigation() {
         </div>
       </div>
 
-      {/* Disclaimer Banner */}
-      <div className="border-t border-border/50 bg-muted/30 py-1.5 sm:py-2 text-center text-[10px] sm:text-xs text-muted-foreground px-2">
-        <span className="hidden sm:inline">🎓 Educational Simulation Only • No Real Trading • Not Financial Advice</span>
-        <span className="sm:hidden">🎓 Educational Only • Not Financial Advice</span>
-      </div>
     </nav>
   );
 }
