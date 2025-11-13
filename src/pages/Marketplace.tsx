@@ -1,7 +1,6 @@
-import { useState, useMemo, useCallback, useEffect, startTransition, useRef } from 'react';
+import { useState, useMemo, useCallback, useEffect, startTransition } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search } from 'lucide-react';
-import { FixedSizeList as List } from 'react-window';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { usePaginatedAthletes } from '@/hooks/usePaginatedAthletes';
@@ -16,7 +15,6 @@ import { CardSkeleton } from '@/components/ui/skeletons';
 import { useAuthLoading, useUser } from '@/store/auth';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import { queryClient } from '@/lib/queryClient';
-import { featureFlags } from '@/lib/config/featureFlags';
 
 const SPORTS: Sport[] = ['Running', 'HYROX', 'Cycling', 'Triathlon', 'CrossFit', 'Swimming', 'Trail Run', 'Rowing'];
 
@@ -27,7 +25,6 @@ export default function Marketplace() {
   const [search, setSearch] = useState('');
   const [selectedSport, setSelectedSport] = useState<Sport | 'All'>('All');
   const [pendingSlug, setPendingSlug] = useState<string | null>(null);
-  const listRef = useRef<List>(null);
   
   // Debounce search to reduce re-renders
   const debouncedSearch = useDebouncedValue(search, 300);
@@ -112,67 +109,9 @@ export default function Marketplace() {
     if (hasNextPage) fetchNextPage();
   }, [hasNextPage, fetchNextPage]);
 
-  const CARD_HEIGHT = 220;
-  const CARDS_PER_ROW = 4;
-  const GAP = 16;
-
-  const gridContainerRef = useRef<HTMLDivElement>(null);
-  const [gridWidth, setGridWidth] = useState(1200);
-
-  useEffect(() => {
-    if (!gridContainerRef.current) return;
-    const updateWidth = () => {
-      if (gridContainerRef.current) {
-        setGridWidth(gridContainerRef.current.offsetWidth);
-      }
-    };
-    updateWidth();
-    const observer = new ResizeObserver(updateWidth);
-    observer.observe(gridContainerRef.current);
-    return () => observer.disconnect();
-  }, []);
-
-  const getColumnsForWidth = (width: number) => {
-    if (width >= 1280) return 4; // xl
-    if (width >= 1024) return 3; // lg
-    if (width >= 640) return 2; // sm
-    return 1;
-  };
-
-  const columns = getColumnsForWidth(gridWidth);
-  const cardWidth = (gridWidth - GAP * (columns - 1)) / columns;
-  const rowHeight = CARD_HEIGHT + GAP;
-
-  const Row = useCallback(
-    ({ index, style }: { index: number; style: React.CSSProperties }) => {
-      const startIndex = index * columns;
-      const rowAthletes = filteredAthletes.slice(startIndex, startIndex + columns);
-
-      return (
-        <div style={style} className="flex gap-4">
-          {rowAthletes.map((athlete) => {
-            const series =
-              (chartData as Record<string, MarketplaceChartPoint[]> | undefined)?.[athlete.id] ?? [];
-
-            return (
-              <div key={athlete.id} style={{ width: `${cardWidth}px`, flexShrink: 0 }}>
-                <AthleteCard
-                  athlete={athlete}
-                  chartData={series}
-                  onClick={() => athlete.slug && handleAthleteClick(athlete.slug)}
-                  onMouseEnter={() => prefetchAthleteDetail(athlete.id)}
-                />
-              </div>
-            );
-          })}
-        </div>
-      );
-    },
-    [filteredAthletes, chartData, columns, cardWidth, handleAthleteClick, prefetchAthleteDetail]
-  );
-
   return (
-    <div className="container mx-auto px-4 py-8 page-transition">
+    <div className="px-4 py-8 page-transition">
+      <div className="mx-auto w-full max-w-6xl">
       {/* Header */}
       <div className="mb-8">
         <div className="flex items-center justify-between mb-2">
@@ -201,7 +140,7 @@ export default function Marketplace() {
             aria-label="Search athletes"
           />
         </div>
-        <div className="flex gap-2 overflow-x-auto pb-2">
+        <div className="flex flex-wrap gap-2 pb-2">
           <Button
             variant={selectedSport === 'All' ? 'default' : 'outline'}
             size="sm"
@@ -223,42 +162,35 @@ export default function Marketplace() {
       </div>
 
       {/* Athletes Grid */}
-      {showGridSkeleton && filteredAthletes.length === 0 ? (
-        <CardSkeleton
-          count={12}
-          className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
-        />
-      ) : featureFlags.enableVirtualScroll ? (
-        <div ref={gridContainerRef} tabIndex={0} role="grid" aria-label="Athletes marketplace grid">
-          <List
-            ref={listRef}
-            height={Math.min(800, Math.ceil(filteredAthletes.length / columns) * rowHeight)}
-            itemCount={Math.ceil(filteredAthletes.length / columns)}
-            itemSize={rowHeight}
-            width="100%"
-            overscanCount={4}
+      <div className="mx-auto w-full">
+        {showGridSkeleton && filteredAthletes.length === 0 ? (
+          <CardSkeleton
+            count={12}
+            className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+          />
+        ) : (
+          <div
+            className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+            role="grid"
+            aria-label="Athletes marketplace grid"
           >
-            {Row}
-          </List>
-        </div>
-      ) : (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {filteredAthletes.map((athlete) => {
-            const series =
-              (chartData as Record<string, MarketplaceChartPoint[]> | undefined)?.[athlete.id] ?? [];
+            {filteredAthletes.map((athlete) => {
+              const series =
+                (chartData as Record<string, MarketplaceChartPoint[]> | undefined)?.[athlete.id] ?? [];
 
-            return (
-              <AthleteCard
-                key={athlete.id}
-                athlete={athlete}
-                chartData={series}
-                onClick={() => athlete.slug && handleAthleteClick(athlete.slug)}
-                onMouseEnter={() => prefetchAthleteDetail(athlete.id)}
-              />
-            );
-          })}
-        </div>
-      )}
+              return (
+                <AthleteCard
+                  key={athlete.id}
+                  athlete={athlete}
+                  chartData={series}
+                  onClick={() => athlete.slug && handleAthleteClick(athlete.slug)}
+                  onMouseEnter={() => prefetchAthleteDetail(athlete.id)}
+                />
+              );
+            })}
+          </div>
+        )}
+      </div>
 
       {filteredAthletes.length === 0 && !showGridSkeleton && (
         <EmptyState
@@ -280,6 +212,7 @@ export default function Marketplace() {
           </Button>
         </div>
       )}
+      </div>
     </div>
   );
 }

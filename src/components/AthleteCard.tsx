@@ -52,6 +52,20 @@ export const AthleteCard = memo(({ athlete, chartData, onClick, onMouseEnter }: 
     return [lower, max + padding];
   }, [hasChartData, sortedChartData]);
 
+  const hasAvatar = Boolean(athlete.avatar && athlete.avatar.trim().length > 0);
+  const avatarUrl = resolveAvatarUrl(athlete.avatar, { size: 320 });
+  const fallbackInitials = useMemo(() => {
+    if (!athlete.name) return 'PX';
+    const letters = athlete.name
+      .split(' ')
+      .map((part) => part.trim()[0])
+      .filter(Boolean)
+      .slice(0, 2)
+      .join('')
+      .toUpperCase();
+    return letters || 'PX';
+  }, [athlete.name]);
+
   return (
     <Card
       className="glass-card group cursor-pointer transition-all duration-300 hover:scale-[1.02] hover:shadow-xl hover:border-primary/30"
@@ -59,16 +73,22 @@ export const AthleteCard = memo(({ athlete, chartData, onClick, onMouseEnter }: 
       onMouseEnter={onMouseEnter}
     >
       <CardContent className="p-0">
-        <div className="aspect-w-1 aspect-h-1">
-          <OptimizedImage
-            src={resolveAvatarUrl(athlete.avatar, { size: 320 })}
-            webpSrc={getAvatarAsset(athlete.avatar)?.webp}
-            alt={athlete.name}
-            width={320}
-            height={320}
-            className="h-48 w-full object-cover"
-            eager={false}
-          />
+        <div className="relative aspect-square overflow-hidden">
+          {hasAvatar ? (
+            <OptimizedImage
+              src={avatarUrl}
+              webpSrc={getAvatarAsset(athlete.avatar)?.webp}
+              alt={athlete.name}
+              width={320}
+              height={320}
+              className="h-full w-full object-cover"
+              eager={false}
+            />
+          ) : (
+            <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-muted/70 to-muted text-3xl font-semibold text-muted-foreground">
+              {fallbackInitials}
+            </div>
+          )}
         </div>
         <div className="p-6">
           {/* Avatar & Name */}
