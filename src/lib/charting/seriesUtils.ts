@@ -189,5 +189,30 @@ export const normalizePriceSeries = (
 ): PriceSeriesPoint[] => {
   if (points.length === 0) return [];
   const deduped = dedupePriceSeries(points);
-  return applyPriceWindow(deduped, range, now);
+  const windowed = applyPriceWindow(deduped, range, now);
+  if (windowed.length === 0) {
+    return windowed;
+  }
+
+  const lastPoint = windowed[windowed.length - 1];
+  const { end } = getWindowUTC(range, now);
+  const target =
+    range === 'all'
+      ? now
+      : Math.min(end, now);
+
+  // If we're already up-to-date (within 60 seconds), no need to append a carry point
+  if (!Number.isFinite(target) || target - lastPoint.t <= 60_000) {
+    return windowed;
+  }
+
+  return [
+    ...windowed,
+    {
+      ...lastPoint,
+      t: target,
+      carried: true,
+      lastTradeTime: lastPoint.lastTradeTime ?? lastPoint.t,
+    },
+  ];
 };
