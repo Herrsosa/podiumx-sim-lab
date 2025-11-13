@@ -1,6 +1,8 @@
+import { useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import type { Database } from '@/integrations/supabase/types';
+import { subscribeToAthletePrice } from '@/lib/realtime/athleteRealtime';
 
 export type TF = '24h' | '7d' | '30d' | 'all';
 
@@ -60,6 +62,12 @@ async function fetchPriceSeries(athleteId: string, from: string | null, to: stri
 }
 
 export function usePriceSeries(athleteId: string | undefined, tf: TF) {
+  // Subscribe to real-time updates via centralized manager
+  useEffect(() => {
+    if (!athleteId) return;
+    return subscribeToAthletePrice(athleteId);
+  }, [athleteId]);
+
   return useQuery<PriceSeriesPoint[]>({
     queryKey: ['priceSeries', athleteId, tf],
     enabled: Boolean(athleteId),

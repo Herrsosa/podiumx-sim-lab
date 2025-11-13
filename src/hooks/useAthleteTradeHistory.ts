@@ -1,10 +1,8 @@
-import { useEffect, useMemo, useRef } from 'react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useEffect, useMemo } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { priceAt } from '@/utils/pricing';
 import type { Database } from '@/integrations/supabase/types';
-import { athletePriceQueryKey, type AthletePriceSnapshot } from './useAthletePrice';
-import { featureFlags } from '@/lib/config/featureFlags';
+import { subscribeToAthletePrice } from '@/lib/realtime/athleteRealtime';
 import {
   clampToSignup,
   toChartPoints,
@@ -103,9 +101,6 @@ export function useAthleteTradeHistory(
   range: TimeRange = '24h',
   options: UseAthleteTradeHistoryOptions = {},
 ) {
-  const queryClient = useQueryClient();
-  const pendingTicksRef = useRef<AthletePriceSnapshot[]>([]);
-  const flushTimeoutRef = useRef<number>();
   const signupAtMs = useMemo(() => {
     if (options.signupAt == null || !Number.isFinite(options.signupAt)) return null;
     return ensureMs(Number(options.signupAt));
@@ -119,115 +114,15 @@ export function useAthleteTradeHistory(
   }, [options.latestPrice]);
 
   const tradeHistoryQueryKey = useMemo(
-    () => ['athleteChart', athleteId, range, signupAtMs, latestPricePoint?.t ?? null, latestPricePoint?.price ?? null] as const,
-    [athleteId, range, signupAtMs, latestPricePoint?.t, latestPricePoint?.price],
+    () => ['athleteTradeHistory', athleteId, range] as const,
+    [athleteId, range],
   );
 
+  // Subscribe to real-time updates via centralized manager
   useEffect(() => {
     if (!athleteId) return;
-    queryClient.removeQueries({ queryKey: ['prices', athleteId], exact: false });
-    queryClient.removeQueries({ queryKey: ['athletePrices', athleteId], exact: false });
-    queryClient.removeQueries({ queryKey: ['chart', athleteId], exact: false });
-  }, [athleteId, queryClient]);
-
-  useEffect(() => {
-    if (!athleteId) return;
-
-    const priceKey = athletePriceQueryKey(athleteId);
-
-      const flushPendingTicks = () => {
-        const ticks = pendingTicksRef.current;
-        pendingTicksRef.current = [];
-        flushTimeoutRef.current = undefined;
-
-        if (ticks.length === 0) return;
-
-        const latest = ticks[ticks.length - 1];
-        queryClient.setQueryData<AthletePriceSnapshot | null>(priceKey, () => latest);
-
-        queryClient.setQueryData<ChartSeries | undefined>(tradeHistoryQueryKey, (current) => {
-          if (!current) return current;
-
-          const basePoints = [...current.data];
-          const appendedPoints = ticks.reduce<TradePoint[]>((acc, tick) => {
-            const timestamp = tick.updatedAt ? new Date(tick.updatedAt).getTime() : Date.now();
-            if (!Number.isFinite(timestamp)) {
-              return acc;
-            }
-            return [...acc, { timestamp, price: tick.price }];
-          }, basePoints);
-
-          const deduped = Array.from(new Map(appendedPoints.map((point) => [point.timestamp, point])).values()).sort(
-            (a, b) => a.timestamp - b.timestamp,
-          );
-
-          const windowed = trimToWindow(deduped, range, signupAtMs);
-          return recalcSeries(windowed, current.volume);
-        });
-      };
-
-    const scheduleFlush = () => {
-      if (flushTimeoutRef.current !== undefined) return;
-      flushTimeoutRef.current = window.setTimeout(flushPendingTicks, 120);
-    };
-
-    const channel = supabase
-      .channel(`price-stream:${athleteId}`)
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'athlete_prices',
-          filter: `athlete_id=eq.${athleteId}`,
-        },
-        (payload) => {
-          const snapshot = payload.new as RealtimePricePayload | null;
-
-          if (!snapshot) return;
-
-          const updatedAt =
-            snapshot.updated_at ??
-            snapshot.updatedAt ??
-            snapshot.created_at ??
-            null;
-
-          const previous = queryClient.getQueryData<AthletePriceSnapshot | null>(priceKey);
-          const curve =
-            snapshot.curve_a !== undefined || snapshot.curve_b !== undefined || snapshot.curve_c !== undefined
-              ? {
-                  a: Number(snapshot.curve_a ?? previous?.curve.a ?? 0.0002),
-                  b: Number(snapshot.curve_b ?? previous?.curve.b ?? 0.02),
-                  c: Number(snapshot.curve_c ?? previous?.curve.c ?? 1),
-                }
-              : previous?.curve ?? { a: 0.0002, b: 0.02, c: 1 };
-
-          const formatted: AthletePriceSnapshot = {
-            athleteId: snapshot.athlete_id ?? athleteId,
-            price: Number(snapshot.price ?? previous?.price ?? 0),
-            supply: Number(snapshot.supply ?? previous?.supply ?? 0),
-            reserve: Number(snapshot.reserve ?? snapshot.treasury_balance ?? previous?.reserve ?? 0),
-            athleteRevenue: Number(snapshot.athleteRevenue ?? snapshot.athlete_earnings ?? previous?.athleteRevenue ?? 0),
-            updatedAt,
-            curve,
-            tokenCreatedAt: previous?.tokenCreatedAt ?? null,
-          };
-
-          pendingTicksRef.current.push(formatted);
-          scheduleFlush();
-        },
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-      if (flushTimeoutRef.current !== undefined) {
-        window.clearTimeout(flushTimeoutRef.current);
-      }
-      pendingTicksRef.current = [];
-      flushTimeoutRef.current = undefined;
-    };
-  }, [athleteId, queryClient, range, signupAtMs, tradeHistoryQueryKey]);
+    return subscribeToAthletePrice(athleteId);
+  }, [athleteId]);
 
   const result = useQuery<ChartSeries>({
     queryKey: tradeHistoryQueryKey,

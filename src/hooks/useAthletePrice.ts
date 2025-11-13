@@ -1,7 +1,8 @@
 import { useEffect } from 'react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { priceAt } from '@/utils/pricing';
+import { subscribeToAthletePrice } from '@/lib/realtime/athleteRealtime';
 
 export interface AthletePriceSnapshot {
   athleteId: string;
@@ -22,56 +23,13 @@ export const athletePriceQueryKey = (athleteId: string | undefined) =>
   ['athlete-price', { athleteId }] as const;
 
 export function useAthletePrice(athleteId: string | undefined) {
-  const queryClient = useQueryClient();
   const queryKey = athletePriceQueryKey(athleteId);
 
+  // Subscribe to real-time updates via centralized manager
   useEffect(() => {
     if (!athleteId) return;
-
-    const channel = supabase
-      .channel(`athlete-prices:${athleteId}`)
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'athlete_prices',
-          filter: `athlete_id=eq.${athleteId}`,
-        },
-        (payload) => {
-          const snapshot = payload.new as Partial<AthletePriceSnapshot> & {
-            athlete_id?: string;
-            price?: number;
-            supply?: number;
-            treasury_balance?: number;
-            athlete_earnings?: number;
-            created_at?: string;
-          };
-
-          if (!snapshot) return;
-
-          const previous = queryClient.getQueryData<AthletePriceSnapshot | null>(queryKey);
-
-          const formatted: AthletePriceSnapshot = {
-            athleteId: snapshot.athlete_id ?? athleteId,
-            price: Number(snapshot.price ?? 0),
-            supply: Number(snapshot.supply ?? 0),
-            reserve: Number(snapshot.treasury_balance ?? 0),
-            athleteRevenue: Number(snapshot.athlete_earnings ?? 0),
-            curve: previous?.curve ?? { a: 0.0002, b: 0.02, c: 1 },
-            updatedAt: snapshot.created_at ?? null,
-            tokenCreatedAt: previous?.tokenCreatedAt ?? null,
-          };
-
-          queryClient.setQueryData(queryKey, formatted);
-        },
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [athleteId, queryClient, queryKey]);
+    return subscribeToAthletePrice(athleteId);
+  }, [athleteId]);
 
   return useQuery<AthletePriceSnapshot | null>({
     queryKey,
@@ -148,7 +106,6 @@ export function useAthletePrice(athleteId: string | undefined) {
         });
       }
 
-      queryClient.setQueryData(queryKey, snapshot);
       return snapshot;
     },
   });
