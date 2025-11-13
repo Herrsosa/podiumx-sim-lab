@@ -22,6 +22,7 @@ import {
   isSec,
   toMs,
 } from '@/lib/charting/seriesUtils';
+import { cn } from '@/lib/utils';
 
 type ChartPoint = {
   t: number;
@@ -132,6 +133,16 @@ const AthletePriceChart = memo(({
   posts,
   syncId = null,
 }: AthletePriceChartProps) => {
+  const isDebug = import.meta.env?.MODE !== 'production';
+  const logDiag = useCallback(
+    (...args: unknown[]) => {
+      if (isDebug) {
+        // eslint-disable-next-line no-console
+        console.log(...args);
+      }
+    },
+    [isDebug],
+  );
   const memoEnabled = featureFlags.perfChartMemo;
   const showPoS = featureFlags.showPoS;
 
@@ -162,22 +173,22 @@ const AthletePriceChart = memo(({
         : [Number.NEGATIVE_INFINITY, now]; // "All" - include everything
       
       // DIAGNOSTICS - Detect timestamp unit mismatches
-      console.log("[ChartDiag] range", timeRange);
-      console.log("[ChartDiag] series len", xyPoints.length);
+      logDiag("[ChartDiag] range", timeRange);
+      logDiag("[ChartDiag] series len", xyPoints.length);
       if (xyPoints.length) {
         const xs = xyPoints.map(p => p.x);
         const minX = Math.min(...xs), maxX = Math.max(...xs);
-        console.log("[ChartDiag] series x min/max", minX, maxX, 
+        logDiag("[ChartDiag] series x min/max", minX, maxX, 
                     "units?", isMs(minX) ? "ms" : isSec(minX) ? "sec" : "other");
-        console.log("[ChartDiag] series x min/max (ISO)", new Date(minX).toISOString(), new Date(maxX).toISOString());
+        logDiag("[ChartDiag] series x min/max (ISO)", new Date(minX).toISOString(), new Date(maxX).toISOString());
       }
       
       const lastBase = xyPoints[xyPoints.length - 1];
       const latestPoint = lastBase ? { t: lastBase.x, price: lastBase.y } : null;
-      console.log("[ChartDiag] latestPoint", latestPoint?.t, latestPoint?.price, 
+      logDiag("[ChartDiag] latestPoint", latestPoint?.t, latestPoint?.price, 
                   latestPoint ? (isMs(latestPoint.t) ? "ms" : isSec(latestPoint.t) ? "sec" : "other") : "none");
       if (latestPoint) {
-        console.log("[ChartDiag] latestPoint (ISO)", new Date(latestPoint.t).toISOString());
+        logDiag("[ChartDiag] latestPoint (ISO)", new Date(latestPoint.t).toISOString());
       }
       
       // Check PoS/workout post timestamps
@@ -191,13 +202,13 @@ const AthletePriceChart = memo(({
             iso: new Date(ts).toISOString()
           };
         });
-        console.log("[ChartDiag] posts sample", posts.length, postSample);
+        logDiag("[ChartDiag] posts sample", posts.length, postSample);
       } else {
-        console.log("[ChartDiag] posts", 0);
+        logDiag("[ChartDiag] posts", 0);
       }
       
       let visible = filterPointsByRange(xyPoints, start, end);
-      console.log("[ChartDiag] after range filter", visible.length);
+      logDiag("[ChartDiag] after range filter", visible.length);
       
       // Stitch latest point if available
       const beforeStitch = visible.length;
@@ -205,21 +216,21 @@ const AthletePriceChart = memo(({
         visible = stitchLatest(visible, latestPoint);
       }
       const stitched = visible.length > beforeStitch;
-      console.log("[ChartDiag] stitchLatest", stitched ? "ADDED" : "skipped", "count now", visible.length);
+      logDiag("[ChartDiag] stitchLatest", stitched ? "ADDED" : "skipped", "count now", visible.length);
       
       visible = ensureMinimumPoints(visible, end);
-      console.log("[ChartDiag] after ensureMinimumPoints", visible.length);
+      logDiag("[ChartDiag] after ensureMinimumPoints", visible.length);
       
-      console.log("[ChartDiag] start/end (ISO)", 
+      logDiag("[ChartDiag] start/end (ISO)", 
         start === Number.NEGATIVE_INFINITY ? 'ALL' : new Date(start).toISOString(), 
         new Date(end).toISOString());
       
       if (visible.length > 0) {
         const lastVisible = visible[visible.length - 1];
-        console.log("[ChartDiag] last visible x (ISO)", new Date(lastVisible.x).toISOString(), "y", lastVisible.y);
+        logDiag("[ChartDiag] last visible x (ISO)", new Date(lastVisible.x).toISOString(), "y", lastVisible.y);
       }
       
-      console.log("[Chart]", { 
+      logDiag("[Chart]", { 
         range: timeRange, 
         start: start === Number.NEGATIVE_INFINITY ? 'ALL' : new Date(start).toISOString(), 
         end: new Date(end).toISOString(), 
@@ -236,7 +247,7 @@ const AthletePriceChart = memo(({
         lastTradeTime: baseData[idx]?.lastTradeTime,
       }));
     },
-    [chartPoints, memoizedPosCountByDay, posSeries, startOfDay, timeRange, posts],
+    [chartPoints, memoizedPosCountByDay, posSeries, startOfDay, timeRange, posts, logDiag],
   );
   
   const chartData = memoEnabled 
@@ -286,7 +297,7 @@ const AthletePriceChart = memo(({
       { floorAtZero: true }
     );
     
-    console.log("[Chart] domain", { 
+    logDiag("[Chart] domain", { 
       range: timeRange, 
       count: chartData.length, 
       yMin: ys.length ? Math.min(...ys) : 'none',
@@ -296,7 +307,7 @@ const AthletePriceChart = memo(({
     });
     
     return [domainMin, domainMax] as const;
-  }, [chartData, timeRange]);
+  }, [chartData, timeRange, logDiag]);
   
   const yDomain = memoEnabled ? yDomainMemo : (() => {
     const ys = chartData.map(p => p.price ?? 0).filter(Number.isFinite);
@@ -374,8 +385,54 @@ const AthletePriceChart = memo(({
 
   const isBusy = isLoading || isFetching;
 
+  const latestTradeTimestamp = useMemo(() => {
+    if (chartPoints.length === 0) return null;
+    const lastPoint = chartPoints[chartPoints.length - 1];
+    if (!lastPoint) return null;
+    const target = lastPoint.carried ? lastPoint.lastTradeTime ?? lastPoint.t : lastPoint.t;
+    return Number.isFinite(target) ? toMs(target) : null;
+  }, [chartPoints]);
+
+  const [statusLabel, statusClass, dotClass] = useMemo(() => {
+    const now = Date.now();
+    const STALE_THRESHOLD = 2 * 60 * 1000; // 2 minutes
+
+    if (isFetching) {
+      return ['Syncing…', 'bg-primary/10 text-primary border border-primary/20', 'bg-primary'];
+    }
+
+    if (latestTradeTimestamp && now - latestTradeTimestamp <= STALE_THRESHOLD) {
+      return ['Live', 'bg-emerald-100 text-emerald-900 border border-emerald-200', 'bg-emerald-500'];
+    }
+
+    if (latestTradeTimestamp) {
+      const formatted = new Intl.DateTimeFormat(undefined, {
+        month: 'short',
+        day: 'numeric',
+      }).format(new Date(latestTradeTimestamp));
+      return [
+        `Updated ${formatted}`,
+        'bg-amber-50 text-amber-900 border border-amber-200',
+        'bg-amber-400',
+      ];
+    }
+
+    return ['Awaiting trades', 'bg-muted text-muted-foreground border border-border/60', 'bg-muted-foreground/50'];
+  }, [isFetching, latestTradeTimestamp]);
+
   return (
     <div style={{ position: 'relative', width: '100%', height: '100%' }}>
+      <div className="pointer-events-none absolute right-4 top-4 z-10">
+        <span
+          className={cn(
+            'inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-medium shadow-sm backdrop-blur-sm',
+            statusClass,
+          )}
+        >
+          <span className={cn('h-2 w-2 rounded-full', dotClass)} />
+          {statusLabel}
+        </span>
+      </div>
       {isBusy ? (
         <div className="pointer-events-none absolute inset-0 px-6 pt-6 pb-10">
           <Skeleton className="h-full w-full rounded-lg opacity-70" />

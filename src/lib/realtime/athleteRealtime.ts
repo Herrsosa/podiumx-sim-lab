@@ -7,6 +7,9 @@ import type { PriceSeriesPoint } from '@/lib/charting/engine';
 import { normalizePriceSeries } from '@/lib/charting/seriesUtils';
 
 type AthletePriceRow = Database['public']['Tables']['athlete_prices']['Row'];
+type CachedTradeHistory = {
+  points?: Array<{ timestamp: number; price: number }>;
+} & Record<string, unknown>;
 
 interface PriceUpdate {
   athleteId: string;
@@ -107,7 +110,7 @@ function updateQueryCaches(athleteId: string, updates: PriceUpdate[]) {
   for (const range of ranges) {
     queryClient.setQueryData(
       ['athleteTradeHistory', athleteId, range],
-      (old: any) => {
+      (old: CachedTradeHistory | undefined) => {
         if (!old) return old;
 
         // Append new points and let the hook handle reprocessing
@@ -119,7 +122,7 @@ function updateQueryCaches(athleteId: string, updates: PriceUpdate[]) {
         return {
           ...old,
           points: dedupeUpdates([
-            ...(old.points || []).map((p: any) => ({
+            ...(old.points || []).map((p) => ({
               athleteId,
               timestamp: p.timestamp,
               price: p.price,

@@ -1,9 +1,8 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, lazy, Suspense } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { useDmConversations } from '@/hooks/useDmConversations';
 import { ConversationList } from './ConversationList';
-import { MessageThread } from './MessageThread';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -13,6 +12,11 @@ import { useStartDm } from '@/hooks/useStartDm';
 import { useToast } from '@/hooks/use-toast';
 import { useUser } from '@/store/auth';
 import { cn } from '@/lib/utils';
+import { Loader2 } from 'lucide-react';
+
+const MessageThread = lazy(() =>
+  import('./MessageThread').then((mod) => ({ default: mod.MessageThread })),
+);
 
 interface LockerMessagesProps {
   athleteId?: string;
@@ -148,14 +152,6 @@ function OwnerLockerMessages({
     }
   };
 
-  if (isLoading) {
-    return (
-      <div className="p-6">
-        <Skeleton className="h-96 w-full" />
-      </div>
-    );
-  }
-
   return (
     <div
       className={cn(
@@ -185,21 +181,27 @@ function OwnerLockerMessages({
           </div>
 
           <div className="flex-1 overflow-hidden">
-            <ConversationList
-              conversations={conversations || []}
-              selectedId={conversationId ?? undefined}
-              onSelect={handleSelectConversation}
-            />
+            {isLoading ? (
+              <ConversationListSkeleton />
+            ) : (
+              <ConversationList
+                conversations={conversations || []}
+                selectedId={conversationId ?? undefined}
+                onSelect={handleSelectConversation}
+              />
+            )}
           </div>
         </div>
       </div>
 
       <div className={`${!conversationId ? 'hidden md:flex' : 'flex'} flex-col`}>
         {conversationId ? (
-          <MessageThread conversationId={conversationId} onBack={handleBack} />
+          <Suspense fallback={<ThreadSkeleton />}>
+            <MessageThread conversationId={conversationId} onBack={handleBack} />
+          </Suspense>
         ) : (
           <div className="flex flex-1 items-center justify-center text-muted-foreground">
-            Select a conversation or start a new one
+            {isLoading ? 'Loading conversations…' : 'Select a conversation or start a new one'}
           </div>
         )}
       </div>
@@ -284,14 +286,6 @@ function OtherLockerMessages({ athleteId, athleteName }: OtherLockerMessagesProp
     }
   };
 
-  if (isLoading) {
-    return (
-      <div className="p-6">
-        <Skeleton className="h-96 w-full" />
-      </div>
-    );
-  }
-
   if (!activeConversationId) {
     return (
       <div className="flex h-[600px] flex-col p-6" data-testid="locker-messages-other">
@@ -307,14 +301,20 @@ function OtherLockerMessages({ athleteId, athleteName }: OtherLockerMessagesProp
               placeholder={`Say hi to ${friendlyName}...`}
               value={messageDraft}
               onChange={(event) => setMessageDraft(event.target.value)}
-              disabled={isSending || startDmMutation.isPending}
+              disabled={isSending || startDmMutation.isPending || isLoading}
               rows={5}
             />
             <Button
               onClick={handleSendFirstMessage}
-              disabled={!messageDraft.trim() || isSending || startDmMutation.isPending}
+              disabled={
+                !messageDraft.trim() || isSending || startDmMutation.isPending || isLoading
+              }
             >
-              {isSending || startDmMutation.isPending ? 'Sending...' : messageLabel}
+              {isSending || startDmMutation.isPending
+                ? 'Sending...'
+                : isLoading
+                  ? 'Preparing...'
+                  : messageLabel}
             </Button>
           </div>
         </div>
@@ -324,14 +324,46 @@ function OtherLockerMessages({ athleteId, athleteName }: OtherLockerMessagesProp
 
   return (
     <div className="h-[600px]" data-testid="locker-messages-other">
-      <MessageThread
-        conversationId={activeConversationId}
-        onBack={() => {
-          setActiveConversationId(null);
-          setShouldAutoSelect(false);
-        }}
-        title={messageLabel}
-      />
+      <Suspense fallback={<ThreadSkeleton />}>
+        <MessageThread
+          conversationId={activeConversationId}
+          onBack={() => {
+            setActiveConversationId(null);
+            setShouldAutoSelect(false);
+          }}
+          title={messageLabel}
+        />
+      </Suspense>
+    </div>
+  );
+}
+
+function ConversationListSkeleton() {
+  return (
+    <div className="flex flex-col gap-3 py-2">
+      {Array.from({ length: 5 }).map((_, index) => (
+        <div key={index} className="flex items-center gap-3">
+          <Skeleton className="h-10 w-10 rounded-full" />
+          <div className="flex-1 space-y-2">
+            <Skeleton className="h-3 w-3/4" />
+            <Skeleton className="h-3 w-1/2" />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function ThreadSkeleton() {
+  return (
+    <div className="flex flex-1 flex-col gap-4 p-6">
+      <div className="flex items-center gap-2">
+        <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+        <p className="text-sm text-muted-foreground">Loading conversation…</p>
+      </div>
+      <Skeleton className="h-16 w-full" />
+      <Skeleton className="h-16 w-full" />
+      <Skeleton className="h-16 w-full" />
     </div>
   );
 }
