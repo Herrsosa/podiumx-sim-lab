@@ -137,7 +137,6 @@ const AthletePriceChart = memo(({
   const logDiag = useCallback(
     (...args: unknown[]) => {
       if (isDebug) {
-        // eslint-disable-next-line no-console
         console.log(...args);
       }
     },
