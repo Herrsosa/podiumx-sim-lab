@@ -11,7 +11,6 @@ import { useAthlete } from '@/hooks/useAthlete';
 import { useWallet } from '@/hooks/useWallet';
 import { useTrades } from '@/hooks/useTrades';
 import { useTrade } from '@/hooks/useTrade';
-import { useAthleteTradeHistory } from '@/hooks/useAthleteTradeHistory';
 import { priceAt, costToBuy, payoutToSell, FEE, type Curve } from '@/utils/pricing';
 import ProofOfSweat from '@/components/ProofOfSweat';
 import TokengatedChat from '@/components/TokengatedChat';
@@ -32,10 +31,10 @@ import { MobileActionBar } from '@/components/MobileActionBar';
 import { OptimizedImage } from '@/components/OptimizedImage';
 import { SelfMobileProfile } from '@/pages/AthleteDetailSelfMobile';
 import { getWindowUTC } from '@/lib/charting/engine';
-import { ensureMs } from '@/lib/charting/seriesUtils';
 import type { Athlete } from '@/types';
 import type { WorkoutMutationResult } from '@/hooks/useWorkouts';
 import { useChartPosts } from '@/hooks/useChartPosts';
+import { usePriceSeries } from '@/hooks/usePriceSeries';
 
 const AthletePriceChart = lazy(() => import('@/components/charts/AthletePriceChart'));
 
@@ -86,13 +85,6 @@ export default function AthleteDetail() {
     return trades.filter((t) => t.athleteId === athlete.id).slice(0, 100);
   }, [trades, athlete?.id]);
 
-  const signupAtMs = useMemo(() => {
-    const timestamp = athlete?.tokenCreatedAt ?? athlete?.createdAt;
-    if (!timestamp) return null;
-    const parsed = Date.parse(timestamp);
-    return Number.isFinite(parsed) ? parsed : null;
-  }, [athlete?.createdAt, athlete?.tokenCreatedAt]);
-
   const latestPricePoint = useMemo(() => {
     if (!athlete) return null;
     if (!Number.isFinite(athlete.price)) return null;
@@ -101,10 +93,17 @@ export default function AthleteDetail() {
     return { price: athlete.price, t: timestamp };
   }, [athlete]);
 
-  // Fetch real trade history data
-  const { data: tradeHistory, isLoading: historyLoading } = useAthleteTradeHistory(athlete?.id, timeRange, {
-    signupAt: signupAtMs,
-    latestPrice: latestPricePoint,
+  const fallbackTimestamp = useMemo(() => {
+    if (!athlete?.priceUpdatedAt) return null;
+    const parsed = Date.parse(athlete.priceUpdatedAt);
+    return Number.isFinite(parsed) ? parsed : null;
+  }, [athlete?.priceUpdatedAt]);
+  const {
+    data: priceSeries = [],
+    isLoading: priceSeriesLoading,
+  } = usePriceSeries(athlete?.id, timeRange, {
+    fallbackPrice: latestPricePoint?.price ?? athlete?.price ?? null,
+    fallbackTimestamp: fallbackTimestamp ?? latestPricePoint?.t ?? null,
   });
   const chartWindow = useMemo(() => getWindowUTC(timeRange), [timeRange]);
   const {
@@ -113,25 +112,8 @@ export default function AthleteDetail() {
     isFetching: isFetchingChartPosts,
   } = useChartPosts(athlete?.id, chartWindow.start);
 
-  const rawChartData = useMemo(() => {
-    if (!tradeHistory?.data || tradeHistory.data.length === 0) {
-      return [];
-    }
-
-    return tradeHistory.data
-      .map((point) => {
-        const timestamp = ensureMs(point.timestamp);
-        if (!Number.isFinite(timestamp)) {
-          return null;
-        }
-        return { t: timestamp, price: point.price };
-      })
-      .filter((point): point is { t: number; price: number } => point !== null);
-  }, [tradeHistory]);
-
-  const chartPoints = useMemo(() => rawChartData, [rawChartData]);
-
-  const hasRealTrades = (tradeHistory?.volume ?? 0) > 0 || rawChartData.length > 1;
+  const chartPoints = useMemo(() => priceSeries, [priceSeries]);
+  const hasRealTrades = useMemo(() => priceSeries.some((point) => !point.carried), [priceSeries]);
   const displayChartPoints = chartPoints;
 
   const formatXAxisTick = useCallback((value: number) => {
@@ -450,7 +432,7 @@ export default function AthleteDetail() {
                   timeRange={timeRange}
                   formatXAxisTick={formatXAxisTick}
                   formatTooltipLabel={formatTooltipLabel}
-                  isLoading={historyLoading || isLoadingChartPosts}
+                  isLoading={priceSeriesLoading || isLoadingChartPosts}
                   isFetching={isFetchingChartPosts}
                   posts={chartPosts}
                   syncId="athlete-detail-chart"

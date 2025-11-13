@@ -1,3 +1,6 @@
+import type { TimeRangeKey } from '@/utils/chartData';
+import { getWindowUTC, type PriceSeriesPoint } from './engine';
+
 // Generic XY type for chart points
 export type XY = { x: number; y: number };
 
@@ -104,3 +107,87 @@ export const toLatestPricePoint = (
 export function isMs(ts: number) { return ts > 1e11; }    // rough cutoff
 export function isSec(ts: number) { return ts > 1e9 && ts < 1e11; }
 export function toMs(ts: number) { return isSec(ts) ? ts * 1000 : ts; }
+
+const ensurePointLastTrade = (point: PriceSeriesPoint): PriceSeriesPoint => {
+  if (point.lastTradeTime != null) {
+    return point;
+  }
+  return { ...point, lastTradeTime: point.t };
+};
+
+/**
+ * Deduplicate price series points by timestamp, keeping the latest trade
+ */
+export const dedupePriceSeries = (points: PriceSeriesPoint[]): PriceSeriesPoint[] => {
+  const map = new Map<number, PriceSeriesPoint>();
+
+  for (const point of points) {
+    if (!Number.isFinite(point.t)) continue;
+    const normalized = ensurePointLastTrade(point);
+    const existing = map.get(normalized.t);
+    const existingTs = existing ? ensurePointLastTrade(existing).lastTradeTime ?? existing.t : 0;
+    const candidateTs = normalized.lastTradeTime ?? normalized.t;
+    if (!existing || candidateTs >= existingTs) {
+      map.set(normalized.t, normalized);
+    }
+  }
+
+  return Array.from(map.values()).sort((a, b) => a.t - b.t);
+};
+
+/**
+ * Clamp/densify a sorted price series to the requested window, seeding
+ * a carried point at window start when the latest trade sits before it.
+ */
+export const applyPriceWindow = (
+  points: PriceSeriesPoint[],
+  range: TimeRangeKey,
+  now: number = Date.now(),
+): PriceSeriesPoint[] => {
+  if (points.length === 0) return [];
+
+  const { start, end } = getWindowUTC(range, now);
+  const windowEnd = Math.max(end, now);
+
+  if (start === undefined) {
+    return points.filter((point) => point.t <= windowEnd);
+  }
+
+  let seed: PriceSeriesPoint | null = null;
+  const windowed: PriceSeriesPoint[] = [];
+
+  for (const point of points) {
+    if (point.t < start) {
+      seed = point;
+      continue;
+    }
+    if (point.t > windowEnd) {
+      break;
+    }
+    windowed.push(point);
+  }
+
+  if (seed && (windowed.length === 0 || windowed[0].t > start)) {
+    windowed.unshift({
+      t: start,
+      price: seed.price,
+      carried: true,
+      lastTradeTime: seed.lastTradeTime ?? seed.t,
+    });
+  }
+
+  return windowed;
+};
+
+/**
+ * Convenience helper to dedupe + clamp a series to a window in one pass.
+ */
+export const normalizePriceSeries = (
+  points: PriceSeriesPoint[],
+  range: TimeRangeKey,
+  now: number = Date.now(),
+): PriceSeriesPoint[] => {
+  if (points.length === 0) return [];
+  const deduped = dedupePriceSeries(points);
+  return applyPriceWindow(deduped, range, now);
+};

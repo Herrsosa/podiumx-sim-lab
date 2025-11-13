@@ -3,65 +3,32 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import type { Database } from '@/integrations/supabase/types';
 import { subscribeToAthletePrice } from '@/lib/realtime/athleteRealtime';
+import type { PriceSeriesPoint } from '@/lib/charting/engine';
+import type { TimeRangeKey } from '@/utils/chartData';
+import { ensureMs, normalizePriceSeries } from '@/lib/charting/seriesUtils';
 
-export type TF = '24h' | '7d' | '30d' | 'all';
+type AthletePriceRow = Database['public']['Tables']['athlete_prices']['Row'];
 
-type TradeRow = Database['public']['Tables']['trades']['Row'];
-
-export type PriceSeriesPoint = {
-  timestamp: number;
-  price: number;
-  grossAmount: number;
-};
-
-const HOURS_PER_DAY = 24;
-
-const getRange = (tf: TF) => {
-  const to = new Date().toISOString();
-  if (tf === 'all') {
-    return { from: null as string | null, to };
-  }
-
-  const hours = tf === '24h' ? HOURS_PER_DAY : tf === '7d' ? HOURS_PER_DAY * 7 : HOURS_PER_DAY * 30;
-  const from = new Date(Date.now() - hours * 60 * 60 * 1000).toISOString();
-  return { from, to };
-};
-
-async function fetchPriceSeries(athleteId: string, from: string | null, to: string) {
-  if (!athleteId) {
-    return [];
-  }
-
-  let query = supabase
-    .from('trades')
-    .select('created_at, price_after, gross_amount')
-    .eq('athlete_id', athleteId)
-    .order('created_at', { ascending: true });
-
-  if (from) {
-    query = query.gte('created_at', from);
-  }
-
-  query = query.lte('created_at', to);
-
-  const { data, error } = await query;
-
-  if (error) {
-    console.error('Failed to fetch price series', error);
-    throw error;
-  }
-
-  return (data as Pick<TradeRow, 'created_at' | 'price_after' | 'gross_amount'>[] | null | undefined)?.map((row) => {
-    const timestamp = new Date(row.created_at).getTime();
-    return {
-      timestamp: Number.isFinite(timestamp) ? timestamp : Date.now(),
-      price: Number(row.price_after ?? 0),
-      grossAmount: Number(row.gross_amount ?? 0),
-    };
-  }) ?? [];
+interface UsePriceSeriesOptions {
+  fallbackPrice?: number | null;
+  fallbackTimestamp?: number | null;
 }
 
-export function usePriceSeries(athleteId: string | undefined, tf: TF) {
+const toFallbackPoint = (price: number, timestamp?: number | null): PriceSeriesPoint => {
+  const fallbackTime = Number.isFinite(timestamp ?? NaN) ? (timestamp as number) : Date.now();
+  return {
+    t: fallbackTime,
+    price,
+    carried: true,
+    lastTradeTime: fallbackTime,
+  };
+};
+
+export function usePriceSeries(
+  athleteId: string | undefined,
+  range: TimeRangeKey,
+  options: UsePriceSeriesOptions = {},
+) {
   // Subscribe to real-time updates via centralized manager
   useEffect(() => {
     if (!athleteId) return;
@@ -69,17 +36,58 @@ export function usePriceSeries(athleteId: string | undefined, tf: TF) {
   }, [athleteId]);
 
   return useQuery<PriceSeriesPoint[]>({
-    queryKey: ['priceSeries', athleteId, tf],
-    enabled: Boolean(athleteId),
+    queryKey: ['priceSeries', athleteId, range],
+    enabled: !!athleteId,
+    keepPreviousData: true,
+    staleTime: 30_000,
+    gcTime: 5 * 60_000,
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
     queryFn: async () => {
       if (!athleteId) {
+        if (typeof options.fallbackPrice === 'number') {
+          return [toFallbackPoint(options.fallbackPrice, options.fallbackTimestamp ?? null)];
+        }
         return [];
       }
 
-      const { from, to } = getRange(tf);
-      return fetchPriceSeries(athleteId, from, to);
+      const { data, error } = await supabase
+        .from('athlete_prices')
+        .select('price, created_at')
+        .eq('athlete_id', athleteId)
+        .order('created_at', { ascending: true });
+
+      if (error) {
+        console.error('Failed to fetch price series', error);
+        throw error;
+      }
+
+      const rows = (data ?? []) as Array<Pick<AthletePriceRow, 'price' | 'created_at'>>;
+
+      const points = rows
+        .map((row) => {
+          const timestamp = ensureMs(row.created_at);
+          const price = Number(row.price ?? 0);
+          if (!Number.isFinite(timestamp) || !Number.isFinite(price)) {
+            return null;
+          }
+          return {
+            t: timestamp,
+            price,
+            carried: false,
+            lastTradeTime: timestamp,
+          } satisfies PriceSeriesPoint;
+        })
+        .filter((point): point is PriceSeriesPoint => Boolean(point));
+
+      const normalized = normalizePriceSeries(points, range);
+
+      if (normalized.length === 0 && typeof options.fallbackPrice === 'number') {
+        return [toFallbackPoint(options.fallbackPrice, options.fallbackTimestamp ?? null)];
+      }
+
+      return normalized;
     },
-    staleTime: 60_000,
   });
 }
 

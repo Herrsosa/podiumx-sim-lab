@@ -2,6 +2,9 @@ import { supabase } from '@/integrations/supabase/client';
 import { queryClient } from '@/lib/queryClient';
 import type { RealtimeChannel } from '@supabase/supabase-js';
 import type { Database } from '@/integrations/supabase/types';
+import type { TimeRangeKey } from '@/utils/chartData';
+import type { PriceSeriesPoint } from '@/lib/charting/engine';
+import { normalizePriceSeries } from '@/lib/charting/seriesUtils';
 
 type AthletePriceRow = Database['public']['Tables']['athlete_prices']['Row'];
 
@@ -25,6 +28,14 @@ interface ChannelState {
 
 const DEBOUNCE_MS = 350;
 const channels = new Map<string, ChannelState>();
+const PRICE_SERIES_RANGES: TimeRangeKey[] = ['7d', '30d', 'all'];
+
+const toSeriesPoint = (update: PriceUpdate): PriceSeriesPoint => ({
+  t: update.timestamp,
+  price: update.price,
+  carried: false,
+  lastTradeTime: update.timestamp,
+});
 
 /**
  * Normalize price row to standard update format with ms timestamp
@@ -78,40 +89,14 @@ function updateQueryCaches(athleteId: string, updates: PriceUpdate[]) {
     timestamp: latestUpdate.timestamp,
   });
 
-  // Update price series for all timeframes
-  const timeframes = ['24h', '7d', '30d', 'all'] as const;
-  
-  for (const tf of timeframes) {
+  // Update price series for all supported windows
+  for (const range of PRICE_SERIES_RANGES) {
     queryClient.setQueryData(
-      ['priceSeries', athleteId, tf],
-      (old: Array<{ timestamp: number; price: number; grossAmount: number }> | undefined) => {
-        if (!old) return old;
-
-        const newPoints = updates.map(u => ({
-          timestamp: u.timestamp,
-          price: u.price,
-          grossAmount: u.grossAmount,
-        }));
-
-        const combined = [...old, ...newPoints];
-        const deduped = dedupeUpdates(
-          combined.map(p => ({
-            athleteId,
-            timestamp: p.timestamp,
-            price: p.price,
-            grossAmount: p.grossAmount,
-            supply: 0,
-            treasuryBalance: 0,
-            athleteEarnings: 0,
-            side: 'BUY' as const,
-          }))
-        );
-
-        return deduped.map(u => ({
-          timestamp: u.timestamp,
-          price: u.price,
-          grossAmount: u.grossAmount,
-        }));
+      ['priceSeries', athleteId, range],
+      (old: PriceSeriesPoint[] | undefined) => {
+        const merged = old ? [...old, ...updates.map(toSeriesPoint)] : updates.map(toSeriesPoint);
+        if (merged.length === 0) return old;
+        return normalizePriceSeries(merged, range);
       }
     );
   }

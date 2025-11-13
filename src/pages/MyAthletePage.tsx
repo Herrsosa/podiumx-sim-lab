@@ -32,7 +32,7 @@ import { ProfileDetailsCard } from '@/components/my-athlete/ProfileDetailsCard';
 import type { EditableProfile } from '@/pages/my-athletes/types';
 import { PersonalConsole } from '@/pages/MyAthlete/PersonalConsole';
 import { LockerView } from '@/pages/MyAthlete/LockerView';
-import { buildPriceSeries, type PriceSeriesPoint } from '@/lib/charting/engine';
+import { usePriceSeries } from '@/hooks/usePriceSeries';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -197,33 +197,18 @@ export default function MyAthletePage() {
     };
   }, [editingWorkout]);
 
-  const priceInputs = useMemo(() => {
-    if (!athleteTrades) return [];
-    return athleteTrades
-      .map((trade) => {
-        const timestamp = typeof trade.timestamp === 'number'
-          ? trade.timestamp
-          : new Date(trade.created_at).getTime();
-        const price = Number(trade.price_after);
-        if (!Number.isFinite(timestamp) || !Number.isFinite(price)) {
-          return null;
-        }
-        return { timestamp, price };
-      })
-      .filter((entry): entry is { timestamp: number; price: number } => entry !== null);
-  }, [athleteTrades]);
-
-  const filledPricePoints = useMemo(() => {
-    return buildPriceSeries(priceInputs, chartTimeRange, {
-      fallbackPrice: myAthletePage?.athlete?.price,
-    });
-  }, [priceInputs, myAthletePage?.athlete?.price, chartTimeRange]);
-  const priceSeries = useMemo<PriceSeriesPoint[]>(() => {
-    return buildPriceSeries(priceInputs, chartTimeRange, {
-      fallbackPrice: myAthletePage?.athlete?.price,
-    });
-  }, [priceInputs, myAthletePage?.athlete?.price, chartTimeRange]);
-
+  const fallbackTimestamp = useMemo(() => {
+    if (!myAthletePage?.athlete?.priceUpdatedAt) return null;
+    const parsed = Date.parse(myAthletePage.athlete.priceUpdatedAt);
+    return Number.isFinite(parsed) ? parsed : null;
+  }, [myAthletePage?.athlete?.priceUpdatedAt]);
+  const {
+    data: priceSeries = [],
+    isLoading: priceSeriesLoading,
+  } = usePriceSeries(myAthletePage?.athlete?.id, chartTimeRange, {
+    fallbackPrice: myAthletePage?.athlete?.price ?? null,
+    fallbackTimestamp,
+  });
   const hasRealPriceHistory = useMemo(() => priceSeries.some((point) => !point.carried), [priceSeries]);
 
   const handleStartEditProfile = useCallback(() => {
@@ -473,7 +458,7 @@ export default function MyAthletePage() {
           onProfileFieldChange={updateEditedProfile}
           onAvatarSelect={handleAvatarFileSelected}
           savingProfile={savingProfile}
-          isLoading={isMyAthleteLoading}
+          isLoading={isMyAthleteLoading || priceSeriesLoading}
           hasNextPage={Boolean(hasNextPage)}
           fetchNextPage={hasNextPage ? () => { void fetchNextPage(); } : undefined}
           isFetchingNextPage={isFetchingNextPage}
@@ -503,7 +488,8 @@ export default function MyAthletePage() {
             athlete={myAthletePage?.athlete}
             workouts={workouts}
           athleteTrades={athleteTrades ?? []}
-            priceSeries={priceSeries}
+          priceSeries={priceSeries}
+          priceSeriesLoading={priceSeriesLoading}
             editedProfile={editedProfile}
             isEditing={isEditing}
             savingProfile={savingProfile}

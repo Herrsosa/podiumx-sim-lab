@@ -42,6 +42,7 @@ interface PersonalConsoleProps {
   workouts: Workout[];
   athleteTrades: AthleteTrade[];
   priceSeries: PriceSeriesPoint[];
+  priceSeriesLoading?: boolean;
   editedProfile: EditableProfile;
   isEditing: boolean;
   savingProfile: boolean;
@@ -65,6 +66,7 @@ export function PersonalConsole({
   workouts,
   athleteTrades,
   priceSeries,
+  priceSeriesLoading = false,
   editedProfile,
   isEditing,
   savingProfile,
@@ -119,8 +121,11 @@ export function PersonalConsole({
   } = useChartPosts(athlete?.id, chartStartDate);
 
   const chartIsLoading = useMemo(
-    () => (priceSeries.length === 0 && athleteTrades.length === 0) || isLoadingChartPosts,
-    [athleteTrades.length, isLoadingChartPosts, priceSeries.length],
+    () =>
+      priceSeriesLoading ||
+      (priceSeries.length === 0 && athleteTrades.length === 0) ||
+      isLoadingChartPosts,
+    [athleteTrades.length, isLoadingChartPosts, priceSeries.length, priceSeriesLoading],
   );
 
   const formatXAxisTick = useCallback((value: number) => {
