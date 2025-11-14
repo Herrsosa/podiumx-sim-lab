@@ -38,7 +38,7 @@ export function usePriceSeries(
   return useQuery<PriceSeriesPoint[]>({
     queryKey: ['priceSeries', athleteId, range],
     enabled: !!athleteId,
-    keepPreviousData: true,
+    placeholderData: (previousData) => previousData,
     staleTime: 30_000,
     gcTime: 5 * 60_000,
     refetchOnWindowFocus: true,
@@ -64,7 +64,7 @@ export function usePriceSeries(
 
       const rows = (data ?? []) as Array<Pick<AthletePriceRow, 'price' | 'created_at'>>;
 
-      const points = rows
+      const points: PriceSeriesPoint[] = rows
         .map((row) => {
           const timestamp = ensureMs(row.created_at);
           const price = Number(row.price ?? 0);
@@ -76,9 +76,9 @@ export function usePriceSeries(
             price,
             carried: false,
             lastTradeTime: timestamp,
-          } satisfies PriceSeriesPoint;
+          };
         })
-        .filter((point): point is PriceSeriesPoint => Boolean(point));
+        .filter((point) => point !== null) as PriceSeriesPoint[];
 
       const normalized = normalizePriceSeries(points, range);
 
