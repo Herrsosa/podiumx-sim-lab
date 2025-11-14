@@ -12,19 +12,35 @@ interface WorkoutGridCardProps {
   onClick: () => void;
 }
 
+const getTypeColor = (type: Workout['type']) => {
+  switch (type) {
+    case 'Run':
+    case 'HYROX':
+      return 'bg-primary/20 text-primary border-primary/30';
+    case 'Swim':
+      return 'bg-accent/20 text-accent border-accent/30';
+    case 'Bike':
+      return 'bg-accent/20 text-accent border-accent/30';
+    case 'Strength':
+      return 'bg-warning/20 text-warning border-warning/30';
+    default:
+      return 'bg-muted/40 text-muted-foreground border-muted/50';
+  }
+};
+
 const getTypeGradient = (type: Workout['type']) => {
   switch (type) {
     case 'Run':
     case 'HYROX':
-      return 'from-emerald-500/20 via-emerald-600/10 to-emerald-700/5';
+      return 'from-primary/10 via-primary/5 to-background/20';
     case 'Swim':
-      return 'from-cyan-500/20 via-cyan-600/10 to-cyan-700/5';
+      return 'from-accent/10 via-accent/5 to-background/20';
     case 'Bike':
-      return 'from-blue-500/20 via-blue-600/10 to-blue-700/5';
+      return 'from-accent/10 via-accent/5 to-background/20';
     case 'Strength':
-      return 'from-orange-500/20 via-orange-600/10 to-orange-700/5';
+      return 'from-warning/10 via-warning/5 to-background/20';
     default:
-      return 'from-muted/40 via-muted/20 to-muted/10';
+      return 'from-muted/20 via-muted/10 to-background/20';
   }
 };
 
@@ -36,6 +52,7 @@ const formatDate = (dateString: string) => {
 export function WorkoutGridCard({ workout, post, canView, onClick }: WorkoutGridCardProps) {
   const hasPhoto = post?.image_url;
   const typeGradient = getTypeGradient(workout.type);
+  const typeColor = getTypeColor(workout.type);
 
   // Build metrics string
   const metrics: string[] = [];
@@ -88,18 +105,18 @@ export function WorkoutGridCard({ workout, post, canView, onClick }: WorkoutGrid
 
         {/* Dark gradient overlay for text readability */}
         <div className={cn(
-          'absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-black/20',
-          !hasPhoto && 'from-background/60 via-background/30 to-transparent'
+          'absolute inset-0 bg-gradient-to-t',
+          hasPhoto ? 'from-black/80 via-black/40 to-black/20' : 'from-background/80 via-background/40 to-transparent'
         )} />
 
         {/* Content overlay */}
         <CardContent className="absolute inset-0 p-4 flex flex-col justify-between">
           {/* Top row: type badge + date */}
           <div className="flex items-start justify-between gap-2">
-            <Badge variant="secondary" className="backdrop-blur-sm bg-background/80 text-xs">
+            <Badge className={cn('backdrop-blur-sm border text-xs font-semibold', typeColor)}>
               {workout.type}
             </Badge>
-            <div className="flex items-center gap-1 text-xs text-white/90 backdrop-blur-sm bg-black/30 px-2 py-1 rounded-md">
+            <div className="flex items-center gap-1 text-xs text-foreground/90 backdrop-blur-sm bg-background/80 px-2 py-1 rounded-md border border-border/50">
               <Calendar className="h-3 w-3" />
               <span className="font-medium">
                 {formatDate(post?.created_at || '')}
@@ -113,22 +130,22 @@ export function WorkoutGridCard({ workout, post, canView, onClick }: WorkoutGrid
               <>
                 {/* Metrics */}
                 {metricsText && (
-                  <div className="text-white font-semibold text-base md:text-lg backdrop-blur-sm">
+                  <div className="text-foreground font-semibold text-base md:text-lg">
                     {metricsText}
                   </div>
                 )}
 
                 {/* Caption */}
                 {post?.text && (
-                  <p className="text-sm text-white/90 line-clamp-2 leading-tight">
+                  <p className="text-sm text-muted-foreground line-clamp-2 leading-tight">
                     {post.text}
                   </p>
                 )}
               </>
             ) : (
               <div className="flex flex-col items-center justify-center py-4 text-center">
-                <Lock className="h-8 w-8 text-white mb-2" />
-                <p className="text-white font-semibold text-sm">Token Holders Only</p>
+                <Lock className="h-8 w-8 text-foreground mb-2" />
+                <p className="text-foreground font-semibold text-sm">Token Holders Only</p>
               </div>
             )}
           </div>
