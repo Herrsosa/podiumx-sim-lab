@@ -110,12 +110,12 @@ export default function Navigation() {
           </div>
 
           {/* Actions */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 sm:gap-2">
             <Button
               variant="ghost"
               size="icon"
               onClick={toggleTheme}
-              className="min-h-[44px] min-w-[44px]"
+              className="min-h-[40px] min-w-[40px]"
               aria-label="Toggle theme"
             >
               {theme === 'dark' ? (
@@ -127,22 +127,40 @@ export default function Navigation() {
             {user && (
               <>
                 <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={handleReset}
+                  className="min-h-[40px] min-w-[40px] sm:hidden"
+                  aria-label="Reset demo"
+                >
+                  <RotateCcw className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={handleSignOut}
+                  className="min-h-[40px] min-w-[40px] sm:hidden"
+                  aria-label="Sign out"
+                >
+                  <LogOut className="h-4 w-4" />
+                </Button>
+                <Button
                   variant="outline"
                   size="sm"
                   onClick={handleReset}
-                  className="gap-2 min-h-[44px]"
+                  className="gap-2 min-h-[44px] hidden sm:inline-flex"
                 >
                   <RotateCcw className="h-4 w-4" />
-                  <span className="hidden sm:inline">Reset</span>
+                  <span>Reset</span>
                 </Button>
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={handleSignOut}
-                  className="gap-2 min-h-[44px]"
+                  className="gap-2 min-h-[44px] hidden sm:inline-flex"
                 >
                   <LogOut className="h-4 w-4" />
-                  <span className="hidden sm:inline">Sign Out</span>
+                  <span>Sign Out</span>
                 </Button>
               </>
             )}

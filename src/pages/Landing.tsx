@@ -92,7 +92,7 @@ export default function Landing() {
 
       {/* Value Props Section */}
       <section className="container mx-auto px-4 py-16">
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 sm:gap-6">
           <Card className="group hover:border-primary/40 transition-all duration-300 hover:shadow-lg hover:shadow-primary/5">
             <CardContent className="pt-6">
               <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
@@ -140,47 +140,47 @@ export default function Landing() {
           </p>
         </div>
         
-        <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-          <div className="relative">
-            <div className="text-center space-y-4">
-              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center text-2xl font-bold text-primary-foreground mx-auto shadow-lg shadow-primary/20">
-                1
+        <div className="grid gap-8 md:grid-cols-3 max-w-5xl mx-auto relative before:absolute before:left-7 before:top-0 before:bottom-0 before:w-px before:bg-border/60 before:hidden md:before:block">
+          {[
+            {
+              step: '1',
+              title: 'Create Profile & Verify',
+              description: 'Create your account and complete your athlete profile to get started.',
+              gradient: 'from-primary to-primary/60',
+              shadow: 'shadow-primary/20',
+            },
+            {
+              step: '2',
+              title: 'Log Proof of Sweat',
+              description: 'Log your workouts and share your progress with your supporters.',
+              gradient: 'from-accent to-accent/60',
+              shadow: 'shadow-accent/20',
+            },
+            {
+              step: '3',
+              title: 'Grow Your Athlete Card Cap',
+              description: 'Build your Athlete Card Cap and grow a strong community around you.',
+              gradient: 'from-success to-success/60',
+              shadow: 'shadow-success/20',
+            },
+          ].map(({ step, title, description, gradient, shadow }) => (
+            <div key={step} className="relative">
+              <div className="text-center space-y-4">
+                <div className={`w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-gradient-to-br ${gradient} flex items-center justify-center text-xl sm:text-2xl font-bold text-white mx-auto shadow-lg ${shadow}`}>
+                  {step}
+                </div>
+                <h3 className="text-lg sm:text-xl font-semibold">{title}</h3>
+                <p className="text-sm text-muted-foreground leading-relaxed max-w-sm mx-auto">
+                  {description}
+                </p>
               </div>
-              <h3 className="text-xl font-semibold">Create Profile & Verify</h3>
-              <p className="text-sm text-muted-foreground leading-relaxed">
-                Create your account and complete your athlete profile to get started.
-              </p>
             </div>
-          </div>
-          
-          <div className="relative">
-            <div className="text-center space-y-4">
-              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-accent to-accent/60 flex items-center justify-center text-2xl font-bold text-accent-foreground mx-auto shadow-lg shadow-accent/20">
-                2
-              </div>
-              <h3 className="text-xl font-semibold">Log Proof of Sweat</h3>
-              <p className="text-sm text-muted-foreground leading-relaxed">
-                Log your workouts and share your progress with your supporters.
-              </p>
-            </div>
-          </div>
-          
-          <div className="relative">
-            <div className="text-center space-y-4">
-              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-success to-success/60 flex items-center justify-center text-2xl font-bold text-success-foreground mx-auto shadow-lg shadow-success/20">
-                3
-              </div>
-              <h3 className="text-xl font-semibold">Grow Your Athlete Card Cap</h3>
-              <p className="text-sm text-muted-foreground leading-relaxed">
-                Build your Athlete Card Cap and grow a strong community around you.
-              </p>
-            </div>
-          </div>
+          ))}
         </div>
       </section>
 
       {/* Top Athletes Section */}
-      <section id="explore" className="container mx-auto px-4 py-16 lg:py-24 bg-muted/30 -mx-4">
+      <section id="explore" className="container mx-auto px-2 sm:px-4 py-16 lg:py-24 bg-muted/30 -mx-2 sm:-mx-4">
         <div className="text-center mb-12">
           <h2 className="text-3xl md:text-4xl font-bold mb-4">Top Athletes</h2>
           <p className="text-muted-foreground max-w-2xl mx-auto">
@@ -189,13 +189,13 @@ export default function Landing() {
         </div>
         
         {isLoading ? (
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 max-w-7xl mx-auto px-4">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 sm:gap-6 max-w-7xl mx-auto px-2 sm:px-4">
             {[...Array(8)].map((_, i) => (
               <div key={i} className="h-96 rounded-xl bg-muted/40 animate-pulse" />
             ))}
           </div>
         ) : (
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 max-w-7xl mx-auto px-4">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 sm:gap-6 max-w-7xl mx-auto px-2 sm:px-4">
             {topAthletes.map((athlete) => (
               <AthleteCardNew
                 key={athlete.id} 
@@ -207,11 +207,20 @@ export default function Landing() {
         )}
         
         <div className="text-center mt-12">
-          <Button size="lg" variant="outline" asChild>
+          <Button size="lg" className="hidden sm:inline-flex" asChild>
             <Link to="/marketplace">View All Athletes</Link>
           </Button>
         </div>
       </section>
+      <div className="fixed inset-x-0 bottom-0 z-40 bg-background/95 border-t border-border/50 p-3 flex items-center gap-3 sm:hidden">
+        <div>
+          <p className="text-sm font-semibold text-foreground">Get started on Athlyst</p>
+          <p className="text-xs text-muted-foreground">Collect, unlock access, and grow your athlete identity.</p>
+        </div>
+        <Button size="sm" asChild className="ml-auto">
+          <Link to="/auth">Join Now</Link>
+        </Button>
+      </div>
     </div>
   );
 }

@@ -162,8 +162,16 @@ const AthletePriceChart = memo(({
     () => {
       const baseData = buildChartData(chartPoints, posSeries, memoizedPosCountByDay, startOfDay);
       
-      // Convert to XY format for new helpers (normalize to ms)
-      const xyPoints = baseData.map(p => ({ x: toMs(p.t), y: p.price ?? 0 }));
+      // Convert to XY format for new helpers (normalize to ms) while carrying last known price across PoS-only rows
+      const firstPriceEntry = baseData.find((entry) => typeof entry.price === 'number');
+      let lastKnownPrice = typeof firstPriceEntry?.price === 'number' ? firstPriceEntry.price : 0;
+      const xyPoints = baseData.map((p) => {
+        if (typeof p.price === 'number') {
+          lastKnownPrice = p.price;
+          return { x: toMs(p.t), y: p.price };
+        }
+        return { x: toMs(p.t), y: lastKnownPrice };
+      });
       
       const now = Date.now();
       const [start, end] =
@@ -253,7 +261,15 @@ const AthletePriceChart = memo(({
     ? memoizedChartData 
     : (() => {
         const baseData = buildChartData(chartPoints, posSeries, posCountByDay, startOfDay);
-        const xyPoints = baseData.map(p => ({ x: toMs(p.t), y: p.price ?? 0 }));
+        const firstPriceEntry = baseData.find((entry) => typeof entry.price === 'number');
+        let lastKnownPrice = typeof firstPriceEntry?.price === 'number' ? firstPriceEntry.price : 0;
+        const xyPoints = baseData.map((p) => {
+          if (typeof p.price === 'number') {
+            lastKnownPrice = p.price;
+            return { x: toMs(p.t), y: p.price };
+          }
+          return { x: toMs(p.t), y: lastKnownPrice };
+        });
         const now = Date.now();
         const [start, end] =
           timeRange === "7d" ? [getRangeStart(now, 7), now]
