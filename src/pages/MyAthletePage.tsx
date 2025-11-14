@@ -180,6 +180,10 @@ export default function MyAthletePage() {
     }));
   }, [pages]);
 
+  const posts = useMemo(() => {
+    return pages.flatMap(p => p?.athlete?.posts ?? []);
+  }, [pages]);
+
   const findPostById = useCallback<(id: string) => Post | undefined>((id) => {
     const posts = pages.flatMap(p => p?.athlete?.posts ?? []);
     return posts.find((p) => p.id === id);
@@ -487,9 +491,10 @@ export default function MyAthletePage() {
           <PersonalConsole
             athlete={myAthletePage?.athlete}
             workouts={workouts}
-          athleteTrades={athleteTrades ?? []}
-          priceSeries={priceSeries}
-          priceSeriesLoading={priceSeriesLoading}
+            posts={posts}
+            athleteTrades={athleteTrades ?? []}
+            priceSeries={priceSeries}
+            priceSeriesLoading={priceSeriesLoading}
             editedProfile={editedProfile}
             isEditing={isEditing}
             savingProfile={savingProfile}

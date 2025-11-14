@@ -17,6 +17,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { SupabaseResponsiveImage } from '@/components/SupabaseResponsiveImage';
 import { ProfileDetailsCard } from '@/components/my-athlete/ProfileDetailsCard';
 import type { EditableProfile } from '@/pages/my-athletes/types';
+import ProofOfSweat from '@/components/ProofOfSweat';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -41,6 +42,7 @@ import { useChartPosts } from '@/hooks/useChartPosts';
 interface PersonalConsoleProps {
   athlete?: Athlete;
   workouts: Workout[];
+  posts: any[];
   athleteTrades: AthleteTrade[];
   priceSeries: PriceSeriesPoint[];
   priceSeriesLoading?: boolean;
@@ -65,6 +67,7 @@ interface PersonalConsoleProps {
 export function PersonalConsole({
   athlete,
   workouts,
+  posts,
   athleteTrades,
   priceSeries,
   priceSeriesLoading = false,
@@ -319,23 +322,23 @@ export function PersonalConsole({
                   No workouts yet. Add your first workout to get started!
                 </div>
               ) : (
-                <div className="space-y-4">
-                  {workouts.map((workout) => (
-                    <WorkoutCard
-                      key={workout.id}
-                      workout={workout}
-                      onEdit={() => onWorkoutEdit(workout)}
-                      onDelete={() => handleDeleteClick(workout.id)}
-                    />
-                  ))}
-                </div>
-              )}
-              {hasNextPage && (
-                <div className="flex justify-center py-6">
-                  <Button onClick={fetchNextPage} disabled={isFetchingNextPage}>
-                    {isFetchingNextPage ? 'Loading...' : 'Load More'}
-                  </Button>
-                </div>
+                <>
+                  <ProofOfSweat
+                    athleteId={athlete?.id || ''}
+                    athleteName={athlete?.name || ''}
+                    workouts={workouts}
+                    posts={posts}
+                    viewerHoldings={Number.MAX_SAFE_INTEGER}
+                    onWorkoutDeleted={onWorkoutDelete}
+                  />
+                  {hasNextPage && (
+                    <div className="flex justify-center py-6">
+                      <Button onClick={fetchNextPage} disabled={isFetchingNextPage} variant="outline">
+                        {isFetchingNextPage ? 'Loading...' : 'Load More'}
+                      </Button>
+                    </div>
+                  )}
+                </>
               )}
             </CardContent>
           </Card>
@@ -407,104 +410,6 @@ export function PersonalConsole({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
-  );
-}
-
-function WorkoutCard({ 
-  workout, 
-  onEdit, 
-  onDelete 
-}: { 
-  workout: Workout; 
-  onEdit: () => void;
-  onDelete: () => void;
-}) {
-  return (
-    <div className="group rounded-lg border border-border/50 p-4 transition-all hover:border-primary/30">
-      <div className="flex items-start justify-between">
-        <div className="flex-1">
-          <div className="mb-2 flex items-center gap-2">
-            <Badge>{workout.type}</Badge>
-            <span className="text-sm text-muted-foreground">
-              {new Date(workout.date).toLocaleDateString()}
-            </span>
-          </div>
-
-          <div className="mb-2 grid grid-cols-2 gap-4 text-sm sm:grid-cols-4">
-            {workout.distance && (
-              <div>
-                <div className="text-muted-foreground">Distance</div>
-                <div className="font-medium">{workout.distance} km</div>
-              </div>
-            )}
-            <div>
-              <div className="text-muted-foreground">Duration</div>
-              <div className="font-medium">{workout.duration} min</div>
-            </div>
-            {workout.pace && (
-              <div>
-                <div className="text-muted-foreground">Pace</div>
-                <div className="font-medium">{workout.pace}</div>
-              </div>
-            )}
-            <div>
-              <div className="text-muted-foreground">RPE</div>
-              <div className="font-medium">{workout.rpe}/10</div>
-            </div>
-          </div>
-
-          {workout.notes && (
-            <p className="mb-2 text-sm text-muted-foreground">{workout.notes}</p>
-          )}
-
-          {workout.mediaUrl && (
-            <div className="mt-2">
-              {workout.mediaType === 'image' ? (
-                <SupabaseResponsiveImage
-                  src={workout.mediaUrl}
-                  alt={`${workout.type} workout media`}
-                  widths={[200, 320, 480]}
-                  sizes="(max-width: 768px) 60vw, 192px"
-                  aspectRatio={3 / 2}
-                  className="w-48 overflow-hidden rounded-lg border border-border/40 bg-muted/30"
-                />
-              ) : (
-                <div
-                  className="w-48 overflow-hidden rounded-lg border border-border/40 bg-muted/30"
-                  style={{ aspectRatio: 3 / 2 }}
-                >
-                  <video
-                    src={workout.mediaUrl}
-                    className="h-full w-full object-cover"
-                    controls
-                    preload="metadata"
-                  />
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-
-        <div className="flex gap-1">
-          <Button
-            size="icon"
-            variant="ghost"
-            className="opacity-0 group-hover:opacity-100 transition-opacity"
-            onClick={onEdit}
-          >
-            <Edit className="h-4 w-4" />
-          </Button>
-          <Button
-            size="icon"
-            variant="ghost"
-            className="opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive"
-            onClick={onDelete}
-          >
-            <Trash2 className="h-4 w-4" />
-          </Button>
-        </div>
-      </div>
     </div>
   );
 }
