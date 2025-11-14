@@ -44,15 +44,19 @@ const getTypeGradient = (type: Workout['type']) => {
   }
 };
 
-const formatDate = (dateString: string) => {
+const formatDate = (dateString: string | undefined) => {
+  if (!dateString) return 'No date';
   const date = new Date(dateString);
+  if (isNaN(date.getTime())) return 'Invalid date';
   return date.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' });
 };
 
 export function WorkoutGridCard({ workout, post, canView, onClick }: WorkoutGridCardProps) {
-  const hasPhoto = post?.image_url;
+  const hasPhoto = post?.image_url || workout.mediaUrl;
+  const photoUrl = post?.image_url || workout.mediaUrl;
   const typeGradient = getTypeGradient(workout.type);
   const typeColor = getTypeColor(workout.type);
+  const displayDate = post?.created_at || workout.date;
 
   // Build metrics string
   const metrics: string[] = [];
@@ -82,13 +86,13 @@ export function WorkoutGridCard({ workout, post, canView, onClick }: WorkoutGrid
           onClick();
         }
       }}
-      aria-label={`${workout.type} workout on ${formatDate(post?.created_at || '')}`}
+      aria-label={`${workout.type} workout on ${formatDate(displayDate)}`}
     >
       <div className="relative aspect-square">
         {/* Background layer */}
-        {hasPhoto ? (
+        {hasPhoto && photoUrl ? (
           <SupabaseResponsiveImage
-            src={post.image_url!}
+            src={photoUrl}
             alt={`${workout.type} workout`}
             widths={[280, 360, 480]}
             sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
@@ -119,7 +123,7 @@ export function WorkoutGridCard({ workout, post, canView, onClick }: WorkoutGrid
             <div className="flex items-center gap-1 text-xs text-foreground/90 backdrop-blur-sm bg-background/80 px-2 py-1 rounded-md border border-border/50">
               <Calendar className="h-3 w-3" />
               <span className="font-medium">
-                {formatDate(post?.created_at || '')}
+                {formatDate(displayDate)}
               </span>
             </div>
           </div>
