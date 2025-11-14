@@ -52,7 +52,7 @@ export function LockerGate({
           <div className="space-y-2">
             <h3 className="text-xl font-semibold">Locked Content</h3>
             <p className="text-sm text-muted-foreground max-w-md">
-              Buy at least {minTokens} {minTokens === 1 ? 'token' : 'tokens'} of {athleteName}'s PodiumPass to unlock exclusive content, direct messaging, and more.
+              Buy at least {minTokens} {minTokens === 1 ? 'token' : 'tokens'} of {athleteName}'s Athlete Card to unlock exclusive content, direct messaging, and more.
             </p>
           </div>
           <Button onClick={onBuyClick} size="lg" className="gap-2">

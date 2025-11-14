@@ -27,30 +27,31 @@ export default function Landing() {
       {/* Hero Section */}
       <section className="relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-b from-primary/5 to-transparent" />
+        <div className="lg:hidden absolute inset-x-0 top-0 h-48 bg-gradient-to-b from-primary/15 via-background to-transparent pointer-events-none" />
         
-        <div className="container relative mx-auto px-4 py-16 lg:py-24">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
+        <div className="container relative mx-auto px-4 py-12 md:py-16 lg:py-24">
+          <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-center">
             {/* Left: Text Content */}
             <div className="space-y-8 text-center lg:text-left">
               <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 text-sm font-medium">
                 <Sparkles className="w-4 h-4 text-primary" />
-                Build Your Athlete Aura
+                Build Your Athlete Identity
               </div>
               
               <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight">
                 Train Hard.
                 <br />
                 <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-                  Build Aura.
+                  Build Your Athlete Identity.
                 </span>
               </h1>
               
               <p className="text-xl md:text-2xl font-semibold text-foreground/90 max-w-xl mx-auto lg:mx-0 mb-2">
-                The fitness social token marketplace
+                Back the athletes who actually put in the work.
               </p>
               
               <p className="text-base md:text-lg text-muted-foreground max-w-xl mx-auto lg:mx-0">
-                Athletes log workouts as proof of dedication. Supporters trade their tokens. Everyone builds together.
+                Athletes log real workouts as Proof of Sweat. Supporters collect their tokens to unlock access, rewards, and a share in the journey.
               </p>
               
               <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
@@ -109,9 +110,9 @@ export default function Landing() {
               <div className="w-12 h-12 rounded-xl bg-accent/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
                 <TrendingUp className="w-6 h-6 text-accent" />
               </div>
-              <h3 className="text-lg font-semibold mb-2">Market Cap Signal</h3>
+              <h3 className="text-lg font-semibold mb-2">Athlete Card Cap Signal</h3>
               <p className="text-sm text-muted-foreground leading-relaxed">
-                An athlete's market cap reflects their community's belief in their potential.
+                An athlete's card cap reflects their community's belief in their potential.
               </p>
             </CardContent>
           </Card>
@@ -169,9 +170,9 @@ export default function Landing() {
               <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-success to-success/60 flex items-center justify-center text-2xl font-bold text-success-foreground mx-auto shadow-lg shadow-success/20">
                 3
               </div>
-              <h3 className="text-xl font-semibold">Grow Your Aura</h3>
+              <h3 className="text-xl font-semibold">Grow Your Athlete Card Cap</h3>
               <p className="text-sm text-muted-foreground leading-relaxed">
-                Build your market cap and grow a strong community around you.
+                Build your Athlete Card Cap and grow a strong community around you.
               </p>
             </div>
           </div>
@@ -183,7 +184,7 @@ export default function Landing() {
         <div className="text-center mb-12">
           <h2 className="text-3xl md:text-4xl font-bold mb-4">Top Athletes</h2>
           <p className="text-muted-foreground max-w-2xl mx-auto">
-            Discover and invest in the most dedicated athletes
+            Discover other Athlysts early and benefit
           </p>
         </div>
         

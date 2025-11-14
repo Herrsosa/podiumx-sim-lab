@@ -213,10 +213,10 @@ export function PersonalConsole({
       {priceSeries.length > 0 && (
         <Card className="glass-card">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <TrendingUp className="h-5 w-5" />
-              PodiumPass Price Chart
-            </CardTitle>
+              <CardTitle className="flex items-center gap-2">
+                <TrendingUp className="h-5 w-5" />
+                Athlete Card Price Chart
+              </CardTitle>
           </CardHeader>
           <CardContent>
             <Tabs value={activeTimeRange} onValueChange={(value) => handleTimeRangeChange(value as TimeRangeKey)} className="mb-4">
@@ -378,7 +378,7 @@ export function PersonalConsole({
                 Athlete Earnings
               </CardTitle>
               <p className="text-sm text-muted-foreground">
-                Track your earnings from trading fees on your PodiumPass
+                Track your earnings from trading fees on your Athlete Card
               </p>
             </CardHeader>
             <CardContent>

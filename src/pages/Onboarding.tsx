@@ -440,7 +440,7 @@ export default function Onboarding() {
             {step === 'FAN_DONE' && "You're All Set!"}
             {step === 'ATHLETE_PROFILE' && "Create Your Profile"}
             {step === 'ATHLETE_WORKOUT' && "Share Your First Workout"}
-            {step === 'ATHLETE_TOKEN' && "Launch Your PodiumPass"}
+            {step === 'ATHLETE_TOKEN' && "Launch Your Athlete Card"}
           </CardTitle>
 
           <CardDescription>
@@ -491,7 +491,7 @@ export default function Onboarding() {
                   <div>
                     <h3 className="font-bold text-lg mb-2">I'm an Athlete</h3>
                     <p className="text-sm text-muted-foreground">
-                      Create your PodiumPass token and monetize your journey
+                      Create your Athlete Card token and monetize your journey
                     </p>
                   </div>
                   <Button className="w-full">Continue as Athlete</Button>
@@ -874,7 +874,7 @@ export default function Onboarding() {
                   Back
                 </Button>
                 <Button onClick={handleAthleteComplete} disabled={submitting} className="w-full">
-                  {submitting ? 'Creating...' : 'Launch PodiumPass 🚀'}
+                  {submitting ? 'Creating...' : 'Launch Athlete Card 🚀'}
                 </Button>
               </div>
             </>
