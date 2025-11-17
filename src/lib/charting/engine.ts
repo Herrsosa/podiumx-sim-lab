@@ -22,7 +22,7 @@ export type PoSSeriesPoint = {
   posCount: number;
 };
 
-const DAY_MS = 86_400_000;
+export const DAY_MS = 86_400_000;
 
 const startOfUtcDay = (timestamp: number): number => {
   const date = new Date(timestamp);
@@ -230,13 +230,12 @@ export function getDomain(
   }
 
   const { start, end } = getWindowUTC(range, now);
-  const firstPriceTime = actualPrices[0].t;
-
-  if (range === '30d' && start !== undefined && firstPriceTime >= start) {
-    return [startOfUtcDay(firstPriceTime), end];
+  if (start !== undefined) {
+    return [start, end];
   }
 
-  return [start ?? startOfUtcDay(firstPriceTime), end];
+  const firstPriceTime = actualPrices[0].t;
+  return [startOfUtcDay(firstPriceTime), end];
 }
 
 export function getDailyTicks(domain: [number, number]): number[] {
@@ -246,6 +245,35 @@ export function getDailyTicks(domain: [number, number]): number[] {
   while (cursor <= end) {
     ticks.push(cursor);
     cursor += DAY_MS;
+  }
+  return ticks;
+}
+
+export function getUniformTicks(
+  domain: [number, number],
+  opts: { targetTickCount?: number } = {},
+): number[] {
+  const [rawStart, rawEnd] = domain;
+  if (!Number.isFinite(rawStart) || !Number.isFinite(rawEnd)) {
+    return [];
+  }
+
+  const start = startOfUtcDay(rawStart);
+  const end = startOfUtcDay(rawEnd);
+  if (end <= start) {
+    return [start];
+  }
+
+  const daySpan = Math.max(1, Math.round((end - start) / DAY_MS));
+  const targetTicks = Math.max(2, opts.targetTickCount ?? 12);
+  const stepDays = Math.max(1, Math.ceil(daySpan / (targetTicks - 1)));
+
+  const ticks: number[] = [];
+  for (let cursor = start; cursor <= end; cursor += stepDays * DAY_MS) {
+    ticks.push(cursor);
+  }
+  if (ticks[ticks.length - 1] !== end) {
+    ticks.push(end);
   }
   return ticks;
 }
@@ -266,6 +294,7 @@ export type ChartEngine = {
   buildPoSSeries: typeof buildPoSSeries;
   getDomain: typeof getDomain;
   getDailyTicks: typeof getDailyTicks;
+  getUniformTicks: typeof getUniformTicks;
   formatTooltip: typeof formatTooltip;
 };
 
@@ -275,6 +304,7 @@ export const chartEngine: ChartEngine = {
   buildPoSSeries,
   getDomain,
   getDailyTicks,
+  getUniformTicks,
   formatTooltip,
 };
 

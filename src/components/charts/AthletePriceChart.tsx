@@ -9,6 +9,7 @@ import {
   formatTooltip as defaultFormatTooltip,
   getDailyTicks,
   getDomain,
+  getUniformTicks,
   type PoSSeriesPoint,
 } from '@/lib/charting/engine';
 import {
@@ -102,7 +103,8 @@ const computePosDomain = (posSeries: PoSSeriesPoint[]): [number, number] => {
 
 const computeXTicks = (range: TimeRangeKey, domain: [number, number]): number[] | undefined => {
   if (range === 'all') {
-    return undefined;
+    const ticks = getUniformTicks(domain, { targetTickCount: 12 });
+    return ticks.length ? ticks : undefined;
   }
 
   return getDailyTicks(domain);
@@ -426,7 +428,7 @@ const AthletePriceChart = memo(({
         day: 'numeric',
       }).format(new Date(latestTradeTimestamp));
       return [
-        `Updated ${formatted}`,
+        `Last Trade ${formatted}`,
         'bg-amber-50 text-amber-900 border border-amber-200',
         'bg-amber-400',
       ];

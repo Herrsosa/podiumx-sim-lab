@@ -218,7 +218,7 @@ export function PersonalConsole({
           <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <TrendingUp className="h-5 w-5" />
-                Athlete Card Price Chart
+                Athlete Card Chart
               </CardTitle>
           </CardHeader>
           <CardContent>
