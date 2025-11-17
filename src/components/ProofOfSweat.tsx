@@ -19,6 +19,22 @@ import { useUser } from '@/store/auth';
 import type { WorkoutMutationResult } from '@/hooks/useWorkouts';
 import { WorkoutGridCard } from '@/components/WorkoutGridCard';
 
+const extractWorkoutId = (value: Post['workout_json']): string | undefined => {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return undefined;
+  }
+  const maybeId = (value as Partial<Workout> & { id?: string }).id;
+  return typeof maybeId === 'string' ? maybeId : undefined;
+};
+
+const postMatchesWorkout = (post: Post, workoutId: string): boolean => {
+  const workoutJsonId = extractWorkoutId(post.workout_json);
+  if (workoutJsonId) {
+    return workoutJsonId === workoutId;
+  }
+  return post.id === workoutId;
+};
+
 interface ProofOfSweatProps {
   workouts?: Workout[];
   posts: Post[];
@@ -75,10 +91,7 @@ export default function ProofOfSweat({
   }, []);
 
   const handleEditClick = useCallback((workout: Workout) => {
-    const post = Array.from(workoutPostMap.values()).find(
-      (p) => p.workout_json && typeof p.workout_json === 'object' &&
-             !Array.isArray(p.workout_json) && (p.workout_json as any).id === workout.id
-    );
+    const post = Array.from(workoutPostMap.values()).find((p) => postMatchesWorkout(p, workout.id));
     setWorkoutToEdit(post || null);
     setEditModalOpen(true);
   }, [workoutPostMap]);
@@ -98,10 +111,7 @@ export default function ProofOfSweat({
 
     setDeleting(true);
     try {
-      const post = Array.from(workoutPostMap.values()).find(
-        (p) => p.workout_json && typeof p.workout_json === 'object' &&
-               !Array.isArray(p.workout_json) && (p.workout_json as any).id === workoutToDelete
-      );
+      const post = Array.from(workoutPostMap.values()).find((p) => postMatchesWorkout(p, workoutToDelete));
 
       if (post?.image_url) {
         const url = new URL(post.image_url);
@@ -162,10 +172,7 @@ export default function ProofOfSweat({
       {/* Instagram-style grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
         {optimisticWorkouts.map((workout) => {
-          const post = Array.from(workoutPostMap.values()).find(
-            (p) => p.workout_json && typeof p.workout_json === 'object' &&
-                   !Array.isArray(p.workout_json) && (p.workout_json as any).id === workout.id
-          );
+          const post = Array.from(workoutPostMap.values()).find((p) => postMatchesWorkout(p, workout.id));
 
           const visibility = workout.visibility;
           const minTokens = workout.minTokensRequired || 0;

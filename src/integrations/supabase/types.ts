@@ -23,6 +23,8 @@ export type Database = {
           elapsed_time_s: number | null
           elev_gain_m: number | null
           external_id: string | null
+          imported_at: string | null
+          imported_post_id: string | null
           id: number
           max_hr: number | null
           moving_time_s: number | null
@@ -41,6 +43,8 @@ export type Database = {
           elapsed_time_s?: number | null
           elev_gain_m?: number | null
           external_id?: string | null
+          imported_at?: string | null
+          imported_post_id?: string | null
           id?: number
           max_hr?: number | null
           moving_time_s?: number | null
@@ -59,6 +63,8 @@ export type Database = {
           elapsed_time_s?: number | null
           elev_gain_m?: number | null
           external_id?: string | null
+          imported_at?: string | null
+          imported_post_id?: string | null
           id?: number
           max_hr?: number | null
           moving_time_s?: number | null

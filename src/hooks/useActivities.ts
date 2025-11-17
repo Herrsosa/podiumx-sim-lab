@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useUser } from '@/store/auth';
+import type { StoredActivity } from '@/utils/stravaActivity';
 
 type UseActivitiesOptions = {
   enabled?: boolean;
@@ -20,7 +21,7 @@ export function useActivities(options: UseActivitiesOptions = {}) {
       const { data, error } = await supabase
         .from('activities')
         .select(
-          'id, user_id, name, sport_type, start_time, distance_m, moving_time_s, elapsed_time_s, avg_hr, max_hr, elev_gain_m, calories, raw, external_id, source, created_at'
+          'id, user_id, name, sport_type, start_time, distance_m, moving_time_s, elapsed_time_s, avg_hr, max_hr, elev_gain_m, calories, raw, external_id, source, created_at, imported_post_id, imported_at'
         )
         .eq('user_id', user.id)
         .order('start_time', { ascending: false })
@@ -31,7 +32,7 @@ export function useActivities(options: UseActivitiesOptions = {}) {
         throw error;
       }
 
-      return data;
+      return (data ?? []) as StoredActivity[];
     },
     enabled: queryEnabled && !!user,
   });

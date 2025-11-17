@@ -7,7 +7,7 @@ import { EarningsSection } from '@/components/EarningsSection';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Athlete, Workout } from '@/types';
+import { Athlete, Workout, Post } from '@/types';
 import { toast } from 'sonner';
 import { useUser } from '@/store/auth';
 import { supabase } from '@/integrations/supabase/client';
@@ -42,7 +42,7 @@ import { useChartPosts } from '@/hooks/useChartPosts';
 interface PersonalConsoleProps {
   athlete?: Athlete;
   workouts: Workout[];
-  posts: any[];
+  posts: Post[];
   athleteTrades: AthleteTrade[];
   priceSeries: PriceSeriesPoint[];
   priceSeriesLoading?: boolean;

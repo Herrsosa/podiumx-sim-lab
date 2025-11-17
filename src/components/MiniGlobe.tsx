@@ -1,9 +1,9 @@
-import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import * as d3 from 'd3';
 import { feature } from 'topojson-client';
 import type { Feature, FeatureCollection, Geometry } from 'geojson';
 import type { Topology } from 'topojson-specification';
-import type { GeoPath, GeoPermissibleObjects } from 'd3-geo';
+import type { GeoPermissibleObjects } from 'd3-geo';
 
 interface Pin {
   lon: number;
@@ -40,11 +40,6 @@ export function MiniGlobe({
   const [lastDragTime, setLastDragTime] = useState(0);
   const dragStartRef = useRef<{ x: number; y: number; rotation: [number, number, number] } | null>(null);
   const animationRef = useRef<number>();
-  const projectionRef = useRef(
-    d3.geoOrthographic().clipAngle(90).precision(0.3),
-  );
-  const pathRef = useRef<GeoPath<unknown, GeoPermissibleObjects>>(d3.geoPath(projectionRef.current));
-  const graticule = useMemo(() => d3.geoGraticule(), []);
 
   // Load world topology data
   useEffect(() => {
@@ -79,14 +74,15 @@ export function MiniGlobe({
     context.clearRect(0, 0, width, height);
 
     // Projection
-    const projection = projectionRef.current;
-    projection
+    const projection = d3
+      .geoOrthographic()
       .scale(width / 2.2)
       .translate([width / 2, height / 2])
-      .rotate(rotation);
+      .rotate(rotation)
+      .clipAngle(90)
+      .precision(0.3);
 
-    const path = pathRef.current;
-    path.projection(projection).context(context);
+    const path = d3.geoPath(projection, context);
 
     // Sphere outline
     context.beginPath();
@@ -96,6 +92,7 @@ export function MiniGlobe({
     context.stroke();
 
     // Graticule
+    const graticule = d3.geoGraticule();
     context.beginPath();
     path(graticule());
     context.strokeStyle = 'rgba(255, 255, 255, 0.08)';
@@ -130,7 +127,7 @@ export function MiniGlobe({
       context.fillStyle = '#4da3ff';
       context.fill();
     });
-  }, [worldData, rotation, pins, width, height, graticule]);
+  }, [worldData, rotation, pins, width, height]);
 
   // Render on changes
   useEffect(() => {
