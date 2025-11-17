@@ -41,33 +41,37 @@ export function useMyAthlete() {
       const from = currentPage * POSTS_PAGE_SIZE;
       const to = from + POSTS_PAGE_SIZE - 1;
 
-      const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('id, username, display_name, sport, avatar_url, bio, instagram_url, strava_url, created_at')
-        .eq('id', user.id)
-        .single();
+      const [profileResult, tokenResult, postsResult] = await Promise.all([
+        supabase
+          .from('profiles')
+          .select('id, username, display_name, sport, avatar_url, bio, instagram_url, strava_url, created_at')
+          .eq('id', user.id)
+          .single(),
+        supabase
+          .from('athlete_tokens')
+          .select('athlete_id, symbol, supply, a, b, c, treasury_balance, athlete_earnings')
+          .eq('athlete_id', user.id),
+        supabase
+          .from('posts')
+          .select(
+            'id, created_at, author_id, workout_json, image_url, text, token_gated, strava_activity_id, visibility, min_tokens_required',
+          )
+          .eq('author_id', user.id)
+          .order('created_at', { ascending: false })
+          .range(from, to),
+      ]);
 
+      const { data: profile, error: profileError } = profileResult;
       if (profileError) throw profileError;
       if (!profile) return null;
-
       const profileData = profile as ProfileSummary;
 
-      const { data: tokens, error: tokenError } = await supabase
-        .from('athlete_tokens')
-        .select('athlete_id, symbol, supply, a, b, c, treasury_balance, athlete_earnings')
-        .eq('athlete_id', user.id);
-
+      const { data: tokens, error: tokenError } = tokenResult;
       if (tokenError) throw tokenError;
       const tokenRows = (tokens ?? []) as TokenRow[];
       const token = tokenRows[0];
 
-      const { data: rawPosts, error: postsError } = await supabase
-        .from('posts')
-        .select('id, created_at, author_id, workout_json, image_url, text, token_gated, strava_activity_id, visibility, min_tokens_required')
-        .eq('author_id', user.id)
-        .order('created_at', { ascending: false })
-        .range(from, to);
-
+      const { data: rawPosts, error: postsError } = postsResult;
       if (postsError) throw postsError;
 
       // Calculate current price from bonding curve
