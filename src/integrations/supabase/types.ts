@@ -23,9 +23,9 @@ export type Database = {
           elapsed_time_s: number | null
           elev_gain_m: number | null
           external_id: string | null
+          id: number
           imported_at: string | null
           imported_post_id: string | null
-          id: number
           max_hr: number | null
           moving_time_s: number | null
           name: string | null
@@ -43,9 +43,9 @@ export type Database = {
           elapsed_time_s?: number | null
           elev_gain_m?: number | null
           external_id?: string | null
+          id?: number
           imported_at?: string | null
           imported_post_id?: string | null
-          id?: number
           max_hr?: number | null
           moving_time_s?: number | null
           name?: string | null
@@ -63,9 +63,9 @@ export type Database = {
           elapsed_time_s?: number | null
           elev_gain_m?: number | null
           external_id?: string | null
+          id?: number
           imported_at?: string | null
           imported_post_id?: string | null
-          id?: number
           max_hr?: number | null
           moving_time_s?: number | null
           name?: string | null
@@ -75,7 +75,15 @@ export type Database = {
           start_time?: string | null
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "activities_imported_post_id_fkey"
+            columns: ["imported_post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       athlete_chat_messages: {
         Row: {
