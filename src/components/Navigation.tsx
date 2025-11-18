@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
-import { Home, TrendingUp, Wallet, User, RotateCcw, Moon, Sun, LogOut } from 'lucide-react';
+import { Activity, Home, TrendingUp, Wallet, User, RotateCcw, Moon, Sun, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAppStore } from '@/store/useAppStore';
 import { useToast } from '@/hooks/use-toast';
@@ -51,6 +51,10 @@ export default function Navigation() {
     void import('../pages/Marketplace');
   }, []);
 
+  const prefetchFeed = useCallback(() => {
+    void import('../pages/Feed');
+  }, []);
+
   const prefetchPortfolio = useCallback(() => {
     void import('../pages/Portfolio');
   }, []);
@@ -73,6 +77,16 @@ export default function Navigation() {
 
           {/* Nav Links */}
           <div className="flex items-center gap-1">
+            <Link to="/feed" onMouseEnter={prefetchFeed}>
+              <Button
+                variant={isActive('/feed') ? 'secondary' : 'ghost'}
+                size="sm"
+                className="gap-2 min-h-[44px]"
+              >
+                <Activity className="h-5 w-5" />
+                <span className="hidden sm:inline">Feed</span>
+              </Button>
+            </Link>
             <Link to="/marketplace" onMouseEnter={prefetchMarketplace}>
               <Button
                 variant={isActive('/marketplace') ? 'secondary' : 'ghost'}

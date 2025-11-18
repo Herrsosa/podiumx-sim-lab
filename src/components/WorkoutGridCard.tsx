@@ -10,6 +10,7 @@ interface WorkoutGridCardProps {
   post?: Post;
   canView: boolean;
   onClick: () => void;
+  variant?: 'grid' | 'feed';
 }
 
 const getTypeColor = (type: Workout['type']) => {
@@ -51,7 +52,7 @@ const formatDate = (dateString: string | undefined) => {
   return date.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' });
 };
 
-export function WorkoutGridCard({ workout, post, canView, onClick }: WorkoutGridCardProps) {
+export function WorkoutGridCard({ workout, post, canView, onClick, variant = 'grid' }: WorkoutGridCardProps) {
   const hasPhoto = post?.image_url || workout.mediaUrl;
   const photoUrl = post?.image_url || workout.mediaUrl;
   const typeGradient = getTypeGradient(workout.type);
@@ -70,12 +71,20 @@ export function WorkoutGridCard({ workout, post, canView, onClick }: WorkoutGrid
 
   const metricsText = metrics.join(' • ');
 
+  const showOverlayContent = variant !== 'feed';
+  const aspectClass = variant === 'feed' ? 'aspect-square max-w-xs sm:max-w-sm' : 'aspect-square';
+  const padding = variant === 'feed' ? 'p-3 sm:p-4' : 'p-4';
+  const metricsClass = variant === 'feed' ? 'text-base font-semibold' : 'text-base md:text-lg text-foreground font-semibold';
+  const captionClass = variant === 'feed' ? 'text-xs text-muted-foreground line-clamp-2 leading-tight' : 'text-sm text-muted-foreground line-clamp-2 leading-tight';
+  const typeBadgeClass = 'text-xs font-semibold';
+  const calendarClass = 'text-xs';
+
   return (
     <Card
       className={cn(
         'group relative overflow-hidden border-muted/40 transition-all duration-300 cursor-pointer',
-        'hover:scale-[1.02] hover:shadow-lg hover:border-primary/20',
-        'active:scale-[0.98]'
+        'hover:shadow-lg hover:border-primary/20',
+        variant === 'feed' ? 'rounded-2xl' : 'hover:scale-[1.02] active:scale-[0.98] rounded-xl'
       )}
       onClick={onClick}
       role="button"
@@ -88,76 +97,95 @@ export function WorkoutGridCard({ workout, post, canView, onClick }: WorkoutGrid
       }}
       aria-label={`${workout.type} workout on ${formatDate(displayDate)}`}
     >
-      <div className="relative aspect-square">
-        {/* Background layer */}
+      <div className={cn('relative', aspectClass)}>
         {hasPhoto && photoUrl ? (
           <SupabaseResponsiveImage
             src={photoUrl}
             alt={`${workout.type} workout`}
-            widths={[280, 360, 480]}
-            sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+            widths={[320, 420, 560]}
+            sizes="(max-width: 768px) 100vw, 560px"
             aspectRatio={1}
             className="absolute inset-0"
             imgClassName={cn(
               'object-cover',
+              variant === 'feed' ? 'rounded-2xl' : '',
               !canView && 'blur-xl'
             )}
           />
         ) : (
-          <div className={cn('absolute inset-0 bg-gradient-to-br', typeGradient)} />
+          <div className={cn('absolute inset-0 bg-gradient-to-br', variant === 'feed' ? 'rounded-2xl' : '', typeGradient)} />
         )}
 
-        {/* Dark gradient overlay for text readability */}
-        <div className={cn(
-          'absolute inset-0 bg-gradient-to-t',
-          hasPhoto ? 'from-black/80 via-black/40 to-black/20' : 'from-background/80 via-background/40 to-transparent'
-        )} />
+        {showOverlayContent && (
+          <>
+            <div
+              className={cn(
+                'absolute inset-0 bg-gradient-to-t',
+                hasPhoto ? 'from-black/80 via-black/40 to-black/20' : 'from-background/80 via-background/40 to-transparent'
+              )}
+            />
+            <CardContent className={cn('absolute inset-0 flex flex-col justify-between', padding)}>
+              <div className="flex items-start justify-between gap-2">
+                <Badge className={cn('backdrop-blur-sm border', typeColor, typeBadgeClass)}>
+                  {workout.type}
+                </Badge>
+                <div className={cn('flex items-center gap-1 text-foreground/90 backdrop-blur-sm bg-background/70 px-2 py-1 rounded-md border border-border/40', calendarClass)}>
+                  <Calendar className="h-3 w-3" />
+                  <span className="font-medium">
+                    {formatDate(displayDate)}
+                  </span>
+                </div>
+              </div>
 
-        {/* Content overlay */}
-        <CardContent className="absolute inset-0 p-4 flex flex-col justify-between">
-          {/* Top row: type badge + date */}
-          <div className="flex items-start justify-between gap-2">
-            <Badge className={cn('backdrop-blur-sm border text-xs font-semibold', typeColor)}>
-              {workout.type}
-            </Badge>
-            <div className="flex items-center gap-1 text-xs text-foreground/90 backdrop-blur-sm bg-background/80 px-2 py-1 rounded-md border border-border/50">
-              <Calendar className="h-3 w-3" />
-              <span className="font-medium">
-                {formatDate(displayDate)}
-              </span>
-            </div>
-          </div>
+              <div className="space-y-2">
+                {canView ? (
+                  <>
+                    {metricsText && (
+                      <div className={metricsClass}>
+                        {metricsText}
+                      </div>
+                    )}
 
-          {/* Bottom section: metrics + caption */}
-          <div className="space-y-2">
-            {canView ? (
-              <>
-                {/* Metrics */}
-                {metricsText && (
-                  <div className="text-foreground font-semibold text-base md:text-lg">
-                    {metricsText}
+                    {post?.text && (
+                      <p className={captionClass}>
+                        {post.text}
+                      </p>
+                    )}
+                  </>
+                ) : (
+                  <div className="flex flex-col items-center justify-center py-4 text-center">
+                    <Lock className="h-8 w-8 text-foreground mb-2" />
+                    <p className="text-foreground font-semibold text-sm">Token Holders Only</p>
                   </div>
                 )}
+              </div>
+            </CardContent>
+          </>
+        )}
 
-                {/* Caption */}
-                {post?.text && (
-                  <p className="text-sm text-muted-foreground line-clamp-2 leading-tight">
-                    {post.text}
-                  </p>
-                )}
-              </>
-            ) : (
-              <div className="flex flex-col items-center justify-center py-4 text-center">
-                <Lock className="h-8 w-8 text-foreground mb-2" />
-                <p className="text-foreground font-semibold text-sm">Token Holders Only</p>
+        {!showOverlayContent && (
+          <div className="absolute inset-0 flex flex-col">
+            <div className="flex items-start justify-between gap-2 p-3">
+              <Badge className={cn('bg-black/60 text-white border border-white/20', typeBadgeClass)}>
+                {workout.type}
+              </Badge>
+              <div className={cn('flex items-center gap-1 text-white/80 bg-black/40 px-2 py-1 rounded-md text-[10px]')}>
+                <Calendar className="h-3 w-3" />
+                <span>{formatDate(displayDate)}</span>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {!canView && (
+          <div className={cn('absolute inset-0 flex items-center justify-center bg-black/60 backdrop-blur-sm', variant === 'feed' ? 'rounded-2xl' : '')}>
+            {!showOverlayContent && (
+              <div className="flex flex-col items-center text-primary-foreground text-center text-xs">
+                <Lock className="h-5 w-5 mb-1" />
+                Holder Exclusive
               </div>
             )}
           </div>
-        </CardContent>
-
-        {/* Lock overlay for gated content */}
-        {!canView && (
-          <div className="absolute inset-0 flex items-center justify-center bg-black/60 backdrop-blur-sm" />
         )}
       </div>
     </Card>

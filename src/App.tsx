@@ -29,6 +29,7 @@ const Marketplace = lazy(() => import("./pages/Marketplace"));
 const MyAthletePage = lazy(() => import("./pages/MyAthletePage"));
 const MyAthleteLocker = lazy(() => import("./pages/MyAthlete/Locker"));
 const GlobeDemo = lazy(() => import("./pages/GlobeDemo"));
+const FeedPage = lazy(() => import("./pages/Feed"));
 
 interface RouteGuardProps {
   requireAuth?: boolean;
@@ -106,6 +107,18 @@ function AppContent() {
           <Navigation />
           <Suspense fallback={<MarketplaceSkeleton />}>
             <Marketplace />
+          </Suspense>
+        </RouteGuard>
+      } />
+      <Route path="/feed" element={
+        <RouteGuard>
+          <Navigation />
+          <Suspense fallback={
+            <div className="min-h-screen flex items-center justify-center">
+              <LoadingSpinner size="lg" />
+            </div>
+          }>
+            <FeedPage />
           </Suspense>
         </RouteGuard>
       } />

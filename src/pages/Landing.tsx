@@ -7,6 +7,7 @@ import { usePaginatedAthletes } from "@/hooks/usePaginatedAthletes";
 import { useMarketplaceCharts } from "@/hooks/useMarketplaceCharts";
 import { AthleteCardNew } from "@/components/AthleteCardNew";
 import { HeroAthleteCard } from "@/components/landing/HeroAthleteCard";
+import { ProofOfSweatFeed } from "@/components/feed/ProofOfSweatFeed";
 
 export default function Landing() {
   const { data: athletes, isLoading } = usePaginatedAthletes();
@@ -179,37 +180,52 @@ export default function Landing() {
         </div>
       </section>
 
+      {/* Global Proof-of-Sweat Feed */}
+      <section className="container mx-auto px-4 py-16">
+        <ProofOfSweatFeed
+          heading="Latest Proof-of-Sweat"
+          subheading="See the most recent training drops across Athlyst."
+          pageSize={6}
+          showLoadMore={false}
+          seeAllHref="/feed"
+          maxVisible={3}
+          scrollable
+        />
+      </section>
+
       {/* Top Athletes Section */}
-      <section id="explore" className="container mx-auto px-2 sm:px-4 py-16 lg:py-24 bg-muted/30 -mx-2 sm:-mx-4">
-        <div className="text-center mb-12">
-          <h2 className="text-3xl md:text-4xl font-bold mb-4">Top Athletes</h2>
-          <p className="text-muted-foreground max-w-2xl mx-auto">
-            Discover other Athlysts early and benefit
-          </p>
-        </div>
-        
-        {isLoading ? (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 sm:gap-6 max-w-7xl mx-auto px-2 sm:px-4">
-            {[...Array(8)].map((_, i) => (
-              <div key={i} className="h-96 rounded-xl bg-muted/40 animate-pulse" />
-            ))}
+      <section id="explore" className="py-16 lg:py-24 bg-muted/30">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">Top Athletes</h2>
+            <p className="text-muted-foreground max-w-2xl mx-auto">
+              Discover other Athlysts early and benefit
+            </p>
           </div>
-        ) : (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 sm:gap-6 max-w-7xl mx-auto px-2 sm:px-4">
-            {topAthletes.map((athlete) => (
-              <AthleteCardNew
-                key={athlete.id} 
-                athlete={athlete} 
-                chartData={chartData?.[athlete.id] || []} 
-              />
-            ))}
+          
+          {isLoading ? (
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 sm:gap-6 max-w-7xl mx-auto">
+              {[...Array(8)].map((_, i) => (
+                <div key={i} className="h-96 rounded-xl bg-muted/40 animate-pulse" />
+              ))}
+            </div>
+          ) : (
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 sm:gap-6 max-w-7xl mx-auto">
+              {topAthletes.map((athlete) => (
+                <AthleteCardNew
+                  key={athlete.id}
+                  athlete={athlete}
+                  chartData={chartData?.[athlete.id] || []}
+                />
+              ))}
+            </div>
+          )}
+          
+          <div className="text-center mt-12">
+            <Button size="lg" className="hidden sm:inline-flex" asChild>
+              <Link to="/marketplace">View All Athletes</Link>
+            </Button>
           </div>
-        )}
-        
-        <div className="text-center mt-12">
-          <Button size="lg" className="hidden sm:inline-flex" asChild>
-            <Link to="/marketplace">View All Athletes</Link>
-          </Button>
         </div>
       </section>
       <div className="fixed inset-x-0 bottom-0 z-40 bg-background/95 border-t border-border/50 p-3 flex items-center gap-3 sm:hidden">
