@@ -127,50 +127,54 @@ export default function Landing() {
 
 
 
-        <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3 relative z-10">
-          {[
-            {
-              icon: Dumbbell,
-              title: "Proof of Sweat",
-              desc: "Verifiable workout data directly from Strava. No fake metrics, just pure effort.",
-              color: "text-primary",
-              bg: "bg-primary/10"
-            },
-            {
-              icon: TrendingUp,
-              title: "Dynamic Pricing",
-              desc: "Bonding curves ensure instant liquidity. Price moves based on supply and demand.",
-              color: "text-accent",
-              bg: "bg-accent/10"
-            },
-            {
-              icon: Shield,
-              title: "Token Utility",
-              desc: "Hold tokens to unlock exclusive content, chat access, and future rewards.",
-              color: "text-success",
-              bg: "bg-success/10"
-            }
-          ].map((item, i) => (
-            <motion.div
-              key={i}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: i * 0.1 }}
-            >
-              <Card className="group h-full glass-card border-transparent hover:border-primary/20 transition-all duration-300 hover:shadow-xl hover:-translate-y-1">
-                <CardContent className="pt-8">
-                  <div className={`w-14 h-14 rounded-2xl ${item.bg} flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300`}>
-                    <item.icon className={`w-7 h-7 ${item.color}`} />
-                  </div>
-                  <h3 className="text-xl font-bold mb-3">{item.title}</h3>
-                  <p className="text-muted-foreground leading-relaxed">
-                    {item.desc}
-                  </p>
-                </CardContent>
-              </Card>
-            </motion.div>
-          ))}
+        {/* Value Props - Horizontal Scroll on Mobile */}
+        <div className="-mx-4 px-4 md:mx-0 md:px-0">
+          <div className="flex md:grid md:grid-cols-3 gap-8 overflow-x-auto scrollbar-hide snap-x snap-mandatory pb-4 md:pb-0 relative z-10">
+            {[
+              {
+                icon: Dumbbell,
+                title: "Proof of Sweat",
+                desc: "Verifiable workout data directly from Strava. No fake metrics, just pure effort.",
+                color: "text-primary",
+                bg: "bg-primary/10"
+              },
+              {
+                icon: TrendingUp,
+                title: "Dynamic Pricing",
+                desc: "Bonding curves ensure instant liquidity. Price moves based on supply and demand.",
+                color: "text-accent",
+                bg: "bg-accent/10"
+              },
+              {
+                icon: Shield,
+                title: "Token Utility",
+                desc: "Hold tokens to unlock exclusive content, chat access, and future rewards.",
+                color: "text-success",
+                bg: "bg-success/10"
+              }
+            ].map((item, i) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.1 }}
+                className="min-w-[280px] md:min-w-0 snap-center"
+              >
+                <Card className="group h-full glass-card border-transparent hover:border-primary/20 transition-all duration-300 hover:shadow-xl hover:-translate-y-1">
+                  <CardContent className="pt-8">
+                    <div className={`w-14 h-14 rounded-2xl ${item.bg} flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300`}>
+                      <item.icon className={`w-7 h-7 ${item.color}`} />
+                    </div>
+                    <h3 className="text-xl font-bold mb-3">{item.title}</h3>
+                    <p className="text-muted-foreground leading-relaxed">
+                      {item.desc}
+                    </p>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            ))}
+          </div>
         </div>
 
         {/* How It Works Steps */}
@@ -189,49 +193,52 @@ export default function Landing() {
             </p>
           </div>
 
-          <div className="grid gap-8 md:grid-cols-3">
-            {[
-              {
-                step: "1",
-                title: "Create Profile & Verify",
-                desc: "Create your account and complete your athlete profile to get started.",
-                color: "bg-success"
-              },
-              {
-                step: "2",
-                title: "Log Proof of Sweat",
-                desc: "Log your workouts and share your progress with your supporters.",
-                color: "bg-primary"
-              },
-              {
-                step: "3",
-                title: "Grow Your Athlete Card Cap",
-                desc: "Build your Athlete Card Cap and grow a strong community around you.",
-                color: "bg-success"
-              }
-            ].map((item, i) => (
-              <motion.div
-                key={i}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.2 }}
-                className="text-center space-y-6 relative"
-              >
-                <div className="relative mx-auto w-24 h-24 flex items-center justify-center">
-                  <div className={`absolute inset-0 ${item.color} opacity-20 blur-2xl rounded-full`} />
-                  <div className={`relative w-16 h-16 rounded-2xl ${item.color} flex items-center justify-center text-2xl font-bold text-white shadow-lg shadow-${item.color}/20`}>
-                    {item.step}
+          {/* How It Works Steps - Horizontal Scroll on Mobile */}
+          <div className="-mx-4 px-4 md:mx-0 md:px-0">
+            <div className="flex md:grid md:grid-cols-3 gap-8 overflow-x-auto scrollbar-hide snap-x snap-mandatory pb-4 md:pb-0">
+              {[
+                {
+                  step: "1",
+                  title: "Create Profile & Verify",
+                  desc: "Create your account and complete your athlete profile to get started.",
+                  color: "bg-success"
+                },
+                {
+                  step: "2",
+                  title: "Log Proof of Sweat",
+                  desc: "Log your workouts and share your progress with your supporters.",
+                  color: "bg-primary"
+                },
+                {
+                  step: "3",
+                  title: "Grow Your Athlete Card Cap",
+                  desc: "Build your Athlete Card Cap and grow a strong community around you.",
+                  color: "bg-success"
+                }
+              ].map((item, i) => (
+                <motion.div
+                  key={i}
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: i * 0.2 }}
+                  className="text-center space-y-6 relative min-w-[280px] md:min-w-0 snap-center"
+                >
+                  <div className="relative mx-auto w-24 h-24 flex items-center justify-center">
+                    <div className={`absolute inset-0 ${item.color} opacity-20 blur-2xl rounded-full`} />
+                    <div className={`relative w-16 h-16 rounded-2xl ${item.color} flex items-center justify-center text-2xl font-bold text-white shadow-lg shadow-${item.color}/20`}>
+                      {item.step}
+                    </div>
                   </div>
-                </div>
-                <div className="space-y-3">
-                  <h3 className="text-xl font-bold">{item.title}</h3>
-                  <p className="text-muted-foreground leading-relaxed max-w-xs mx-auto">
-                    {item.desc}
-                  </p>
-                </div>
-              </motion.div>
-            ))}
+                  <div className="space-y-3">
+                    <h3 className="text-xl font-bold">{item.title}</h3>
+                    <p className="text-muted-foreground leading-relaxed max-w-xs mx-auto">
+                      {item.desc}
+                    </p>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
           </div>
         </div>
       </section>
@@ -275,39 +282,41 @@ export default function Landing() {
             <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4 max-w-7xl mx-auto">
               {[...Array(8)].map((_, i) => (
                 <div key={i} className="h-96 rounded-2xl bg-muted/40 animate-pulse" />
-              ))}
-            </div>
+              ))}\n            </div>
           ) : (
-            <motion.div
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true, margin: "-100px" }}
-              variants={{
-                hidden: { opacity: 0 },
-                visible: {
-                  opacity: 1,
-                  transition: {
-                    staggerChildren: 0.1
+            <div className="-mx-4 px-4 md:mx-0 md:px-0">
+              <motion.div
+                initial="hidden"
+                whileInView="visible"
+                viewport={{ once: true, margin: "-100px" }}
+                variants={{
+                  hidden: { opacity: 0 },
+                  visible: {
+                    opacity: 1,
+                    transition: {
+                      staggerChildren: 0.1
+                    }
                   }
-                }
-              }}
-              className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4 max-w-7xl mx-auto"
-            >
-              {topAthletes.map((athlete) => (
-                <motion.div
-                  key={athlete.id}
-                  variants={{
-                    hidden: { opacity: 0, y: 20 },
-                    visible: { opacity: 1, y: 0 }
-                  }}
-                >
-                  <AthleteCardNew
-                    athlete={athlete}
-                    chartData={chartData?.[athlete.id] || []}
-                  />
-                </motion.div>
-              ))}
-            </motion.div>
+                }}
+                className="flex md:grid md:grid-cols-2 lg:grid-cols-4 gap-6 overflow-x-auto scrollbar-hide snap-x snap-mandatory pb-4 md:pb-0 max-w-7xl mx-auto"
+              >
+                {topAthletes.map((athlete) => (
+                  <motion.div
+                    key={athlete.id}
+                    variants={{
+                      hidden: { opacity: 0, y: 20 },
+                      visible: { opacity: 1, y: 0 }
+                    }}
+                    className="min-w-[280px] md:min-w-0 snap-center"
+                  >
+                    <AthleteCardNew
+                      athlete={athlete}
+                      chartData={chartData?.[athlete.id] || []}
+                    />
+                  </motion.div>
+                ))}
+              </motion.div>
+            </div>
           )}
 
           <div className="text-center mt-16">
