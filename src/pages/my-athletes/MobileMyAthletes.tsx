@@ -507,6 +507,7 @@ export default function MobileMyAthletes({
     priceChange,
     PriceChangeIcon,
     setConsoleTab,
+    priceSeries,
   ]);
 
   if (!athlete) {
