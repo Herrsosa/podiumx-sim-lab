@@ -1,9 +1,8 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
-import * as d3 from 'd3';
+import { geoOrthographic, geoPath, geoGraticule, type GeoPermissibleObjects } from 'd3';
 import { feature } from 'topojson-client';
 import type { Feature, FeatureCollection, Geometry } from 'geojson';
 import type { Topology } from 'topojson-specification';
-import type { GeoPermissibleObjects } from 'd3-geo';
 
 interface Pin {
   lon: number;
@@ -43,15 +42,28 @@ export function MiniGlobe({
 
   // Load world topology data
   useEffect(() => {
-    fetch('https://cdn.jsdelivr.net/npm/world-atlas@2/land-110m.json')
-      .then((res) => res.json())
-      .then((topology: unknown) => {
-        // We only care that there's an objects.land; rely on topojson to convert it.
-        const topo = topology as Topology & { objects: { land: unknown } };
-        const land = feature(topo, topo.objects.land) as WorldGeo;
-        setWorldData(land);
-      })
-      .catch((err) => console.error('Failed to load world data:', err));
+    let mounted = true;
+
+    const loadData = async () => {
+      try {
+        // Dynamic import to split this large JSON into a separate chunk
+        const worldAtlasModule = await import('world-atlas/land-110m.json');
+        const topo = worldAtlasModule.default as unknown as Topology & { objects: { land: unknown } };
+
+        if (mounted) {
+          const land = feature(topo, topo.objects.land) as WorldGeo;
+          setWorldData(land);
+        }
+      } catch (err) {
+        console.error('Failed to load world data:', err);
+      }
+    };
+
+    loadData();
+
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   // Render function
@@ -74,15 +86,14 @@ export function MiniGlobe({
     context.clearRect(0, 0, width, height);
 
     // Projection
-    const projection = d3
-      .geoOrthographic()
+    const projection = geoOrthographic()
       .scale(width / 2.2)
       .translate([width / 2, height / 2])
       .rotate(rotation)
       .clipAngle(90)
       .precision(0.3);
 
-    const path = d3.geoPath(projection, context);
+    const path = geoPath(projection, context);
 
     // Sphere outline
     context.beginPath();
@@ -92,7 +103,7 @@ export function MiniGlobe({
     context.stroke();
 
     // Graticule
-    const graticule = d3.geoGraticule();
+    const graticule = geoGraticule();
     context.beginPath();
     path(graticule());
     context.strokeStyle = 'rgba(255, 255, 255, 0.08)';

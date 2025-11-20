@@ -21,6 +21,7 @@ import { ProfileDetailsCard } from '@/components/my-athlete/ProfileDetailsCard';
 import type { EditableProfile } from '@/pages/my-athletes/types';
 import ConnectXButton from '@/components/social/ConnectXButton';
 import { useXConnection } from '@/hooks/useXConnection';
+import { StravaCard } from '@/components/strava/StravaCard';
 import { MobileActionBar } from '@/components/MobileActionBar';
 import LockerMessages from '@/components/myathlete/LockerMessages';
 import LockerWorkouts from '@/components/myathlete/LockerWorkouts';
@@ -145,7 +146,7 @@ export default function MobileMyAthletes({
                 <TabsTrigger value="personal">Settings</TabsTrigger>
                 <TabsTrigger value="locker">Locker</TabsTrigger>
               </TabsList>
-              
+
               <TabsContent value="personal" className="space-y-4 mt-4">
                 <ProfileDetailsCard
                   variant="mobile"
@@ -160,7 +161,7 @@ export default function MobileMyAthletes({
                   onFieldChange={onProfileFieldChange}
                   onAvatarSelect={onAvatarSelect}
                 />
-                
+
                 {/* X.com Integration */}
                 {xLoading ? (
                   <Card className="shadow-none">
@@ -181,7 +182,7 @@ export default function MobileMyAthletes({
                   </Card>
                 ) : null}
               </TabsContent>
-              
+
               <TabsContent value="locker" className="mt-4">
                 <LockerWorkouts />
               </TabsContent>
@@ -221,7 +222,7 @@ export default function MobileMyAthletes({
                 workouts={workouts}
                 posts={posts}
                 viewerHoldings={Number.MAX_SAFE_INTEGER}
-                onWorkoutDeleted={() => {}}
+                onWorkoutDeleted={() => { }}
               />
             )}
           </div>
@@ -334,7 +335,7 @@ export default function MobileMyAthletes({
                     </TabsList>
                   </Tabs>
                 )}
-                
+
                 {priceSeries.length === 0 ? (
                   <div className="space-y-3 p-6 text-center text-sm text-muted-foreground">
                     <TrendingUp className="mx-auto h-8 w-8 text-muted-foreground" />
@@ -378,34 +379,34 @@ export default function MobileMyAthletes({
             ) : (
               <div className="max-h-[420px] space-y-3 overflow-y-auto pr-2">
                 {trades.map((trade, index) => {
-                      const side = (trade.side as string) ?? 'buy';
-                    const isBuy = side === 'buy';
-                    const qty = Number(trade.qty ?? 0);
-                    const gross = Number(trade.gross_amount ?? 0);
-                    const price = Number(trade.price_after ?? 0);
-                    const timestamp = typeof trade.created_at === 'string' ? new Date(trade.created_at) : new Date(Number(trade.created_at ?? Date.now()));
+                  const side = (trade.side as string) ?? 'buy';
+                  const isBuy = side === 'buy';
+                  const qty = Number(trade.qty ?? 0);
+                  const gross = Number(trade.gross_amount ?? 0);
+                  const price = Number(trade.price_after ?? 0);
+                  const timestamp = typeof trade.created_at === 'string' ? new Date(trade.created_at) : new Date(Number(trade.created_at ?? Date.now()));
 
-                    return (
-                      <Card key={`${trade.id ?? index}`} className="border border-border/60">
-                        <CardContent className="space-y-2 p-4">
-                          <div className="flex items-center justify-between">
-                            <Badge variant={isBuy ? 'default' : 'secondary'} className="uppercase">
-                              {isBuy ? 'Buy' : 'Sell'}
-                            </Badge>
-                            <span className="text-xs text-muted-foreground">
-                              {timestamp.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}{' '}
-                              {timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                            </span>
-                          </div>
-                          <div className="grid grid-cols-2 gap-2 text-sm">
-                            <Metric label="Quantity" value={`${qty}`} />
-                            <Metric label="Price" value={currencyFormatter.format(price)} />
-                            <Metric label="Notional" value={currencyFormatter.format(gross)} />
-                            <Metric label="Fee" value={currencyFormatter.format(Number(trade.fee ?? 0))} />
-                          </div>
-                        </CardContent>
-                      </Card>
-                    );
+                  return (
+                    <Card key={`${trade.id ?? index}`} className="border border-border/60">
+                      <CardContent className="space-y-2 p-4">
+                        <div className="flex items-center justify-between">
+                          <Badge variant={isBuy ? 'default' : 'secondary'} className="uppercase">
+                            {isBuy ? 'Buy' : 'Sell'}
+                          </Badge>
+                          <span className="text-xs text-muted-foreground">
+                            {timestamp.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}{' '}
+                            {timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          </span>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2 text-sm">
+                          <Metric label="Quantity" value={`${qty}`} />
+                          <Metric label="Price" value={currencyFormatter.format(price)} />
+                          <Metric label="Notional" value={currencyFormatter.format(gross)} />
+                          <Metric label="Fee" value={currencyFormatter.format(Number(trade.fee ?? 0))} />
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
                 })}
               </div>
             )}
@@ -441,20 +442,21 @@ export default function MobileMyAthletes({
                   workouts={workouts}
                   posts={posts}
                   viewerHoldings={Number.MAX_SAFE_INTEGER}
-                  onWorkoutDeleted={() => {}}
+                  onWorkoutDeleted={() => { }}
                 />
                 {hasNextPage && (
                   <Button onClick={fetchNextPage} disabled={isFetchingNextPage} variant="outline" className="w-full">
                     {isFetchingNextPage ? 'Loading…' : 'Load more'}
                   </Button>
                 )}
+                <StravaCard className="mt-4" />
               </>
             )}
           </TabsContent>
 
           <TabsContent value="dm" className="min-w-0">
-            <LockerMessages 
-              athleteId={athlete.id} 
+            <LockerMessages
+              athleteId={athlete.id}
               athleteName={athlete.name}
               mode="embedded"
             />

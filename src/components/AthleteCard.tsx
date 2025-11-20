@@ -1,5 +1,5 @@
 import { memo, useMemo } from 'react';
-import { TrendingUp, TrendingDown } from 'lucide-react';
+import { TrendingUp, TrendingDown, ArrowUpRight } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
@@ -9,6 +9,7 @@ import { formatMoney, formatNumber } from '@/lib/format';
 import { getAvatarAsset, resolveAvatarUrl } from '@/utils/avatar';
 import { format } from 'date-fns';
 import { OptimizedImage } from '@/components/OptimizedImage';
+import { motion } from 'framer-motion';
 
 interface AthleteCardProps {
   athlete: Athlete;
@@ -67,119 +68,153 @@ export const AthleteCard = memo(({ athlete, chartData, onClick, onMouseEnter }: 
   }, [athlete.name]);
 
   return (
-    <Card
-      className="glass-card group cursor-pointer transition-all duration-300 hover:scale-[1.02] hover:shadow-xl hover:border-primary/30"
-      onClick={onClick}
-      onMouseEnter={onMouseEnter}
+    <motion.div
+      whileHover={{ y: -5, scale: 1.02 }}
+      whileTap={{ scale: 0.98 }}
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3 }}
     >
-      <CardContent className="p-0">
-        <div className="relative aspect-square overflow-hidden">
-          {hasAvatar ? (
-            <OptimizedImage
-              src={avatarUrl}
-              webpSrc={getAvatarAsset(athlete.avatar)?.webp}
-              alt={athlete.name}
-              width={320}
-              height={320}
-              className="h-full w-full object-cover"
-              eager={false}
-            />
-          ) : (
-            <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-muted/70 to-muted text-3xl font-semibold text-muted-foreground">
-              {fallbackInitials}
-            </div>
-          )}
-        </div>
-        <div className="p-6">
-          {/* Avatar & Name */}
-          <div className="mb-4 flex items-center gap-3">
-            <div className="flex-1">
-              <h3 className="font-semibold">{athlete.name}</h3>
-              <Badge variant="secondary" className="text-xs">
-                {athlete.sport}
-              </Badge>
+      <Card
+        className="glass-card glass-card-hover group cursor-pointer overflow-hidden relative"
+        onClick={onClick}
+        onMouseEnter={onMouseEnter}
+      >
+        <CardContent className="p-0">
+          <div className="relative aspect-square overflow-hidden">
+            {hasAvatar ? (
+              <OptimizedImage
+                src={avatarUrl}
+                webpSrc={getAvatarAsset(athlete.avatar)?.webp}
+                alt={athlete.name}
+                width={320}
+                height={320}
+                className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
+                eager={false}
+              />
+            ) : (
+              <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-muted/70 to-muted text-3xl font-semibold text-muted-foreground">
+                {fallbackInitials}
+              </div>
+            )}
+            
+            {/* Overlay with View Profile Button */}
+            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center backdrop-blur-[2px]">
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                whileHover={{ scale: 1.05 }}
+                className="bg-white/10 backdrop-blur-md border border-white/20 text-white px-4 py-2 rounded-full font-medium text-sm flex items-center gap-2"
+              >
+                View Profile <ArrowUpRight className="w-4 h-4" />
+              </motion.div>
             </div>
           </div>
+          
+          <div className="p-6">
+            {/* Avatar & Name */}
+            <div className="mb-4 flex items-center gap-3">
+              <div className="flex-1">
+                <h3 className="font-semibold truncate">{athlete.name}</h3>
+                <Badge variant="secondary" className="text-xs mt-1">
+                  {athlete.sport}
+                </Badge>
+              </div>
+            </div>
 
-          {/* Price */}
-          <div className="mb-2">
-            <div className="text-2xl font-bold">
-              {formatMoney(athlete.price)}
+            {/* Price */}
+            <div className="mb-2">
+              <div className="text-2xl font-bold tracking-tight">
+                {formatMoney(athlete.price)}
+              </div>
+              <div
+                className={`flex items-center gap-1 text-sm font-medium ${
+                  isPositive ? 'text-success' : 'text-destructive'
+                }`}
+              >
+                {isPositive ? (
+                  <TrendingUp className="h-3 w-3" />
+                ) : (
+                  <TrendingDown className="h-3 w-3" />
+                )}
+                {isPositive ? '+' : ''}
+                {formatNumber(athlete.change24h)}% 24h
+              </div>
             </div>
-            <div
-              className={`flex items-center gap-1 text-sm ${
-                isPositive ? 'text-success' : 'text-destructive'
-              }`}
-            >
-              {isPositive ? (
-                <TrendingUp className="h-3 w-3" />
-              ) : (
-                <TrendingDown className="h-3 w-3" />
-              )}
-              {isPositive ? '+' : ''}
-              {formatNumber(athlete.change24h)}% 24h
-            </div>
-          </div>
 
-          {/* Price Trend */}
-          <div className="mb-4">
-            <div className="mb-2 flex items-center justify-between text-[0.65rem] uppercase tracking-wide text-muted-foreground">
-              <span>Price (7d)</span>
+            {/* Price Trend */}
+            <div className="mb-4">
+              <div className="mb-2 flex items-center justify-between text-[0.65rem] uppercase tracking-wide text-muted-foreground">
+                <span>Price (7d)</span>
+              </div>
+              <div className="h-20">
+                {hasChartData ? (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart
+                      data={sortedChartData}
+                      margin={{ top: 4, right: 8, left: -8, bottom: 0 }}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} strokeOpacity={0.1} />
+                      <XAxis
+                        dataKey="timestamp"
+                        axisLine={false}
+                        tickLine={false}
+                        tickFormatter={(value) => format(new Date(value), 'MMM d')}
+                        minTickGap={16}
+                        tick={{ fontSize: 10, fill: 'var(--muted-foreground)' }}
+                      />
+                      <YAxis
+                        axisLine={false}
+                        tickLine={false}
+                        tickFormatter={(value) => `$${Number(value).toFixed(2)}`}
+                        width={42}
+                        domain={priceDomain ?? ['auto', 'auto']}
+                        tick={{ fontSize: 10, fill: 'var(--muted-foreground)' }}
+                      />
+                      <Tooltip
+                        contentStyle={{ 
+                          backgroundColor: 'hsl(var(--popover))', 
+                          borderColor: 'hsl(var(--border))',
+                          borderRadius: '8px',
+                          fontSize: '12px'
+                        }}
+                        cursor={{ stroke: lineColor, strokeWidth: 1, opacity: 0.2 }}
+                        formatter={(value: number) => [`$${Number(value).toFixed(2)}`, 'Price']}
+                        labelFormatter={(value) => format(new Date(value), 'PPP p')}
+                      />
+                      <Line 
+                        type="monotone" 
+                        dataKey="price" 
+                        stroke={lineColor} 
+                        strokeWidth={2} 
+                        dot={false}
+                        activeDot={{ r: 4, strokeWidth: 0 }}
+                        animationDuration={1500}
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="flex h-full items-center justify-center text-xs text-muted-foreground bg-muted/20 rounded-lg">
+                    No trade history
+                  </div>
+                )}
+              </div>
             </div>
-            <div className="h-20">
-              {hasChartData ? (
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart
-                    data={sortedChartData}
-                    margin={{ top: 4, right: 8, left: -8, bottom: 0 }}
-                  >
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                    <XAxis
-                      dataKey="timestamp"
-                      axisLine={false}
-                      tickLine={false}
-                      tickFormatter={(value) => format(new Date(value), 'MMM d')}
-                      minTickGap={16}
-                      tick={{ fontSize: 10 }}
-                    />
-                    <YAxis
-                      axisLine={false}
-                      tickLine={false}
-                      tickFormatter={(value) => `$${Number(value).toFixed(2)}`}
-                      width={42}
-                      domain={priceDomain ?? ['auto', 'auto']}
-                      tick={{ fontSize: 10 }}
-                    />
-                    <Tooltip
-                      cursor={{ stroke: lineColor, strokeWidth: 1, opacity: 0.2 }}
-                      formatter={(value: number) => [`$${Number(value).toFixed(2)}`, 'Price']}
-                      labelFormatter={(value) => format(new Date(value), 'PPP p')}
-                    />
-                    <Line type="monotone" dataKey="price" stroke={lineColor} strokeWidth={2} dot={false} />
-                  </LineChart>
-                </ResponsiveContainer>
-              ) : (
-                <div className="flex h-full items-center justify-center text-xs text-muted-foreground">
-                  No trade history
-                </div>
-              )}
-            </div>
-          </div>
 
-          {/* Stats */}
-          <div className="grid grid-cols-2 gap-2 text-sm">
-            <div>
-              <div className="text-muted-foreground">Supply</div>
-              <div className="font-medium">{formatNumber(athlete.supply)}</div>
-            </div>
-            <div>
-              <div className="text-muted-foreground">Market Cap</div>
-              <div className="font-medium">{formatMoney(athlete.marketCap)}</div>
+            {/* Stats */}
+            <div className="grid grid-cols-2 gap-2 text-xs border-t pt-3 border-border/50">
+              <div>
+                <div className="text-muted-foreground mb-0.5">Supply</div>
+                <div className="font-medium">{formatNumber(athlete.supply)}</div>
+              </div>
+              <div>
+                <div className="text-muted-foreground mb-0.5">Market Cap</div>
+                <div className="font-medium">{formatMoney(athlete.marketCap)}</div>
+              </div>
             </div>
           </div>
-        </div>
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
+    </motion.div>
   );
 }, (prev, next) => {
   if (prev.athlete.id !== next.athlete.id) return false;

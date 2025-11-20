@@ -58,6 +58,7 @@ export function useProofOfSweatFeed(options: UseProofOfSweatFeedOptions = {}) {
     queryKey: ['proof-of-sweat-feed', athleteId, pageSize],
     initialPageParam: 0,
     getNextPageParam: (lastPage) => lastPage?.nextPage,
+    staleTime: 30000, // Consider data fresh for 30 seconds
     queryFn: async ({ pageParam = 0 }) => {
       const currentPage = Number(pageParam) || 0;
       const from = currentPage * pageSize;

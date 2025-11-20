@@ -1,5 +1,7 @@
 export type Sport = 'Running' | 'HYROX' | 'Cycling' | 'Triathlon' | 'CrossFit' | 'Swimming' | 'Trail Run' | 'Rowing';
 
+export const SPORTS: Sport[] = ['Running', 'HYROX', 'Cycling', 'Triathlon', 'CrossFit', 'Swimming', 'Trail Run', 'Rowing'];
+
 export interface Athlete {
   id: string;
   slug: string;
@@ -106,7 +108,7 @@ export interface AppState {
   userProfile: UserProfile;
   userAthleteId?: string;
   initialized: boolean;
-  
+
   // Actions
   buyTokens: (athleteId: string, quantity: number) => void;
   sellTokens: (athleteId: string, quantity: number) => void;
