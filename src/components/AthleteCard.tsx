@@ -10,6 +10,19 @@ import { getAvatarAsset, resolveAvatarUrl } from '@/utils/avatar';
 import { format } from 'date-fns';
 import { OptimizedImage } from '@/components/OptimizedImage';
 import { motion } from 'framer-motion';
+import { CountUp } from '@/components/ui/count-up';
+import { cn } from '@/lib/utils';
+
+const SPORT_COLORS: Record<string, string> = {
+  Running: 'bg-orange-500/10 text-orange-500 hover:bg-orange-500/20 border-orange-500/20',
+  HYROX: 'bg-yellow-500/10 text-yellow-500 hover:bg-yellow-500/20 border-yellow-500/20',
+  Cycling: 'bg-blue-500/10 text-blue-500 hover:bg-blue-500/20 border-blue-500/20',
+  Triathlon: 'bg-purple-500/10 text-purple-500 hover:bg-purple-500/20 border-purple-500/20',
+  CrossFit: 'bg-red-500/10 text-red-500 hover:bg-red-500/20 border-red-500/20',
+  Swimming: 'bg-cyan-500/10 text-cyan-500 hover:bg-cyan-500/20 border-cyan-500/20',
+  'Trail Run': 'bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20 border-emerald-500/20',
+  Rowing: 'bg-indigo-500/10 text-indigo-500 hover:bg-indigo-500/20 border-indigo-500/20',
+};
 
 interface AthleteCardProps {
   athlete: Athlete;
@@ -97,7 +110,7 @@ export const AthleteCard = memo(({ athlete, chartData, onClick, onMouseEnter }: 
                 {fallbackInitials}
               </div>
             )}
-            
+
             {/* Overlay with View Profile Button */}
             <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center backdrop-blur-[2px]">
               <motion.div
@@ -109,13 +122,16 @@ export const AthleteCard = memo(({ athlete, chartData, onClick, onMouseEnter }: 
               </motion.div>
             </div>
           </div>
-          
+
           <div className="p-6">
             {/* Avatar & Name */}
             <div className="mb-4 flex items-center gap-3">
               <div className="flex-1">
                 <h3 className="font-semibold truncate">{athlete.name}</h3>
-                <Badge variant="secondary" className="text-xs mt-1">
+                <Badge
+                  variant="secondary"
+                  className={cn("text-xs mt-1 border", SPORT_COLORS[athlete.sport] || "bg-secondary text-secondary-foreground")}
+                >
                   {athlete.sport}
                 </Badge>
               </div>
@@ -124,12 +140,11 @@ export const AthleteCard = memo(({ athlete, chartData, onClick, onMouseEnter }: 
             {/* Price */}
             <div className="mb-2">
               <div className="text-2xl font-bold tracking-tight">
-                {formatMoney(athlete.price)}
+                $<CountUp value={athlete.price} decimalPlaces={2} duration={1.5} />
               </div>
               <div
-                className={`flex items-center gap-1 text-sm font-medium ${
-                  isPositive ? 'text-success' : 'text-destructive'
-                }`}
+                className={`flex items-center gap-1 text-sm font-medium ${isPositive ? 'text-success' : 'text-destructive'
+                  }`}
               >
                 {isPositive ? (
                   <TrendingUp className="h-3 w-3" />
@@ -171,8 +186,8 @@ export const AthleteCard = memo(({ athlete, chartData, onClick, onMouseEnter }: 
                         tick={{ fontSize: 10, fill: 'var(--muted-foreground)' }}
                       />
                       <Tooltip
-                        contentStyle={{ 
-                          backgroundColor: 'hsl(var(--popover))', 
+                        contentStyle={{
+                          backgroundColor: 'hsl(var(--popover))',
                           borderColor: 'hsl(var(--border))',
                           borderRadius: '8px',
                           fontSize: '12px'
@@ -181,11 +196,11 @@ export const AthleteCard = memo(({ athlete, chartData, onClick, onMouseEnter }: 
                         formatter={(value: number) => [`$${Number(value).toFixed(2)}`, 'Price']}
                         labelFormatter={(value) => format(new Date(value), 'PPP p')}
                       />
-                      <Line 
-                        type="monotone" 
-                        dataKey="price" 
-                        stroke={lineColor} 
-                        strokeWidth={2} 
+                      <Line
+                        type="monotone"
+                        dataKey="price"
+                        stroke={lineColor}
+                        strokeWidth={2}
                         dot={false}
                         activeDot={{ r: 4, strokeWidth: 0 }}
                         animationDuration={1500}
