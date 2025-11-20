@@ -73,18 +73,20 @@ export function WorkoutGridCard({ workout, post, canView, onClick, variant = 'gr
 
   const showOverlayContent = variant !== 'feed';
   const aspectClass = variant === 'feed' ? 'aspect-square max-w-xs sm:max-w-sm' : 'aspect-square';
-  const padding = variant === 'feed' ? 'p-3 sm:p-4' : 'p-4';
-  const metricsClass = variant === 'feed' ? 'text-base font-semibold' : 'text-base md:text-lg text-foreground font-semibold';
-  const captionClass = variant === 'feed' ? 'text-xs text-muted-foreground line-clamp-2 leading-tight' : 'text-sm text-muted-foreground line-clamp-2 leading-tight';
-  const typeBadgeClass = 'text-xs font-semibold';
-  const calendarClass = 'text-xs';
+  const padding = variant === 'feed' ? 'p-4 sm:p-5' : 'p-4';
+  const metricsClass = variant === 'feed' ? 'text-lg font-bold tracking-tight text-foreground' : 'text-base md:text-lg text-foreground font-semibold';
+  const captionClass = variant === 'feed' ? 'text-sm text-muted-foreground line-clamp-2 leading-relaxed mt-1' : 'text-sm text-muted-foreground line-clamp-2 leading-tight';
+  const typeBadgeClass = 'text-xs font-semibold px-2 py-0.5';
+  const calendarClass = 'text-xs font-medium';
 
   return (
     <Card
       className={cn(
-        'group relative overflow-hidden border-muted/40 transition-all duration-300 cursor-pointer',
+        'group relative overflow-hidden transition-all duration-300 cursor-pointer',
         'hover:shadow-lg hover:border-primary/20',
-        variant === 'feed' ? 'rounded-2xl' : 'hover:scale-[1.02] active:scale-[0.98] rounded-xl'
+        variant === 'feed'
+          ? 'rounded-3xl border-white/5 bg-card/40 backdrop-blur-md shadow-sm'
+          : 'hover:scale-[1.02] active:scale-[0.98] rounded-xl border-muted/40'
       )}
       onClick={onClick}
       role="button"

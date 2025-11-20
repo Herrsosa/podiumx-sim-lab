@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef } from 'react';
+import { Suspense, lazy, useState, useMemo, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FixedSizeList as List } from 'react-window';
 import { DollarSign, TrendingUp, TrendingDown, Coins, Download } from 'lucide-react';
@@ -18,6 +18,19 @@ import { useUserTrades } from '@/hooks/useTrades';
 import { exportPositionsToCSV, exportTradesToCSV } from '@/utils/csvExport';
 import { AddFundsDialog } from '@/components/funding/AddFundsDialog';
 import { featureFlags } from '@/lib/config/featureFlags';
+import { CountUp } from '@/components/ui/count-up';
+import { cn } from '@/lib/utils';
+
+const SPORT_COLORS: Record<string, string> = {
+  Running: 'bg-orange-500/10 text-orange-500 hover:bg-orange-500/20 border-orange-500/20',
+  HYROX: 'bg-yellow-500/10 text-yellow-500 hover:bg-yellow-500/20 border-yellow-500/20',
+  Cycling: 'bg-blue-500/10 text-blue-500 hover:bg-blue-500/20 border-blue-500/20',
+  Triathlon: 'bg-purple-500/10 text-purple-500 hover:bg-purple-500/20 border-purple-500/20',
+  CrossFit: 'bg-red-500/10 text-red-500 hover:bg-red-500/20 border-red-500/20',
+  Swimming: 'bg-cyan-500/10 text-cyan-500 hover:bg-cyan-500/20 border-cyan-500/20',
+  'Trail Run': 'bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20 border-emerald-500/20',
+  Rowing: 'bg-indigo-500/10 text-indigo-500 hover:bg-indigo-500/20 border-indigo-500/20',
+};
 
 export default function Portfolio() {
   const navigate = useNavigate();
@@ -150,7 +163,10 @@ export default function Portfolio() {
               />
               <div className="min-w-0">
                 <div className="font-semibold truncate">{athlete.name}</div>
-                <Badge variant="secondary" className="text-xs">
+                <Badge
+                  variant="secondary"
+                  className={cn("text-xs border", SPORT_COLORS[athlete.sport] || "bg-secondary text-secondary-foreground")}
+                >
                   {athlete.sport}
                 </Badge>
               </div>
@@ -267,103 +283,91 @@ export default function Portfolio() {
         <AddFundsDialog />
       </div>
 
-      {/* Summary Cards */}
-      <div className="mb-8 grid gap-4 grid-cols-2 lg:grid-cols-4">
-        <Card className="glass-card">
-          <CardContent className="p-4 sm:p-6">
-            <div className="mb-2 flex items-center justify-between">
-              <span className="text-xs sm:text-sm text-muted-foreground">USDC Balance</span>
-              <DollarSign className="h-4 w-4 text-primary" />
+      {/* Hero Section */}
+      <div className="mb-8 grid gap-4 grid-cols-1 md:grid-cols-3">
+        {/* Hero Card */}
+        <Card className="md:col-span-2 relative overflow-hidden border-0 bg-gradient-to-br from-primary/20 via-background to-background">
+          <div className="absolute inset-0 bg-grid-white/5 [mask-image:linear-gradient(0deg,white,rgba(255,255,255,0.6))]" />
+          <CardContent className="relative p-6 sm:p-8 flex flex-col justify-between h-full min-h-[200px]">
+            <div className="flex justify-between items-start">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground mb-1">Total Portfolio Value</p>
+                <div className="text-4xl sm:text-5xl font-bold tracking-tight">
+                  <CountUp
+                    value={totalValue}
+                    prefix="$"
+                    decimalPlaces={2}
+                    duration={1.5}
+                  />
+                </div>
+              </div>
+              <div className="text-right">
+                <div className={cn("flex items-center justify-end gap-1 text-sm font-medium mb-1", percentClass)}>
+                  {percentChange && percentChange >= 0 ? <TrendingUp className="h-4 w-4" /> : <TrendingDown className="h-4 w-4" />}
+                  <CountUp
+                    value={Math.abs(percentChange || 0)}
+                    suffix="%"
+                    decimalPlaces={2}
+                  />
+                </div>
+                <div className={cn("text-xl font-bold", totalPnlClass.split(' ')[2])}>
+                  {totalPnL >= 0 ? '+' : '-'}$
+                  <CountUp
+                    value={Math.abs(totalPnL)}
+                    decimalPlaces={2}
+                  />
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">All-time P&L</p>
+              </div>
             </div>
-            <div className="text-xl sm:text-3xl font-bold">{renderValue(wallet.usdc)}</div>
-          </CardContent>
-        </Card>
 
-        <Card className="glass-card">
-          <CardContent className="p-4 sm:p-6">
-            <div className="mb-2 flex items-center justify-between">
-              <span className="text-xs sm:text-sm text-muted-foreground">Token Value</span>
-              <Coins className="h-4 w-4 text-primary" />
-            </div>
-            <div className="text-xl sm:text-3xl font-bold">{renderValue(totalValue)}</div>
-          </CardContent>
-        </Card>
-
-        <Card className="glass-card">
-          <CardContent className="p-4 sm:p-6">
-            <div className="mb-2 flex items-center justify-between">
-              <span className="text-xs sm:text-sm text-muted-foreground">Unrealized P&L</span>
-              {safeNumber(unrealizedPnL) ? (
-                unrealizedPnL >= 0 ? (
-                  <TrendingUp className="h-4 w-4 text-success" />
-                ) : (
-                  <TrendingDown className="h-4 w-4 text-destructive" />
-                )
-              ) : (
-                <TrendingUp className="h-4 w-4 text-muted-foreground" />
-              )}
-            </div>
-            <div className={unrealizedClass.replace('text-3xl', 'text-xl sm:text-3xl')}>{renderValue(unrealizedPnL)}</div>
-            <div className="text-xs text-muted-foreground mt-1">
-              Open positions
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="glass-card">
-          <CardContent className="p-4 sm:p-6">
-            <div className="mb-2 flex items-center justify-between">
-              <span className="text-xs sm:text-sm text-muted-foreground">Realized P&L</span>
-              {hasClosedTrades && safeNumber(realizedPnL) ? (
-                realizedPnL >= 0 ? (
-                  <TrendingUp className="h-4 w-4 text-success" />
-                ) : (
-                  <TrendingDown className="h-4 w-4 text-destructive" />
-                )
-              ) : (
-                <TrendingUp className="h-4 w-4 text-muted-foreground" />
-              )}
-            </div>
-            <div className={realizedClass.replace('text-3xl', 'text-xl sm:text-3xl')}>{renderValue(hasClosedTrades ? realizedPnL : null)}</div>
-            <div className="text-xs text-muted-foreground mt-1">
-              From closed trades
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Summary Stats */}
-      <div className="mb-8 grid gap-4 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4">
-        <Card className="glass-card">
-          <CardContent className="p-4 sm:p-6">
-            <div className="mb-2 text-xs sm:text-sm text-muted-foreground">Total Cost Basis</div>
-            <div className="text-lg sm:text-2xl font-bold">{renderValue(totalCostBasis)}</div>
-          </CardContent>
-        </Card>
-
-        <Card className="glass-card">
-          <CardContent className="p-4 sm:p-6">
-            <div className="mb-2 text-xs sm:text-sm text-muted-foreground">Current Value</div>
-            <div className="text-lg sm:text-2xl font-bold">{renderValue(totalValue)}</div>
-          </CardContent>
-        </Card>
-
-        <Card className="glass-card col-span-2 sm:col-span-1">
-          <CardContent className="p-4 sm:p-6">
-            <div className="mb-2 text-xs sm:text-sm text-muted-foreground">Total P&L</div>
-            <div className={totalPnlClass.replace('text-2xl', 'text-lg sm:text-2xl')}>{renderValue(totalPnL)}</div>
-            <div className={`text-sm ${percentClass}`}>
-              {renderPercent(percentChange)}
+            <div className="mt-6 flex gap-8">
+              <div>
+                <p className="text-xs text-muted-foreground mb-1">Invested</p>
+                <p className="text-lg font-semibold">
+                  <CountUp value={totalCostBasis} prefix="$" decimalPlaces={2} />
+                </p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground mb-1">Realized P&L</p>
+                <p className={cn("text-lg font-semibold", realizedPnL >= 0 ? "text-success" : "text-destructive")}>
+                  {realizedPnL >= 0 ? '+' : '-'}$
+                  <CountUp value={Math.abs(realizedPnL)} decimalPlaces={2} />
+                </p>
+              </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="glass-card hidden lg:block">
-          <CardContent className="p-4 sm:p-6">
-            <div className="mb-2 text-xs sm:text-sm text-muted-foreground">Positions</div>
-            <div className="text-lg sm:text-3xl font-bold">{formatNumber(positions.length)}</div>
-          </CardContent>
-        </Card>
+        {/* Secondary Stats */}
+        <div className="grid grid-cols-2 md:grid-cols-1 gap-4">
+          <Card className="glass-card flex flex-col justify-center">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm text-muted-foreground">USDC Balance</span>
+                <DollarSign className="h-4 w-4 text-primary/60" />
+              </div>
+              <div className="text-2xl font-bold">
+                <CountUp value={wallet.usdc} prefix="$" decimalPlaces={2} />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="glass-card flex flex-col justify-center">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm text-muted-foreground">Active Positions</span>
+                <Coins className="h-4 w-4 text-primary/60" />
+              </div>
+              <div className="text-2xl font-bold">
+                <CountUp value={positions.length} duration={1} />
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                Across {new Set(positions.map(p => athletes?.find(a => a.id === p.athleteId)?.sport)).size} sports
+              </p>
+            </CardContent>
+          </Card>
+        </div>
       </div>
 
       {/* Positions */}
@@ -464,7 +468,10 @@ export default function Portfolio() {
                           />
                           <div>
                             <div className="font-semibold">{athlete.name}</div>
-                            <Badge variant="secondary" className="text-xs">
+                            <Badge
+                              variant="secondary"
+                              className={cn("text-xs border", SPORT_COLORS[athlete.sport] || "bg-secondary text-secondary-foreground")}
+                            >
                               {athlete.sport}
                             </Badge>
                           </div>

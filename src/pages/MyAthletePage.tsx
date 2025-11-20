@@ -69,9 +69,9 @@ export default function MyAthletePage() {
           const pages = current.pages.map((page) =>
             page?.athlete
               ? {
-                  ...page,
-                  athlete: mutator(page.athlete),
-                }
+                ...page,
+                athlete: mutator(page.athlete),
+              }
               : page,
           );
 
@@ -93,7 +93,7 @@ export default function MyAthletePage() {
   const [activeTab, setActiveTab] = useState<'workouts' | 'community' | 'messages' | 'earnings'>('workouts');
   const [newAvatarFile, setNewAvatarFile] = useState<File | null>(null);
   const [chartTimeRange, setChartTimeRange] = useState<TimeRangeKey>('7d');
-  
+
   // Tab management: "personal" or "locker"
   const currentTab = searchParams.get('tab') || 'personal';
   const setTab = (tab: 'personal' | 'locker') => {
@@ -244,7 +244,7 @@ export default function MyAthletePage() {
 
         const fileExt = newAvatarFile.name.split('.').pop();
         const fileName = `${user.id}/${Date.now()}.${fileExt}`;
-        
+
         const { error: uploadError } = await supabase.storage
           .from('avatars')
           .upload(fileName, newAvatarFile);
@@ -254,7 +254,7 @@ export default function MyAthletePage() {
         const { data: urlData } = supabase.storage
           .from('avatars')
           .getPublicUrl(fileName);
-        
+
         avatarUrl = urlData.publicUrl;
       }
 
@@ -321,7 +321,7 @@ export default function MyAthletePage() {
       if (error) throw error;
 
       toast.success('Workout deleted');
-      
+
       updateMyAthleteCache((prev) => ({
         ...prev,
         workouts: prev.workouts.filter((workout) => workout.id !== workoutToDelete),
@@ -466,6 +466,11 @@ export default function MyAthletePage() {
           hasNextPage={Boolean(hasNextPage)}
           fetchNextPage={hasNextPage ? () => { void fetchNextPage(); } : undefined}
           isFetchingNextPage={isFetchingNextPage}
+          onRefetchWorkouts={() => {
+            if (user?.id) {
+              void queryClient.invalidateQueries({ queryKey: ['my-athlete', user.id] });
+            }
+          }}
         />
         {modalStack}
       </>
@@ -475,79 +480,79 @@ export default function MyAthletePage() {
   return (
     <>
       <div className="container mx-auto px-4 pb-32 pt-8 md:pb-8 overflow-x-hidden">
-      <div className="mb-8">
-        <h1 className="mb-2 text-4xl font-bold">My Athlete Profile</h1>
-        <p className="text-muted-foreground">Manage your profile and workout timeline</p>
-      </div>
+        <div className="mb-8">
+          <h1 className="mb-2 text-4xl font-bold">My Athlete Profile</h1>
+          <p className="text-muted-foreground">Manage your profile and workout timeline</p>
+        </div>
 
-      {/* Top-level tabs: Personal vs View Locker */}
-      <Tabs value={currentTab} onValueChange={(v) => setTab(v as 'personal' | 'locker')} className="w-full mb-6">
-        <TabsList className="grid w-full grid-cols-2 max-w-md">
-          <TabsTrigger value="personal">Personal</TabsTrigger>
-          <TabsTrigger value="locker">View Locker</TabsTrigger>
-        </TabsList>
+        {/* Top-level tabs: Personal vs View Locker */}
+        <Tabs value={currentTab} onValueChange={(v) => setTab(v as 'personal' | 'locker')} className="w-full mb-6">
+          <TabsList className="grid w-full grid-cols-2 max-w-md">
+            <TabsTrigger value="personal">Personal</TabsTrigger>
+            <TabsTrigger value="locker">View Locker</TabsTrigger>
+          </TabsList>
 
-        <TabsContent value="personal" className="mt-6">
-          <PersonalConsole
-            athlete={myAthletePage?.athlete}
-            workouts={workouts}
-            posts={posts}
-            athleteTrades={athleteTrades ?? []}
-            priceSeries={priceSeries}
-            priceSeriesLoading={priceSeriesLoading}
-            editedProfile={editedProfile}
-            isEditing={isEditing}
-            savingProfile={savingProfile}
-            onStartEditProfile={handleStartEditProfile}
-            onCancelEditProfile={handleCancelEditProfile}
-            onSaveProfile={handleSaveProfile}
-            onProfileFieldChange={updateEditedProfile}
-            onAvatarSelect={handleAvatarFileSelected}
-            onWorkoutEdit={handleEditWorkout}
-            onWorkoutDelete={(id) => {
-              setWorkoutToDelete(id);
-              setDeleteDialogOpen(true);
-            }}
-            onAddWorkout={() => setAddWorkoutOpen(true)}
-            hasNextPage={Boolean(hasNextPage)}
-            fetchNextPage={hasNextPage ? () => { void fetchNextPage(); } : undefined}
-            isFetchingNextPage={isFetchingNextPage}
-            timeRange={chartTimeRange}
-            onTimeRangeChange={setChartTimeRange}
+          <TabsContent value="personal" className="mt-6">
+            <PersonalConsole
+              athlete={myAthletePage?.athlete}
+              workouts={workouts}
+              posts={posts}
+              athleteTrades={athleteTrades ?? []}
+              priceSeries={priceSeries}
+              priceSeriesLoading={priceSeriesLoading}
+              editedProfile={editedProfile}
+              isEditing={isEditing}
+              savingProfile={savingProfile}
+              onStartEditProfile={handleStartEditProfile}
+              onCancelEditProfile={handleCancelEditProfile}
+              onSaveProfile={handleSaveProfile}
+              onProfileFieldChange={updateEditedProfile}
+              onAvatarSelect={handleAvatarFileSelected}
+              onWorkoutEdit={handleEditWorkout}
+              onWorkoutDelete={(id) => {
+                setWorkoutToDelete(id);
+                setDeleteDialogOpen(true);
+              }}
+              onAddWorkout={() => setAddWorkoutOpen(true)}
+              hasNextPage={Boolean(hasNextPage)}
+              fetchNextPage={hasNextPage ? () => { void fetchNextPage(); } : undefined}
+              isFetchingNextPage={isFetchingNextPage}
+              timeRange={chartTimeRange}
+              onTimeRangeChange={setChartTimeRange}
+            />
+          </TabsContent>
+
+          <TabsContent value="locker" className="mt-6">
+            <LockerView athleteId={user?.id} athleteName={myAthletePage?.athlete?.name} />
+          </TabsContent>
+        </Tabs>
+
+        {isMobile && (
+          <MobileActionBar
+            actions={[
+              {
+                id: 'add-pos',
+                label: 'Add Proof of Sweat',
+                icon: <Activity className="h-5 w-5" aria-hidden="true" />,
+                variant: 'primary',
+                onPress: handleMobileLogPos,
+                ariaLabel: 'Add proof-of-sweat workout',
+              },
+            ]}
           />
-        </TabsContent>
-
-        <TabsContent value="locker" className="mt-6">
-          <LockerView athleteId={user?.id} athleteName={myAthletePage?.athlete?.name} />
-        </TabsContent>
-      </Tabs>
-
-      {isMobile && (
-        <MobileActionBar
-          actions={[
-            {
-              id: 'add-pos',
-              label: 'Add Proof of Sweat',
-              icon: <Activity className="h-5 w-5" aria-hidden="true" />,
-              variant: 'primary',
-              onPress: handleMobileLogPos,
-              ariaLabel: 'Add proof-of-sweat workout',
-            },
-          ]}
-        />
-      )}
-    </div>
+        )}
+      </div>
       {modalStack}
     </>
   );
 }
 
-function WorkoutCard({ 
-  workout, 
-  onEdit, 
-  onDelete 
-}: { 
-  workout: Workout; 
+function WorkoutCard({
+  workout,
+  onEdit,
+  onDelete
+}: {
+  workout: Workout;
   onEdit: () => void;
   onDelete: () => void;
 }) {

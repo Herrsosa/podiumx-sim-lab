@@ -181,10 +181,12 @@ All colors MUST be HSL.
     transform: scale(0.6);
     opacity: 0;
   }
+
   60% {
     transform: scale(1.1);
     opacity: 1;
   }
+
   100% {
     transform: scale(1);
     opacity: 1;
@@ -204,4 +206,9 @@ All colors MUST be HSL.
   text-transform: uppercase;
   text-shadow: 0 0 6px rgba(134, 239, 172, 0.45);
   pointer-events: none;
+}
+
+/* Hide mobile action bar when any dialog is open to prevent overlay issues */
+body:has([role="dialog"][data-state="open"]) .mobile-action-bar {
+  display: none;
 }

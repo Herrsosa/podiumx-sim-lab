@@ -39,7 +39,7 @@ export function MobileActionBar({ actions, className }: MobileActionBarProps) {
   return (
     <div
       className={cn(
-        'pointer-events-none fixed inset-x-0 bottom-0 z-[1000] flex justify-center md:hidden',
+        'mobile-action-bar pointer-events-none fixed inset-x-0 bottom-0 z-[1000] flex justify-center md:hidden',
         className,
       )}
     >
