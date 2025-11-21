@@ -23,15 +23,16 @@ import { useUser } from "@/store/auth";
 
 type ProfileInsert = Database['public']['Tables']['profiles']['Insert'];
 
-type OnboardingStep = 
-  | 'ROLE_SELECTION' 
-  | 'FAN_PROFILE' 
-  | 'FAN_WALLET' 
-  | 'FAN_EXPLORE' 
+type OnboardingStep =
+  | 'ROLE_SELECTION'
+  | 'FAN_PROFILE'
+  | 'FAN_WALLET'
+  | 'FAN_EXPLORE'
   | 'FAN_DONE'
-  | 'ATHLETE_PROFILE' 
-  | 'ATHLETE_WORKOUT' 
-  | 'ATHLETE_TOKEN';
+  | 'ATHLETE_PROFILE'
+  | 'ATHLETE_WORKOUT'
+  | 'ATHLETE_TOKEN'
+  | 'ATHLETE_DONE';
 
 export default function Onboarding() {
   const navigate = useNavigate();
@@ -59,7 +60,9 @@ export default function Onboarding() {
   const [workoutType, setWorkoutType] = useState<Workout['type']>("Run");
   const [distance, setDistance] = useState("");
   const [duration, setDuration] = useState("");
+
   const [notes, setNotes] = useState("");
+  const [workoutDate, setWorkoutDate] = useState(new Date().toISOString().split('T')[0]);
 
   // Handle validation
   const [handleValidationStatus, setHandleValidationStatus] = useState<'idle' | 'checking' | 'available' | 'taken'>('idle');
@@ -120,7 +123,7 @@ export default function Onboarding() {
 
       const fallbackHandleBase = user.email?.split('@')[0]?.replace(/[^a-zA-Z0-9]/g, '') || `user-${user.id.slice(0, 6)}`;
       const fallbackUsername = `${fallbackHandleBase}-${user.id.slice(0, 4)}`.toLowerCase();
-      
+
       const payload: ProfileInsert = {
         id: user.id,
         role,
@@ -268,11 +271,17 @@ export default function Onboarding() {
     setStep('ATHLETE_WORKOUT');
   };
 
+
+
   const handleAthleteWorkoutNext = () => {
-    if (!duration || !notes) {
+    if (!duration || !notes || !workoutDate) {
       toast.error("Please add your first workout details");
       return;
     }
+    setStep('ATHLETE_TOKEN');
+  };
+
+  const handleSkipWorkout = () => {
     setStep('ATHLETE_TOKEN');
   };
 
@@ -355,34 +364,55 @@ export default function Onboarding() {
           balance: 1000,
         });
 
-      if (walletError && walletError.code !== '23505') throw walletError;
+      if (walletError) {
+        // Ignore 409/23505 (unique violation) if wallet already exists
+        if (walletError.code !== '23505' && walletError.code !== '409') {
+          throw walletError;
+        }
+      }
 
-      // 4. Create first workout post
-      const workoutData = {
-        date: new Date().toISOString().split('T')[0],
-        type: workoutType,
-        distance: distance ? parseFloat(distance) : undefined,
-        duration: parseInt(duration),
-        notes,
-        rpe: 7,
-      };
+      // 4. Create first workout post (if not skipped)
+      if (duration && notes) {
+        const workoutData = {
+          date: workoutDate,
+          type: workoutType,
+          distance: distance ? parseFloat(distance) : undefined,
+          duration: parseInt(duration),
+          notes,
+          rpe: 7,
+        };
 
-      const { error: postError } = await supabase
-        .from('posts')
-        .insert({
-          author_id: uid,
-          text: notes,
-          workout_json: workoutData,
-        });
+        const { error: postError } = await supabase
+          .from('posts')
+          .insert({
+            author_id: uid,
+            text: notes,
+            workout_json: workoutData,
+          });
 
-      if (postError) throw postError;
+        if (postError) throw postError;
+      }
 
       await markOnboardingComplete();
 
       setOnboardingRole(null);
 
-      toast.success('Welcome to Athlyst! 🎉');
-      navigate('/portfolio', { replace: true });
+      // Trigger confetti
+      const confetti = (await import('canvas-confetti')).default;
+      confetti({
+        particleCount: 100,
+        spread: 70,
+        origin: { y: 0.6 }
+      });
+
+      // Show large welcome overlay instead of toast
+      setStep('ATHLETE_DONE' as OnboardingStep); // New step for welcome
+
+      // Delay navigation to let user see the welcome screen
+      setTimeout(() => {
+        navigate('/portfolio', { replace: true });
+      }, 3000);
+
     } catch (error: unknown) {
       console.error('Onboarding error:', error);
       toast.error(error instanceof Error ? error.message : 'Failed to complete onboarding');
@@ -415,17 +445,15 @@ export default function Onboarding() {
                 {onboardingRole === 'fan' && ['FAN_PROFILE', 'FAN_WALLET', 'FAN_EXPLORE'].map((s, i) => (
                   <div
                     key={s}
-                    className={`w-12 h-1 rounded-full transition-colors ${
-                      ['FAN_PROFILE', 'FAN_WALLET', 'FAN_EXPLORE'].indexOf(step) >= i ? "bg-primary" : "bg-muted"
-                    }`}
+                    className={`w-12 h-1 rounded-full transition-colors ${['FAN_PROFILE', 'FAN_WALLET', 'FAN_EXPLORE'].indexOf(step) >= i ? "bg-primary" : "bg-muted"
+                      }`}
                   />
                 ))}
                 {onboardingRole === 'athlete' && ['ATHLETE_PROFILE', 'ATHLETE_WORKOUT', 'ATHLETE_TOKEN'].map((s, i) => (
                   <div
                     key={s}
-                    className={`w-12 h-1 rounded-full transition-colors ${
-                      ['ATHLETE_PROFILE', 'ATHLETE_WORKOUT', 'ATHLETE_TOKEN'].indexOf(step) >= i ? "bg-primary" : "bg-muted"
-                    }`}
+                    className={`w-12 h-1 rounded-full transition-colors ${['ATHLETE_PROFILE', 'ATHLETE_WORKOUT', 'ATHLETE_TOKEN'].indexOf(step) >= i ? "bg-primary" : "bg-muted"
+                      }`}
                   />
                 ))}
               </div>
@@ -441,6 +469,7 @@ export default function Onboarding() {
             {step === 'ATHLETE_PROFILE' && "Create Your Profile"}
             {step === 'ATHLETE_WORKOUT' && "Share Your First Workout"}
             {step === 'ATHLETE_TOKEN' && "Launch Your Athlete Card"}
+            {step === 'ATHLETE_DONE' && "Welcome to Athlyst!"}
           </CardTitle>
 
           <CardDescription>
@@ -451,6 +480,7 @@ export default function Onboarding() {
             {step === 'ATHLETE_PROFILE' && "Tell us about yourself as an athlete"}
             {step === 'ATHLETE_WORKOUT' && "Show proof of grit with your first training"}
             {step === 'ATHLETE_TOKEN' && "Create your athlete token"}
+            {step === 'ATHLETE_DONE' && "Your athlete identity is now live."}
           </CardDescription>
         </CardHeader>
 
@@ -458,7 +488,7 @@ export default function Onboarding() {
           {/* ROLE SELECTION */}
           {step === 'ROLE_SELECTION' && (
             <div className="grid md:grid-cols-2 gap-4">
-              <Card 
+              <Card
                 className="cursor-pointer hover:border-primary transition-colors"
                 onClick={() => handleRoleSelection('fan')}
               >
@@ -474,11 +504,10 @@ export default function Onboarding() {
                       Explore athletes, buy tokens, and support your favorites
                     </p>
                   </div>
-                  <Button className="w-full">Continue as Fan</Button>
                 </CardContent>
               </Card>
 
-              <Card 
+              <Card
                 className="cursor-pointer hover:border-primary transition-colors"
                 onClick={() => handleRoleSelection('athlete')}
               >
@@ -494,7 +523,6 @@ export default function Onboarding() {
                       Create your Athlete Card token and monetize your journey
                     </p>
                   </div>
-                  <Button className="w-full">Continue as Athlete</Button>
                 </CardContent>
               </Card>
             </div>
@@ -502,334 +530,260 @@ export default function Onboarding() {
 
           {/* FAN FLOW - PROFILE */}
           {step === 'FAN_PROFILE' && (
-            <>
-              <div className="flex items-center gap-4">
-                <Avatar className="h-20 w-20">
-                  <AvatarImage src={resolveAvatarUrl(avatar, { size: 160 })} width={160} height={160} loading="lazy" />
-                  <AvatarFallback>{name[0] || "?"}</AvatarFallback>
-                </Avatar>
-                <div>
-                  <Button variant="outline" size="sm" onClick={() => document.getElementById('avatar-upload')?.click()}>
-                    <Upload className="w-4 h-4 mr-2" />
-                    Change Photo
-                  </Button>
-                  <input
-                    id="avatar-upload"
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (file) {
-                        setAvatarFile(file);
-                        setAvatar(URL.createObjectURL(file));
-                      }
-                    }}
-                  />
+            <div className="space-y-4">
+              <div className="flex justify-center mb-6">
+                <div className="relative">
+                  <Avatar className="w-24 h-24">
+                    <AvatarImage src={avatar} objectFit="cover" />
+                    <AvatarFallback>{name?.charAt(0) || "F"}</AvatarFallback>
+                  </Avatar>
+                  <Label
+                    htmlFor="avatar-upload"
+                    className="absolute bottom-0 right-0 p-2 bg-primary rounded-full cursor-pointer hover:bg-primary/90 transition-colors"
+                  >
+                    <Upload className="w-4 h-4 text-primary-foreground" />
+                    <Input
+                      id="avatar-upload"
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          setAvatarFile(file);
+                          setAvatar(URL.createObjectURL(file));
+                        }
+                      }}
+                    />
+                  </Label>
                 </div>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="name">Display Name *</Label>
+                <Label>Display Name</Label>
                 <Input
-                  id="name"
+                  placeholder="Your Name"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  placeholder="Your name"
-                />
-                <div className="text-xs text-muted-foreground h-4 mt-1">
-                  {name.trim().length > 0 && <span className="text-green-500">Looks good!</span>}
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="fan-bio">Bio</Label>
-                <Textarea
-                  id="fan-bio"
-                  value={bio}
-                  onChange={(e) => setBio(e.target.value)}
-                  placeholder="Tell us a bit about yourself..."
-                  rows={3}
                 />
               </div>
 
-              <Button 
-                onClick={handleFanProfileNext} 
-                disabled={!isFanNameValid || submitting}
-                className="w-full"
-              >
+              <Button onClick={handleFanProfileNext} disabled={submitting} className="w-full">
                 {submitting ? 'Saving...' : 'Continue'}
               </Button>
-            </>
+            </div>
           )}
 
           {/* FAN FLOW - WALLET */}
           {step === 'FAN_WALLET' && (
-            <>
-              <div className="space-y-4 p-6 bg-card border rounded-lg">
-                <div className="flex items-center gap-3">
-                  <TrendingUp className="w-6 h-6 text-primary" />
+            <div className="space-y-6">
+              <div className="p-6 bg-card border rounded-lg space-y-4">
+                <div className="flex items-center gap-4">
+                  <div className="p-3 bg-primary/10 rounded-full">
+                    <ShoppingBag className="w-6 h-6 text-primary" />
+                  </div>
                   <div>
-                    <p className="font-semibold">Your Wallet is Ready</p>
-                    <p className="text-sm text-muted-foreground">
-                      Get some test USDC to start trading
-                    </p>
+                    <h3 className="font-semibold">Your Wallet</h3>
+                    <p className="text-sm text-muted-foreground">Funded with test USDC</p>
                   </div>
                 </div>
-                <FaucetButton />
+                <div className="text-2xl font-bold">1,000 USDC</div>
               </div>
 
-              <div className="flex gap-3">
-                <Button variant="outline" onClick={() => setStep('FAN_PROFILE')} className="w-full">
-                  Back
-                </Button>
-                <Button onClick={() => setStep('FAN_EXPLORE')} className="w-full">
-                  Continue
-                </Button>
-              </div>
-            </>
+              <FaucetButton />
+
+              <Button onClick={() => setStep('FAN_EXPLORE')} className="w-full">
+                Start Exploring
+              </Button>
+            </div>
           )}
 
           {/* FAN FLOW - EXPLORE */}
           {step === 'FAN_EXPLORE' && (
-            <>
-              <div className="space-y-4">
-                <div className="flex items-center gap-3 p-4 bg-primary/10 rounded-lg">
-                  <ShoppingBag className="w-6 h-6 text-primary" />
-                  <div>
-                    <p className="font-semibold">Suggested Athletes</p>
-                    <p className="text-sm text-muted-foreground">
-                      Buy 1 token to support an athlete
-                    </p>
+            <div className="space-y-6">
+              <div className="grid gap-4">
+                {topAthletes.map((athlete) => (
+                  <div key={athlete.id} className="flex items-center justify-between p-4 border rounded-lg">
+                    <div className="flex items-center gap-3">
+                      <Avatar>
+                        <AvatarImage src={resolveAvatarUrl(athlete.avatar_url)} />
+                        <AvatarFallback>{athlete.display_name[0]}</AvatarFallback>
+                      </Avatar>
+                      <div>
+                        <p className="font-medium">{athlete.display_name}</p>
+                        <p className="text-sm text-muted-foreground">@{athlete.username}</p>
+                      </div>
+                    </div>
+                    <Button size="sm" variant="outline" onClick={() => handleBuyToken(athlete.id)}>
+                      Buy
+                    </Button>
                   </div>
-                </div>
-
-                <div className="space-y-3">
-                  {topAthletes.map((athlete) => (
-                    <Card key={athlete.id}>
-                      <CardContent className="p-4 flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <Avatar>
-                            <AvatarImage
-                              src={resolveAvatarUrl(athlete.avatar, { size: 96 })}
-                              width={96}
-                              height={96}
-                              loading="lazy"
-                            />
-                            <AvatarFallback>{athlete.name[0]}</AvatarFallback>
-                          </Avatar>
-                          <div>
-                            <p className="font-semibold">{athlete.name}</p>
-                            <p className="text-sm text-muted-foreground">{athlete.sport}</p>
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-sm text-muted-foreground">Price</p>
-                          <p className="font-bold">${athlete.price.toFixed(2)}</p>
-                          <Button
-                            size="sm"
-                            onClick={() => handleBuyToken(athlete.id)}
-                            disabled={trade.isPending}
-                            className="mt-2"
-                          >
-                            Buy 1 Token
-                          </Button>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
+                ))}
               </div>
 
-              <div className="flex gap-3">
-                <Button variant="outline" onClick={() => setStep('FAN_WALLET')} className="w-full">
-                  Back
-                </Button>
-                <Button
-                  onClick={async () => {
-                    setSubmitting(true);
-                    try {
-                      await markOnboardingComplete();
-                      setOnboardingRole(null);
-                      navigate('/portfolio', { replace: true });
-                    } finally {
-                      setSubmitting(false);
-                    }
-                  }}
-                  className="w-full"
-                  disabled={submitting}
-                >
-                  {hasBoughtToken ? 'Go to Marketplace' : 'Skip for Now'}
-                </Button>
-              </div>
-            </>
+              <Button onClick={() => navigate('/marketplace')} className="w-full">
+                Go to Marketplace
+              </Button>
+            </div>
           )}
 
           {/* ATHLETE FLOW - PROFILE */}
           {step === 'ATHLETE_PROFILE' && (
-            <>
-              <div className="flex items-center gap-4">
-                <Avatar className="h-20 w-20">
-                  <AvatarImage src={resolveAvatarUrl(avatar, { size: 160 })} width={160} height={160} loading="lazy" />
-                  <AvatarFallback>{name[0] || "?"}</AvatarFallback>
-                </Avatar>
-                <div>
-                  <Button variant="outline" size="sm" onClick={() => document.getElementById('athlete-avatar-upload')?.click()}>
-                    <Upload className="w-4 h-4 mr-2" />
-                    Change Photo
-                  </Button>
-                  <input
-                    id="athlete-avatar-upload"
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (file) {
-                        setAvatarFile(file);
-                        setAvatar(URL.createObjectURL(file));
-                      }
-                    }}
-                  />
+            <div className="space-y-4">
+              <div className="flex justify-center mb-6">
+                <div className="relative">
+                  <Avatar className="w-24 h-24">
+                    <AvatarImage src={avatar} objectFit="cover" />
+                    <AvatarFallback>{name?.charAt(0) || "A"}</AvatarFallback>
+                  </Avatar>
+                  <Label
+                    htmlFor="athlete-avatar-upload"
+                    className="absolute bottom-0 right-0 p-2 bg-primary rounded-full cursor-pointer hover:bg-primary/90 transition-colors"
+                  >
+                    <Upload className="w-4 h-4 text-primary-foreground" />
+                    <Input
+                      id="athlete-avatar-upload"
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          setAvatarFile(file);
+                          setAvatar(URL.createObjectURL(file));
+                        }
+                      }}
+                    />
+                  </Label>
                 </div>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="athlete-name">Full Name *</Label>
+                <Label>Display Name</Label>
                 <Input
-                  id="athlete-name"
+                  placeholder="Your Name"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  placeholder="John Doe"
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="handle">Handle *</Label>
-                <Input
-                  id="handle"
-                  value={handle}
-                  onChange={(e) => setHandle(e.target.value)}
-                  placeholder="@johndoe"
-                />
-                <div className="text-xs text-muted-foreground h-4 mt-1">
-                  {handleValidationStatus === 'checking' && 'Checking availability...'}
-                  {handleValidationStatus === 'taken' && <span className="text-destructive">{handleValidationError}</span>}
-                  {handleValidationStatus === 'available' && <span className="text-green-500">Handle is available!</span>}
+                <Label>Handle</Label>
+                <div className="relative">
+                  <Input
+                    placeholder="@username"
+                    value={handle}
+                    onChange={(e) => {
+                      const val = e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, '');
+                      setHandle(val);
+                    }}
+                    className={
+                      handleValidationStatus === 'taken' ? 'border-destructive' :
+                        handleValidationStatus === 'available' ? 'border-green-500' : ''
+                    }
+                  />
+                  {handleValidationStatus === 'checking' && (
+                    <div className="absolute right-3 top-2.5">
+                      <div className="animate-spin h-4 w-4 border-2 border-primary border-t-transparent rounded-full" />
+                    </div>
+                  )}
                 </div>
+                {handleValidationError && (
+                  <p className="text-xs text-destructive">{handleValidationError}</p>
+                )}
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="sport">Primary Sport *</Label>
+                <Label>Sport</Label>
                 <Select value={sport} onValueChange={(v) => setSport(v as Sport)}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="Running">Running</SelectItem>
-                    <SelectItem value="HYROX">HYROX</SelectItem>
                     <SelectItem value="Cycling">Cycling</SelectItem>
+                    <SelectItem value="Swimming">Swimming</SelectItem>
                     <SelectItem value="Triathlon">Triathlon</SelectItem>
                     <SelectItem value="CrossFit">CrossFit</SelectItem>
-                    <SelectItem value="Swimming">Swimming</SelectItem>
-                    <SelectItem value="Trail Run">Trail Run</SelectItem>
-                    <SelectItem value="Rowing">Rowing</SelectItem>
+                    <SelectItem value="Hyrox">Hyrox</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="bio">Bio</Label>
+                <Label>Bio</Label>
                 <Textarea
-                  id="bio"
+                  placeholder="Tell us about your athletic journey..."
                   value={bio}
                   onChange={(e) => setBio(e.target.value)}
-                  placeholder="Tell us about your athletic journey..."
-                  rows={4}
                 />
               </div>
 
-              <Button 
-                onClick={handleAthleteProfileNext} 
-                className="w-full"
-                disabled={handleValidationStatus !== 'available' || !name || !sport}
-              >
+              <Button onClick={handleAthleteProfileNext} className="w-full">
                 Continue
               </Button>
-            </>
+            </div>
           )}
 
           {/* ATHLETE FLOW - WORKOUT */}
           {step === 'ATHLETE_WORKOUT' && (
             <>
-              <div className="flex items-center gap-3 p-4 bg-primary/10 rounded-lg">
-                <Dumbbell className="w-6 h-6 text-primary" />
-                <div>
-                  <p className="font-semibold">Proof of Grit</p>
-                  <p className="text-sm text-muted-foreground">
-                    Share your latest training session
-                  </p>
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="workoutType">Workout Type *</Label>
-                <Select value={workoutType} onValueChange={(v) => setWorkoutType(v as Workout['type'])}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Run">Run</SelectItem>
-                    <SelectItem value="HYROX">HYROX</SelectItem>
-                    <SelectItem value="Swim">Swim</SelectItem>
-                    <SelectItem value="Bike">Bike</SelectItem>
-                    <SelectItem value="Strength">Strength</SelectItem>
-                    <SelectItem value="Other">Other</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="distance">Distance (km)</Label>
+                  <Label>Date</Label>
                   <Input
-                    id="distance"
-                    type="number"
-                    value={distance}
-                    onChange={(e) => setDistance(e.target.value)}
-                    placeholder="5.0"
+                    type="date"
+                    value={workoutDate}
+                    onChange={(e) => setWorkoutDate(e.target.value)}
                   />
                 </div>
 
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Type</Label>
+                    <Select value={workoutType} onValueChange={(v) => setWorkoutType(v as Workout['type'])}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Run">Run</SelectItem>
+                        <SelectItem value="Lift">Lift</SelectItem>
+                        <SelectItem value="Cycle">Cycle</SelectItem>
+                        <SelectItem value="Swim">Swim</SelectItem>
+                        <SelectItem value="HIIT">HIIT</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Duration (min)</Label>
+                    <Input
+                      type="number"
+                      placeholder="45"
+                      value={duration}
+                      onChange={(e) => setDuration(e.target.value)}
+                    />
+                  </div>
+                </div>
+
                 <div className="space-y-2">
-                  <Label htmlFor="duration">Duration (min) *</Label>
-                  <Input
-                    id="duration"
-                    type="number"
-                    value={duration}
-                    onChange={(e) => setDuration(e.target.value)}
-                    placeholder="30"
+                  <Label>Notes / Description</Label>
+                  <Textarea
+                    placeholder="How did it feel? What did you achieve?"
+                    value={notes}
+                    onChange={(e) => setNotes(e.target.value)}
                   />
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="notes">Workout Notes *</Label>
-                <Textarea
-                  id="notes"
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                  placeholder="How did it feel? What did you accomplish?"
-                  rows={4}
-                />
-              </div>
-
-              <div className="flex gap-3">
+              <div className="flex gap-3 pt-4">
                 <Button variant="outline" onClick={() => setStep('ATHLETE_PROFILE')} className="w-full">
                   Back
                 </Button>
+                <Button variant="ghost" onClick={handleSkipWorkout} className="w-full">
+                  Skip for now
+                </Button>
                 <Button onClick={handleAthleteWorkoutNext} className="w-full">
-                  Continue
+                  Next
                 </Button>
               </div>
             </>

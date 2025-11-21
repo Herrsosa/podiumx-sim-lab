@@ -61,8 +61,8 @@ export default function Landing() {
 
             <h1 className="text-5xl sm:text-7xl font-bold tracking-tight leading-[1.1]">
               Train Hard.<br />
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary via-primary/80 to-accent animate-gradient-x">
-                Build Your Identity.
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-white via-blue-400 to-blue-600 animate-gradient-x">
+                Build Your Athlete Identity.
               </span>
             </h1>
 
@@ -112,7 +112,7 @@ export default function Landing() {
                 height={800}
                 interactive={true}
                 spinSpeedDegPerSec={5}
-                className="w-full h-full max-w-[800px] max-h-[800px] drop-shadow-2xl"
+                className="w-full h-full max-w-[800px] max-h-[800px]"
               />
             </Suspense>
           </motion.div>

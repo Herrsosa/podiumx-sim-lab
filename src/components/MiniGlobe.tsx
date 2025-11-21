@@ -80,10 +80,15 @@ export function MiniGlobe({
     canvas.height = height * dpr;
     canvas.style.width = `${width}px`;
     canvas.style.height = `${height}px`;
+    // Clear everything (using physical coordinates to be safe)
+    context.resetTransform();
+    context.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Set scale for drawing
     context.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-    // Clear
-    context.clearRect(0, 0, width, height);
+    // Ensure no fill leaks
+    context.fillStyle = 'rgba(0,0,0,0)';
 
     // Projection
     const projection = geoOrthographic()
@@ -230,6 +235,10 @@ export function MiniGlobe({
       style={{
         maxWidth: '100%',
         height: 'auto',
+        background: 'transparent',
+        border: 'none',
+        outline: 'none',
+        boxShadow: 'none',
         cursor: interactive ? (isDragging ? 'grabbing' : 'grab') : 'default',
         touchAction: 'none',
         userSelect: 'none',
