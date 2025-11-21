@@ -557,36 +557,38 @@ function WorkoutCard({
   onDelete: () => void;
 }) {
   return (
-    <div className="group rounded-lg border border-border/50 p-4 transition-all hover:border-primary/30">
+    <div className="group rounded-xl border border-white/5 bg-card/40 backdrop-blur-sm p-5 transition-all hover:border-primary/30 hover:bg-card/60 hover:shadow-lg hover:shadow-primary/5">
       <div className="flex items-start justify-between">
         <div className="flex-1">
-          <div className="mb-2 flex items-center gap-2">
-            <Badge>{workout.type}</Badge>
-            <span className="text-sm text-muted-foreground">
-              {new Date(workout.date).toLocaleDateString()}
+          <div className="mb-3 flex items-center gap-2">
+            <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20 hover:bg-primary/20 transition-colors">
+              {workout.type}
+            </Badge>
+            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+              {new Date(workout.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
             </span>
           </div>
 
-          <div className="mb-2 grid grid-cols-2 gap-4 text-sm sm:grid-cols-4">
+          <div className="mb-4 grid grid-cols-2 gap-x-8 gap-y-2 text-sm sm:grid-cols-4">
             {workout.distance && (
               <div>
-                <div className="text-muted-foreground">Distance</div>
-                <div className="font-medium">{workout.distance} km</div>
+                <div className="text-[10px] uppercase tracking-wider text-muted-foreground mb-0.5">Distance</div>
+                <div className="font-semibold text-foreground">{workout.distance} km</div>
               </div>
             )}
             <div>
-              <div className="text-muted-foreground">Duration</div>
-              <div className="font-medium">{workout.duration} min</div>
+              <div className="text-[10px] uppercase tracking-wider text-muted-foreground mb-0.5">Duration</div>
+              <div className="font-semibold text-foreground">{workout.duration} min</div>
             </div>
             {workout.pace && (
               <div>
-                <div className="text-muted-foreground">Pace</div>
-                <div className="font-medium">{workout.pace}</div>
+                <div className="text-[10px] uppercase tracking-wider text-muted-foreground mb-0.5">Pace</div>
+                <div className="font-semibold text-foreground">{workout.pace}</div>
               </div>
             )}
             <div>
-              <div className="text-muted-foreground">RPE</div>
-              <div className="font-medium">{workout.rpe}/10</div>
+              <div className="text-[10px] uppercase tracking-wider text-muted-foreground mb-0.5">RPE</div>
+              <div className="font-semibold text-foreground">{workout.rpe}/10</div>
             </div>
           </div>
 

@@ -207,10 +207,97 @@ function AppContent() {
           <GlobeDemo />
         </Suspense>
       } />
+      <Route path="/athlete/:slug" element={
+        <RouteGuard>
+          <Navigation />
+          <Suspense fallback={<AthleteDetailSkeleton />}>
+            <AthleteDetail />
+          </Suspense>
+        </RouteGuard>
+      } />
+      <Route path="/portfolio" element={
+        <RouteGuard requireAuth>
+          <Navigation />
+          <Suspense fallback={
+            <div className="min-h-screen flex items-center justify-center">
+              <LoadingSpinner size="lg" />
+            </div>
+          }>
+            <Portfolio />
+          </Suspense>
+        </RouteGuard>
+      } />
+      <Route path="/my-athlete" element={<Navigate to="/my-athlete/overview" replace />} />
+      <Route path="/my-athlete/overview" element={
+        <RouteGuard requireAuth>
+          <Navigation />
+          <Suspense fallback={
+            <div className="min-h-screen flex items-center justify-center">
+              <LoadingSpinner size="lg" />
+            </div>
+          }>
+            <MyAthletePage />
+          </Suspense>
+        </RouteGuard>
+      } />
+      <Route path="/my-athlete/locker" element={
+        <RouteGuard requireAuth>
+          <Navigation />
+          <Suspense fallback={
+            <div className="min-h-screen flex items-center justify-center">
+              <LoadingSpinner size="lg" />
+            </div>
+          }>
+            <MyAthleteLocker />
+          </Suspense>
+        </RouteGuard>
+      } />
+      <Route path="/my-athlete/locker/:section" element={
+        <RouteGuard requireAuth>
+          <Navigation />
+          <Suspense fallback={
+            <div className="min-h-screen flex items-center justify-center">
+              <LoadingSpinner size="lg" />
+            </div>
+          }>
+            <MyAthleteLocker />
+          </Suspense>
+        </RouteGuard>
+      } />
+      <Route path="/my-athlete/locker/:section/:conversationId" element={
+        <RouteGuard requireAuth>
+          <Navigation />
+          <Suspense fallback={
+            <div className="min-h-screen flex items-center justify-center">
+              <LoadingSpinner size="lg" />
+            </div>
+          }>
+            <MyAthleteLocker />
+          </Suspense>
+        </RouteGuard>
+      } />
+      <Route path="/my-athlete-profile" element={<Navigate to="/my-athlete/overview" replace />} />
+      <Route path="/strava/callback" element={
+        <RouteGuard requireAuth>
+          <StravaCallback />
+        </RouteGuard>
+      } />
+      <Route path="/linked/strava" element={<StravaLinkedResult />} />
+      <Route path="/globe-demo" element={
+        <Suspense fallback={
+          <div className="min-h-screen flex items-center justify-center">
+            <LoadingSpinner size="lg" />
+          </div>
+        }>
+          <GlobeDemo />
+        </Suspense>
+      } />
       <Route path="*" element={<NotFound />} />
     </Routes>
   );
 }
+
+import { LazyMotion, domAnimation } from "framer-motion";
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -219,9 +306,11 @@ const App = () => (
         <ErrorBoundary>
           <Toaster />
           <Sonner />
-          <BrowserRouter>
-            <AppContent />
-          </BrowserRouter>
+          <LazyMotion features={domAnimation}>
+            <BrowserRouter>
+              <AppContent />
+            </BrowserRouter>
+          </LazyMotion>
         </ErrorBoundary>
       </AuthProvider>
     </TooltipProvider>

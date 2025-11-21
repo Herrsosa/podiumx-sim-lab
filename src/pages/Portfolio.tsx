@@ -286,13 +286,15 @@ export default function Portfolio() {
       {/* Hero Section */}
       <div className="mb-8 grid gap-4 grid-cols-1 md:grid-cols-3">
         {/* Hero Card */}
-        <Card className="md:col-span-2 relative overflow-hidden border-0 bg-gradient-to-br from-primary/20 via-background to-background">
+        <Card className="md:col-span-2 relative overflow-hidden border border-primary/10 bg-gradient-to-br from-primary/5 via-background to-background shadow-2xl shadow-primary/5">
           <div className="absolute inset-0 bg-grid-white/5 [mask-image:linear-gradient(0deg,white,rgba(255,255,255,0.6))]" />
+          <div className="absolute -top-24 -right-24 w-64 h-64 bg-primary/20 blur-[100px] rounded-full pointer-events-none" />
+
           <CardContent className="relative p-6 sm:p-8 flex flex-col justify-between h-full min-h-[200px]">
             <div className="flex justify-between items-start">
               <div>
-                <p className="text-sm font-medium text-muted-foreground mb-1">Total Portfolio Value</p>
-                <div className="text-4xl sm:text-5xl font-bold tracking-tight">
+                <p className="text-sm font-medium text-muted-foreground mb-2 uppercase tracking-wider">Total Portfolio Value</p>
+                <div className="text-4xl sm:text-6xl font-bold tracking-tight text-foreground">
                   <CountUp
                     value={totalValue}
                     prefix="$"
@@ -317,20 +319,20 @@ export default function Portfolio() {
                     decimalPlaces={2}
                   />
                 </div>
-                <p className="text-xs text-muted-foreground mt-1">All-time P&L</p>
+                <p className="text-xs text-muted-foreground mt-1 uppercase tracking-wider">All-time P&L</p>
               </div>
             </div>
 
-            <div className="mt-6 flex gap-8">
+            <div className="mt-8 flex gap-12 border-t border-border/30 pt-6">
               <div>
-                <p className="text-xs text-muted-foreground mb-1">Invested</p>
-                <p className="text-lg font-semibold">
+                <p className="text-xs text-muted-foreground mb-1 uppercase tracking-wider">Invested</p>
+                <p className="text-xl font-semibold text-foreground/80">
                   <CountUp value={totalCostBasis} prefix="$" decimalPlaces={2} />
                 </p>
               </div>
               <div>
-                <p className="text-xs text-muted-foreground mb-1">Realized P&L</p>
-                <p className={cn("text-lg font-semibold", realizedPnL >= 0 ? "text-success" : "text-destructive")}>
+                <p className="text-xs text-muted-foreground mb-1 uppercase tracking-wider">Realized P&L</p>
+                <p className={cn("text-xl font-semibold", realizedPnL >= 0 ? "text-success" : "text-destructive")}>
                   {realizedPnL >= 0 ? '+' : '-'}$
                   <CountUp value={Math.abs(realizedPnL)} decimalPlaces={2} />
                 </p>

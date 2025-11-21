@@ -2,34 +2,31 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
-All colors MUST be HSL.
-*/
-
 @layer base {
   :root {
     --background: 0 0% 98%;
-    --foreground: 0 0% 10%;
+    --foreground: 0 0% 3.9%;
 
     --card: 0 0% 100%;
-    --card-foreground: 0 0% 10%;
+    --card-foreground: 0 0% 3.9%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 10%;
+    --popover-foreground: 0 0% 3.9%;
 
-    --primary: 132 82% 72%;
-    --primary-foreground: 0 0% 10%;
+    --primary: 136 80% 55%;
+    /* Vibrant Green for Light Mode */
+    --primary-foreground: 0 0% 98%;
 
-    --secondary: 0 0% 92%;
-    --secondary-foreground: 0 0% 10%;
+    --secondary: 0 0% 96.1%;
+    --secondary-foreground: 0 0% 9%;
 
-    --muted: 0 0% 95%;
-    --muted-foreground: 0 0% 40%;
+    --muted: 0 0% 96.1%;
+    --muted-foreground: 0 0% 45.1%;
 
-    --accent: 212 100% 64%;
-    --accent-foreground: 0 0% 100%;
+    --accent: 0 0% 96.1%;
+    --accent-foreground: 0 0% 9%;
 
-    --destructive: 0 84% 60%;
+    --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
 
     --success: 142 71% 45%;
@@ -38,11 +35,11 @@ All colors MUST be HSL.
     --warning: 45 93% 63%;
     --warning-foreground: 0 0% 10%;
 
-    --border: 0 0% 90%;
-    --input: 0 0% 90%;
-    --ring: 132 82% 72%;
+    --border: 0 0% 89.8%;
+    --input: 0 0% 89.8%;
+    --ring: 136 80% 55%;
 
-    --radius: 1rem;
+    --radius: 0.75rem;
 
     /* Elevation shadows */
     --shadow-sm: 0 1px 2px 0 hsl(0 0% 0% / 0.05);
@@ -50,59 +47,62 @@ All colors MUST be HSL.
     --shadow-lg: 0 10px 15px -3px hsl(0 0% 0% / 0.1), 0 4px 6px -4px hsl(0 0% 0% / 0.1);
     --shadow-xl: 0 20px 25px -5px hsl(0 0% 0% / 0.1), 0 8px 10px -6px hsl(0 0% 0% / 0.1);
 
-    --chart-1: 132 82% 72%;
-    --chart-2: 212 100% 64%;
-    --chart-3: 280 80% 70%;
-    --chart-4: 45 93% 63%;
-    --chart-5: 340 82% 67%;
+    --chart-1: 136 80% 55%;
+    --chart-2: 173 58% 39%;
+    --chart-3: 197 37% 24%;
+    --chart-4: 43 74% 66%;
+    --chart-5: 27 87% 67%;
   }
 
   .dark {
-    --background: 0 0% 4%;
+    --background: 0 0% 3%;
+    /* Deep Black */
     --foreground: 0 0% 98%;
 
-    --card: 0 0% 8%;
+    --card: 0 0% 5%;
+    /* Slightly lighter black for cards */
     --card-foreground: 0 0% 98%;
 
-    --popover: 0 0% 8%;
+    --popover: 0 0% 5%;
     --popover-foreground: 0 0% 98%;
 
-    --primary: 132 82% 72%;
-    --primary-foreground: 0 0% 10%;
+    --primary: 136 100% 60%;
+    /* Neon Green */
+    --primary-foreground: 0 0% 5%;
 
-    --secondary: 0 0% 12%;
+    --secondary: 0 0% 10%;
     --secondary-foreground: 0 0% 98%;
 
-    --muted: 0 0% 12%;
-    --muted-foreground: 0 0% 65%;
+    --muted: 0 0% 10%;
+    --muted-foreground: 0 0% 60%;
 
-    --accent: 212 100% 64%;
-    --accent-foreground: 0 0% 98%;
+    --accent: 136 100% 60%;
+    --accent-foreground: 0 0% 5%;
 
-    --destructive: 0 84% 60%;
+    --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 0% 98%;
 
-    --success: 142 71% 45%;
+    --success: 142 70% 50%;
     --success-foreground: 0 0% 98%;
 
-    --warning: 45 93% 63%;
+    --warning: 45 90% 60%;
     --warning-foreground: 0 0% 10%;
 
-    --border: 0 0% 16%;
-    --input: 0 0% 16%;
-    --ring: 132 82% 72%;
+    --border: 0 0% 12%;
+    --input: 0 0% 12%;
+    --ring: 136 100% 60%;
 
     /* Elevation shadows for dark mode */
-    --shadow-sm: 0 1px 2px 0 hsl(0 0% 0% / 0.2);
-    --shadow-md: 0 4px 6px -1px hsl(0 0% 0% / 0.3), 0 2px 4px -2px hsl(0 0% 0% / 0.3);
-    --shadow-lg: 0 10px 15px -3px hsl(0 0% 0% / 0.4), 0 4px 6px -4px hsl(0 0% 0% / 0.4);
-    --shadow-xl: 0 20px 25px -5px hsl(0 0% 0% / 0.5), 0 8px 10px -6px hsl(0 0% 0% / 0.5);
+    --shadow-sm: 0 1px 2px 0 hsl(0 0% 0% / 0.4);
+    --shadow-md: 0 4px 6px -1px hsl(0 0% 0% / 0.5), 0 2px 4px -2px hsl(0 0% 0% / 0.5);
+    --shadow-lg: 0 10px 15px -3px hsl(0 0% 0% / 0.6), 0 4px 6px -4px hsl(0 0% 0% / 0.6);
+    --shadow-xl: 0 20px 25px -5px hsl(0 0% 0% / 0.7), 0 8px 10px -6px hsl(0 0% 0% / 0.7);
 
-    --chart-1: 132 82% 72%;
-    --chart-2: 212 100% 64%;
-    --chart-3: 280 80% 70%;
-    --chart-4: 45 93% 63%;
-    --chart-5: 340 82% 67%;
+    --chart-1: 136 100% 60%;
+    --chart-2: 160 60% 45%;
+    --chart-3: 30 80% 55%;
+    --chart-4: 280 65% 60%;
+    --chart-5: 340 75% 55%;
   }
 }
 
@@ -174,6 +174,19 @@ All colors MUST be HSL.
   .hover-lift {
     @apply transition-transform duration-200 hover:-translate-y-1 hover:shadow-lg;
   }
+
+  /* Hide scrollbar for Chrome, Safari and Opera */
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Hide scrollbar for IE, Edge and Firefox */
+  .scrollbar-none {
+    -ms-overflow-style: none;
+    /* IE and Edge */
+    scrollbar-width: none;
+    /* Firefox */
+  }
 }
 
 @keyframes pos-circle-pop {
@@ -211,4 +224,26 @@ All colors MUST be HSL.
 /* Hide mobile action bar when any dialog is open to prevent overlay issues */
 body:has([role="dialog"][data-state="open"]) .mobile-action-bar {
   display: none;
+}
+
+@layer base {
+
+  /* Custom Scrollbar */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: hsl(var(--muted-foreground) / 0.3);
+    border-radius: 4px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--muted-foreground) / 0.5);
+  }
 }
