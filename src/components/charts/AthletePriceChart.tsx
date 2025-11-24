@@ -227,7 +227,7 @@ const AthletePriceChart = memo(({
       const stitched = visible.length > beforeStitch;
       logDiag("[ChartDiag] stitchLatest", stitched ? "ADDED" : "skipped", "count now", visible.length);
 
-      visible = ensureMinimumPoints(visible, end);
+      visible = ensureMinimumPoints(visible, start, end);
       logDiag("[ChartDiag] after ensureMinimumPoints", visible.length);
 
       logDiag("[ChartDiag] start/end (ISO)",
@@ -283,7 +283,7 @@ const AthletePriceChart = memo(({
       if (lastBase) {
         visible = stitchLatest(visible, { t: lastBase.x, price: lastBase.y });
       }
-      visible = ensureMinimumPoints(visible, end);
+      visible = ensureMinimumPoints(visible, start, end);
 
       return visible.map((p, idx) => ({
         t: p.x,
@@ -334,6 +334,18 @@ const AthletePriceChart = memo(({
       { floorAtZero: true }
     );
   })();
+
+  console.log('[AthletePriceChart] Chart State:', {
+    timeRange,
+    chartPointsCount: chartPoints.length,
+    chartDataCount: chartData.length,
+    xDomain,
+    yDomain,
+    hasRealTrades,
+    isLoading,
+    isFetching,
+    chartDataSample: chartData.slice(0, 3).map(d => ({ t: d.t, price: d.price, posCount: d.posCount }))
+  });
 
   const chartDataLookup = useMemo(() => buildChartLookup(chartData), [chartData]);
 
@@ -536,13 +548,12 @@ const AthletePriceChart = memo(({
             type="monotone"
             dataKey="price"
             stroke={POS_NEON_COLOR}
-            strokeWidth={3}
-            strokeOpacity={0.9}
+            strokeWidth={2.5}
+            strokeOpacity={0.95}
             dot={false}
             connectNulls
             strokeLinecap="round"
-            animationDuration={500}
-            filter={`url(#lineGlow-${glowFilterId})`}
+            animationDuration={300}
             fill={`url(#areaGradient-${glowFilterId})`}
           />
         </ComposedChart>

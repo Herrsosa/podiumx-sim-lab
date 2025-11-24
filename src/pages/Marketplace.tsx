@@ -16,6 +16,7 @@ import { useAuthLoading, useUser } from '@/store/auth';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import { queryClient } from '@/lib/queryClient';
 import { motion } from 'framer-motion';
+import { RecentTrades } from '@/components/RecentTrades';
 
 export default function Marketplace() {
   const navigate = useNavigate();
@@ -164,73 +165,84 @@ export default function Marketplace() {
           </div>
         </div>
 
-        {/* Athletes Grid */}
-        <div className="mx-auto w-full">
-          {showGridSkeleton && filteredAthletes.length === 0 ? (
-            <CardSkeleton
-              count={12}
-              className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
-            />
-          ) : (
-            <motion.div
-              className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
-              role="grid"
-              aria-label="Athletes marketplace grid"
-              initial="hidden"
-              animate="visible"
-              variants={{
-                hidden: { opacity: 0 },
-                visible: {
-                  opacity: 1,
-                  transition: {
-                    staggerChildren: 0.05
-                  }
-                }
-              }}
-            >
-              {filteredAthletes.map((athlete) => {
-                const series =
-                  (chartData as Record<string, MarketplaceChartPoint[]> | undefined)?.[athlete.id] ?? [];
-
-                return (
-                  <AthleteCard
-                    key={athlete.id}
-                    athlete={athlete}
-                    chartData={series}
-                    onClick={() => athlete.slug && handleAthleteClick(athlete.slug)}
-                    onMouseEnter={() => prefetchAthleteDetail(athlete.id)}
-                  />
-                );
-              })}
-            </motion.div>
-          )}
-        </div>
-
-        {
-          filteredAthletes.length === 0 && !showGridSkeleton && (
-            <EmptyState
-              title="No athletes match your filters"
-              description="Try changing the sport or adjusting your search to discover more athletes."
-              ctaLabel="Reset filters"
-              onCta={() => {
-                setSelectedSport('All');
-                setSearch('');
-              }}
-              className="mt-16"
-            />
-          )
-        }
-
-        {
-          hasNextPage && !showGridSkeleton && (
-            <div className="flex justify-center py-10">
-              <Button variant="outline" onClick={handleLoadMore}>
-                Load more athletes
-              </Button>
+        {/* Main Content Area: Recent Trades + Athletes Grid */}
+        <div className="grid gap-8 lg:grid-cols-[320px_1fr]">
+          {/* Recent Trades - Shows on left sidebar on desktop, top on mobile */}
+          {user && (
+            <div className="lg:sticky lg:top-4 lg:self-start">
+              <RecentTrades />
             </div>
-          )
-        }
-      </div >
-    </div >
+          )}
+
+          {/* Athletes Grid */}
+          <div className={user ? '' : 'col-span-full'}>
+
+            {showGridSkeleton && filteredAthletes.length === 0 ? (
+              <CardSkeleton
+                count={12}
+                className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+              />
+            ) : (
+              <motion.div
+                className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+                role="grid"
+                aria-label="Athletes marketplace grid"
+                initial="hidden"
+                animate="visible"
+                variants={{
+                  hidden: { opacity: 0 },
+                  visible: {
+                    opacity: 1,
+                    transition: {
+                      staggerChildren: 0.05
+                    }
+                  }
+                }}
+              >
+                {filteredAthletes.map((athlete) => {
+                  const series =
+                    (chartData as Record<string, MarketplaceChartPoint[]> | undefined)?.[athlete.id] ?? [];
+
+                  return (
+                    <AthleteCard
+                      key={athlete.id}
+                      athlete={athlete}
+                      chartData={series}
+                      onClick={() => athlete.slug && handleAthleteClick(athlete.slug)}
+                      onMouseEnter={() => prefetchAthleteDetail(athlete.id)}
+                    />
+                  );
+                })}
+              </motion.div>
+            )}
+          </div>
+
+          {
+            filteredAthletes.length === 0 && !showGridSkeleton && (
+              <EmptyState
+                title="No athletes match your filters"
+                description="Try changing the sport or adjusting your search to discover more athletes."
+                ctaLabel="Reset filters"
+                onCta={() => {
+                  setSelectedSport('All');
+                  setSearch('');
+                }}
+                className="mt-16"
+              />
+            )
+          }
+
+          {
+            hasNextPage && !showGridSkeleton && (
+              <div className="flex justify-center py-10">
+                <Button variant="outline" onClick={handleLoadMore}>
+                  Load more athletes
+                </Button>
+              </div>
+            )
+          }
+        </div>
+      </div>
+    </div>
   );
 }

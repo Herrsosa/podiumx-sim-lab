@@ -47,16 +47,34 @@ export const getPaddedDomain = (
 };
 
 // Ensure at least two points so Recharts draws a visible segment
-export const ensureMinimumPoints = <T extends XY>(pts: T[], end: number): T[] => {
+export const ensureMinimumPoints = <T extends XY>(pts: T[], start: number, end: number): T[] => {
   if (pts.length >= 2) return pts;
-  if (pts.length === 1) return [{ ...pts[0], x: end - 1 } as T, pts[0]];
+
+  if (pts.length === 1) {
+    const p = pts[0];
+    // If we have a start time, extend back to it. Otherwise default to 24h before the point.
+    const effectiveStart = Number.isFinite(start) && start > 0
+      ? start
+      : p.x - (24 * 60 * 60 * 1000);
+
+    // If the point is at or before effectiveStart, we can't extend back. 
+    // Instead extend forward slightly or just return a tiny segment.
+    if (p.x <= effectiveStart) {
+      return [p, { ...p, x: p.x + 1 } as T];
+    }
+
+    return [{ ...p, x: effectiveStart } as T, p];
+  }
+
   // zero points → synthesize a flat zero line (or tiny epsilon to avoid flat domain)
-  return [{ x: end - 1, y: 0.0001 } as T, { x: end, y: 0.0001 } as T];
+  // Use start/end if available, otherwise default to now-24h to now
+  const s = Number.isFinite(start) && start > 0 ? start : end - (24 * 60 * 60 * 1000);
+  return [{ x: s, y: 0.0001 } as T, { x: end, y: 0.0001 } as T];
 };
 
 // Range filter by UTC ms (normalize to ms first)
 export const filterPointsByRange = <T extends XY>(pts: T[], start: number, end: number): T[] =>
-  pts.map(p => ({...p, x: toMs(p.x) } as T)).filter(p => p.x >= start && p.x <= end);
+  pts.map(p => ({ ...p, x: toMs(p.x) } as T)).filter(p => p.x >= start && p.x <= end);
 
 // Always stitch latest after range filter so last visible value is shown (normalize to ms)
 export const stitchLatest = <T extends XY>(pts: T[], latest: { t: number; price: number } | null): T[] => {

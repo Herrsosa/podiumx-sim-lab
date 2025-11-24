@@ -378,7 +378,7 @@ export default function AthleteDetail() {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="h-64 sm:h-80 w-full">
+            <div className="h-64 sm:h-80 min-h-64 sm:min-h-80 w-full">
               <Suspense fallback={<ChartSkeleton className="h-full" />}>
                 <AthletePriceChart
                   chartPoints={displayChartPoints}

@@ -1,5 +1,6 @@
-import { ReactNode } from 'react';
+import { ReactNode, useState } from 'react';
 import { cn } from '@/lib/utils';
+import { useUser } from '@/store/auth';
 
 type MobileAction = {
   id: string;
@@ -32,6 +33,32 @@ interface MobileActionBarProps {
 }
 
 export function MobileActionBar({ actions, className }: MobileActionBarProps) {
+  const [isSimulating, setIsSimulating] = useState(false);
+  const user = useUser();
+  const isAdmin = user?.email === 'nilshertzner@hotmail.de';
+
+  const handleSimulation = async () => {
+    if (isSimulating) return;
+    setIsSimulating(true);
+    try {
+      const { runDailySimulation } = await import('@/simulation/engine');
+      const result = await runDailySimulation();
+
+      const summary = `Simulated: ${result.trades} trades, ${result.posts} posts, ${result.messages} msgs`;
+      if (result.errors.length > 0) {
+        console.error('Simulation errors:', result.errors);
+        alert(`${summary}\n(See console for ${result.errors.length} errors)`);
+      } else {
+        alert(summary);
+      }
+    } catch (e) {
+      console.error(e);
+      alert('Simulation failed to start');
+    } finally {
+      setIsSimulating(false);
+    }
+  };
+
   if (!actions || actions.length === 0) {
     return null;
   }
@@ -44,6 +71,16 @@ export function MobileActionBar({ actions, className }: MobileActionBarProps) {
       )}
     >
       <div className="pointer-events-auto flex w-full max-w-xl items-center gap-3 rounded-t-2xl border border-border/40 bg-background/95 px-4 pt-3 pb-[max(env(safe-area-inset-bottom,0px),12px)] shadow-lg backdrop-blur-md">
+        {isAdmin && (
+          <button
+            type="button"
+            className="h-12 min-h-[48px] rounded-full bg-destructive/10 px-3 text-sm font-semibold text-destructive transition-all active:scale-95"
+            onClick={handleSimulation}
+            disabled={isSimulating}
+          >
+            {isSimulating ? '...' : 'Sim'}
+          </button>
+        )}
         {actions.map(({ id, label, icon, onPress, ariaLabel, variant = 'primary' }) => (
           <button
             key={id}

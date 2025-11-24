@@ -140,6 +140,32 @@ export default function Navigation() {
             </Button>
             {user && (
               <>
+                {user.email === 'nilshertzner@hotmail.de' && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={async () => {
+                      try {
+                        const { runDailySimulation } = await import('@/simulation/engine');
+                        const result = await runDailySimulation();
+                        const summary = `Simulated: ${result.trades} trades, ${result.posts} posts, ${result.messages} msgs`;
+                        if (result.errors.length > 0) {
+                          console.error('Simulation errors:', result.errors);
+                          alert(`${summary}\n(See console for ${result.errors.length} errors)`);
+                        } else {
+                          alert(summary);
+                        }
+                      } catch (e) {
+                        console.error(e);
+                        alert('Simulation failed to start');
+                      }
+                    }}
+                    className="gap-2 min-h-[44px] hidden sm:inline-flex text-destructive hover:text-destructive"
+                  >
+                    <Activity className="h-4 w-4" />
+                    <span>Sim</span>
+                  </Button>
+                )}
                 <Button
                   variant="ghost"
                   size="icon"

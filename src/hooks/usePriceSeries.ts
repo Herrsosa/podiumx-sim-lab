@@ -52,17 +52,23 @@ export function usePriceSeries(
       }
 
       const { data, error } = await supabase
-        .from('athlete_prices')
-        .select('price, created_at')
+        .from('trades')
+        .select('price_after, created_at')
         .eq('athlete_id', athleteId)
         .order('created_at', { ascending: true });
+
+      console.log(`[usePriceSeries] athleteId=${athleteId}, range=${range}, tradesCount=${data?.length ?? 0}`, { data, error });
 
       if (error) {
         console.error('Failed to fetch price series', error);
         throw error;
       }
 
-      const rows = (data ?? []) as Array<Pick<AthletePriceRow, 'price' | 'created_at'>>;
+      // Map trades to price points
+      const rows = (data ?? []).map(t => ({
+        price: t.price_after,
+        created_at: t.created_at
+      }));
 
       const points: PriceSeriesPoint[] = rows
         .map((row) => {
@@ -82,7 +88,10 @@ export function usePriceSeries(
 
       const normalized = normalizePriceSeries(points, range);
 
+      console.log(`[usePriceSeries] normalized points count=${normalized.length}, points=${JSON.stringify(normalized.slice(0, 3))}`);
+
       if (normalized.length === 0 && typeof options.fallbackPrice === 'number') {
+        console.log(`[usePriceSeries] Using fallback price=${options.fallbackPrice}`);
         return [toFallbackPoint(options.fallbackPrice, options.fallbackTimestamp ?? null)];
       }
 
