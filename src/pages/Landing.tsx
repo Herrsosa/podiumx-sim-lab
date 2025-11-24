@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { usePaginatedAthletes } from "@/hooks/usePaginatedAthletes";
 import { useMarketplaceCharts } from "@/hooks/useMarketplaceCharts";
-import { AthleteCardNew } from "@/components/AthleteCardNew";
+import { AthleteCard } from "@/components/AthleteCard";
 import { ProofOfSweatFeed } from "@/components/feed/ProofOfSweatFeed";
 import { motion } from "framer-motion";
 
@@ -293,7 +293,7 @@ export default function Landing() {
                     transition={{ delay: i * 0.1 }}
                     className="min-w-[280px] md:min-w-0 snap-center"
                   >
-                    <AthleteCardNew
+                    <AthleteCard
                       athlete={athlete}
                       chartData={chartData?.[athlete.id] || []}
                     />

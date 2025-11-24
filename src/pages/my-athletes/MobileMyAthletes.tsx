@@ -28,6 +28,9 @@ import AthletePriceChart from '@/components/charts/AthletePriceChart';
 import type { PriceSeriesPoint } from '@/lib/charting/engine';
 import { getWindowUTC } from '@/lib/charting/engine';
 import { useChartPosts } from '@/hooks/useChartPosts';
+import { lazy, Suspense } from 'react';
+
+const LockerGlobe = lazy(() => import('@/components/myathlete/LockerGlobe'));
 
 interface LockerContentProps {
   athleteId: string;
@@ -555,12 +558,13 @@ export default function MobileMyAthletes({
 
       <main className="flex-1 overflow-x-hidden pb-24">
         <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as typeof activeTab)} className="space-y-4 px-4 py-4">
-          <TabsList className="grid w-full grid-cols-5 gap-1 rounded-2xl bg-muted/40 p-1">
-            <TabsTrigger value="overview" className="text-xs">Overview</TabsTrigger>
-            <TabsTrigger value="chart" className="text-xs">Chart</TabsTrigger>
-            <TabsTrigger value="trades" className="text-xs">Trades</TabsTrigger>
-            <TabsTrigger value="posts" className="text-xs">Posts</TabsTrigger>
-            <TabsTrigger value="dm" className="text-xs">DM</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-6 gap-1 rounded-2xl bg-muted/40 p-1 overflow-x-auto">
+            <TabsTrigger value="overview" className="text-xs px-1">Overview</TabsTrigger>
+            <TabsTrigger value="chart" className="text-xs px-1">Chart</TabsTrigger>
+            <TabsTrigger value="trades" className="text-xs px-1">Trades</TabsTrigger>
+            <TabsTrigger value="posts" className="text-xs px-1">Posts</TabsTrigger>
+            <TabsTrigger value="globe" className="text-xs px-1">Globe</TabsTrigger>
+            <TabsTrigger value="dm" className="text-xs px-1">DM</TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview" className="min-w-0">
@@ -714,6 +718,16 @@ export default function MobileMyAthletes({
                 <StravaCard className="mt-4" />
               </>
             )}
+          </TabsContent>
+
+          <TabsContent value="globe" className="min-w-0">
+            <Card className="border-white/5 bg-card/60 backdrop-blur-sm overflow-hidden">
+              <CardContent className="p-0">
+                <Suspense fallback={<div className="p-8"><Skeleton className="h-64 w-full" /></div>}>
+                  <LockerGlobe athleteId={athlete.id} athleteName={athlete.name} />
+                </Suspense>
+              </CardContent>
+            </Card>
           </TabsContent>
 
           <TabsContent value="dm" className="min-w-0">

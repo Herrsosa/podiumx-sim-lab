@@ -1,4 +1,4 @@
-export const MOBILE_TAB_KEYS = ['overview', 'chart', 'trades', 'posts', 'dm'];
+export const MOBILE_TAB_KEYS = ['overview', 'chart', 'trades', 'posts', 'globe', 'dm'];
 
 export function shouldUseMobileAccordion(width) {
   return width < 768;
