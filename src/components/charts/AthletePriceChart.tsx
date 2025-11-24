@@ -163,7 +163,7 @@ const AthletePriceChart = memo(({
   const memoizedChartData = useMemo(
     () => {
       const baseData = buildChartData(chartPoints, posSeries, memoizedPosCountByDay, startOfDay);
-      
+
       // Convert to XY format for new helpers (normalize to ms) while carrying last known price across PoS-only rows
       const firstPriceEntry = baseData.find((entry) => typeof entry.price === 'number');
       let lastKnownPrice = typeof firstPriceEntry?.price === 'number' ? firstPriceEntry.price : 0;
@@ -174,32 +174,32 @@ const AthletePriceChart = memo(({
         }
         return { x: toMs(p.t), y: lastKnownPrice };
       });
-      
+
       const now = Date.now();
       const [start, end] =
         timeRange === "7d" ? [getRangeStart(now, 7), now]
-        : timeRange === "30d" ? [getRangeStart(now, 30), now]
-        : [Number.NEGATIVE_INFINITY, now]; // "All" - include everything
-      
+          : timeRange === "30d" ? [getRangeStart(now, 30), now]
+            : [Number.NEGATIVE_INFINITY, now]; // "All" - include everything
+
       // DIAGNOSTICS - Detect timestamp unit mismatches
       logDiag("[ChartDiag] range", timeRange);
       logDiag("[ChartDiag] series len", xyPoints.length);
       if (xyPoints.length) {
         const xs = xyPoints.map(p => p.x);
         const minX = Math.min(...xs), maxX = Math.max(...xs);
-        logDiag("[ChartDiag] series x min/max", minX, maxX, 
-                    "units?", isMs(minX) ? "ms" : isSec(minX) ? "sec" : "other");
+        logDiag("[ChartDiag] series x min/max", minX, maxX,
+          "units?", isMs(minX) ? "ms" : isSec(minX) ? "sec" : "other");
         logDiag("[ChartDiag] series x min/max (ISO)", new Date(minX).toISOString(), new Date(maxX).toISOString());
       }
-      
+
       const lastBase = xyPoints[xyPoints.length - 1];
       const latestPoint = lastBase ? { t: lastBase.x, price: lastBase.y } : null;
-      logDiag("[ChartDiag] latestPoint", latestPoint?.t, latestPoint?.price, 
-                  latestPoint ? (isMs(latestPoint.t) ? "ms" : isSec(latestPoint.t) ? "sec" : "other") : "none");
+      logDiag("[ChartDiag] latestPoint", latestPoint?.t, latestPoint?.price,
+        latestPoint ? (isMs(latestPoint.t) ? "ms" : isSec(latestPoint.t) ? "sec" : "other") : "none");
       if (latestPoint) {
         logDiag("[ChartDiag] latestPoint (ISO)", new Date(latestPoint.t).toISOString());
       }
-      
+
       // Check PoS/workout post timestamps
       if (posts && posts.length > 0) {
         const postSample = posts.slice(0, 3).map(p => {
@@ -215,10 +215,10 @@ const AthletePriceChart = memo(({
       } else {
         logDiag("[ChartDiag] posts", 0);
       }
-      
+
       let visible = filterPointsByRange(xyPoints, start, end);
       logDiag("[ChartDiag] after range filter", visible.length);
-      
+
       // Stitch latest point if available
       const beforeStitch = visible.length;
       if (latestPoint) {
@@ -226,27 +226,27 @@ const AthletePriceChart = memo(({
       }
       const stitched = visible.length > beforeStitch;
       logDiag("[ChartDiag] stitchLatest", stitched ? "ADDED" : "skipped", "count now", visible.length);
-      
+
       visible = ensureMinimumPoints(visible, end);
       logDiag("[ChartDiag] after ensureMinimumPoints", visible.length);
-      
-      logDiag("[ChartDiag] start/end (ISO)", 
-        start === Number.NEGATIVE_INFINITY ? 'ALL' : new Date(start).toISOString(), 
+
+      logDiag("[ChartDiag] start/end (ISO)",
+        start === Number.NEGATIVE_INFINITY ? 'ALL' : new Date(start).toISOString(),
         new Date(end).toISOString());
-      
+
       if (visible.length > 0) {
         const lastVisible = visible[visible.length - 1];
         logDiag("[ChartDiag] last visible x (ISO)", new Date(lastVisible.x).toISOString(), "y", lastVisible.y);
       }
-      
-      logDiag("[Chart]", { 
-        range: timeRange, 
-        start: start === Number.NEGATIVE_INFINITY ? 'ALL' : new Date(start).toISOString(), 
-        end: new Date(end).toISOString(), 
-        count: visible.length, 
-        baseCount: xyPoints.length 
+
+      logDiag("[Chart]", {
+        range: timeRange,
+        start: start === Number.NEGATIVE_INFINITY ? 'ALL' : new Date(start).toISOString(),
+        end: new Date(end).toISOString(),
+        count: visible.length,
+        baseCount: xyPoints.length
       });
-      
+
       // Convert back to ChartDataPoint format
       return visible.map((p, idx) => ({
         t: p.x,
@@ -258,41 +258,41 @@ const AthletePriceChart = memo(({
     },
     [chartPoints, memoizedPosCountByDay, posSeries, startOfDay, timeRange, posts, logDiag],
   );
-  
-  const chartData = memoEnabled 
-    ? memoizedChartData 
+
+  const chartData = memoEnabled
+    ? memoizedChartData
     : (() => {
-        const baseData = buildChartData(chartPoints, posSeries, posCountByDay, startOfDay);
-        const firstPriceEntry = baseData.find((entry) => typeof entry.price === 'number');
-        let lastKnownPrice = typeof firstPriceEntry?.price === 'number' ? firstPriceEntry.price : 0;
-        const xyPoints = baseData.map((p) => {
-          if (typeof p.price === 'number') {
-            lastKnownPrice = p.price;
-            return { x: toMs(p.t), y: p.price };
-          }
-          return { x: toMs(p.t), y: lastKnownPrice };
-        });
-        const now = Date.now();
-        const [start, end] =
-          timeRange === "7d" ? [getRangeStart(now, 7), now]
-          : timeRange === "30d" ? [getRangeStart(now, 30), now]
-          : [Number.NEGATIVE_INFINITY, now];
-        
-        let visible = filterPointsByRange(xyPoints, start, end);
-        const lastBase = xyPoints[xyPoints.length - 1];
-        if (lastBase) {
-          visible = stitchLatest(visible, { t: lastBase.x, price: lastBase.y });
+      const baseData = buildChartData(chartPoints, posSeries, posCountByDay, startOfDay);
+      const firstPriceEntry = baseData.find((entry) => typeof entry.price === 'number');
+      let lastKnownPrice = typeof firstPriceEntry?.price === 'number' ? firstPriceEntry.price : 0;
+      const xyPoints = baseData.map((p) => {
+        if (typeof p.price === 'number') {
+          lastKnownPrice = p.price;
+          return { x: toMs(p.t), y: p.price };
         }
-        visible = ensureMinimumPoints(visible, end);
-        
-        return visible.map((p, idx) => ({
-          t: p.x,
-          price: p.y,
-          posCount: baseData[idx]?.posCount ?? 0,
-          carried: baseData[idx]?.carried,
-          lastTradeTime: baseData[idx]?.lastTradeTime,
-        }));
-      })();
+        return { x: toMs(p.t), y: lastKnownPrice };
+      });
+      const now = Date.now();
+      const [start, end] =
+        timeRange === "7d" ? [getRangeStart(now, 7), now]
+          : timeRange === "30d" ? [getRangeStart(now, 30), now]
+            : [Number.NEGATIVE_INFINITY, now];
+
+      let visible = filterPointsByRange(xyPoints, start, end);
+      const lastBase = xyPoints[xyPoints.length - 1];
+      if (lastBase) {
+        visible = stitchLatest(visible, { t: lastBase.x, price: lastBase.y });
+      }
+      visible = ensureMinimumPoints(visible, end);
+
+      return visible.map((p, idx) => ({
+        t: p.x,
+        price: p.y,
+        posCount: baseData[idx]?.posCount ?? 0,
+        carried: baseData[idx]?.carried,
+        lastTradeTime: baseData[idx]?.lastTradeTime,
+      }));
+    })();
 
   const posDomainMemo = useMemo(() => computePosDomain(posSeries), [posSeries]);
   const posDomain = memoEnabled ? posDomainMemo : computePosDomain(posSeries);
@@ -313,19 +313,19 @@ const AthletePriceChart = memo(({
       ys.length ? Math.max(...ys) : undefined,
       { floorAtZero: true }
     );
-    
-    logDiag("[Chart] domain", { 
-      range: timeRange, 
-      count: chartData.length, 
+
+    logDiag("[Chart] domain", {
+      range: timeRange,
+      count: chartData.length,
       yMin: ys.length ? Math.min(...ys) : 'none',
       yMax: ys.length ? Math.max(...ys) : 'none',
-      domainMin, 
-      domainMax 
+      domainMin,
+      domainMax
     });
-    
+
     return [domainMin, domainMax] as const;
   }, [chartData, timeRange, logDiag]);
-  
+
   const yDomain = memoEnabled ? yDomainMemo : (() => {
     const ys = chartData.map(p => p.price ?? 0).filter(Number.isFinite);
     return getPaddedDomain(
@@ -469,11 +469,22 @@ const AthletePriceChart = memo(({
                 <feMergeNode in="SourceGraphic" />
               </feMerge>
             </filter>
+            <filter id={`lineGlow-${glowFilterId}`} x="-50%" y="-50%" width="200%" height="200%">
+              <feGaussianBlur stdDeviation="3" result="coloredBlur" />
+              <feMerge>
+                <feMergeNode in="coloredBlur" />
+                <feMergeNode in="SourceGraphic" />
+              </feMerge>
+            </filter>
+            <linearGradient id={`lineGradient-${glowFilterId}`} x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor={POS_NEON_COLOR} stopOpacity={0.4} />
+              <stop offset="100%" stopColor={POS_NEON_COLOR} stopOpacity={0.05} />
+            </linearGradient>
           </defs>
-          <CartesianGrid 
-            strokeDasharray="3 3" 
-            stroke="hsl(var(--border))" 
-            opacity={0.15} 
+          <CartesianGrid
+            strokeDasharray="3 3"
+            stroke="hsl(var(--border))"
+            opacity={0.15}
             vertical={false}
           />
           <XAxis
@@ -501,9 +512,9 @@ const AthletePriceChart = memo(({
             tickLine={false}
           />
           <YAxis yAxisId="pos" domain={posDomain} hide />
-          <RechartsTooltip 
-            content={renderTooltip} 
-            cursor={tooltipCursor} 
+          <RechartsTooltip
+            content={renderTooltip}
+            cursor={tooltipCursor}
             animationDuration={200}
           />
           {featureFlags.showPoS ? (
@@ -515,16 +526,24 @@ const AthletePriceChart = memo(({
               shape={posBarShape}
             />
           ) : null}
+          <defs>
+            <linearGradient id={`areaGradient-${glowFilterId}`} x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor={POS_NEON_COLOR} stopOpacity={0.3} />
+              <stop offset="100%" stopColor={POS_NEON_COLOR} stopOpacity={0} />
+            </linearGradient>
+          </defs>
           <Line
             type="monotone"
             dataKey="price"
             stroke={POS_NEON_COLOR}
             strokeWidth={3}
-            strokeOpacity={0.8}
+            strokeOpacity={0.9}
             dot={false}
             connectNulls
             strokeLinecap="round"
             animationDuration={500}
+            filter={`url(#lineGlow-${glowFilterId})`}
+            fill={`url(#areaGradient-${glowFilterId})`}
           />
         </ComposedChart>
       </ResponsiveContainer>

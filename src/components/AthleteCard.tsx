@@ -1,4 +1,4 @@
-import { memo, useMemo, useRef, useState } from 'react';
+import { memo, useMemo } from 'react';
 import { TrendingUp, TrendingDown, ArrowUpRight } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
@@ -12,6 +12,7 @@ import { OptimizedImage } from '@/components/OptimizedImage';
 import { motion } from 'framer-motion';
 import { CountUp } from '@/components/ui/count-up';
 import { cn } from '@/lib/utils';
+import { use3DTilt } from '@/hooks/use3DTilt';
 
 const SPORT_COLORS: Record<string, string> = {
   Running: 'bg-orange-500/10 text-orange-500 hover:bg-orange-500/20 border-orange-500/20',
@@ -34,8 +35,13 @@ interface AthleteCardProps {
 export const AthleteCard = memo(({ athlete, chartData, onClick, onMouseEnter }: AthleteCardProps) => {
   const isPositive = athlete.change24h >= 0;
   const lineColor = isPositive ? '#7CFF6B' : '#EF4444';
-  const cardRef = useRef<HTMLDivElement>(null);
-  const [tilt, setTilt] = useState({ rotateX: 0, rotateY: 0, glowX: 50, glowY: 50 });
+
+  // Use the optimized tilt hook which returns the ref
+  const cardRef = use3DTilt<HTMLDivElement>({
+    maxTilt: 10,
+    scale: 1.02,
+    speed: 400
+  });
 
   const sortedChartData = useMemo(
     () => chartData.slice().sort((a, b) => a.timestamp - b.timestamp),
@@ -82,31 +88,9 @@ export const AthleteCard = memo(({ athlete, chartData, onClick, onMouseEnter }: 
     return letters || 'PX';
   }, [athlete.name]);
 
-  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!cardRef.current) return;
-    const rect = cardRef.current.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-    const centerX = rect.width / 2;
-    const centerY = rect.height / 2;
-
-    const rotateX = ((y - centerY) / centerY) * -10; // Max 10deg tilt
-    const rotateY = ((x - centerX) / centerX) * 10;
-    const glowX = (x / rect.width) * 100;
-    const glowY = (y / rect.height) * 100;
-
-    setTilt({ rotateX, rotateY, glowX, glowY });
-  };
-
-  const handleMouseLeave = () => {
-    setTilt({ rotateX: 0, rotateY: 0, glowX: 50, glowY: 50 });
-  };
-
   return (
     <div
       ref={cardRef}
-      onMouseMove={handleMouseMove}
-      onMouseLeave={handleMouseLeave}
       onClick={onClick}
       className="cursor-pointer"
       style={{
@@ -117,10 +101,6 @@ export const AthleteCard = memo(({ athlete, chartData, onClick, onMouseEnter }: 
       <Card
         className="glass-card glass-card-hover group overflow-hidden relative transition-all duration-300"
         onMouseEnter={onMouseEnter}
-        style={{
-          transform: `rotateX(${tilt.rotateX}deg) rotateY(${tilt.rotateY}deg) scale(1.02)`,
-          transition: 'transform 0.1s ease-out',
-        }}
       >
         <CardContent className="p-0">
           <div className="relative aspect-square overflow-hidden">
@@ -262,7 +242,7 @@ export const AthleteCard = memo(({ athlete, chartData, onClick, onMouseEnter }: 
         <div
           className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"
           style={{
-            background: `radial-gradient(600px circle at ${tilt.glowX}% ${tilt.glowY}%, rgba(255,255,255,0.15), transparent 40%)`,
+            background: `radial-gradient(600px circle at var(--glow-x, 50%) var(--glow-y, 50%), rgba(255,255,255,0.15), transparent 40%)`,
           }}
         />
       </Card>
