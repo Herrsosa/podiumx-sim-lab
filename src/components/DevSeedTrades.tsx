@@ -53,7 +53,7 @@ export function DevSeedTrades() {
       const { error } = await supabase
         .from('trades')
         .delete()
-        .neq('id', 0); // Hack to delete all rows
+        .neq('id', '00000000-0000-0000-0000-000000000000'); // Hack to delete all rows
 
       if (error) throw error;
 

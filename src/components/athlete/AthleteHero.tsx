@@ -62,7 +62,6 @@ export function AthleteHero({ athlete }: AthleteHeroProps) {
                         width={640}
                         height={853}
                         className="h-full w-full object-cover transition-transform duration-700 hover:scale-105"
-                        priority={true}
                     />
 
                     {/* Sport Badge Overlay */}
