@@ -10,6 +10,17 @@ interface SimulationResult {
     errors: string[];
 }
 
+interface AthleteTokenData {
+    athlete_id: string;
+    symbol: string;
+    supply: number;
+    a: number;
+    b: number;
+    c: number;
+    athlete_earnings: number;
+    treasury_balance: number;
+}
+
 export async function runDailySimulation(): Promise<SimulationResult> {
     const result: SimulationResult = {
         trades: 0,
@@ -24,9 +35,11 @@ export async function runDailySimulation(): Promise<SimulationResult> {
     console.log(`Starting simulation for ${today}...`);
 
     // 1. Fetch necessary data including curve parameters (using admin client)
-    const { data: athleteTokens, error: tokenError } = await supabaseAdmin
+    const { data: rawTokens, error: tokenError } = await supabaseAdmin
         .from('athlete_tokens')
-        .select('athlete_id, symbol, supply, a, b, c, athlete_earnings, treasury_balance') as any;
+        .select('athlete_id, symbol, supply, a, b, c, athlete_earnings, treasury_balance');
+
+    const athleteTokens = rawTokens as unknown as AthleteTokenData[] | null;
 
     if (tokenError || !athleteTokens) {
         result.errors.push(`Failed to fetch athlete tokens: ${tokenError?.message}`);
@@ -44,7 +57,7 @@ export async function runDailySimulation(): Promise<SimulationResult> {
 
     // Map simulation profiles to REAL athlete IDs, excluding specific users
     const realActors = athleteTokens
-        .map((t: any) => t.athlete_id)
+        .map((t) => t.athlete_id)
         .filter((id: string) => !excludedIds.has(id));
 
     if (realActors.length === 0) {
@@ -77,7 +90,7 @@ export async function runDailySimulation(): Promise<SimulationResult> {
             const numTrades = Math.floor(Math.random() * (tradeConfig.max - tradeConfig.min + 1)) + tradeConfig.min;
 
             // Filter eligible targets (exclude excluded users)
-            const eligibleTargets = athleteTokens.filter((t: any) => !excludedIds.has(t.athlete_id));
+            const eligibleTargets = athleteTokens.filter((t) => !excludedIds.has(t.athlete_id));
 
             for (let j = 0; j < numTrades; j++) {
                 if (eligibleTargets.length === 0) break;
@@ -160,7 +173,7 @@ export async function runDailySimulation(): Promise<SimulationResult> {
                 const duration = Math.floor(Math.random() * 60) + 30;
 
                 const workoutData: Partial<Workout> = {
-                    type: type as any,
+                    type: type as Workout['type'],
                     duration,
                     rpe: Math.floor(Math.random() * 4) + 6,
                     date: today,
@@ -247,9 +260,10 @@ export async function runDailySimulation(): Promise<SimulationResult> {
                 }
             }
 
-        } catch (err: any) {
+        } catch (err: unknown) {
+            const errorMessage = err instanceof Error ? err.message : String(err);
             console.error(`Error simulating profile ${profile.name}:`, err);
-            result.errors.push(`Exception for ${profile.name}: ${err?.message || err}`);
+            result.errors.push(`Exception for ${profile.name}: ${errorMessage}`);
         }
     }
 
