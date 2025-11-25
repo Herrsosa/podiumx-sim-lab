@@ -28,8 +28,8 @@ interface OverviewTabProps {
     latestWorkout: Workout | null;
     xConnected: boolean;
     xLoading: boolean;
-    editedProfile: EditableProfile;
     isEditingProfile: boolean;
+    editedProfile: EditableProfile;
     consoleTab: 'personal' | 'locker';
     setConsoleTab: (tab: 'personal' | 'locker') => void;
     scrollToContent: () => void;
@@ -58,13 +58,13 @@ export function OverviewTab({
     onSaveProfile,
     onProfileFieldChange,
     onAvatarSelect,
+    isEditingProfile,
     savingProfile,
     onAddWorkout,
     latestWorkout,
     xConnected,
     xLoading,
     editedProfile,
-    isEditingProfile,
     consoleTab,
     setConsoleTab,
     scrollToContent,
@@ -86,12 +86,7 @@ export function OverviewTab({
         hidden: { opacity: 0, y: 20 },
         visible: {
             opacity: 1,
-            y: 0,
-            transition: {
-                type: "spring",
-                stiffness: 100,
-                damping: 15
-            }
+            y: 0
         }
     };
 
@@ -283,7 +278,7 @@ export function OverviewTab({
                                 className="shadow-none"
                                 athlete={athlete}
                                 editedProfile={editedProfile}
-                                isEditing={isEditing}
+                                isEditing={isEditingProfile}
                                 savingProfile={savingProfile}
                                 onStartEdit={onStartEditProfile}
                                 onCancelEdit={onCancelEditProfile}

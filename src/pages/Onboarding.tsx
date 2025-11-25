@@ -534,7 +534,7 @@ export default function Onboarding() {
               <div className="flex justify-center mb-6">
                 <div className="relative">
                   <Avatar className="w-24 h-24">
-                    <AvatarImage src={avatar} objectFit="cover" />
+                    <AvatarImage src={avatar} className="object-cover" />
                     <AvatarFallback>{name?.charAt(0) || "F"}</AvatarFallback>
                   </Avatar>
                   <Label
@@ -606,12 +606,12 @@ export default function Onboarding() {
                   <div key={athlete.id} className="flex items-center justify-between p-4 border rounded-lg">
                     <div className="flex items-center gap-3">
                       <Avatar>
-                        <AvatarImage src={resolveAvatarUrl(athlete.avatar_url)} />
-                        <AvatarFallback>{athlete.display_name[0]}</AvatarFallback>
+                        <AvatarImage src={resolveAvatarUrl(athlete.avatar)} />
+                        <AvatarFallback>{athlete.name[0]}</AvatarFallback>
                       </Avatar>
                       <div>
-                        <p className="font-medium">{athlete.display_name}</p>
-                        <p className="text-sm text-muted-foreground">@{athlete.username}</p>
+                        <p className="font-medium">{athlete.name}</p>
+                        <p className="text-sm text-muted-foreground">{athlete.sport}</p>
                       </div>
                     </div>
                     <Button size="sm" variant="outline" onClick={() => handleBuyToken(athlete.id)}>
@@ -633,7 +633,7 @@ export default function Onboarding() {
               <div className="flex justify-center mb-6">
                 <div className="relative">
                   <Avatar className="w-24 h-24">
-                    <AvatarImage src={avatar} objectFit="cover" />
+                    <AvatarImage src={avatar} className="object-cover" />
                     <AvatarFallback>{name?.charAt(0) || "A"}</AvatarFallback>
                   </Avatar>
                   <Label
