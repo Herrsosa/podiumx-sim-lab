@@ -13,12 +13,14 @@ import NotFound from "./pages/NotFound";
 import StravaCallback from "./pages/StravaCallback";
 import StravaLinkedResult from "./pages/StravaLinkedResult";
 import MarketplaceSkeleton from "@/components/skeletons/MarketplaceSkeleton";
-import AthleteDetailSkeleton from "@/components/skeletons/AthleteDetailSkeleton";
+import AthleteDetailSkeleton from '@/components/skeletons/AthleteDetailSkeleton';
+import { PortfolioSkeleton } from '@/components/skeletons/PortfolioSkeleton';
+import { FeedSkeleton } from '@/components/skeletons/FeedSkeleton';
 import { queryClient } from "@/lib/queryClient";
 import { useOnboardingStatus } from "@/hooks/useOnboardingStatus";
 import { AuthProvider } from "@/providers/AuthProvider";
 import { useAuthLoading, useUser } from "@/store/auth";
-import { ErrorBoundary } from "@/components/ui/error-boundary";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 
 // Lazy load heavy pages
@@ -113,11 +115,7 @@ function AppContent() {
       <Route path="/feed" element={
         <RouteGuard>
           <Navigation />
-          <Suspense fallback={
-            <div className="min-h-screen flex items-center justify-center">
-              <LoadingSpinner size="lg" />
-            </div>
-          }>
+          <Suspense fallback={<FeedSkeleton />}>
             <FeedPage />
           </Suspense>
         </RouteGuard>
@@ -133,96 +131,7 @@ function AppContent() {
       <Route path="/portfolio" element={
         <RouteGuard requireAuth>
           <Navigation />
-          <Suspense fallback={
-            <div className="min-h-screen flex items-center justify-center">
-              <LoadingSpinner size="lg" />
-            </div>
-          }>
-            <Portfolio />
-          </Suspense>
-        </RouteGuard>
-      } />
-      <Route path="/my-athlete" element={<Navigate to="/my-athlete/overview" replace />} />
-      <Route path="/my-athlete/overview" element={
-        <RouteGuard requireAuth>
-          <Navigation />
-          <Suspense fallback={
-            <div className="min-h-screen flex items-center justify-center">
-              <LoadingSpinner size="lg" />
-            </div>
-          }>
-            <MyAthletePage />
-          </Suspense>
-        </RouteGuard>
-      } />
-      <Route path="/my-athlete/locker" element={
-        <RouteGuard requireAuth>
-          <Navigation />
-          <Suspense fallback={
-            <div className="min-h-screen flex items-center justify-center">
-              <LoadingSpinner size="lg" />
-            </div>
-          }>
-            <MyAthleteLocker />
-          </Suspense>
-        </RouteGuard>
-      } />
-      <Route path="/my-athlete/locker/:section" element={
-        <RouteGuard requireAuth>
-          <Navigation />
-          <Suspense fallback={
-            <div className="min-h-screen flex items-center justify-center">
-              <LoadingSpinner size="lg" />
-            </div>
-          }>
-            <MyAthleteLocker />
-          </Suspense>
-        </RouteGuard>
-      } />
-      <Route path="/my-athlete/locker/:section/:conversationId" element={
-        <RouteGuard requireAuth>
-          <Navigation />
-          <Suspense fallback={
-            <div className="min-h-screen flex items-center justify-center">
-              <LoadingSpinner size="lg" />
-            </div>
-          }>
-            <MyAthleteLocker />
-          </Suspense>
-        </RouteGuard>
-      } />
-      <Route path="/my-athlete-profile" element={<Navigate to="/my-athlete/overview" replace />} />
-      <Route path="/strava/callback" element={
-        <RouteGuard requireAuth>
-          <StravaCallback />
-        </RouteGuard>
-      } />
-      <Route path="/linked/strava" element={<StravaLinkedResult />} />
-      <Route path="/globe-demo" element={
-        <Suspense fallback={
-          <div className="min-h-screen flex items-center justify-center">
-            <LoadingSpinner size="lg" />
-          </div>
-        }>
-          <GlobeDemo />
-        </Suspense>
-      } />
-      <Route path="/athlete/:slug" element={
-        <RouteGuard>
-          <Navigation />
-          <Suspense fallback={<AthleteDetailSkeleton />}>
-            <AthleteDetail />
-          </Suspense>
-        </RouteGuard>
-      } />
-      <Route path="/portfolio" element={
-        <RouteGuard requireAuth>
-          <Navigation />
-          <Suspense fallback={
-            <div className="min-h-screen flex items-center justify-center">
-              <LoadingSpinner size="lg" />
-            </div>
-          }>
+          <Suspense fallback={<PortfolioSkeleton />}>
             <Portfolio />
           </Suspense>
         </RouteGuard>
