@@ -26,7 +26,7 @@ interface LockerMessagesProps {
   onConversationChange?: (id: string | null) => void;
 }
 
-export default function LockerMessages({
+export function LockerMessages({
   athleteId,
   athleteName,
   mode = 'default',

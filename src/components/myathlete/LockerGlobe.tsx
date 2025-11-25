@@ -10,7 +10,7 @@ interface LockerGlobeProps {
   athleteName: string;
 }
 
-export default function LockerGlobe({ athleteId, athleteName }: LockerGlobeProps) {
+export function LockerGlobe({ athleteId, athleteName }: LockerGlobeProps) {
   const { data: locations, isLoading, error } = useGlobeData(athleteId);
   const [rotation, setRotation] = useState<[number, number, number]>([0, -20, 0]);
 
@@ -56,7 +56,7 @@ export default function LockerGlobe({ athleteId, athleteName }: LockerGlobeProps
       </div>
 
       <div className="bg-muted/30 rounded-lg p-4 flex justify-center">
-        <MiniGlobe 
+        <MiniGlobe
           rotation={rotation}
           pins={pins}
           width={600}

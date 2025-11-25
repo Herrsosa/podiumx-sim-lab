@@ -12,7 +12,7 @@ import ConnectXButton from '@/components/social/ConnectXButton';
 import XBadge from '@/components/social/XBadge';
 import { getAvatarAsset, resolveAvatarUrl } from '@/utils/avatar';
 import type { Athlete, Sport } from '@/types';
-import type { EditableProfile } from '@/pages/my-athletes/types';
+import type { EditableProfile } from '@/pages/MyAthlete/mobile/types';
 import { OptimizedImage } from '@/components/OptimizedImage';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useXConnection } from '@/hooks/useXConnection';

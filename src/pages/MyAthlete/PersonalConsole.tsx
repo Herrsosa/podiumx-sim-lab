@@ -12,11 +12,11 @@ import { toast } from 'sonner';
 import { useUser } from '@/store/auth';
 import { supabase } from '@/integrations/supabase/client';
 import TokengatedChat from '@/components/TokengatedChat';
-const LockerMessages = lazy(() => import('@/components/myathlete/LockerMessages'));
+const LockerMessages = lazy(() => import('@/components/myathlete/LockerMessages').then(module => ({ default: module.LockerMessages })));
 import { useQueryClient } from '@tanstack/react-query';
 import { SupabaseResponsiveImage } from '@/components/SupabaseResponsiveImage';
-import { ProfileDetailsCard } from '@/components/my-athlete/ProfileDetailsCard';
-import type { EditableProfile } from '@/pages/my-athletes/types';
+import { ProfileDetailsCard } from '@/components/myathlete/ProfileDetailsCard';
+import type { EditableProfile } from '@/pages/MyAthlete/mobile/types';
 import ProofOfSweat from '@/components/ProofOfSweat';
 import {
   AlertDialog,
@@ -164,7 +164,7 @@ export function PersonalConsole({
       if (error) throw error;
 
       toast.success('Workout deleted');
-      
+
       queryClient.invalidateQueries({ queryKey: ['my-athlete', user?.id] });
     } catch (error: unknown) {
       toast.error((error as Error).message || 'Failed to delete workout');
@@ -216,10 +216,10 @@ export function PersonalConsole({
       {priceSeries.length > 0 && (
         <Card className="glass-card">
           <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <TrendingUp className="h-5 w-5" />
-                Athlete Card Chart
-              </CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              <TrendingUp className="h-5 w-5" />
+              Athlete Card Chart
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <Tabs value={activeTimeRange} onValueChange={(value) => handleTimeRangeChange(value as TimeRangeKey)} className="mb-4">
@@ -246,7 +246,7 @@ export function PersonalConsole({
                 syncId="myathlete-chart"
               />
             </div>
-            
+
             {/* Token Stats - Compact list style below chart */}
             <div className="pt-4 border-t border-border">
               <h3 className="text-sm font-semibold mb-3 text-muted-foreground">Stats</h3>
@@ -351,7 +351,7 @@ export function PersonalConsole({
               athleteId={user.id}
               athleteName={athlete?.name || ''}
               userHoldings={1}
-              onBuyClick={() => {}}
+              onBuyClick={() => { }}
             />
           )}
         </TabsContent>

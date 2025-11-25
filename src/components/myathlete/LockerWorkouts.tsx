@@ -28,7 +28,7 @@ interface LockerWorkoutsProps {
   viewerHoldings?: number;
 }
 
-export default function LockerWorkouts({
+export function LockerWorkouts({
   athleteId: lockerAthleteId,
   athleteName: lockerAthleteName,
   isOwner: isOwnerProp,
@@ -181,7 +181,7 @@ export default function LockerWorkouts({
     () => workoutsQuery.workouts ?? [],
     [workoutsQuery.workouts]
   );
-  
+
 
   const { workouts, posts } = useMemo(() => {
     const assembledWorkouts = workoutItems
@@ -304,7 +304,7 @@ export default function LockerWorkouts({
       )}
 
       {!intersectionFailed && <div ref={loadMoreRef} className="h-8" aria-hidden="true" />}
-      
+
       {hasNextPage && (
         <div className="flex flex-col items-center gap-3">
           {intersectionFailed || isFetchingNextPage ? (

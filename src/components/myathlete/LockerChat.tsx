@@ -8,7 +8,7 @@ interface LockerChatProps {
   athleteSlug: string;
 }
 
-export default function LockerChat({ athleteId, athleteName, athleteSlug }: LockerChatProps) {
+export function LockerChat({ athleteId, athleteName, athleteSlug }: LockerChatProps) {
   const { data: accessData, isLoading: accessLoading } = useAccessTier(athleteId);
 
   if (accessLoading) {

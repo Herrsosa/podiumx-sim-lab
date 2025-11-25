@@ -117,7 +117,7 @@ export default function TokengatedChat({
   };
 
   return (
-    <Card className="glass-card flex max-h-[var(--card-h)] flex-col overflow-hidden">
+    <Card className="glass-card flex h-[500px] flex-col overflow-hidden">
       <CardHeader className="px-5 py-4">
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-2">
@@ -129,7 +129,7 @@ export default function TokengatedChat({
           </Badge>
         </div>
       </CardHeader>
-      <CardContent className="flex flex-1 flex-col gap-3 px-5 pb-4 pt-0">
+      <CardContent className="flex flex-1 flex-col gap-3 min-h-0 px-5 pb-4 pt-0">
         <div
           ref={scrollRef}
           onScroll={handleScroll}
@@ -197,11 +197,10 @@ function ChatMessageBubble({
           <span className="text-xs text-muted-foreground">{timestamp}</span>
         </div>
         <div
-          className={`whitespace-pre-line break-words rounded-lg px-4 py-2 text-sm ${
-            isOwn
-              ? 'bg-primary text-primary-foreground'
-              : 'bg-background text-foreground shadow-sm'
-          }`}
+          className={`whitespace-pre-line break-words rounded-lg px-4 py-2 text-sm ${isOwn
+            ? 'bg-primary text-primary-foreground'
+            : 'bg-background text-foreground shadow-sm'
+            }`}
         >
           {message.content}
         </div>

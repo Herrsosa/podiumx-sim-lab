@@ -18,7 +18,7 @@ import WorkoutPosts from '@/components/WorkoutPosts';
 import AddWorkoutModal from '@/components/AddWorkoutModal';
 import { LockerGate } from '@/components/myathlete/LockerGate';
 import { LockerView, type LockerTab } from '@/pages/MyAthlete/LockerView';
-import LockerMessages from '@/components/myathlete/LockerMessages';
+import { LockerMessages } from '@/components/myathlete/LockerMessages';
 import { useQueryClient } from '@tanstack/react-query';
 import AthleteDetailSkeleton from '@/components/skeletons/AthleteDetailSkeleton';
 import { ChartSkeleton } from '@/components/ui/skeletons';

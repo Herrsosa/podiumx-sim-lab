@@ -5,11 +5,11 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useUser } from '@/store/auth';
 import { useAccessTier } from '@/hooks/useAccessTier';
 
-const LockerWorkouts = lazy(() => import('@/components/myathlete/LockerWorkouts'));
-const LockerGlobe = lazy(() => import('@/components/myathlete/LockerGlobe'));
-const LockerResources = lazy(() => import('@/components/myathlete/LockerResources'));
-const LockerChat = lazy(() => import('@/components/myathlete/LockerChat'));
-const LockerMessages = lazy(() => import('@/components/myathlete/LockerMessages'));
+const LockerWorkouts = lazy(() => import('@/components/myathlete/LockerWorkouts').then(module => ({ default: module.LockerWorkouts })));
+const LockerGlobe = lazy(() => import('@/components/myathlete/LockerGlobe').then(module => ({ default: module.LockerGlobe })));
+const LockerResources = lazy(() => import('@/components/myathlete/LockerResources').then(module => ({ default: module.LockerResources })));
+const LockerChat = lazy(() => import('@/components/myathlete/LockerChat').then(module => ({ default: module.LockerChat })));
+const LockerMessages = lazy(() => import('@/components/myathlete/LockerMessages').then(module => ({ default: module.LockerMessages })));
 
 export type LockerTab = 'workouts' | 'globe' | 'resources' | 'chat' | 'messages';
 
@@ -58,7 +58,7 @@ export function LockerView({ athleteId, athleteName, athleteSlug, initialTab }: 
           <TabsTrigger value="workouts">Workouts</TabsTrigger>
           <TabsTrigger value="globe">Globe</TabsTrigger>
           <TabsTrigger value="resources">Resources</TabsTrigger>
-          <TabsTrigger value="chat">Chat</TabsTrigger>
+          <TabsTrigger value="chat">Community Chat</TabsTrigger>
           <TabsTrigger value="messages">Messages</TabsTrigger>
         </TabsList>
 

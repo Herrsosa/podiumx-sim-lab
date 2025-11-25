@@ -1,7 +1,7 @@
 import { Card, CardContent } from '@/components/ui/card';
 import { FileText, Video, Image as ImageIcon } from 'lucide-react';
 
-export default function LockerResources() {
+export function LockerResources() {
   return (
     <div className="space-y-6 p-6">
       <div>

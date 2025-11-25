@@ -7,10 +7,10 @@ import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useMyAthlete } from '@/hooks/useMyAthlete';
 
-const LockerWorkouts = lazy(() => import('@/components/myathlete/LockerWorkouts'));
-const LockerResources = lazy(() => import('@/components/myathlete/LockerResources'));
-const LockerChat = lazy(() => import('@/components/myathlete/LockerChat'));
-const LockerMessages = lazy(() => import('@/components/myathlete/LockerMessages'));
+const LockerWorkouts = lazy(() => import('@/components/myathlete/LockerWorkouts').then(module => ({ default: module.LockerWorkouts })));
+const LockerResources = lazy(() => import('@/components/myathlete/LockerResources').then(module => ({ default: module.LockerResources })));
+const LockerChat = lazy(() => import('@/components/myathlete/LockerChat').then(module => ({ default: module.LockerChat })));
+const LockerMessages = lazy(() => import('@/components/myathlete/LockerMessages').then(module => ({ default: module.LockerMessages })));
 
 const TAB_KEYS = ['workouts', 'resources', 'chat', 'messages'] as const;
 type LockerTab = (typeof TAB_KEYS)[number];
@@ -84,7 +84,7 @@ export default function Locker() {
           <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="workouts">Workouts</TabsTrigger>
             <TabsTrigger value="resources">Resources</TabsTrigger>
-            <TabsTrigger value="chat">Chat</TabsTrigger>
+            <TabsTrigger value="chat">Community Chat</TabsTrigger>
             <TabsTrigger value="messages">Messages</TabsTrigger>
           </TabsList>
 
