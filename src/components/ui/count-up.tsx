@@ -29,7 +29,7 @@ export function CountUp({
         stiffness: 100,
         duration: duration * 1000,
     });
-    const isInView = useInView(ref, { once: true, margin: "-100px" });
+    const isInView = useInView(ref, { once: true, margin: "0px" });
 
     useEffect(() => {
         if (isInView) {
@@ -45,9 +45,19 @@ export function CountUp({
             maximumFractionDigits: decimalPlaces,
         });
 
-        springValue.on("change", (latest) => {
+        // Set initial value immediately
+        if (ref.current) {
+            const current = springValue.get();
+            // Handle NaN or invalid numbers gracefully
+            const safeValue = isNaN(current) ? 0 : current;
+            ref.current.textContent = `${prefix}${formatter.format(safeValue)}${suffix}`;
+        }
+
+        return springValue.on("change", (latest) => {
             if (ref.current) {
-                ref.current.textContent = `${prefix}${formatter.format(latest)}${suffix}`;
+                // Handle NaN or invalid numbers gracefully
+                const safeLatest = isNaN(latest) ? 0 : latest;
+                ref.current.textContent = `${prefix}${formatter.format(safeLatest)}${suffix}`;
             }
         });
     }, [springValue, decimalPlaces, prefix, suffix]);

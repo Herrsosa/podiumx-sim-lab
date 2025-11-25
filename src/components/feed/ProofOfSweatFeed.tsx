@@ -217,6 +217,7 @@ export function ProofOfSweatFeed({
               const createdAt = new Date(item.post.created_at);
               const showSupportCta = !isOwner;
               const metrics = [
+                item.workout.type,
                 item.workout.distance ? `${item.workout.distance} km` : null,
                 item.workout.duration
                   ? `${Math.floor(item.workout.duration / 60)}h ${item.workout.duration % 60}m`

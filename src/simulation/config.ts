@@ -1,4 +1,5 @@
 import { Sport } from '@/types';
+import { athleteAvatarAssets } from '@/utils/athleteAvatars';
 
 export interface SimulationProfile {
     id: string;
@@ -11,6 +12,7 @@ export interface SimulationProfile {
         activeHours: { start: number; end: number }; // Hour of day (0-23)
     };
     preferredTokens?: string[]; // IDs of athletes they like to trade
+    avatar?: string;
 }
 
 // Based on the seed data in src/utils/seedData.ts
@@ -20,6 +22,7 @@ export const SIMULATION_PROFILES: SimulationProfile[] = [
         id: '1', // Nils
         name: 'Nils Bergström',
         sport: 'Running',
+        avatar: athleteAvatarAssets.nils.src,
         behavior: {
             tradeFrequency: 'medium',
             posFrequency: 'daily',
@@ -31,6 +34,7 @@ export const SIMULATION_PROFILES: SimulationProfile[] = [
         id: '2', // Mara
         name: 'Mara Chen',
         sport: 'HYROX',
+        avatar: athleteAvatarAssets.mara.src,
         behavior: {
             tradeFrequency: 'high',
             posFrequency: 'often',
@@ -42,6 +46,7 @@ export const SIMULATION_PROFILES: SimulationProfile[] = [
         id: '3', // Leo
         name: 'Leo Martinez',
         sport: 'Cycling',
+        avatar: athleteAvatarAssets.leo.src,
         behavior: {
             tradeFrequency: 'low',
             posFrequency: 'often',
@@ -53,6 +58,7 @@ export const SIMULATION_PROFILES: SimulationProfile[] = [
         id: '4', // Ava
         name: 'Ava Thompson',
         sport: 'Triathlon',
+        avatar: athleteAvatarAssets.ava.src,
         behavior: {
             tradeFrequency: 'medium',
             posFrequency: 'daily',
@@ -64,6 +70,7 @@ export const SIMULATION_PROFILES: SimulationProfile[] = [
         id: '5', // Kai
         name: 'Kai Anderson',
         sport: 'CrossFit',
+        avatar: athleteAvatarAssets.kai.src,
         behavior: {
             tradeFrequency: 'high',
             posFrequency: 'often',
@@ -75,6 +82,7 @@ export const SIMULATION_PROFILES: SimulationProfile[] = [
         id: '6', // Rio
         name: 'Rio Silva',
         sport: 'Swimming',
+        avatar: athleteAvatarAssets.rio.src,
         behavior: {
             tradeFrequency: 'low',
             posFrequency: 'often',
@@ -86,6 +94,7 @@ export const SIMULATION_PROFILES: SimulationProfile[] = [
         id: '7', // Zara
         name: 'Zara Williams',
         sport: 'Trail Run',
+        avatar: athleteAvatarAssets.zara.src,
         behavior: {
             tradeFrequency: 'medium',
             posFrequency: 'often',
@@ -97,6 +106,7 @@ export const SIMULATION_PROFILES: SimulationProfile[] = [
         id: '8', // Max
         name: 'Max Jensen',
         sport: 'Rowing',
+        avatar: athleteAvatarAssets.max.src,
         behavior: {
             tradeFrequency: 'low',
             posFrequency: 'rare',
