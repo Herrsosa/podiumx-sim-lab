@@ -1,6 +1,6 @@
 import { useMemo, lazy, Suspense } from "react";
 import { Link } from "react-router-dom";
-import { ArrowRight, Shield, TrendingUp, Dumbbell, Sparkles } from "lucide-react";
+import { ArrowRight, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { usePaginatedAthletes } from "@/hooks/usePaginatedAthletes";
@@ -67,14 +67,13 @@ export default function Landing() {
             </h1>
 
             <p className="text-xl text-muted-foreground max-w-2xl mx-auto lg:mx-0 leading-relaxed">
-              The first athlete identity network powered by your sweat.
-              Turn your workouts into a verifiable track record and trade on your potential.
+              Your Sweat. Your Equity. The first athlete network where hard work builds athlete identity.
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
               <Button size="lg" className="h-14 px-8 text-lg rounded-full bg-primary text-primary-foreground hover:bg-primary/90 shadow-lg shadow-primary/20 hover:shadow-primary/40 transition-all duration-300" asChild>
                 <Link to="/auth">
-                  Start Building <ArrowRight className="ml-2 h-5 w-5" />
+                  Start Building Identity <ArrowRight className="ml-2 h-5 w-5" />
                 </Link>
               </Button>
               <Button size="lg" variant="outline" onClick={handleScrollToExplore} className="h-14 px-8 text-lg rounded-full border-white/10 bg-white/5 hover:bg-white/10 backdrop-blur-sm">
@@ -82,20 +81,7 @@ export default function Landing() {
               </Button>
             </div>
 
-            <div className="pt-8 flex items-center justify-center lg:justify-start gap-8 text-sm text-muted-foreground">
-              <div className="flex items-center gap-2">
-                <div className="h-1 w-1 rounded-full bg-primary" />
-                <span>Proof-of-Sweat</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="h-1 w-1 rounded-full bg-primary" />
-                <span>On-Chain Identity</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="h-1 w-1 rounded-full bg-primary" />
-                <span>Real Yield</span>
-              </div>
-            </div>
+
           </motion.div>
 
           <motion.div
@@ -123,58 +109,8 @@ export default function Landing() {
       <section className="container mx-auto px-4 py-24 relative">
         <div className="absolute inset-0 bg-grid-white/5 [mask-image:linear-gradient(to_bottom,transparent,black,transparent)] pointer-events-none" />
 
-        {/* Value Props - Horizontal Scroll on Mobile */}
-        <div className="-mx-4 px-4 md:mx-0 md:px-0">
-          <div className="flex md:grid md:grid-cols-3 gap-8 overflow-x-auto scrollbar-hide snap-x snap-mandatory pb-4 md:pb-0 relative z-10">
-            {[
-              {
-                icon: Dumbbell,
-                title: "Proof of Sweat",
-                desc: "Verifiable workout data directly from Strava. No fake metrics, just pure effort.",
-                color: "text-primary",
-                bg: "bg-primary/10"
-              },
-              {
-                icon: TrendingUp,
-                title: "Dynamic Pricing",
-                desc: "Bonding curves ensure instant liquidity. Price moves based on supply and demand.",
-                color: "text-accent",
-                bg: "bg-accent/10"
-              },
-              {
-                icon: Shield,
-                title: "Token Utility",
-                desc: "Hold tokens to unlock exclusive content, chat access, and future rewards.",
-                color: "text-success",
-                bg: "bg-success/10"
-              }
-            ].map((item, i) => (
-              <motion.div
-                key={i}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.1 }}
-                className="min-w-[280px] md:min-w-0 snap-center"
-              >
-                <Card className="group h-full glass-card border-transparent hover:border-primary/20 transition-all duration-300 hover:shadow-xl hover:-translate-y-1">
-                  <CardContent className="pt-8">
-                    <div className={`w-14 h-14 rounded-2xl ${item.bg} flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300`}>
-                      <item.icon className={`w-7 h-7 ${item.color}`} />
-                    </div>
-                    <h3 className="text-xl font-bold mb-3">{item.title}</h3>
-                    <p className="text-muted-foreground leading-relaxed">
-                      {item.desc}
-                    </p>
-                  </CardContent>
-                </Card>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-
         {/* How It Works Steps */}
-        <div className="mt-32 relative z-10">
+        <div className="relative z-10">
           <div className="text-center mb-16 space-y-4">
             <motion.h2
               initial={{ opacity: 0, y: 20 }}
@@ -185,7 +121,7 @@ export default function Landing() {
               How It Works
             </motion.h2>
             <p className="text-muted-foreground max-w-2xl mx-auto text-lg">
-              Three simple steps to start building your athlete aura
+              Three simple steps to start building your athlete identity
             </p>
           </div>
 
@@ -195,20 +131,20 @@ export default function Landing() {
               {[
                 {
                   step: "1",
-                  title: "Create Profile & Verify",
+                  title: "Create Profile & Launch Token",
                   desc: "Create your account and complete your athlete profile to get started.",
                   color: "bg-success"
                 },
                 {
                   step: "2",
                   title: "Log Proof of Sweat",
-                  desc: "Log your workouts and share your progress with your supporters.",
+                  desc: "Log your workouts and share your progress with the community.",
                   color: "bg-primary"
                 },
                 {
                   step: "3",
-                  title: "Grow Your Athlete Card Cap",
-                  desc: "Build your Athlete Card Cap and grow a strong community around you.",
+                  title: "Grow Your Athlete Cap",
+                  desc: "Build your Athlete Cap and grow a strong community around you.",
                   color: "bg-success"
                 }
               ].map((item, i) => (
