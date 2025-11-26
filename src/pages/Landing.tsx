@@ -54,7 +54,7 @@ export default function Landing() {
             initial={{ opacity: 0, x: -50 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.8, ease: "easeOut" }}
-            className="space-y-8 text-center lg:text-left"
+            className="space-y-8 text-center lg:text-left relative z-20"
           >
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 backdrop-blur-sm">
               <span className="relative flex h-2 w-2">
@@ -93,7 +93,7 @@ export default function Landing() {
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 1, delay: 0.2 }}
-            className="relative h-[400px] sm:h-[500px] lg:h-[700px] w-full flex items-center justify-center mt-8 lg:mt-0"
+            className="relative h-[400px] sm:h-[500px] lg:h-[700px] w-full flex items-center justify-center mt-8 lg:mt-0 z-10"
           >
             {/* Subtle glow behind the globe to separate it from the gritty background */}
             <div className="absolute inset-0 bg-primary/5 blur-[100px] rounded-full transform scale-75" />

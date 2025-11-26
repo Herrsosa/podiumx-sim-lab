@@ -208,6 +208,8 @@ function AppContent() {
 
 import { LazyMotion, domAnimation } from "framer-motion";
 
+import { BottomTabBar } from "@/components/BottomTabBar";
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
@@ -218,6 +220,7 @@ const App = () => (
           <LazyMotion features={domAnimation}>
             <BrowserRouter>
               <AppContent />
+              <BottomTabBar />
             </BrowserRouter>
           </LazyMotion>
         </ErrorBoundary>

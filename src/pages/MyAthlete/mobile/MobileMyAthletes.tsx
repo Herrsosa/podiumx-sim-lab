@@ -89,6 +89,7 @@ export default function MobileMyAthletes({
 }: MobileMyAthletesProps) {
   const [activeTab, setActiveTab] = useState<(typeof MOBILE_TAB_KEYS)[number]>('overview');
   const [consoleTab, setConsoleTab] = useState<'personal' | 'locker'>('personal');
+  const [postsView, setPostsView] = useState<'feed' | 'globe'>('feed');
   const { isConnected: xConnected, loading: xLoading } = useXConnection();
 
   const chartWindow = useMemo(() => getWindowUTC(timeRange || '7d'), [timeRange]);
@@ -178,13 +179,11 @@ export default function MobileMyAthletes({
 
       <main className="flex-1 overflow-x-hidden pb-24">
         <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as typeof activeTab)} className="space-y-4 px-4 py-4">
-          <TabsList className="grid w-full grid-cols-6 gap-1 rounded-2xl bg-muted/40 p-1 overflow-x-auto">
-            <TabsTrigger value="overview" className="text-xs px-1">Overview</TabsTrigger>
-            <TabsTrigger value="chart" className="text-xs px-1">Chart</TabsTrigger>
-            <TabsTrigger value="trades" className="text-xs px-1">Trades</TabsTrigger>
-            <TabsTrigger value="posts" className="text-xs px-1">Posts</TabsTrigger>
-            <TabsTrigger value="globe" className="text-xs px-1">Globe</TabsTrigger>
-            <TabsTrigger value="dm" className="text-xs px-1">DM</TabsTrigger>
+          <TabsList className="flex w-full gap-1 rounded-2xl bg-muted/40 p-1 overflow-x-auto no-scrollbar">
+            <TabsTrigger value="overview" className="text-xs px-3 flex-shrink-0">Overview</TabsTrigger>
+            <TabsTrigger value="chart" className="text-xs px-3 flex-shrink-0">Chart</TabsTrigger>
+            <TabsTrigger value="trades" className="text-xs px-3 flex-shrink-0">Trades</TabsTrigger>
+            <TabsTrigger value="posts" className="text-xs px-3 flex-shrink-0">Posts</TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview" className="min-w-0">
@@ -231,72 +230,92 @@ export default function MobileMyAthletes({
 
           <TabsContent value="posts" className="min-w-0 space-y-4">
             <div className="flex items-center justify-between">
-              <h2 className="text-base font-semibold">Workout Timeline</h2>
-              <Button onClick={onAddWorkout} size="sm">
-                <Plus className="mr-2 h-4 w-4" />
-                Add
-              </Button>
-            </div>
-            {isLoading ? (
-              <div className="space-y-3">
-                <Skeleton className="h-40 w-full" />
-                <Skeleton className="h-40 w-full" />
-              </div>
-            ) : workouts.length === 0 ? (
-              <Card>
-                <CardContent className="space-y-4 p-6 text-center text-sm text-muted-foreground">
-                  <p>No workouts yet. Add your first session to begin your Proof-of-Sweat streak.</p>
-                  <Button onClick={onAddWorkout} className="w-full">
-                    Log Workout
+              <div className="flex items-center gap-2">
+                <h2 className="text-base font-semibold">Activity</h2>
+                <div className="flex items-center bg-muted/50 rounded-lg p-0.5">
+                  <Button
+                    variant={postsView === 'feed' ? 'secondary' : 'ghost'}
+                    size="sm"
+                    className="h-7 text-xs px-2"
+                    onClick={() => setPostsView('feed')}
+                  >
+                    Feed
                   </Button>
+                  <Button
+                    variant={postsView === 'globe' ? 'secondary' : 'ghost'}
+                    size="sm"
+                    className="h-7 text-xs px-2"
+                    onClick={() => setPostsView('globe')}
+                  >
+                    Globe
+                  </Button>
+                </div>
+              </div>
+              {postsView === 'feed' && (
+                <Button onClick={onAddWorkout} size="sm">
+                  <Plus className="mr-2 h-4 w-4" />
+                  Add
+                </Button>
+              )}
+            </div>
+
+            {postsView === 'globe' ? (
+              <Card className="border-white/5 bg-card/60 backdrop-blur-sm overflow-hidden">
+                <CardContent className="p-0">
+                  <Suspense fallback={<div className="p-8"><Skeleton className="h-64 w-full" /></div>}>
+                    <LockerGlobe athleteId={athlete.id} athleteName={athlete.name} />
+                  </Suspense>
                 </CardContent>
               </Card>
             ) : (
               <>
-                <ProofOfSweat
-                  athleteId={athlete.id}
-                  athleteName={athlete.name}
-                  workouts={workouts}
-                  posts={posts}
-                  viewerHoldings={Number.MAX_SAFE_INTEGER}
-                  onWorkoutDeleted={() => { }}
-                  onWorkoutUpdated={() => {
-                    if (onRefetchWorkouts) {
-                      onRefetchWorkouts();
-                    }
-                  }}
-                />
-                {hasNextPage && (
-                  <Button onClick={fetchNextPage} disabled={isFetchingNextPage} variant="outline" className="w-full">
-                    {isFetchingNextPage ? 'Loading…' : 'Load more'}
-                  </Button>
+                {isLoading ? (
+                  <div className="space-y-3">
+                    <Skeleton className="h-40 w-full" />
+                    <Skeleton className="h-40 w-full" />
+                  </div>
+                ) : workouts.length === 0 ? (
+                  <Card>
+                    <CardContent className="space-y-4 p-6 text-center text-sm text-muted-foreground">
+                      <p>No workouts yet. Add your first session to begin your Proof-of-Sweat streak.</p>
+                      <Button onClick={onAddWorkout} className="w-full">
+                        Log Workout
+                      </Button>
+                    </CardContent>
+                  </Card>
+                ) : (
+                  <>
+                    <ProofOfSweat
+                      athleteId={athlete.id}
+                      athleteName={athlete.name}
+                      workouts={workouts}
+                      posts={posts}
+                      viewerHoldings={Number.MAX_SAFE_INTEGER}
+                      onWorkoutDeleted={() => { }}
+                      onWorkoutUpdated={() => {
+                        if (onRefetchWorkouts) {
+                          onRefetchWorkouts();
+                        }
+                      }}
+                    />
+                    {hasNextPage && (
+                      <Button onClick={fetchNextPage} disabled={isFetchingNextPage} variant="outline" className="w-full">
+                        {isFetchingNextPage ? 'Loading…' : 'Load more'}
+                      </Button>
+                    )}
+                    <StravaCard className="mt-4" />
+                  </>
                 )}
-                <StravaCard className="mt-4" />
               </>
             )}
           </TabsContent>
 
-          <TabsContent value="globe" className="min-w-0">
-            <Card className="border-white/5 bg-card/60 backdrop-blur-sm overflow-hidden">
-              <CardContent className="p-0">
-                <Suspense fallback={<div className="p-8"><Skeleton className="h-64 w-full" /></div>}>
-                  <LockerGlobe athleteId={athlete.id} athleteName={athlete.name} />
-                </Suspense>
-              </CardContent>
-            </Card>
-          </TabsContent>
 
-          <TabsContent value="dm" className="min-w-0">
-            <LockerMessages
-              athleteId={athlete.id}
-              athleteName={athlete.name}
-              mode="embedded"
-            />
-          </TabsContent>
         </Tabs>
       </main>
 
       <MobileActionBar
+        className="bottom-16"
         actions={[
           {
             id: 'add-pos',

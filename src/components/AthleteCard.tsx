@@ -132,14 +132,14 @@ export const AthleteCard = memo(({ athlete, chartData, onClick, onMouseEnter }: 
             </div>
           </div>
 
-          <div className="p-6">
+          <div className="p-3 sm:p-6">
             {/* Avatar & Name */}
-            <div className="mb-4 flex items-center gap-3">
-              <div className="flex-1">
-                <h3 className="font-semibold truncate">{athlete.name}</h3>
+            <div className="mb-2 sm:mb-4 flex items-center gap-2 sm:gap-3">
+              <div className="flex-1 min-w-0">
+                <h3 className="font-semibold truncate text-sm sm:text-base">{athlete.name}</h3>
                 <Badge
                   variant="secondary"
-                  className={cn("text-xs mt-1 border", SPORT_COLORS[athlete.sport] || "bg-secondary text-secondary-foreground")}
+                  className={cn("text-[10px] sm:text-xs mt-1 border px-1.5 py-0 sm:px-2.5 sm:py-0.5", SPORT_COLORS[athlete.sport] || "bg-secondary text-secondary-foreground")}
                 >
                   {athlete.sport}
                 </Badge>
@@ -148,11 +148,11 @@ export const AthleteCard = memo(({ athlete, chartData, onClick, onMouseEnter }: 
 
             {/* Price */}
             <div className="mb-2">
-              <div className="text-2xl font-bold tracking-tight">
+              <div className="text-lg sm:text-2xl font-bold tracking-tight">
                 $<CountUp value={athlete.price} decimalPlaces={2} duration={1.5} />
               </div>
               <div
-                className={`flex items-center gap-1 text-sm font-medium ${isPositive ? 'text-success' : 'text-destructive'
+                className={`flex items-center gap-1 text-[10px] sm:text-sm font-medium ${isPositive ? 'text-success' : 'text-destructive'
                   }`}
               >
                 {isPositive ? (
@@ -166,11 +166,11 @@ export const AthleteCard = memo(({ athlete, chartData, onClick, onMouseEnter }: 
             </div>
 
             {/* Price Trend */}
-            <div className="mb-4">
-              <div className="mb-2 flex items-center justify-between text-[0.65rem] uppercase tracking-wide text-muted-foreground">
+            <div className="mb-2 sm:mb-4">
+              <div className="mb-1 sm:mb-2 flex items-center justify-between text-[0.65rem] uppercase tracking-wide text-muted-foreground">
                 <span>Price (7d)</span>
               </div>
-              <div className="h-20">
+              <div className="h-12 sm:h-20">
                 {hasChartData ? (
                   <ResponsiveContainer width="100%" height="100%">
                     <LineChart
@@ -225,14 +225,14 @@ export const AthleteCard = memo(({ athlete, chartData, onClick, onMouseEnter }: 
             </div>
 
             {/* Stats */}
-            <div className="grid grid-cols-2 gap-2 text-xs border-t pt-3 border-border/50">
+            <div className="grid grid-cols-2 gap-2 text-[10px] sm:text-xs border-t pt-2 sm:pt-3 border-border/50">
               <div>
                 <div className="text-muted-foreground mb-0.5">Supply</div>
-                <div className="font-medium">{formatNumber(athlete.supply)}</div>
+                <div className="font-medium truncate">{formatNumber(athlete.supply)}</div>
               </div>
               <div>
-                <div className="text-muted-foreground mb-0.5">Market Cap</div>
-                <div className="font-medium">{formatMoney(athlete.marketCap)}</div>
+                <div className="text-muted-foreground mb-0.5">Mkt Cap</div>
+                <div className="font-medium truncate">{formatMoney(athlete.marketCap)}</div>
               </div>
             </div>
           </div>

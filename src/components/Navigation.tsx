@@ -64,7 +64,7 @@ export default function Navigation() {
   }, []);
 
   return (
-    <nav className="sticky top-0 z-50 border-b border-border/50 bg-background/95 backdrop-blur-xl shadow-sm">
+    <nav className="sticky top-0 z-50 border-b border-border/50 bg-background/95 backdrop-blur-xl shadow-sm hidden md:block">
       <div className="container mx-auto px-2 sm:px-4">
         <div className="flex h-16 sm:h-18 items-center justify-between">
           {/* Logo */}
@@ -160,7 +160,7 @@ export default function Navigation() {
                         alert('Simulation failed to start');
                       }
                     }}
-                    className="gap-2 min-h-[44px] hidden sm:inline-flex text-destructive hover:text-destructive"
+                    className="gap-2 min-h-[44px] hidden md:inline-flex text-destructive hover:text-destructive"
                   >
                     <Activity className="h-4 w-4" />
                     <span>Sim</span>
