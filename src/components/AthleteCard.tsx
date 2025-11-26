@@ -132,14 +132,14 @@ export const AthleteCard = memo(({ athlete, chartData, onClick, onMouseEnter }: 
             </div>
           </div>
 
-          <div className="p-3 sm:p-6">
+          <div className="p-3">
             {/* Avatar & Name */}
-            <div className="mb-2 sm:mb-4 flex items-center gap-2 sm:gap-3">
+            <div className="mb-2 flex items-center gap-2">
               <div className="flex-1 min-w-0">
-                <h3 className="font-semibold truncate text-sm sm:text-base">{athlete.name}</h3>
+                <h3 className="font-semibold truncate text-sm">{athlete.name}</h3>
                 <Badge
                   variant="secondary"
-                  className={cn("text-[10px] sm:text-xs mt-1 border px-1.5 py-0 sm:px-2.5 sm:py-0.5", SPORT_COLORS[athlete.sport] || "bg-secondary text-secondary-foreground")}
+                  className={cn("text-[10px] mt-1 border px-1.5 py-0", SPORT_COLORS[athlete.sport] || "bg-secondary text-secondary-foreground")}
                 >
                   {athlete.sport}
                 </Badge>
@@ -148,11 +148,11 @@ export const AthleteCard = memo(({ athlete, chartData, onClick, onMouseEnter }: 
 
             {/* Price */}
             <div className="mb-2">
-              <div className="text-lg sm:text-2xl font-bold tracking-tight">
+              <div className="text-lg font-bold tracking-tight">
                 $<CountUp value={athlete.price} decimalPlaces={2} duration={1.5} />
               </div>
               <div
-                className={`flex items-center gap-1 text-[10px] sm:text-sm font-medium ${isPositive ? 'text-success' : 'text-destructive'
+                className={`flex items-center gap-1 text-[10px] font-medium ${isPositive ? 'text-success' : 'text-destructive'
                   }`}
               >
                 {isPositive ? (
@@ -166,11 +166,11 @@ export const AthleteCard = memo(({ athlete, chartData, onClick, onMouseEnter }: 
             </div>
 
             {/* Price Trend */}
-            <div className="mb-2 sm:mb-4">
-              <div className="mb-1 sm:mb-2 flex items-center justify-between text-[0.65rem] uppercase tracking-wide text-muted-foreground">
+            <div className="mb-2">
+              <div className="mb-1 flex items-center justify-between text-[0.65rem] uppercase tracking-wide text-muted-foreground">
                 <span>Price (7d)</span>
               </div>
-              <div className="h-12 sm:h-20">
+              <div className="h-14">
                 {hasChartData ? (
                   <ResponsiveContainer width="100%" height="100%">
                     <LineChart
@@ -184,22 +184,23 @@ export const AthleteCard = memo(({ athlete, chartData, onClick, onMouseEnter }: 
                         tickLine={false}
                         tickFormatter={(value) => format(new Date(value), 'MMM d')}
                         minTickGap={16}
-                        tick={{ fontSize: 10, fill: 'var(--muted-foreground)' }}
+                        tick={{ fontSize: 9, fill: 'var(--muted-foreground)' }}
                       />
                       <YAxis
                         axisLine={false}
                         tickLine={false}
                         tickFormatter={(value) => `$${Number(value).toFixed(2)}`}
-                        width={42}
+                        width={36}
                         domain={priceDomain ?? ['auto', 'auto']}
-                        tick={{ fontSize: 10, fill: 'var(--muted-foreground)' }}
+                        tick={{ fontSize: 9, fill: 'var(--muted-foreground)' }}
                       />
                       <Tooltip
                         contentStyle={{
                           backgroundColor: 'hsl(var(--popover))',
                           borderColor: 'hsl(var(--border))',
                           borderRadius: '8px',
-                          fontSize: '12px'
+                          fontSize: '11px',
+                          padding: '4px 8px'
                         }}
                         cursor={{ stroke: lineColor, strokeWidth: 1, opacity: 0.2 }}
                         formatter={(value: number) => [`$${Number(value).toFixed(2)}`, 'Price']}
@@ -209,15 +210,15 @@ export const AthleteCard = memo(({ athlete, chartData, onClick, onMouseEnter }: 
                         type="monotone"
                         dataKey="price"
                         stroke={lineColor}
-                        strokeWidth={2}
+                        strokeWidth={1.5}
                         dot={false}
-                        activeDot={{ r: 4, strokeWidth: 0 }}
+                        activeDot={{ r: 3, strokeWidth: 0 }}
                         animationDuration={1500}
                       />
                     </LineChart>
                   </ResponsiveContainer>
                 ) : (
-                  <div className="flex h-full items-center justify-center text-xs text-muted-foreground bg-muted/20 rounded-lg">
+                  <div className="flex h-full items-center justify-center text-[10px] text-muted-foreground bg-muted/20 rounded-lg">
                     No trade history
                   </div>
                 )}
@@ -225,7 +226,7 @@ export const AthleteCard = memo(({ athlete, chartData, onClick, onMouseEnter }: 
             </div>
 
             {/* Stats */}
-            <div className="grid grid-cols-2 gap-2 text-[10px] sm:text-xs border-t pt-2 sm:pt-3 border-border/50">
+            <div className="grid grid-cols-2 gap-2 text-[10px] border-t pt-2 border-border/50">
               <div>
                 <div className="text-muted-foreground mb-0.5">Supply</div>
                 <div className="font-medium truncate">{formatNumber(athlete.supply)}</div>
