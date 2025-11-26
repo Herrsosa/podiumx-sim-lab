@@ -379,36 +379,36 @@ export function StravaCard({ className }: StravaCardProps) {
   return (
     <>
       <Card className={cn("bg-card/60 border-border/60", className)}>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 px-4 py-3">
-          <div className="flex items-center gap-3">
+        <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between space-y-0 px-4 py-3">
+          <div className="flex items-center gap-3 w-full sm:w-auto">
             <button
               type="button"
               onClick={handleToggleCollapse}
-              className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-border/60 bg-background/60 text-muted-foreground hover:bg-background"
+              className="inline-flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-md border border-border/60 bg-background/60 text-muted-foreground hover:bg-background"
               aria-label={collapsed ? "Expand Strava card" : "Collapse Strava card"}
             >
               {collapsed ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
             </button>
-            <div className="flex flex-col gap-1">
-              <div className="flex items-center gap-2 text-sm font-medium">
-                <span className="flex items-center gap-1">
+            <div className="flex flex-col gap-1 min-w-0">
+              <div className="flex flex-wrap items-center gap-2 text-sm font-medium">
+                <span className="flex items-center gap-1 whitespace-nowrap">
                   <LinkIcon className="h-4 w-4" />
                   Strava Training
                 </span>
-                <Badge variant={connection ? "default" : "secondary"} className="text-xs">
+                <Badge variant={connection ? "default" : "secondary"} className="text-xs whitespace-nowrap">
                   {connection ? "Connected" : "Not Connected"}
                 </Badge>
               </div>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-xs text-muted-foreground truncate">
                 Last sync: {connectionLoading ? "Loading..." : lastSync}
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center justify-end gap-2 w-full sm:w-auto">
             <Button
               variant="outline"
               size="sm"
-              className="h-8 px-2"
+              className="h-8 px-2 flex-1 sm:flex-none"
               onClick={handleImport}
               disabled={importing || !connection}
             >
@@ -416,11 +416,11 @@ export function StravaCard({ className }: StravaCardProps) {
               {importing ? "Importing" : "Import"}
             </Button>
             {connection ? (
-              <Button variant="outline" size="sm" className="h-8 px-2" onClick={handleDisconnect}>
+              <Button variant="outline" size="sm" className="h-8 px-2 flex-1 sm:flex-none" onClick={handleDisconnect}>
                 Disconnect
               </Button>
             ) : (
-              <Button variant="outline" size="sm" className="h-8 px-2" onClick={handleConnect}>
+              <Button variant="outline" size="sm" className="h-8 px-2 flex-1 sm:flex-none" onClick={handleConnect}>
                 Connect
               </Button>
             )}
@@ -633,11 +633,11 @@ function ActivitiesList({
 
   const handleKeyDown = onSelect
     ? (activity: ActivityRecord) => (event: KeyboardEvent<HTMLDivElement>) => {
-        if (event.key === "Enter" || event.key === " ") {
-          event.preventDefault();
-          onSelect(activity);
-        }
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        onSelect(activity);
       }
+    }
     : null;
 
   return (

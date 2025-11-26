@@ -10,7 +10,7 @@ import ProofOfSweat from '@/components/ProofOfSweat';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
-import { Activity, ArrowDownRight, ArrowUpRight, Plus } from 'lucide-react';
+import { Activity, ArrowDownRight, ArrowUpRight, Plus, LogOut } from 'lucide-react';
 import { MOBILE_TAB_KEYS } from './mobile-config';
 import type { EditableProfile } from './types';
 import { StravaCard } from '@/components/strava/StravaCard';
@@ -19,6 +19,8 @@ import { LockerMessages } from '@/components/myathlete/LockerMessages';
 import type { PriceSeriesPoint } from '@/lib/charting/engine';
 import { getWindowUTC } from '@/lib/charting/engine';
 import { useChartPosts } from '@/hooks/useChartPosts';
+import { useAuthStore } from '@/store/auth';
+import { useToast } from '@/hooks/use-toast';
 
 import { OverviewTab } from './OverviewTab';
 import { ChartsTab } from './ChartsTab';
@@ -91,6 +93,21 @@ export default function MobileMyAthletes({
   const [consoleTab, setConsoleTab] = useState<'personal' | 'locker'>('personal');
   const [postsView, setPostsView] = useState<'feed' | 'globe'>('feed');
   const { isConnected: xConnected, loading: xLoading } = useXConnection();
+  const signOut = useAuthStore((s) => s.signOut);
+  const { toast } = useToast();
+
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : undefined;
+      toast({
+        title: "Sign out failed",
+        description: message || "Unable to sign out. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
 
   const chartWindow = useMemo(() => getWindowUTC(timeRange || '7d'), [timeRange]);
   const chartStartDate = chartWindow.start;
@@ -117,6 +134,14 @@ export default function MobileMyAthletes({
           <h1 className="truncate text-lg font-semibold">{athlete.name}</h1>
           <p className="text-sm text-muted-foreground">{athlete.sport}</p>
         </div>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={handleSignOut}
+          className="h-10 w-10 rounded-full bg-muted/40 hover:bg-destructive/10 hover:text-destructive"
+        >
+          <LogOut className="h-5 w-5" />
+        </Button>
       </div>
     );
   }, [athlete]);
