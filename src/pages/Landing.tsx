@@ -36,12 +36,17 @@ export default function Landing() {
   return (
     <div className="min-h-screen bg-background overflow-x-hidden">
       {/* Hero Section */}
-      <section className="relative min-h-[90vh] flex items-center pt-20 overflow-hidden">
-        {/* Background Elements */}
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-primary/10 via-background to-background" />
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-7xl h-full pointer-events-none">
-          <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-primary/20 blur-[120px] rounded-full mix-blend-screen opacity-50" />
-          <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-accent/20 blur-[120px] rounded-full mix-blend-screen opacity-50" />
+      <section className="relative min-h-[100vh] flex items-center pt-20 overflow-hidden">
+        {/* Background Elements - Gritty Warehouse Style */}
+        <div className="absolute inset-0 bg-background">
+          <div
+            className="absolute inset-0 bg-cover bg-[65%_center] md:bg-center bg-no-repeat opacity-50"
+            style={{ backgroundImage: "url('/gym-background-v2.png')" }}
+          />
+          {/* Subtle overlay to ensure text readability without hiding the image */}
+          <div className="absolute inset-0 bg-background/30" />
+          {/* Gradient to fade into the next section */}
+          <div className="absolute bottom-0 left-0 right-0 h-48 bg-gradient-to-t from-background via-background/80 to-transparent" />
         </div>
 
         <div className="container mx-auto px-4 grid lg:grid-cols-2 gap-12 items-center relative z-10">
@@ -59,7 +64,7 @@ export default function Landing() {
               <span className="text-xs font-medium tracking-wider uppercase text-muted-foreground">Live Beta</span>
             </div>
 
-            <h1 className="text-5xl sm:text-7xl font-bold tracking-tight leading-[1.1]">
+            <h1 className="text-4xl sm:text-5xl md:text-7xl font-bold tracking-tight leading-[1.1] px-2 sm:px-0">
               Train Hard.<br />
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-white via-blue-400 to-blue-600 animate-gradient-x">
                 Build Your Athlete Identity.
@@ -88,9 +93,10 @@ export default function Landing() {
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 1, delay: 0.2 }}
-            className="relative h-[500px] lg:h-[700px] w-full flex items-center justify-center"
+            className="relative h-[400px] sm:h-[500px] lg:h-[700px] w-full flex items-center justify-center mt-8 lg:mt-0"
           >
-            <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent z-10" />
+            {/* Subtle glow behind the globe to separate it from the gritty background */}
+            <div className="absolute inset-0 bg-primary/5 blur-[100px] rounded-full transform scale-75" />
             <Suspense fallback={<div className="w-64 h-64 rounded-full bg-white/5 animate-pulse" />}>
               <MiniGlobe
                 pins={samplePins}
@@ -103,10 +109,10 @@ export default function Landing() {
             </Suspense>
           </motion.div>
         </div>
-      </section>
+      </section >
 
       {/* Value Props Section */}
-      <section className="container mx-auto px-4 py-24 relative">
+      < section className="container mx-auto px-4 py-24 relative" >
         <div className="absolute inset-0 bg-grid-white/5 [mask-image:linear-gradient(to_bottom,transparent,black,transparent)] pointer-events-none" />
 
         {/* How It Works Steps */}
@@ -173,10 +179,10 @@ export default function Landing() {
             </div>
           </div>
         </div>
-      </section>
+      </section >
 
       {/* Global Proof-of-Sweat Feed */}
-      <section className="py-24 bg-muted/30 relative overflow-hidden">
+      < section className="py-24 bg-muted/30 relative overflow-hidden" >
         <div className="absolute inset-0 bg-gradient-to-b from-background to-transparent h-24" />
         <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-background to-transparent h-24" />
 
@@ -191,10 +197,10 @@ export default function Landing() {
             scrollable
           />
         </div>
-      </section>
+      </section >
 
       {/* Top Athletes Section */}
-      <section id="explore" className="py-24">
+      < section id="explore" className="py-24" >
         <div className="container mx-auto px-4">
           <div className="text-center mb-16 space-y-4">
             <motion.h2
@@ -247,7 +253,7 @@ export default function Landing() {
             </Button>
           </div>
         </div>
-      </section>
-    </div>
+      </section >
+    </div >
   );
 }
