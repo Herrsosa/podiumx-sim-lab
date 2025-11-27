@@ -29,15 +29,27 @@ export function useChartPosts(athleteId: string | undefined, startDate?: number)
     enabled: Boolean(athleteId),
     staleTime: startDate ? 2 * 60_000 : 5 * 60_000,
     gcTime: 10 * 60_000,
-    select: (rows) => rows.map(mapPostRowToPost),
+    select: (rows) =>
+      rows.map((row) => ({
+        id: row.id,
+        created_at: row.created_at,
+        author_id: row.author_id,
+        // We know workout_json is not null due to the query filter.
+        // We provide a minimal object to satisfy the type and truthiness check in AthletePriceChart.
+        workout_json: { id: row.id } as any,
+        image_url: null,
+        text: null,
+        token_gated: false,
+        strava_activity_id: null,
+        visibility: 'public',
+        min_tokens_required: 0,
+      })),
     queryFn: async () => {
       if (!athleteId) return [];
 
       let query = supabase
         .from('posts')
-        .select(
-          'id, created_at, author_id, workout_json, image_url, text, token_gated, strava_activity_id, visibility, min_tokens_required',
-        )
+        .select('id, created_at, author_id')
         .eq('author_id', athleteId)
         .not('workout_json', 'is', null)
         .order('created_at', { ascending: true });

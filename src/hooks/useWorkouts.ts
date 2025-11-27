@@ -30,17 +30,17 @@ export const mapPostRowToLockerWorkout = (row: PostRow): LockerWorkout => {
   const workoutJson = row.workout_json as Partial<Workout> | null;
   const workout: Workout | null = workoutJson
     ? ({
-        id: row.id,
-        ...workoutJson,
-        date: workoutJson.date ?? row.created_at,
-        notes: workoutJson.notes ?? row.text ?? '',
-        mediaUrl: workoutJson.mediaUrl ?? row.image_url ?? undefined,
-        mediaType:
-          workoutJson.mediaType ??
-          (row.image_url ? ('image' as const) : undefined),
-        visibility: (row.visibility as WorkoutVisibility) ?? 'public',
-        minTokensRequired: row.min_tokens_required ?? 0,
-      } as Workout)
+      id: row.id,
+      ...workoutJson,
+      date: workoutJson.date ?? row.created_at,
+      notes: workoutJson.notes ?? row.text ?? '',
+      mediaUrl: workoutJson.mediaUrl ?? row.image_url ?? undefined,
+      mediaType:
+        workoutJson.mediaType ??
+        (row.image_url ? ('image' as const) : undefined),
+      visibility: (row.visibility as WorkoutVisibility) ?? 'public',
+      minTokensRequired: row.min_tokens_required ?? 0,
+    } as Workout)
     : null;
 
   return {
@@ -72,7 +72,7 @@ interface UseWorkoutsOptions {
   viewerRole?: WorkoutViewerRole;
 }
 
-const DEFAULT_PAGE_SIZE = 30;
+const DEFAULT_PAGE_SIZE = 15;
 
 type WorkoutsPage = {
   items: LockerWorkout[];

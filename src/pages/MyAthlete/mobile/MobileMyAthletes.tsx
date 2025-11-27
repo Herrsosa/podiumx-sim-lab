@@ -1,4 +1,4 @@
-import { useMemo, useState, useRef, lazy, Suspense } from 'react';
+import { useMemo, useState, useRef, lazy, Suspense, useCallback } from 'react';
 import { Athlete, Workout, Post } from '@/types';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import type { TimeRangeKey } from '@/utils/chartData';
@@ -96,7 +96,7 @@ export default function MobileMyAthletes({
   const signOut = useAuthStore((s) => s.signOut);
   const { toast } = useToast();
 
-  const handleSignOut = async () => {
+  const handleSignOut = useCallback(async () => {
     try {
       await signOut();
     } catch (error) {
@@ -107,7 +107,7 @@ export default function MobileMyAthletes({
         variant: "destructive",
       });
     }
-  };
+  }, [signOut, toast]);
 
   const chartWindow = useMemo(() => getWindowUTC(timeRange || '7d'), [timeRange]);
   const chartStartDate = chartWindow.start;
@@ -144,7 +144,7 @@ export default function MobileMyAthletes({
         </Button>
       </div>
     );
-  }, [athlete]);
+  }, [athlete, handleSignOut]);
 
   const latestWorkout = useMemo(() => {
     if (workouts.length === 0) return null;
