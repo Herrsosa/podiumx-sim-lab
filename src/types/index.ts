@@ -41,6 +41,13 @@ export interface Post {
   author_id: string;
   visibility: 'public' | 'supporters' | 'backers';
   min_tokens_required: number;
+  location_city?: string | null;
+  location_country?: string | null;
+  location_country_code?: string | null;
+  location_geohash?: string | null;
+  location_lat?: number | null;
+  location_lng?: number | null;
+  has_location?: boolean | null;
 }
 
 export interface Trade {
