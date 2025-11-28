@@ -42,22 +42,14 @@ export default function Auth() {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (!isMounted) return;
       if (session) {
-        if (!session.user.email_confirmed_at) {
-          navigate('/verify-email');
-        } else {
-          navigate(redirectTarget, { replace: true });
-        }
+        navigate(redirectTarget, { replace: true });
       }
     });
 
     // Listen for auth changes (sign-up or sign-in)
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (session && (event === 'SIGNED_IN' || event === 'INITIAL_SESSION')) {
-        if (!session.user.email_confirmed_at) {
-          navigate('/verify-email');
-        } else {
-          navigate(redirectTarget, { replace: true });
-        }
+        navigate(redirectTarget, { replace: true });
       }
     });
 
@@ -83,16 +75,13 @@ export default function Auth() {
       const { error } = await supabase.auth.signUp({
         email,
         password,
-        options: {
-          emailRedirectTo: `${window.location.origin}/onboarding`,
-        },
       });
 
       if (error) throw error;
 
       toast({
-        title: "Check your email!",
-        description: "We've sent you a verification link. Click it to complete your signup and start your athlete journey.",
+        title: "Welcome to Athlyst!",
+        description: "Your account has been created successfully.",
       });
     } catch (error: unknown) {
       toast({
