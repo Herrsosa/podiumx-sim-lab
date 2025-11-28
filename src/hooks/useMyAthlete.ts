@@ -72,7 +72,7 @@ export function useMyAthlete() {
         .map(p => p.strava_activity_id)
         .filter((id): id is number => id !== null);
 
-      let activityMap = new Map<number, string>();
+      const activityMap = new Map<number, string>();
 
       if (stravaActivityIds.length > 0) {
         // Query by external_id (Strava ID) since posts.strava_activity_id is likely the Strava ID
@@ -87,7 +87,7 @@ export function useMyAthlete() {
 
         if (activities) {
           activities.forEach(activity => {
-            const raw = getActivityRaw(activity as any);
+            const raw = getActivityRaw(activity as Database['public']['Tables']['activities']['Row']);
             // Try to find polyline in various Strava locations
             const map = raw?.map as Record<string, unknown> | undefined;
             const polyline = (map?.summary_polyline || map?.polyline) as string | undefined;

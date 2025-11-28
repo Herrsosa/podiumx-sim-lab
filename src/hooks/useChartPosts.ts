@@ -36,7 +36,7 @@ export function useChartPosts(athleteId: string | undefined, startDate?: number)
         author_id: row.author_id,
         // We know workout_json is not null due to the query filter.
         // We provide a minimal object to satisfy the type and truthiness check in AthletePriceChart.
-        workout_json: { id: row.id } as any,
+        workout_json: { id: row.id } as Post['workout_json'],
         image_url: null,
         text: null,
         token_gated: false,
