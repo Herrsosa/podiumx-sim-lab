@@ -291,7 +291,7 @@ export default function Onboarding() {
 
       // Redirect after delay
       setTimeout(() => {
-        navigate(launchToken ? '/portfolio' : '/marketplace', { replace: true });
+        navigate('/portfolio', { replace: true });
       }, 3000);
 
     } catch (error: unknown) {
