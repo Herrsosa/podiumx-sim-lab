@@ -16,6 +16,7 @@ export default function Auth() {
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [isResettingPassword, setIsResettingPassword] = useState(false);
 
   const redirectTarget = useMemo(() => {
@@ -41,14 +42,22 @@ export default function Auth() {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (!isMounted) return;
       if (session) {
-        navigate(redirectTarget, { replace: true });
+        if (!session.user.email_confirmed_at) {
+          navigate('/verify-email');
+        } else {
+          navigate(redirectTarget, { replace: true });
+        }
       }
     });
 
     // Listen for auth changes (sign-up or sign-in)
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (session && (event === 'SIGNED_IN' || event === 'INITIAL_SESSION')) {
-        navigate(redirectTarget, { replace: true });
+        if (!session.user.email_confirmed_at) {
+          navigate('/verify-email');
+        } else {
+          navigate(redirectTarget, { replace: true });
+        }
       }
     });
 
@@ -60,6 +69,14 @@ export default function Auth() {
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (password !== confirmPassword) {
+      toast({
+        title: "Passwords do not match",
+        description: "Please ensure both passwords match.",
+        variant: "destructive",
+      });
+      return;
+    }
     setLoading(true);
 
     try {
@@ -279,6 +296,19 @@ export default function Auth() {
                       placeholder="••••••••"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
+                      required
+                      minLength={6}
+                      className="bg-background/50"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="signup-confirm-password">Confirm Password</Label>
+                    <Input
+                      id="signup-confirm-password"
+                      type="password"
+                      placeholder="••••••••"
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
                       required
                       minLength={6}
                       className="bg-background/50"

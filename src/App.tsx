@@ -32,6 +32,7 @@ const MyAthletePage = lazy(() => import("./pages/MyAthletePage"));
 const MyAthleteLocker = lazy(() => import("./pages/MyAthlete/Locker"));
 const GlobeDemo = lazy(() => import("./pages/GlobeDemo"));
 const FeedPage = lazy(() => import("./pages/Feed"));
+const VerifyEmail = lazy(() => import("./pages/VerifyEmail"));
 
 interface RouteGuardProps {
   requireAuth?: boolean;
@@ -45,6 +46,7 @@ function RouteGuard({ requireAuth = false, children }: RouteGuardProps) {
   const { onboardingCompleted, needsOnboarding, isLoading: onboardingIsLoading } = useOnboardingStatus();
 
   const isOnboardingRoute = location.pathname.startsWith('/onboarding');
+  const isVerifyRoute = location.pathname === '/verify-email';
   const isProtected = requireAuth;
 
   if (loading) {
@@ -70,6 +72,20 @@ function RouteGuard({ requireAuth = false, children }: RouteGuardProps) {
     return <>{children}</>;
   }
 
+  // Check for email confirmation
+  if (user && !user.email_confirmed_at && !isVerifyRoute) {
+    return <Navigate to="/verify-email" replace />;
+  }
+
+  if (user && !user.email_confirmed_at && isVerifyRoute) {
+    return <>{children}</>;
+  }
+
+  // If verified but on verify page, go to onboarding/app
+  if (user && user.email_confirmed_at && isVerifyRoute) {
+    return <Navigate to={onboardingCompleted ? "/portfolio" : "/onboarding"} replace />;
+  }
+
   if (!onboardingCompleted && !isOnboardingRoute) {
     return <Navigate to="/onboarding" replace />;
   }
@@ -93,6 +109,17 @@ function AppContent() {
       <Route path="/" element={<Landing />} />
       <Route path="/auth" element={<Auth />} />
       <Route path="/auth/callback" element={<AuthCallback />} />
+      <Route path="/verify-email" element={
+        <RouteGuard requireAuth>
+          <Suspense fallback={
+            <div className="min-h-screen flex items-center justify-center">
+              <LoadingSpinner size="lg" />
+            </div>
+          }>
+            <VerifyEmail />
+          </Suspense>
+        </RouteGuard>
+      } />
       <Route path="/onboarding" element={
         <RouteGuard requireAuth>
           <Suspense fallback={
