@@ -64,24 +64,24 @@ export default function Navigation() {
   }, []);
 
   return (
-    <nav className="sticky top-0 z-50 border-b border-border/50 bg-background/95 backdrop-blur-xl shadow-sm hidden md:block">
-      <div className="container mx-auto px-2 sm:px-4">
-        <div className="flex h-16 sm:h-18 items-center justify-between">
+    <nav className="sticky top-0 z-50 border-b border-border/40 bg-background/95 backdrop-blur-xl shadow-md hidden md:block">
+      <div className="container mx-auto px-4 sm:px-6">
+        <div className="flex h-18 items-center justify-between">
           {/* Logo */}
-          <Link to="/" className="flex items-center gap-1.5 sm:gap-2">
-            <div className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-xl bg-primary">
-              <TrendingUp className="h-4 w-4 sm:h-6 sm:w-6 text-primary-foreground" />
+          <Link to="/" className="flex items-center gap-3 transition-opacity hover:opacity-80">
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary shadow-lg shadow-primary/20">
+              <TrendingUp className="h-6 w-6 text-primary-foreground" />
             </div>
-            <span className="text-base sm:text-xl font-bold">Athlyst</span>
+            <span className="text-2xl font-bold tracking-tight">Athlyst</span>
           </Link>
 
           {/* Nav Links */}
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-2">
             <Link to="/feed" onMouseEnter={prefetchFeed}>
               <Button
                 variant={isActive('/feed') ? 'secondary' : 'ghost'}
                 size="sm"
-                className="gap-2 min-h-[44px]"
+                className="gap-2 min-h-[44px] px-4 font-medium transition-all hover:scale-105"
               >
                 <Activity className="h-5 w-5" />
                 <span className="hidden sm:inline">Feed</span>
@@ -91,7 +91,7 @@ export default function Navigation() {
               <Button
                 variant={isActive('/marketplace') ? 'secondary' : 'ghost'}
                 size="sm"
-                className="gap-2 min-h-[44px]"
+                className="gap-2 min-h-[44px] px-4 font-medium transition-all hover:scale-105"
               >
                 <Home className="h-5 w-5" />
                 <span className="hidden sm:inline">Marketplace</span>
@@ -103,7 +103,7 @@ export default function Navigation() {
                   <Button
                     variant={isActive('/portfolio') ? 'secondary' : 'ghost'}
                     size="sm"
-                    className="gap-2 min-h-[44px]"
+                    className="gap-2 min-h-[44px] px-4 font-medium transition-all hover:scale-105"
                   >
                     <Wallet className="h-5 w-5" />
                     <span className="hidden sm:inline">Portfolio</span>
@@ -113,7 +113,7 @@ export default function Navigation() {
                   <Button
                     variant={isActive('/my-athlete/overview') ? 'secondary' : 'ghost'}
                     size="sm"
-                    className="gap-2 min-h-[44px]"
+                    className="gap-2 min-h-[44px] px-4 font-medium transition-all hover:scale-105"
                   >
                     <User className="h-5 w-5" />
                     <span className="hidden sm:inline">My Athlete Profile</span>
@@ -124,12 +124,12 @@ export default function Navigation() {
           </div>
 
           {/* Actions */}
-          <div className="flex items-center gap-1 sm:gap-2">
+          <div className="flex items-center gap-2">
             <Button
               variant="ghost"
               size="icon"
               onClick={toggleTheme}
-              className="min-h-[40px] min-w-[40px]"
+              className="min-h-[44px] min-w-[44px] transition-all hover:scale-110"
               aria-label="Toggle theme"
             >
               {theme === 'dark' ? (
@@ -170,7 +170,7 @@ export default function Navigation() {
                   variant="ghost"
                   size="icon"
                   onClick={handleReset}
-                  className="min-h-[40px] min-w-[40px] sm:hidden"
+                  className="min-h-[44px] min-w-[44px] sm:hidden transition-all hover:scale-110"
                   aria-label="Reset demo"
                 >
                   <RotateCcw className="h-4 w-4" />
@@ -179,7 +179,7 @@ export default function Navigation() {
                   variant="ghost"
                   size="icon"
                   onClick={handleSignOut}
-                  className="min-h-[40px] min-w-[40px] sm:hidden"
+                  className="min-h-[44px] min-w-[44px] sm:hidden transition-all hover:scale-110"
                   aria-label="Sign out"
                 >
                   <LogOut className="h-4 w-4" />
@@ -188,7 +188,7 @@ export default function Navigation() {
                   variant="outline"
                   size="sm"
                   onClick={handleReset}
-                  className="gap-2 min-h-[44px] hidden sm:inline-flex"
+                  className="gap-2 min-h-[44px] hidden sm:inline-flex px-4 transition-all hover:scale-105"
                 >
                   <RotateCcw className="h-4 w-4" />
                   <span>Reset</span>
@@ -197,7 +197,7 @@ export default function Navigation() {
                   variant="ghost"
                   size="sm"
                   onClick={handleSignOut}
-                  className="gap-2 min-h-[44px] hidden sm:inline-flex"
+                  className="gap-2 min-h-[44px] hidden sm:inline-flex px-4 transition-all hover:scale-105"
                 >
                   <LogOut className="h-4 w-4" />
                   <span>Sign Out</span>
