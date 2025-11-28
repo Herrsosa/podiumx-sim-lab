@@ -15,6 +15,7 @@ import type { WorkoutMutationResult } from '@/hooks/useWorkouts';
 import { mapPostRowToLockerWorkout, mapPostRowToPost } from '@/hooks/useWorkouts';
 import { LocationInput } from './LocationInput';
 import type { LocationResult } from '@/hooks/useLocationSearch';
+import { ActivityMap } from '@/components/ui/ActivityMap';
 
 interface EditWorkoutModalProps {
   open: boolean;
@@ -24,6 +25,7 @@ interface EditWorkoutModalProps {
     workout_json: Workout;
     token_gated: boolean;
     image_url?: string;
+    strava_map_polyline?: string;
   };
   onSuccess: (result: WorkoutMutationResult) => void;
 }
@@ -35,11 +37,11 @@ export default function EditWorkoutModal({ open, onOpenChange, workoutPost, onSu
   const [newMediaFile, setNewMediaFile] = useState<File | null>(null);
   const [mediaPreviewUrl, setMediaPreviewUrl] = useState<string | null>(workoutPost.image_url || null);
   const [location, setLocation] = useState<LocationResult | null>(null);
-  
-  const workout = (workoutPost.workout_json && typeof workoutPost.workout_json === 'object' && !Array.isArray(workoutPost.workout_json)) 
+
+  const workout = (workoutPost.workout_json && typeof workoutPost.workout_json === 'object' && !Array.isArray(workoutPost.workout_json))
     ? workoutPost.workout_json as Partial<Workout>
     : {} as Partial<Workout>;
-    
+
   const [formData, setFormData] = useState({
     date: workout.date || new Date().toISOString().split('T')[0],
     type: (workout.type as Workout['type']) || 'Run',
@@ -53,7 +55,7 @@ export default function EditWorkoutModal({ open, onOpenChange, workoutPost, onSu
   useEffect(() => {
     setMediaPreviewUrl(workoutPost.image_url || null);
     setNewMediaFile(null);
-    const w = (workoutPost.workout_json && typeof workoutPost.workout_json === 'object' && !Array.isArray(workoutPost.workout_json)) 
+    const w = (workoutPost.workout_json && typeof workoutPost.workout_json === 'object' && !Array.isArray(workoutPost.workout_json))
       ? workoutPost.workout_json as Partial<Workout>
       : {} as Partial<Workout>;
     setFormData({
@@ -106,7 +108,7 @@ export default function EditWorkoutModal({ open, onOpenChange, workoutPost, onSu
         // Upload new file
         const fileExt = newMediaFile.name.split('.').pop();
         const fileName = `${user.id}/${Date.now()}.${fileExt}`;
-        
+
         const { error: uploadError } = await supabase.storage
           .from('workout-media')
           .upload(fileName, newMediaFile);
@@ -116,7 +118,7 @@ export default function EditWorkoutModal({ open, onOpenChange, workoutPost, onSu
         const { data: urlData } = supabase.storage
           .from('workout-media')
           .getPublicUrl(fileName);
-        
+
         imageUrl = urlData.publicUrl;
       } else if (workoutPost.image_url && !mediaPreviewUrl) {
         // If media was removed, delete from storage and set URL to null
@@ -281,13 +283,26 @@ export default function EditWorkoutModal({ open, onOpenChange, workoutPost, onSu
             placeholder="Search for city..."
           />
 
+          {/* Map Display (Read-only) */}
+          {workoutPost.strava_map_polyline && (
+            <div>
+              <Label>Route Map</Label>
+              <div className="mt-2 h-48 w-full rounded-lg border border-border/50 overflow-hidden relative">
+                <ActivityMap
+                  polyline={workoutPost.strava_map_polyline}
+                  className="w-full h-full"
+                />
+              </div>
+            </div>
+          )}
+
           <div>
             <Label>Media</Label>
             <div className="mt-2 flex items-center gap-4">
               {mediaPreviewUrl && (
-                <img 
-                  src={mediaPreviewUrl} 
-                  alt="Workout media preview" 
+                <img
+                  src={mediaPreviewUrl}
+                  alt="Workout media preview"
                   className="h-24 w-24 rounded-lg object-cover"
                 />
               )}
@@ -307,7 +322,7 @@ export default function EditWorkoutModal({ open, onOpenChange, workoutPost, onSu
                   onChange={handleFileChange}
                 />
                 {mediaPreviewUrl && (
-                  <Button 
+                  <Button
                     variant="link"
                     size="sm"
                     className="h-auto p-0 text-xs text-destructive"

@@ -21,6 +21,7 @@ import {
 } from '@/utils/stravaActivity';
 import { mapPostRowToLockerWorkout, mapPostRowToPost, type WorkoutMutationResult } from '@/hooks/useWorkouts';
 import type { Database } from '@/integrations/supabase/types';
+import { ActivityMap } from '@/components/ui/ActivityMap';
 
 type PostRow = Database['public']['Tables']['posts']['Row'];
 
@@ -231,28 +232,41 @@ export function StravaImportDialog({ activity, open, onOpenChange, onImported }:
             <div className="py-12 text-center text-muted-foreground">Select a Strava activity to import.</div>
           ) : (
             <div className="space-y-6">
-              <div className="rounded-lg border border-border/50 bg-muted/20 p-4">
-                <div className="flex items-center gap-2">
-                  <Activity className="h-4 w-4 text-primary" />
-                  <p className="font-semibold">{title}</p>
-                </div>
-                <p className="text-sm text-muted-foreground">
-                  {new Date(getActivityStartTimestamp(activity)).toLocaleString()}
-                </p>
-                <div className="mt-3 flex flex-wrap items-center gap-3 text-sm">
-                  {activity.distance_m ? (
-                    <Badge variant="outline">{(activity.distance_m / 1000).toFixed(2)} km</Badge>
+              <div className="rounded-lg border border-border/50 bg-muted/20 overflow-hidden">
+                {/* Map Preview */}
+                {(activity.map?.summary_polyline || activity.map?.polyline) && (
+                  <div className="h-48 w-full border-b border-border/50 relative">
+                    {/* We need to dynamically import ActivityMap to avoid SSR issues if any, but standard import is fine here */}
+                    <ActivityMap
+                      polyline={(activity.map.summary_polyline || activity.map.polyline) as string}
+                      className="w-full h-full"
+                    />
+                  </div>
+                )}
+
+                <div className="p-4">
+                  <div className="flex items-center gap-2">
+                    <Activity className="h-4 w-4 text-primary" />
+                    <p className="font-semibold">{title}</p>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    {new Date(getActivityStartTimestamp(activity)).toLocaleString()}
+                  </p>
+                  <div className="mt-3 flex flex-wrap items-center gap-3 text-sm">
+                    {activity.distance_m ? (
+                      <Badge variant="outline">{(activity.distance_m / 1000).toFixed(2)} km</Badge>
+                    ) : null}
+                    {activity.moving_time_s ? (
+                      <Badge variant="outline">
+                        {Math.floor(activity.moving_time_s / 60)} min
+                      </Badge>
+                    ) : null}
+                    {pace ? <Badge variant="outline">{pace}</Badge> : null}
+                  </div>
+                  {description ? (
+                    <p className="mt-3 text-sm text-muted-foreground">{description}</p>
                   ) : null}
-                  {activity.moving_time_s ? (
-                    <Badge variant="outline">
-                      {Math.floor(activity.moving_time_s / 60)} min
-                    </Badge>
-                  ) : null}
-                  {pace ? <Badge variant="outline">{pace}</Badge> : null}
                 </div>
-                {description ? (
-                  <p className="mt-3 text-sm text-muted-foreground">{description}</p>
-                ) : null}
               </div>
 
               <form id="strava-import-form" onSubmit={handleSubmit} className="space-y-4">

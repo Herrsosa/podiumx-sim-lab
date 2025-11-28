@@ -14,6 +14,7 @@ import { Workout, Post } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import EditWorkoutModal from './EditWorkoutModal';
+import ViewWorkoutModal from './ViewWorkoutModal';
 import { EmptyState } from '@/components/ui/empty-state';
 import { useUser } from '@/store/auth';
 import type { WorkoutMutationResult } from '@/hooks/useWorkouts';
@@ -85,6 +86,9 @@ export default function ProofOfSweat({
     return map;
   }, [posts]);
 
+  const [viewModalOpen, setViewModalOpen] = useState(false);
+  const [workoutToView, setWorkoutToView] = useState<Post | null>(null);
+
   const handleDeleteClick = useCallback((workoutId: string) => {
     setWorkoutToDelete(workoutId);
     setDeleteDialogOpen(true);
@@ -94,6 +98,12 @@ export default function ProofOfSweat({
     const post = Array.from(workoutPostMap.values()).find((p) => postMatchesWorkout(p, workout.id));
     setWorkoutToEdit(post || null);
     setEditModalOpen(true);
+  }, [workoutPostMap]);
+
+  const handleViewClick = useCallback((workout: Workout) => {
+    const post = Array.from(workoutPostMap.values()).find((p) => postMatchesWorkout(p, workout.id));
+    setWorkoutToView(post || null);
+    setViewModalOpen(true);
   }, [workoutPostMap]);
 
   const handleConnectStrava = () => {
@@ -180,8 +190,8 @@ export default function ProofOfSweat({
             visibility === 'supporters'
               ? Math.max(1, minTokens)
               : visibility === 'backers'
-              ? Math.max(10, minTokens)
-              : 0;
+                ? Math.max(10, minTokens)
+                : 0;
           const canView = visibility === 'public' || canDelete || viewerHoldings >= requiredTokens;
 
           return (
@@ -193,6 +203,8 @@ export default function ProofOfSweat({
               onClick={() => {
                 if (canView && canDelete) {
                   handleEditClick(workout);
+                } else if (canView && !canDelete) {
+                  handleViewClick(workout);
                 } else if (!canView && onUnlock) {
                   onUnlock();
                 }
@@ -229,9 +241,19 @@ export default function ProofOfSweat({
             id: workoutToEdit.id,
             workout_json: workoutToEdit.workout_json as Workout,
             token_gated: workoutToEdit.token_gated || false,
-            image_url: workoutToEdit.image_url
+            image_url: workoutToEdit.image_url,
+            strava_map_polyline: workoutToEdit.strava_map_polyline
           }}
           onSuccess={handleWorkoutUpdated}
+        />
+      )}
+
+      {/* View modal */}
+      {viewModalOpen && workoutToView && (
+        <ViewWorkoutModal
+          open={viewModalOpen}
+          onOpenChange={setViewModalOpen}
+          workoutPost={workoutToView}
         />
       )}
     </>

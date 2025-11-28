@@ -1,4 +1,15 @@
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo } from 'react';
+import { MapContainer, TileLayer, Polyline, useMap } from 'react-leaflet';
+import 'leaflet/dist/leaflet.css';
+import L from 'leaflet';
+
+// Fix for Leaflet icon issues in React (though we aren't using markers yet)
+// delete (L.Icon.Default.prototype as any)._getIconUrl;
+// L.Icon.Default.mergeOptions({
+//   iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
+//   iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
+//   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+// });
 
 interface ActivityMapProps {
     polyline: string;
@@ -38,83 +49,70 @@ function decodePolyline(encoded: string): [number, number][] {
     return points;
 }
 
+function FitBounds({ points }: { points: [number, number][] }) {
+    const map = useMap();
+
+    useEffect(() => {
+        if (points.length > 0) {
+            const bounds = L.latLngBounds(points);
+            map.fitBounds(bounds, {
+                padding: [20, 20],
+                animate: false
+            });
+        }
+    }, [map, points]);
+
+    return null;
+}
+
 export function ActivityMap({
     polyline,
     className = "",
     strokeColor = "#fc4c02", // Strava orange
     strokeWidth = 4
 }: ActivityMapProps) {
-    const { pathData, viewBox } = useMemo(() => {
-        if (!polyline) return { pathData: '', viewBox: '0 0 100 100' };
-
-        const points = decodePolyline(polyline);
-        if (points.length === 0) return { pathData: '', viewBox: '0 0 100 100' };
-
-        // Calculate bounds
-        let minLat = Infinity, maxLat = -Infinity, minLng = Infinity, maxLng = -Infinity;
-        points.forEach(([lat, lng]) => {
-            if (lat < minLat) minLat = lat;
-            if (lat > maxLat) maxLat = lat;
-            if (lng < minLng) minLng = lng;
-            if (lng > maxLng) maxLng = lng;
-        });
-
-        // Add padding
-        const latRange = maxLat - minLat;
-        const lngRange = maxLng - minLng;
-        const padding = Math.max(latRange, lngRange) * 0.1;
-
-        minLat -= padding;
-        maxLat += padding;
-        minLng -= padding;
-        maxLng += padding;
-
-        // Convert to SVG coordinates (lat is Y, lng is X)
-        // Note: SVG Y coordinates go down, but latitude goes up. So we flip Y.
-        const width = maxLng - minLng;
-        const height = maxLat - minLat;
-
-        const pathPoints = points.map(([lat, lng]) => {
-            const x = (lng - minLng);
-            const y = (maxLat - lat); // Flip Y
-            return `${x},${y}`;
-        }).join(' ');
-
-        return {
-            pathData: `M ${pathPoints}`,
-            viewBox: `0 0 ${width} ${height}`
-        };
+    const points = useMemo(() => {
+        if (!polyline) return [];
+        return decodePolyline(polyline);
     }, [polyline]);
 
-    if (!pathData) return null;
+    if (points.length === 0) return null;
 
     return (
-        <div className={`w-full h-full bg-zinc-900 relative overflow-hidden ${className}`}>
-            {/* Subtle grid pattern background */}
-            <div
-                className="absolute inset-0 opacity-20"
-                style={{
-                    backgroundImage: 'radial-gradient(#333 1px, transparent 1px)',
-                    backgroundSize: '20px 20px'
-                }}
-            />
-
-            <svg
-                viewBox={viewBox}
-                preserveAspectRatio="xMidYMid meet"
-                className="w-full h-full relative z-10"
-                style={{ filter: 'drop-shadow(0 0 6px rgba(252, 76, 2, 0.5))' }}
+        <div className={`w-full h-full relative overflow-hidden ${className}`}>
+            <MapContainer
+                center={points[0]}
+                zoom={13}
+                style={{ width: '100%', height: '100%', background: '#18181b' }} // bg-zinc-900
+                zoomControl={false}
+                dragging={false}
+                scrollWheelZoom={false}
+                doubleClickZoom={false}
+                touchZoom={false}
+                attributionControl={false}
             >
-                <path
-                    d={pathData}
-                    fill="none"
-                    stroke={strokeColor}
-                    strokeWidth={strokeWidth}
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    vectorEffect="non-scaling-stroke"
+                {/* Dark Matter Tiles */}
+                <TileLayer
+                    url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
                 />
-            </svg>
+
+                <Polyline
+                    positions={points}
+                    pathOptions={{
+                        color: strokeColor,
+                        weight: strokeWidth,
+                        opacity: 1,
+                        lineCap: 'round',
+                        lineJoin: 'round'
+                    }}
+                />
+
+                <FitBounds points={points} />
+            </MapContainer>
+
+            {/* Overlay to prevent interaction and add subtle vignette if needed */}
+            <div className="absolute inset-0 pointer-events-none z-[1000]" />
         </div>
     );
 }
