@@ -17,6 +17,7 @@ import {
   getActivityDescription,
   getActivityStartTimestamp,
   getStravaActivityId,
+  getActivityMapPolyline,
   type StoredActivity,
 } from '@/utils/stravaActivity';
 import { mapPostRowToLockerWorkout, mapPostRowToPost, type WorkoutMutationResult } from '@/hooks/useWorkouts';
@@ -234,15 +235,17 @@ export function StravaImportDialog({ activity, open, onOpenChange, onImported }:
             <div className="space-y-6">
               <div className="rounded-lg border border-border/50 bg-muted/20 overflow-hidden">
                 {/* Map Preview */}
-                {(activity.map?.summary_polyline || activity.map?.polyline) && (
-                  <div className="h-48 w-full border-b border-border/50 relative">
-                    {/* We need to dynamically import ActivityMap to avoid SSR issues if any, but standard import is fine here */}
-                    <ActivityMap
-                      polyline={(activity.map.summary_polyline || activity.map.polyline) as string}
-                      className="w-full h-full"
-                    />
-                  </div>
-                )}
+                {(() => {
+                  const polyline = getActivityMapPolyline(activity);
+                  return polyline ? (
+                    <div className="h-48 w-full border-b border-border/50 relative">
+                      <ActivityMap
+                        polyline={polyline}
+                        className="w-full h-full"
+                      />
+                    </div>
+                  ) : null;
+                })()}
 
                 <div className="p-4">
                   <div className="flex items-center gap-2">

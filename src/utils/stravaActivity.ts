@@ -152,6 +152,27 @@ export interface StravaImportDefaults {
   startTimestamp: string;
 }
 
+export function getActivityMapPolyline(activity: StoredActivity): string | null {
+  const raw = getActivityRaw(activity);
+  if (!raw) return null;
+  
+  const map = raw.map;
+  if (!map || typeof map !== 'object' || Array.isArray(map)) return null;
+  
+  const mapObj = map as Record<string, unknown>;
+  const summaryPolyline = mapObj.summary_polyline;
+  if (typeof summaryPolyline === 'string' && summaryPolyline.length > 0) {
+    return summaryPolyline;
+  }
+  
+  const polyline = mapObj.polyline;
+  if (typeof polyline === 'string' && polyline.length > 0) {
+    return polyline;
+  }
+  
+  return null;
+}
+
 export function deriveImportDefaults(activity: StoredActivity): StravaImportDefaults {
   const date = getActivityDate(activity);
   const type = mapStravaSportToWorkoutType(activity.sport_type);
