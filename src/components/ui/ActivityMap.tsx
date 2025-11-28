@@ -21,7 +21,8 @@ interface ActivityMapProps {
 // Simple polyline decoder
 function decodePolyline(encoded: string): [number, number][] {
     const points: [number, number][] = [];
-    let index = 0, len = encoded.length;
+    let index = 0;
+    const len = encoded.length;
     let lat = 0, lng = 0;
 
     while (index < len) {
