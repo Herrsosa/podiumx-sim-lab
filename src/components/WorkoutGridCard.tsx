@@ -1,8 +1,9 @@
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Lock, Calendar } from 'lucide-react';
+import { Lock, Calendar, Activity } from 'lucide-react';
 import type { Workout, Post } from '@/types';
 import { SupabaseResponsiveImage } from '@/components/SupabaseResponsiveImage';
+import { ActivityMap } from '@/components/ui/ActivityMap';
 import { cn } from '@/lib/utils';
 
 interface WorkoutGridCardProps {
@@ -33,15 +34,15 @@ const getTypeGradient = (type: Workout['type']) => {
   switch (type) {
     case 'Run':
     case 'HYROX':
-      return 'from-primary/10 via-primary/5 to-background/20';
+      return '!from-emerald-600 !to-teal-900';
     case 'Swim':
-      return 'from-accent/10 via-accent/5 to-background/20';
+      return '!from-indigo-600 !to-blue-900';
     case 'Bike':
-      return 'from-accent/10 via-accent/5 to-background/20';
+      return '!from-blue-600 !to-cyan-900';
     case 'Strength':
-      return 'from-warning/10 via-warning/5 to-background/20';
+      return '!from-orange-600 !to-red-900';
     default:
-      return 'from-muted/20 via-muted/10 to-background/20';
+      return '!from-slate-600 !to-gray-900';
   }
 };
 
@@ -54,6 +55,7 @@ const formatDate = (dateString: string | undefined) => {
 
 export function WorkoutGridCard({ workout, post, canView, onClick, variant = 'grid' }: WorkoutGridCardProps) {
   const hasPhoto = post?.image_url || workout.mediaUrl;
+  const hasMap = post?.strava_map_polyline;
   const photoUrl = post?.image_url || workout.mediaUrl;
   const typeGradient = getTypeGradient(workout.type);
   const typeColor = getTypeColor(workout.type);
@@ -114,8 +116,15 @@ export function WorkoutGridCard({ workout, post, canView, onClick, variant = 'gr
               !canView && 'blur-xl'
             )}
           />
+        ) : hasMap ? (
+          <div className="absolute inset-0">
+            <ActivityMap
+              polyline={post!.strava_map_polyline!}
+              className={cn(variant === 'feed' ? 'rounded-2xl' : '', !canView && 'blur-sm')}
+            />
+          </div>
         ) : (
-          <div className={cn('absolute inset-0 bg-gradient-to-br', variant === 'feed' ? 'rounded-2xl' : '', typeGradient)} />
+          <div className={cn('absolute inset-0 bg-gradient-to-br overflow-hidden', variant === 'feed' ? 'rounded-2xl' : '', typeGradient)} />
         )}
 
         {showOverlayContent && (
@@ -123,7 +132,7 @@ export function WorkoutGridCard({ workout, post, canView, onClick, variant = 'gr
             <div
               className={cn(
                 'absolute inset-0 bg-gradient-to-t',
-                hasPhoto ? 'from-black/80 via-black/40 to-black/20' : 'from-background/80 via-background/40 to-transparent'
+                hasPhoto ? 'from-black/80 via-black/40 to-black/20' : 'from-black/60 via-transparent to-transparent'
               )}
             />
             <CardContent className={cn('absolute inset-0 flex flex-col justify-between', padding)}>

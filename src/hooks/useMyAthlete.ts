@@ -6,6 +6,7 @@ import { priceAt } from '@/utils/pricing';
 import { resolveAvatarUrl } from '@/utils/avatar';
 import { useUser } from '@/store/auth';
 import { useAthleteMetrics } from './useAthleteMetrics';
+import { getActivityRaw } from '@/utils/stravaActivity';
 import type { Database } from '@/integrations/supabase/types';
 
 type ProfileRow = Database['public']['Tables']['profiles']['Row'];
@@ -61,6 +62,47 @@ export function useMyAthlete() {
           .range(from, to),
       ]);
 
+      const { data: rawPosts, error: postsError } = postsResult;
+      if (postsError) throw postsError;
+
+      const postRows: PostRow[] = (rawPosts ?? []) as PostRow[];
+
+      // Fetch linked activities for these posts to get map data
+      const stravaActivityIds = postRows
+        .map(p => p.strava_activity_id)
+        .filter((id): id is number => id !== null);
+
+      let activityMap = new Map<number, string>();
+
+      if (stravaActivityIds.length > 0) {
+        // Query by external_id (Strava ID) since posts.strava_activity_id is likely the Strava ID
+        const { data: activities, error: activitiesError } = await supabase
+          .from('activities')
+          .select('id, external_id, raw')
+          .in('external_id', stravaActivityIds.map(String));
+
+        if (activitiesError) {
+          console.error('Error fetching activities:', activitiesError);
+        }
+
+        if (activities) {
+          activities.forEach(activity => {
+            const raw = getActivityRaw(activity as any);
+            // Try to find polyline in various Strava locations
+            const map = raw?.map as Record<string, unknown> | undefined;
+            const polyline = (map?.summary_polyline || map?.polyline) as string | undefined;
+
+            // Map using the external_id because that's what we have in the post
+            if (polyline && activity.external_id) {
+              const stravaId = Number(activity.external_id);
+              if (!isNaN(stravaId)) {
+                activityMap.set(stravaId, polyline);
+              }
+            }
+          });
+        }
+      }
+
       const { data: profile, error: profileError } = profileResult;
       if (profileError) throw profileError;
       if (!profile) return null;
@@ -71,9 +113,6 @@ export function useMyAthlete() {
       const tokenRows = (tokens ?? []) as TokenRow[];
       const token = tokenRows[0];
 
-      const { data: rawPosts, error: postsError } = postsResult;
-      if (postsError) throw postsError;
-
       // Calculate current price from bonding curve
       const supply = token?.supply || 0;
       const a = token?.a || 0.0002;
@@ -81,9 +120,6 @@ export function useMyAthlete() {
       const c = token?.c || 1;
       const price = priceAt(supply, { a, b, c });
       const marketCap = price * supply;
-
-      // Convert posts to typed objects and workouts format
-      const postRows: PostRow[] = (rawPosts ?? []) as PostRow[];
 
       const posts: Post[] = postRows.map((post) => ({
         id: post.id,
@@ -93,6 +129,7 @@ export function useMyAthlete() {
         text: post.text,
         token_gated: Boolean(post.token_gated),
         strava_activity_id: post.strava_activity_id,
+        strava_map_polyline: post.strava_activity_id ? activityMap.get(post.strava_activity_id) : null,
         author_id: post.author_id,
         visibility: (post.visibility as Post['visibility']) ?? 'public',
         min_tokens_required: post.min_tokens_required ?? 0,

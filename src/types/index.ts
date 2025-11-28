@@ -37,6 +37,7 @@ export interface Post {
   text: string | null;
   token_gated: boolean;
   strava_activity_id: number | null;
+  strava_map_polyline?: string | null;
   author_id: string;
   visibility: 'public' | 'supporters' | 'backers';
   min_tokens_required: number;

@@ -6,6 +6,8 @@ import { Lock, Calendar, Activity, Clock, Zap } from 'lucide-react';
 import { useUser } from '@/store/auth';
 import { Post, Workout } from '@/types';
 import { SupabaseResponsiveImage } from '@/components/SupabaseResponsiveImage';
+import { ActivityMap } from '@/components/ui/ActivityMap';
+import { cn } from '@/lib/utils';
 
 interface WorkoutPostsProps {
   athleteId: string;
@@ -81,7 +83,7 @@ export default function WorkoutPosts({
     <div className="space-y-4">
       {posts.map((post) => {
         const canView = canViewPost(post);
-        const workout = (post.workout_json && typeof post.workout_json === 'object' && !Array.isArray(post.workout_json)) 
+        const workout = (post.workout_json && typeof post.workout_json === 'object' && !Array.isArray(post.workout_json))
           ? post.workout_json as Partial<Workout>
           : {} as Partial<Workout>;
 
@@ -89,17 +91,27 @@ export default function WorkoutPosts({
           <Card key={post.id} className="glass-card overflow-hidden">
             <CardContent className="p-0">
               {/* Media */}
-              {post.image_url && (
+              {(post.image_url || post.strava_map_polyline) ? (
                 <div className="relative">
-                  <SupabaseResponsiveImage
-                    src={post.image_url}
-                    alt="Workout"
-                    widths={[480, 720, 960, 1280]}
-                    sizes="(max-width: 768px) 100vw, 960px"
-                    aspectRatio={2}
-                    className="w-full"
-                    imgClassName={!canView ? 'blur-lg' : undefined}
-                  />
+                  {post.image_url ? (
+                    <SupabaseResponsiveImage
+                      src={post.image_url}
+                      alt="Workout"
+                      widths={[480, 720, 960, 1280]}
+                      sizes="(max-width: 768px) 100vw, 960px"
+                      aspectRatio={2}
+                      className="w-full"
+                      imgClassName={!canView ? 'blur-lg' : undefined}
+                    />
+                  ) : (
+                    <div className="w-full aspect-[2/1] bg-muted/30 relative overflow-hidden">
+                      <ActivityMap
+                        polyline={post.strava_map_polyline!}
+                        className={!canView ? 'blur-sm' : undefined}
+                      />
+                    </div>
+                  )}
+
                   {!canView && (
                     <div className="absolute inset-0 flex items-center justify-center bg-black/50">
                       <div className="text-center text-white">
@@ -109,6 +121,16 @@ export default function WorkoutPosts({
                     </div>
                   )}
                 </div>
+              ) : (
+                /* Empty State Gradient Header */
+                <div className={cn(
+                  "w-full h-24 relative overflow-hidden",
+                  workout.type === 'Run' && "!bg-gradient-to-br !from-emerald-600 !to-teal-900",
+                  workout.type === 'Bike' && "!bg-gradient-to-br !from-blue-600 !to-cyan-900",
+                  workout.type === 'Swim' && "!bg-gradient-to-br !from-indigo-600 !to-blue-900",
+                  workout.type === 'Strength' && "!bg-gradient-to-br !from-orange-600 !to-red-900",
+                  (!workout.type || workout.type === 'Other') && "!bg-gradient-to-br !from-slate-600 !to-gray-900",
+                )} />
               )}
 
               {/* Content */}
