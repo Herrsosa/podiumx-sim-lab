@@ -28,7 +28,7 @@ export function useAthlete(slug: string) {
       const { data: posts, error: postsError } = await supabase
         .from('posts')
         .select(
-          'id, created_at, author_id, workout_json, image_url, text, token_gated, strava_activity_id, visibility, min_tokens_required',
+          'id, created_at, author_id, workout_json, image_url, text, token_gated, strava_activity_id, visibility, min_tokens_required, strava_map_polyline',
         )
         .eq('author_id', profile.id)
         .order('created_at', { ascending: false })
@@ -46,6 +46,7 @@ export function useAthlete(slug: string) {
         text: post.text,
         token_gated: Boolean(post.token_gated),
         strava_activity_id: post.strava_activity_id,
+        strava_map_polyline: post.strava_map_polyline,
         author_id: post.author_id,
         visibility: (post.visibility as 'public' | 'supporters' | 'backers') || 'public',
         min_tokens_required: post.min_tokens_required || 0,
@@ -109,15 +110,15 @@ export function useAthlete(slug: string) {
 
     const enriched: Athlete = priceSnapshot
       ? {
-          ...queryResult.data,
-          supply: priceSnapshot.supply,
-          reserve: priceSnapshot.reserve,
-          price: priceSnapshot.price,
-          marketCap: priceSnapshot.price * priceSnapshot.supply,
-          athleteRevenue: priceSnapshot.athleteRevenue,
-          priceUpdatedAt: priceSnapshot.updatedAt ?? null,
-          tokenCreatedAt: priceSnapshot.tokenCreatedAt ?? queryResult.data.tokenCreatedAt,
-        }
+        ...queryResult.data,
+        supply: priceSnapshot.supply,
+        reserve: priceSnapshot.reserve,
+        price: priceSnapshot.price,
+        marketCap: priceSnapshot.price * priceSnapshot.supply,
+        athleteRevenue: priceSnapshot.athleteRevenue,
+        priceUpdatedAt: priceSnapshot.updatedAt ?? null,
+        tokenCreatedAt: priceSnapshot.tokenCreatedAt ?? queryResult.data.tokenCreatedAt,
+      }
       : queryResult.data;
 
     const metrics = metricsMap?.get(enriched.id);
