@@ -176,6 +176,7 @@ export function StravaImportDialog({ activity, open, onOpenChange, onImported }:
           min_tokens_required: minTokens,
           strava_activity_id: stravaActivityId,
           created_at: createdAt,
+          strava_map_polyline: getActivityMapPolyline(activity),
         })
         .select('id, created_at, author_id, workout_json, image_url, text, visibility, min_tokens_required, token_gated, strava_activity_id')
         .single();
