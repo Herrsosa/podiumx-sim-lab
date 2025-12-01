@@ -92,8 +92,8 @@ export default function Auth() {
     setLoading(true);
 
     try {
-      // Using 'as any' to bypass type check since table was just created
-      const { error } = await supabase.from('waitlist' as any).insert({
+      // Table definition added to types.ts
+      const { error } = await supabase.from('waitlist').insert({
         email: waitlistEmail,
       });
 
