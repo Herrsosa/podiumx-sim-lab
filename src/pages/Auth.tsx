@@ -185,7 +185,7 @@ export default function Auth() {
         <CardHeader>
           <CardTitle className="text-2xl text-center">Athlyst</CardTitle>
           <CardDescription className="text-center">
-            Join the athlete token marketplace
+            Join and build that Athlete Identity!
           </CardDescription>
         </CardHeader>
         <CardContent>

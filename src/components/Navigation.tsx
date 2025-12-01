@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
-import { Activity, Home, TrendingUp, Wallet, User, RotateCcw, Moon, Sun, LogOut } from 'lucide-react';
+import { Activity, Home, TrendingUp, Wallet, User, Moon, Sun, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAppStore } from '@/store/useAppStore';
 import { useToast } from '@/hooks/use-toast';
@@ -8,7 +8,7 @@ import { useAuthStore, useUser } from '@/store/auth';
 
 export default function Navigation() {
   const location = useLocation();
-  const resetDemo = useAppStore((state) => state.resetDemo);
+
   const user = useUser();
   const signOut = useAuthStore((s) => s.signOut);
   const { toast } = useToast();
@@ -25,12 +25,7 @@ export default function Navigation() {
     document.documentElement.classList.toggle('dark');
   };
 
-  const handleReset = () => {
-    if (confirm('Reset all demo data? This will restore default values.')) {
-      resetDemo();
-      window.location.reload();
-    }
-  };
+
 
   const handleSignOut = async () => {
     try {
@@ -166,15 +161,7 @@ export default function Navigation() {
                     <span>Sim</span>
                   </Button>
                 )}
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={handleReset}
-                  className="min-h-[44px] min-w-[44px] sm:hidden transition-all hover:scale-110"
-                  aria-label="Reset demo"
-                >
-                  <RotateCcw className="h-4 w-4" />
-                </Button>
+
                 <Button
                   variant="ghost"
                   size="icon"
@@ -184,15 +171,7 @@ export default function Navigation() {
                 >
                   <LogOut className="h-4 w-4" />
                 </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleReset}
-                  className="gap-2 min-h-[44px] hidden sm:inline-flex px-4 transition-all hover:scale-105"
-                >
-                  <RotateCcw className="h-4 w-4" />
-                  <span>Reset</span>
-                </Button>
+
                 <Button
                   variant="ghost"
                   size="sm"

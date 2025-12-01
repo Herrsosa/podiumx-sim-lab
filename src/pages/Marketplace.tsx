@@ -112,13 +112,6 @@ export default function Marketplace() {
   return (
     <div className="px-4 py-8 page-transition">
       <div className="mx-auto w-full max-w-6xl">
-        {/* Header */}
-        <div className="mb-8">
-          <H1 className="text-4xl">Athlete Marketplace</H1>
-        </div>
-        <Body className="text-muted-foreground">
-          {user ? 'Trade simulated athlete tokens with bonding curve mechanics' : 'Explore athlete profiles and performance metrics'}
-        </Body>
       </div>
 
       {/* Search and Filter */}
@@ -182,7 +175,7 @@ export default function Marketplace() {
             />
           ) : (
             <motion.div
-              className="grid grid-cols-2 gap-3 sm:gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5"
+              className="grid grid-cols-2 gap-3 sm:gap-4 sm:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6"
               role="grid"
               aria-label="Athletes marketplace grid"
               initial="hidden"
