@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2 } from "lucide-react";
+import { Loader2, Instagram, CheckCircle2 } from "lucide-react";
 
 export default function Auth() {
   const navigate = useNavigate();
@@ -18,6 +18,12 @@ export default function Auth() {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [isResettingPassword, setIsResettingPassword] = useState(false);
+
+  // Waitlist State
+  const [isWaitlistMode, setIsWaitlistMode] = useState(true);
+  const [waitlistEmail, setWaitlistEmail] = useState("");
+  const [waitlistSuccess, setWaitlistSuccess] = useState(false);
+  const [waitlistError, setWaitlistError] = useState("");
 
   const redirectTarget = useMemo(() => {
     const sanitizePath = (value?: string | null) => {
@@ -36,6 +42,13 @@ export default function Auth() {
   }, [location]);
 
   useEffect(() => {
+    // Check for invite code
+    const params = new URLSearchParams(location.search);
+    const inviteCode = params.get('invite');
+    if (inviteCode === 'ATHLYST2025') {
+      setIsWaitlistMode(false);
+    }
+
     let isMounted = true;
 
     // Check if user is already logged in
@@ -65,7 +78,41 @@ export default function Auth() {
       isMounted = false;
       subscription.unsubscribe();
     };
-  }, [navigate, redirectTarget]);
+  }, [navigate, redirectTarget, location.search]);
+
+  const handleJoinWaitlist = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setWaitlistError("");
+
+    if (!waitlistEmail || !waitlistEmail.includes('@')) {
+      setWaitlistError("That doesn’t look like a valid email.");
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      // Using 'as any' to bypass type check since table was just created
+      const { error } = await supabase.from('waitlist' as any).insert({
+        email: waitlistEmail,
+      });
+
+      if (error) {
+        if (error.code === '23505') { // Unique violation
+          setWaitlistSuccess(true); // Treat duplicate as success to not leak info/annoy user
+          return;
+        }
+        throw error;
+      }
+
+      setWaitlistSuccess(true);
+    } catch (error: unknown) {
+      console.error('Waitlist error:', error);
+      setWaitlistError("Something went wrong – please try again in a moment to build that Athlete Identity.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -275,50 +322,108 @@ export default function Auth() {
               </TabsContent>
 
               <TabsContent value="signup">
-                <form onSubmit={handleSignUp} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="signup-email">Email</Label>
-                    <Input
-                      id="signup-email"
-                      type="email"
-                      placeholder="you@example.com"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      required
-                      className="bg-background/50"
-                    />
+                {isWaitlistMode ? (
+                  <div className="space-y-4">
+                    <div className="text-center mb-6">
+                      <h3 className="text-lg font-semibold mb-2">
+                        {waitlistSuccess ? "✅ You’re in." : "🔒 Founding Athlysts Only (For Now)"}
+                      </h3>
+                      <p className="text-sm text-muted-foreground">
+                        {waitlistSuccess
+                          ? "You’re now on the Founding Athlysts list."
+                          : "We’re opening Athlyst in waves so the first athletes on the platform actually feel early."}
+                      </p>
+                    </div>
+
+                    {waitlistSuccess ? (
+                      <div className="space-y-6 text-center">
+                        <p className="text-muted-foreground text-sm">
+                          Watch your inbox – your invite link drops soon.
+                          <br />
+                          In the meantime, follow us on Instagram: <span className="text-primary">@athlyst.fun</span>
+                        </p>
+                        <Button
+                          className="w-full gap-2"
+                          onClick={() => window.open('https://www.instagram.com/athlyst.fun/', '_blank')}
+                        >
+                          <Instagram className="w-4 h-4" />
+                          Follow on Instagram
+                        </Button>
+                      </div>
+                    ) : (
+                      <form onSubmit={handleJoinWaitlist} className="space-y-4">
+                        <div className="space-y-2">
+                          <p className="text-sm text-muted-foreground text-center mb-4">
+                            Drop your email to get into the next wave of Founding Athlysts.
+                          </p>
+                          <Input
+                            type="email"
+                            placeholder="your@email.com"
+                            value={waitlistEmail}
+                            onChange={(e) => setWaitlistEmail(e.target.value)}
+                            required
+                            className="bg-background/50"
+                          />
+                          {waitlistError && (
+                            <p className="text-xs text-destructive text-center">{waitlistError}</p>
+                          )}
+                        </div>
+                        <Button type="submit" className="w-full" disabled={loading}>
+                          {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                          Get on the Founding List
+                        </Button>
+                        <p className="text-[10px] text-muted-foreground text-center">
+                          No spam. Just your invite link when doors open.
+                        </p>
+                      </form>
+                    )}
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="signup-password">Password</Label>
-                    <Input
-                      id="signup-password"
-                      type="password"
-                      placeholder="••••••••"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      required
-                      minLength={6}
-                      className="bg-background/50"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="signup-confirm-password">Confirm Password</Label>
-                    <Input
-                      id="signup-confirm-password"
-                      type="password"
-                      placeholder="••••••••"
-                      value={confirmPassword}
-                      onChange={(e) => setConfirmPassword(e.target.value)}
-                      required
-                      minLength={6}
-                      className="bg-background/50"
-                    />
-                  </div>
-                  <Button type="submit" className="w-full" disabled={loading}>
-                    {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    Sign Up
-                  </Button>
-                </form>
+                ) : (
+                  <form onSubmit={handleSignUp} className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="signup-email">Email</Label>
+                      <Input
+                        id="signup-email"
+                        type="email"
+                        placeholder="you@example.com"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        required
+                        className="bg-background/50"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="signup-password">Password</Label>
+                      <Input
+                        id="signup-password"
+                        type="password"
+                        placeholder="••••••••"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        required
+                        minLength={6}
+                        className="bg-background/50"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="signup-confirm-password">Confirm Password</Label>
+                      <Input
+                        id="signup-confirm-password"
+                        type="password"
+                        placeholder="••••••••"
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        required
+                        minLength={6}
+                        className="bg-background/50"
+                      />
+                    </div>
+                    <Button type="submit" className="w-full" disabled={loading}>
+                      {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                      Sign Up
+                    </Button>
+                  </form>
+                )}
               </TabsContent>
             </Tabs>
           )}
