@@ -23,8 +23,8 @@ type TradeParams = {
 const buildHeaders = (idempotencyKey: string | undefined) =>
   idempotencyKey
     ? {
-        'X-Idempotency-Key': idempotencyKey,
-      }
+      'X-Idempotency-Key': idempotencyKey,
+    }
     : undefined;
 
 export function useTrade() {
@@ -34,12 +34,15 @@ export function useTrade() {
 
   return useMutation<TradeServerEnvelope, Error, TradeParams, OptimisticTradeContext>({
     mutationFn: async (variables) => {
+      // Use refreshSession to ensure we have a valid, non-expired token
+      // getSession can return stale cached sessions that fail with 401
       const {
         data: { session },
-      } = await supabase.auth.getSession();
+        error: sessionError,
+      } = await supabase.auth.refreshSession();
 
-      if (!session) {
-        throw new Error('Not authenticated. Please sign in to trade.');
+      if (sessionError || !session) {
+        throw new Error('Session expired. Please sign in again to trade.');
       }
 
       await walletService.ensureWallet(session.user.id);
