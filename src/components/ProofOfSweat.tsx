@@ -76,11 +76,19 @@ export default function ProofOfSweat({
     setOptimisticWorkouts(workouts || []);
   }, [workouts]);
 
+  // Map workout IDs to their corresponding Post objects for O(1) lookup
   const workoutPostMap = useMemo(() => {
     const map = new Map<string, Post>();
     posts.forEach((post) => {
       if (post.workout_json && typeof post.workout_json === 'object' && !Array.isArray(post.workout_json)) {
-        map.set(post.id, post);
+        // Key by workout_json.id if available, otherwise by post.id
+        const workoutId = extractWorkoutId(post.workout_json);
+        const key = workoutId || post.id;
+        map.set(key, post);
+        // Also map by post.id as fallback for cases where workout.id === post.id
+        if (workoutId && workoutId !== post.id) {
+          map.set(post.id, post);
+        }
       }
     });
     return map;
@@ -95,13 +103,15 @@ export default function ProofOfSweat({
   }, []);
 
   const handleEditClick = useCallback((workout: Workout) => {
-    const post = Array.from(workoutPostMap.values()).find((p) => postMatchesWorkout(p, workout.id));
+    // Direct lookup by workout.id
+    const post = workoutPostMap.get(workout.id);
     setWorkoutToEdit(post || null);
     setEditModalOpen(true);
   }, [workoutPostMap]);
 
   const handleViewClick = useCallback((workout: Workout) => {
-    const post = Array.from(workoutPostMap.values()).find((p) => postMatchesWorkout(p, workout.id));
+    // Direct lookup by workout.id
+    const post = workoutPostMap.get(workout.id);
     setWorkoutToView(post || null);
     setViewModalOpen(true);
   }, [workoutPostMap]);

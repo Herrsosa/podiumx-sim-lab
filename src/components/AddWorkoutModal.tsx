@@ -28,7 +28,7 @@ export default function AddWorkoutModal({ open, onOpenChange, athleteId, onSucce
   const [mediaFile, setMediaFile] = useState<File | null>(null);
   const [location, setLocation] = useState<LocationResult | null>(null);
   const [showCelebration, setShowCelebration] = useState(false);
-  
+
   const [formData, setFormData] = useState({
     date: new Date().toISOString().split('T')[0],
     type: 'Run',
@@ -51,12 +51,16 @@ export default function AddWorkoutModal({ open, onOpenChange, athleteId, onSucce
       if (!user) throw new Error('Not authenticated');
 
       let mediaUrl = '';
-      
+      let mediaType: 'image' | 'video' | undefined;
+
       // Upload media if provided
       if (mediaFile) {
         const fileExt = mediaFile.name.split('.').pop();
         const fileName = `${user.id}/${Date.now()}.${fileExt}`;
-        
+
+        // Detect media type from file MIME type
+        mediaType = mediaFile.type.startsWith('video/') ? 'video' : 'image';
+
         const { error: uploadError } = await supabase.storage
           .from('workout-media')
           .upload(fileName, mediaFile);
@@ -66,11 +70,11 @@ export default function AddWorkoutModal({ open, onOpenChange, athleteId, onSucce
         const { data: urlData } = supabase.storage
           .from('workout-media')
           .getPublicUrl(fileName);
-        
+
         mediaUrl = urlData.publicUrl;
       }
 
-      // Create workout JSON
+      // Create workout JSON with media info
       const workoutJson = {
         date: formData.date,
         type: formData.type,
@@ -78,6 +82,8 @@ export default function AddWorkoutModal({ open, onOpenChange, athleteId, onSucce
         duration: formData.duration ? parseInt(formData.duration) : undefined,
         rpe: parseInt(formData.rpe),
         notes: formData.notes,
+        mediaUrl: mediaUrl || undefined,
+        mediaType: mediaType,
       };
 
       const visibility = formData.visibility as 'public' | 'supporters' | 'backers';
@@ -119,7 +125,7 @@ export default function AddWorkoutModal({ open, onOpenChange, athleteId, onSucce
 
       onSuccess({ workout, post });
       onOpenChange(false);
-      
+
       // Reset form
       setFormData({
         date: new Date().toISOString().split('T')[0],

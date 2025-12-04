@@ -18,7 +18,14 @@ export default function ViewWorkoutModal({ open, onOpenChange, workoutPost }: Vi
         : {} as Partial<Workout>;
 
     const hasMap = !!workoutPost.strava_map_polyline;
-    const hasImage = !!workoutPost.image_url;
+    // Check both post.image_url and workout.mediaUrl for media
+    const mediaUrl = workoutPost.image_url || workout.mediaUrl;
+    const hasMedia = !!mediaUrl;
+
+    // Detect video: check mediaType first, then fallback to URL extension
+    const videoExtensions = ['.mp4', '.mov', '.webm', '.avi', '.mkv', '.m4v'];
+    const urlLower = mediaUrl?.toLowerCase() || '';
+    const isVideo = workout.mediaType === 'video' || videoExtensions.some(ext => urlLower.includes(ext));
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
@@ -31,7 +38,7 @@ export default function ViewWorkoutModal({ open, onOpenChange, workoutPost }: Vi
                 </DialogHeader>
 
                 <div className="flex-1 overflow-y-auto">
-                    {/* Media Section: Map or Image */}
+                    {/* Media Section: Map, Video, or Image */}
                     {hasMap ? (
                         <div className="h-64 w-full relative border-b border-border/50">
                             <ActivityMap
@@ -39,13 +46,26 @@ export default function ViewWorkoutModal({ open, onOpenChange, workoutPost }: Vi
                                 className="w-full h-full"
                             />
                         </div>
-                    ) : hasImage ? (
-                        <div className="h-64 w-full relative border-b border-border/50">
-                            <OptimizedImage
-                                src={workoutPost.image_url!}
-                                alt="Workout media"
-                                className="w-full h-full object-cover"
-                            />
+                    ) : hasMedia ? (
+                        <div className="w-full relative border-b border-border/50">
+                            {isVideo ? (
+                                <video
+                                    src={mediaUrl}
+                                    controls
+                                    autoPlay
+                                    muted
+                                    playsInline
+                                    className="w-full max-h-96 object-contain bg-black"
+                                />
+                            ) : (
+                                <div className="h-64">
+                                    <OptimizedImage
+                                        src={mediaUrl}
+                                        alt="Workout media"
+                                        className="w-full h-full object-cover"
+                                    />
+                                </div>
+                            )}
                         </div>
                     ) : null}
 
@@ -115,16 +135,28 @@ export default function ViewWorkoutModal({ open, onOpenChange, workoutPost }: Vi
                             </div>
                         )}
 
-                        {/* Image (if map is shown at top, show image here) */}
-                        {hasMap && hasImage && (
+                        {/* Additional media (if map is shown at top, show image/video here) */}
+                        {hasMap && hasMedia && (
                             <div className="space-y-2">
-                                <h3 className="font-semibold text-sm uppercase tracking-wider text-muted-foreground">Photo</h3>
+                                <h3 className="font-semibold text-sm uppercase tracking-wider text-muted-foreground">
+                                    {isVideo ? 'Video' : 'Photo'}
+                                </h3>
                                 <div className="rounded-lg overflow-hidden border border-border/50">
-                                    <OptimizedImage
-                                        src={workoutPost.image_url!}
-                                        alt="Workout media"
-                                        className="w-full h-auto object-cover max-h-96"
-                                    />
+                                    {isVideo ? (
+                                        <video
+                                            src={mediaUrl}
+                                            controls
+                                            muted
+                                            playsInline
+                                            className="w-full max-h-96 object-contain bg-black"
+                                        />
+                                    ) : (
+                                        <OptimizedImage
+                                            src={mediaUrl}
+                                            alt="Workout media"
+                                            className="w-full h-auto object-cover max-h-96"
+                                        />
+                                    )}
                                 </div>
                             </div>
                         )}
