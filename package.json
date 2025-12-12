@@ -94,6 +94,7 @@
     "@vitejs/plugin-react": "^5.0.4",
     "@vitejs/plugin-react-swc": "^3.11.0",
     "autoprefixer": "^10.4.21",
+    "baseline-browser-mapping": "^2.9.6",
     "cypress": "^13.13.0",
     "eslint": "^9.32.0",
     "eslint-plugin-react-hooks": "^5.2.0",

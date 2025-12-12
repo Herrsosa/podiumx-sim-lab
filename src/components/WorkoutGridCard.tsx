@@ -1,6 +1,7 @@
+import { memo } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Lock, Calendar, Activity } from 'lucide-react';
+import { Lock, Calendar } from 'lucide-react';
 import type { Workout, Post } from '@/types';
 import { SupabaseResponsiveImage } from '@/components/SupabaseResponsiveImage';
 import { ActivityMap } from '@/components/ui/ActivityMap';
@@ -53,7 +54,7 @@ const formatDate = (dateString: string | undefined) => {
   return date.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' });
 };
 
-export function WorkoutGridCard({ workout, post, canView, onClick, variant = 'grid' }: WorkoutGridCardProps) {
+function WorkoutGridCardComponent({ workout, post, canView, onClick, variant = 'grid' }: WorkoutGridCardProps) {
   const hasPhoto = post?.image_url || workout.mediaUrl;
   const hasMap = post?.strava_map_polyline;
   const photoUrl = post?.image_url || workout.mediaUrl;
@@ -202,3 +203,17 @@ export function WorkoutGridCard({ workout, post, canView, onClick, variant = 'gr
     </Card>
   );
 }
+
+// Custom comparison to prevent re-renders when props haven't meaningfully changed
+function arePropsEqual(prev: WorkoutGridCardProps, next: WorkoutGridCardProps): boolean {
+  return (
+    prev.workout.id === next.workout.id &&
+    prev.post?.id === next.post?.id &&
+    prev.canView === next.canView &&
+    prev.variant === next.variant &&
+    prev.workout.mediaUrl === next.workout.mediaUrl &&
+    prev.post?.image_url === next.post?.image_url
+  );
+}
+
+export const WorkoutGridCard = memo(WorkoutGridCardComponent, arePropsEqual);

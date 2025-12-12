@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Flame } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
@@ -160,10 +161,36 @@ export function ProofOfSweatFeed({
   const user = useUser();
   const walletPositions = useWalletPositions();
   const holdings = walletPositions.data ?? {};
-  const feedQuery = useProofOfSweatFeed({ athleteId, pageSize });
+  const {
+    data,
+    isLoading,
+    isError,
+    hasNextPage,
+    isFetchingNextPage,
+    fetchNextPage,
+    refetch
+  } = useProofOfSweatFeed({ athleteId, pageSize });
+  const loadMoreRef = useRef<HTMLDivElement>(null);
 
-  const feedItems = feedQuery.data?.pages.flatMap((page) => page.items) ?? [];
-  const usingFallback = !feedQuery.isLoading && feedItems.length === 0;
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasNextPage && !isFetchingNextPage) {
+          fetchNextPage();
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    if (loadMoreRef.current) {
+      observer.observe(loadMoreRef.current);
+    }
+
+    return () => observer.disconnect();
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
+
+  const feedItems = data?.pages.flatMap((page) => page.items) ?? [];
+  const usingFallback = !isLoading && feedItems.length === 0;
   const timelineItems = usingFallback ? fallbackFeed : feedItems;
   const visibleItems =
     typeof maxVisible === 'number' ? timelineItems.slice(0, maxVisible) : timelineItems;
@@ -187,7 +214,7 @@ export function ProofOfSweatFeed({
         )}
       </header>
 
-      {feedQuery.isLoading ? (
+      {isLoading ? (
         <div className="space-y-8">
           {Array.from({ length: maxVisible ?? 3 }).map((_, index) => (
             <div key={index} className="flex gap-4">
@@ -197,13 +224,38 @@ export function ProofOfSweatFeed({
                   <div className="mx-auto h-24 w-px bg-border/60" />
                 </div>
               </div>
-              <div className="flex-1 space-y-3">
-                <Skeleton className="h-5 w-48" />
-                <Skeleton className="h-32 w-10/12 rounded-2xl" />
-                <Skeleton className="h-48 w-64 rounded-2xl" />
+              <div className="flex-1 space-y-4">
+                {/* Header: Avatar + Name */}
+                <div className="flex items-center gap-3">
+                  <Skeleton className="h-12 w-12 rounded-full" /> {/* Avatar */}
+                  <div className="space-y-1.5">
+                    <Skeleton className="h-4 w-32" />
+                    <Skeleton className="h-3 w-24" />
+                  </div>
+                </div>
+
+                {/* Stats/Text Block */}
+                <div className="rounded-2xl border border-border/60 bg-muted/30 p-4 space-y-3">
+                  <div className="flex gap-2">
+                    <Skeleton className="h-5 w-16 rounded-full" />
+                    <Skeleton className="h-5 w-16 rounded-full" />
+                  </div>
+                  <Skeleton className="h-4 w-full" />
+                  <Skeleton className="h-4 w-4/5" />
+                </div>
+
+                {/* Media Block */}
+                <Skeleton className="aspect-square w-full max-w-xs rounded-3xl" />
               </div>
             </div>
           ))}
+        </div>
+      ) : isError ? (
+        <div className="flex flex-col items-center justify-center py-12 text-center text-muted-foreground">
+          <p className="mb-4">Failed to load feed</p>
+          <Button variant="outline" onClick={() => refetch()}>
+            Retry
+          </Button>
         </div>
       ) : (
         <div className={cn('relative', enableScroll && 'max-h-[520px] overflow-y-auto pr-2')}>
@@ -296,15 +348,16 @@ export function ProofOfSweatFeed({
         </div>
       )}
 
-      {showLoadMore && feedQuery.hasNextPage && !usingFallback && (
-        <div className="flex justify-center">
-          <Button
-            variant="outline"
-            onClick={() => feedQuery.fetchNextPage()}
-            disabled={feedQuery.isFetchingNextPage}
-          >
-            {feedQuery.isFetchingNextPage ? 'Loading…' : 'Load more workouts'}
-          </Button>
+      {showLoadMore && hasNextPage && !usingFallback && (
+        <div ref={loadMoreRef} className="flex justify-center py-4">
+          {isFetchingNextPage ? (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+              Loading more...
+            </div>
+          ) : (
+            <div className="h-4" /> // Spacer for observer
+          )}
         </div>
       )}
     </section>
