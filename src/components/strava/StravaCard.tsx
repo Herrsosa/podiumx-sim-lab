@@ -378,7 +378,7 @@ export function StravaCard({ className }: StravaCardProps) {
 
   return (
     <>
-      <Card className={cn("bg-card/60 border-border/60", className)}>
+      <Card className={cn("bg-card/60 border-border/60", className)} data-tour="strava-card">
         <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between space-y-0 px-4 py-3">
           <div className="flex items-center gap-3 w-full sm:w-auto">
             <button

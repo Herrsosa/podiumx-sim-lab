@@ -6,6 +6,7 @@ import type { Workout, Post } from '@/types';
 import { SupabaseResponsiveImage } from '@/components/SupabaseResponsiveImage';
 import { ActivityMap } from '@/components/ui/ActivityMap';
 import { cn } from '@/lib/utils';
+import { PropButton } from '@/components/PropButton';
 
 interface WorkoutGridCardProps {
   workout: Workout;
@@ -162,6 +163,13 @@ function WorkoutGridCardComponent({ workout, post, canView, onClick, variant = '
                       <p className={captionClass}>
                         {post.text}
                       </p>
+                    )}
+
+                    {/* Props Button */}
+                    {post?.id && (
+                      <div className="flex items-center mt-2">
+                        <PropButton postId={post.id} size="sm" />
+                      </div>
                     )}
                   </>
                 ) : (

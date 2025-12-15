@@ -489,7 +489,7 @@ export default function MyAthletePage() {
         <Tabs value={currentTab} onValueChange={(v) => setTab(v as 'personal' | 'locker')} className="w-full mb-6">
           <TabsList className="grid w-full grid-cols-2 max-w-md">
             <TabsTrigger value="personal">Personal</TabsTrigger>
-            <TabsTrigger value="locker">View Locker</TabsTrigger>
+            <TabsTrigger value="locker" data-tour="locker-tab">View Locker</TabsTrigger>
           </TabsList>
 
           <TabsContent value="personal" className="mt-6">

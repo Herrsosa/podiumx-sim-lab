@@ -5,6 +5,7 @@ import { useAppStore } from '@/store/useAppStore';
 import { useToast } from '@/hooks/use-toast';
 import { useCallback, useEffect, useState } from 'react';
 import { useAuthStore, useUser } from '@/store/auth';
+import { NotificationCenter } from '@/components/NotificationCenter';
 
 export default function Navigation() {
   const location = useLocation();
@@ -72,7 +73,7 @@ export default function Navigation() {
 
           {/* Nav Links */}
           <div className="flex items-center gap-2">
-            <Link to="/feed" onMouseEnter={prefetchFeed}>
+            <Link to="/feed" onMouseEnter={prefetchFeed} data-tour="feed">
               <Button
                 variant={isActive('/feed') ? 'secondary' : 'ghost'}
                 size="sm"
@@ -82,7 +83,7 @@ export default function Navigation() {
                 <span className="hidden sm:inline">Feed</span>
               </Button>
             </Link>
-            <Link to="/marketplace" onMouseEnter={prefetchMarketplace}>
+            <Link to="/marketplace" onMouseEnter={prefetchMarketplace} data-tour="marketplace">
               <Button
                 variant={isActive('/marketplace') ? 'secondary' : 'ghost'}
                 size="sm"
@@ -94,7 +95,7 @@ export default function Navigation() {
             </Link>
             {user && (
               <>
-                <Link to="/portfolio" onMouseEnter={prefetchPortfolio}>
+                <Link to="/portfolio" onMouseEnter={prefetchPortfolio} data-tour="portfolio">
                   <Button
                     variant={isActive('/portfolio') ? 'secondary' : 'ghost'}
                     size="sm"
@@ -120,6 +121,9 @@ export default function Navigation() {
 
           {/* Actions */}
           <div className="flex items-center gap-2">
+            {/* Notification Center */}
+            <NotificationCenter />
+
             <Button
               variant="ghost"
               size="icon"

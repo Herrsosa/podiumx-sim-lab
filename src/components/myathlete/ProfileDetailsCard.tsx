@@ -66,6 +66,7 @@ export function ProfileDetailsCard({
 
   return (
     <Card
+      data-tour="profile-identity"
       className={cn(
         variant === 'mobile'
           ? 'border border-border/60 bg-card shadow-sm'

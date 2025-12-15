@@ -1,7 +1,10 @@
 import { Link, useLocation } from 'react-router-dom';
-import { Activity, Home, Wallet, User } from 'lucide-react';
+import { Activity, Home, Wallet, User, Bell } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useUser } from '@/store/auth';
+import { useNotifications } from '@/hooks/useNotifications';
+import { Badge } from '@/components/ui/badge';
+import { featureFlags } from '@/lib/config/featureFlags';
 
 export function BottomTabBar() {
     const location = useLocation();
@@ -10,8 +13,12 @@ export function BottomTabBar() {
 
     const isActive = (path: string) => {
         if (path === '/my-athlete/overview' && pathname.startsWith('/my-athlete')) return true;
+        if (path === '/notifications' && pathname === '/notifications') return true;
         return pathname === path;
     };
+
+    const { unreadCount } = useNotifications();
+    const showNotifications = featureFlags.enableNotifications;
 
     if (!user) return null;
 
@@ -61,6 +68,29 @@ export function BottomTabBar() {
                     <User className="h-6 w-6" />
                     <span>Profile</span>
                 </Link>
+
+                {showNotifications && (
+                    <Link
+                        to="/notifications"
+                        className={cn(
+                            "flex flex-col items-center justify-center gap-1 min-w-[64px] h-full text-xs font-medium transition-colors relative",
+                            isActive('/notifications') ? "text-primary" : "text-muted-foreground hover:text-foreground"
+                        )}
+                    >
+                        <div className="relative">
+                            <Bell className="h-6 w-6" />
+                            {unreadCount > 0 && (
+                                <Badge
+                                    variant="destructive"
+                                    className="absolute -top-2 -right-2 h-4 min-w-[16px] px-1 text-[10px] font-bold"
+                                >
+                                    {unreadCount > 9 ? '9+' : unreadCount}
+                                </Badge>
+                            )}
+                        </div>
+                        <span>Alerts</span>
+                    </Link>
+                )}
             </div>
         </div>
     );

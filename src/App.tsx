@@ -33,6 +33,10 @@ const MyAthleteLocker = lazy(() => import("./pages/MyAthlete/Locker"));
 const GlobeDemo = lazy(() => import("./pages/GlobeDemo"));
 const FeedPage = lazy(() => import("./pages/Feed"));
 const VerifyEmail = lazy(() => import("./pages/VerifyEmail"));
+const NotificationsPage = lazy(() => import("./pages/Notifications"));
+const LearnPage = lazy(() => import("./pages/Learn"));
+
+import { TourPromptModal } from "@/components/TourPromptModal";
 
 interface RouteGuardProps {
   requireAuth?: boolean;
@@ -105,131 +109,157 @@ function AppContent() {
   }, [initializeStore]);
 
   return (
-    <Routes>
-      <Route path="/" element={<Landing />} />
-      <Route path="/auth" element={<Auth />} />
-      <Route path="/auth/callback" element={<AuthCallback />} />
-      <Route path="/verify-email" element={
-        <RouteGuard requireAuth>
+    <>
+      <Routes>
+        <Route path="/" element={<Landing />} />
+        <Route path="/auth" element={<Auth />} />
+        <Route path="/auth/callback" element={<AuthCallback />} />
+        <Route path="/verify-email" element={
+          <RouteGuard requireAuth>
+            <Suspense fallback={
+              <div className="min-h-screen flex items-center justify-center">
+                <LoadingSpinner size="lg" />
+              </div>
+            }>
+              <VerifyEmail />
+            </Suspense>
+          </RouteGuard>
+        } />
+        <Route path="/onboarding" element={
+          <RouteGuard requireAuth>
+            <Suspense fallback={
+              <div className="min-h-screen flex items-center justify-center">
+                <LoadingSpinner size="lg" />
+              </div>
+            }>
+              <Onboarding />
+            </Suspense>
+          </RouteGuard>
+        } />
+        <Route path="/marketplace" element={
+          <RouteGuard>
+            <Navigation />
+            <Suspense fallback={<MarketplaceSkeleton />}>
+              <Marketplace />
+            </Suspense>
+          </RouteGuard>
+        } />
+        <Route path="/feed" element={
+          <RouteGuard>
+            <Navigation />
+            <Suspense fallback={<FeedSkeleton />}>
+              <FeedPage />
+            </Suspense>
+          </RouteGuard>
+        } />
+        <Route path="/athlete/:slug" element={
+          <RouteGuard>
+            <Navigation />
+            <Suspense fallback={<AthleteDetailSkeleton />}>
+              <AthleteDetail />
+            </Suspense>
+          </RouteGuard>
+        } />
+        <Route path="/portfolio" element={
+          <RouteGuard requireAuth>
+            <Navigation />
+            <Suspense fallback={<PortfolioSkeleton />}>
+              <Portfolio />
+            </Suspense>
+          </RouteGuard>
+        } />
+        <Route path="/my-athlete" element={<Navigate to="/my-athlete/overview" replace />} />
+        <Route path="/my-athlete/overview" element={
+          <RouteGuard requireAuth>
+            <Navigation />
+            <Suspense fallback={
+              <div className="min-h-screen flex items-center justify-center">
+                <LoadingSpinner size="lg" />
+              </div>
+            }>
+              <MyAthletePage />
+            </Suspense>
+          </RouteGuard>
+        } />
+        <Route path="/my-athlete/locker" element={
+          <RouteGuard requireAuth>
+            <Navigation />
+            <Suspense fallback={
+              <div className="min-h-screen flex items-center justify-center">
+                <LoadingSpinner size="lg" />
+              </div>
+            }>
+              <MyAthleteLocker />
+            </Suspense>
+          </RouteGuard>
+        } />
+        <Route path="/my-athlete/locker/:section" element={
+          <RouteGuard requireAuth>
+            <Navigation />
+            <Suspense fallback={
+              <div className="min-h-screen flex items-center justify-center">
+                <LoadingSpinner size="lg" />
+              </div>
+            }>
+              <MyAthleteLocker />
+            </Suspense>
+          </RouteGuard>
+        } />
+        <Route path="/my-athlete/locker/:section/:conversationId" element={
+          <RouteGuard requireAuth>
+            <Navigation />
+            <Suspense fallback={
+              <div className="min-h-screen flex items-center justify-center">
+                <LoadingSpinner size="lg" />
+              </div>
+            }>
+              <MyAthleteLocker />
+            </Suspense>
+          </RouteGuard>
+        } />
+        <Route path="/my-athlete-profile" element={<Navigate to="/my-athlete/overview" replace />} />
+        <Route path="/strava/callback" element={
+          <RouteGuard requireAuth>
+            <StravaCallback />
+          </RouteGuard>
+        } />
+        <Route path="/notifications" element={
+          <RouteGuard requireAuth>
+            <Suspense fallback={
+              <div className="min-h-screen flex items-center justify-center">
+                <LoadingSpinner size="lg" />
+              </div>
+            }>
+              <NotificationsPage />
+            </Suspense>
+          </RouteGuard>
+        } />
+        <Route path="/linked/strava" element={<StravaLinkedResult />} />
+        <Route path="/globe-demo" element={
           <Suspense fallback={
             <div className="min-h-screen flex items-center justify-center">
               <LoadingSpinner size="lg" />
             </div>
           }>
-            <VerifyEmail />
+            <GlobeDemo />
           </Suspense>
-        </RouteGuard>
-      } />
-      <Route path="/onboarding" element={
-        <RouteGuard requireAuth>
-          <Suspense fallback={
-            <div className="min-h-screen flex items-center justify-center">
-              <LoadingSpinner size="lg" />
-            </div>
-          }>
-            <Onboarding />
-          </Suspense>
-        </RouteGuard>
-      } />
-      <Route path="/marketplace" element={
-        <RouteGuard>
-          <Navigation />
-          <Suspense fallback={<MarketplaceSkeleton />}>
-            <Marketplace />
-          </Suspense>
-        </RouteGuard>
-      } />
-      <Route path="/feed" element={
-        <RouteGuard>
-          <Navigation />
-          <Suspense fallback={<FeedSkeleton />}>
-            <FeedPage />
-          </Suspense>
-        </RouteGuard>
-      } />
-      <Route path="/athlete/:slug" element={
-        <RouteGuard>
-          <Navigation />
-          <Suspense fallback={<AthleteDetailSkeleton />}>
-            <AthleteDetail />
-          </Suspense>
-        </RouteGuard>
-      } />
-      <Route path="/portfolio" element={
-        <RouteGuard requireAuth>
-          <Navigation />
-          <Suspense fallback={<PortfolioSkeleton />}>
-            <Portfolio />
-          </Suspense>
-        </RouteGuard>
-      } />
-      <Route path="/my-athlete" element={<Navigate to="/my-athlete/overview" replace />} />
-      <Route path="/my-athlete/overview" element={
-        <RouteGuard requireAuth>
-          <Navigation />
-          <Suspense fallback={
-            <div className="min-h-screen flex items-center justify-center">
-              <LoadingSpinner size="lg" />
-            </div>
-          }>
-            <MyAthletePage />
-          </Suspense>
-        </RouteGuard>
-      } />
-      <Route path="/my-athlete/locker" element={
-        <RouteGuard requireAuth>
-          <Navigation />
-          <Suspense fallback={
-            <div className="min-h-screen flex items-center justify-center">
-              <LoadingSpinner size="lg" />
-            </div>
-          }>
-            <MyAthleteLocker />
-          </Suspense>
-        </RouteGuard>
-      } />
-      <Route path="/my-athlete/locker/:section" element={
-        <RouteGuard requireAuth>
-          <Navigation />
-          <Suspense fallback={
-            <div className="min-h-screen flex items-center justify-center">
-              <LoadingSpinner size="lg" />
-            </div>
-          }>
-            <MyAthleteLocker />
-          </Suspense>
-        </RouteGuard>
-      } />
-      <Route path="/my-athlete/locker/:section/:conversationId" element={
-        <RouteGuard requireAuth>
-          <Navigation />
-          <Suspense fallback={
-            <div className="min-h-screen flex items-center justify-center">
-              <LoadingSpinner size="lg" />
-            </div>
-          }>
-            <MyAthleteLocker />
-          </Suspense>
-        </RouteGuard>
-      } />
-      <Route path="/my-athlete-profile" element={<Navigate to="/my-athlete/overview" replace />} />
-      <Route path="/strava/callback" element={
-        <RouteGuard requireAuth>
-          <StravaCallback />
-        </RouteGuard>
-      } />
-      <Route path="/linked/strava" element={<StravaLinkedResult />} />
-      <Route path="/globe-demo" element={
-        <Suspense fallback={
-          <div className="min-h-screen flex items-center justify-center">
-            <LoadingSpinner size="lg" />
-          </div>
-        }>
-          <GlobeDemo />
-        </Suspense>
-      } />
-      <Route path="*" element={<NotFound />} />
-    </Routes>
+        } />
+        <Route path="/learn" element={
+          <RouteGuard requireAuth>
+            <Navigation />
+            <Suspense fallback={
+              <div className="min-h-screen flex items-center justify-center">
+                <LoadingSpinner size="lg" />
+              </div>
+            }>
+              <LearnPage />
+            </Suspense>
+          </RouteGuard>
+        } />
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+      <TourPromptModal />
+    </>
   );
 }
 

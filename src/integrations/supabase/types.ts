@@ -537,6 +537,57 @@ export type Database = {
         }
         Relationships: []
       }
+      props: {
+        Row: {
+          id: string
+          created_at: string
+          actor_user_id: string
+          target_type: string
+          target_id: string
+        }
+        Insert: {
+          id?: string
+          created_at?: string
+          actor_user_id: string
+          target_type: string
+          target_id: string
+        }
+        Update: {
+          id?: string
+          created_at?: string
+          actor_user_id?: string
+          target_type?: string
+          target_id?: string
+        }
+        Relationships: []
+      }
+      notifications: {
+        Row: {
+          id: string
+          created_at: string
+          user_id: string
+          type: string
+          payload: Json
+          read_at: string | null
+        }
+        Insert: {
+          id?: string
+          created_at?: string
+          user_id: string
+          type: string
+          payload?: Json
+          read_at?: string | null
+        }
+        Update: {
+          id?: string
+          created_at?: string
+          user_id?: string
+          type?: string
+          payload?: Json
+          read_at?: string | null
+        }
+        Relationships: []
+      }
       posts: {
         Row: {
           author_id: string
@@ -551,6 +602,7 @@ export type Database = {
           location_lat: number | null
           location_lng: number | null
           min_tokens_required: number
+          props_count: number
           strava_activity_id: number | null
           strava_map_polyline: string | null
           text: string | null
@@ -571,6 +623,7 @@ export type Database = {
           location_lat?: number | null
           location_lng?: number | null
           min_tokens_required?: number
+          props_count?: number
           strava_activity_id?: number | null
           strava_map_polyline?: string | null
           text?: string | null
@@ -591,6 +644,7 @@ export type Database = {
           location_lat?: number | null
           location_lng?: number | null
           min_tokens_required?: number
+          props_count?: number
           strava_activity_id?: number | null
           strava_map_polyline?: string | null
           text?: string | null
@@ -620,6 +674,7 @@ export type Database = {
           role: string | null
           sport: string | null
           strava_url: string | null
+          tour_version_completed: string | null
           updated_at: string
           username: string
         }
@@ -634,6 +689,7 @@ export type Database = {
           role?: string | null
           sport?: string | null
           strava_url?: string | null
+          tour_version_completed?: string | null
           updated_at?: string
           username: string
         }
@@ -648,6 +704,7 @@ export type Database = {
           role?: string | null
           sport?: string | null
           strava_url?: string | null
+          tour_version_completed?: string | null
           updated_at?: string
           username?: string
         }

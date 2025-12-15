@@ -6,6 +6,8 @@ export const featureFlags = {
   chartStitchLatest: true,
   perfChartMemo: true,
   enableVirtualScroll: true,
+  enableProps: true,
+  enableNotifications: true,
 } as const;
 
 export type FeatureFlagKey = keyof typeof featureFlags;

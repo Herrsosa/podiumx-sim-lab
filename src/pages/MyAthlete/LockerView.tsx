@@ -10,8 +10,9 @@ const LockerGlobe = lazy(() => import('@/components/myathlete/LockerGlobe').then
 const LockerResources = lazy(() => import('@/components/myathlete/LockerResources').then(module => ({ default: module.LockerResources })));
 const LockerChat = lazy(() => import('@/components/myathlete/LockerChat').then(module => ({ default: module.LockerChat })));
 const LockerMessages = lazy(() => import('@/components/myathlete/LockerMessages').then(module => ({ default: module.LockerMessages })));
+const LockerSettings = lazy(() => import('@/components/myathlete/LockerSettings').then(module => ({ default: module.LockerSettings })));
 
-export type LockerTab = 'workouts' | 'globe' | 'resources' | 'chat' | 'messages';
+export type LockerTab = 'workouts' | 'globe' | 'resources' | 'chat' | 'messages' | 'settings';
 
 interface LockerViewProps {
   athleteId?: string;
@@ -47,19 +48,20 @@ export function LockerView({ athleteId, athleteName, athleteSlug, initialTab }: 
       <Tabs
         value={activeTab}
         onValueChange={(value) => {
-          const tab = ['workouts', 'globe', 'resources', 'chat', 'messages'].includes(value as LockerTab)
+          const tab = ['workouts', 'globe', 'resources', 'chat', 'messages', 'settings'].includes(value as LockerTab)
             ? (value as LockerTab)
             : 'workouts';
           setActiveTab(tab);
         }}
         className="w-full"
       >
-        <TabsList className="grid w-full grid-cols-5 sticky top-0 z-20 bg-background/95 backdrop-blur-sm">
+        <TabsList className="grid w-full grid-cols-6 sticky top-0 z-20 bg-background/95 backdrop-blur-sm">
           <TabsTrigger value="workouts">Workouts</TabsTrigger>
           <TabsTrigger value="globe">Globe</TabsTrigger>
           <TabsTrigger value="resources">Resources</TabsTrigger>
-          <TabsTrigger value="chat">Community Chat</TabsTrigger>
+          <TabsTrigger value="chat">Chat</TabsTrigger>
           <TabsTrigger value="messages">Messages</TabsTrigger>
+          <TabsTrigger value="settings">Settings</TabsTrigger>
         </TabsList>
 
         <Suspense
@@ -96,6 +98,10 @@ export function LockerView({ athleteId, athleteName, athleteSlug, initialTab }: 
 
           <TabsContent value="messages">
             <LockerMessages athleteId={effectiveAthleteId} athleteName={effectiveName} />
+          </TabsContent>
+
+          <TabsContent value="settings">
+            <LockerSettings />
           </TabsContent>
         </Suspense>
       </Tabs>

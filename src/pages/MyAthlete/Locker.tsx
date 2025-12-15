@@ -11,8 +11,9 @@ const LockerWorkouts = lazy(() => import('@/components/myathlete/LockerWorkouts'
 const LockerResources = lazy(() => import('@/components/myathlete/LockerResources').then(module => ({ default: module.LockerResources })));
 const LockerChat = lazy(() => import('@/components/myathlete/LockerChat').then(module => ({ default: module.LockerChat })));
 const LockerMessages = lazy(() => import('@/components/myathlete/LockerMessages').then(module => ({ default: module.LockerMessages })));
+const LockerSettings = lazy(() => import('@/components/myathlete/LockerSettings').then(module => ({ default: module.LockerSettings })));
 
-const TAB_KEYS = ['workouts', 'resources', 'chat', 'messages'] as const;
+const TAB_KEYS = ['workouts', 'resources', 'chat', 'messages', 'settings'] as const;
 type LockerTab = (typeof TAB_KEYS)[number];
 
 function isLockerTab(value: string | null | undefined): value is LockerTab {
@@ -81,11 +82,12 @@ export default function Locker() {
 
       <Card className="glass-card">
         <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="workouts">Workouts</TabsTrigger>
             <TabsTrigger value="resources">Resources</TabsTrigger>
-            <TabsTrigger value="chat">Community Chat</TabsTrigger>
+            <TabsTrigger value="chat">Chat</TabsTrigger>
             <TabsTrigger value="messages">Messages</TabsTrigger>
+            <TabsTrigger value="settings">Settings</TabsTrigger>
           </TabsList>
 
           <Suspense
@@ -113,6 +115,10 @@ export default function Locker() {
 
             <TabsContent value="messages">
               <LockerMessages athleteId={athlete.id} athleteName={athlete.name} />
+            </TabsContent>
+
+            <TabsContent value="settings">
+              <LockerSettings />
             </TabsContent>
           </Suspense>
         </Tabs>
