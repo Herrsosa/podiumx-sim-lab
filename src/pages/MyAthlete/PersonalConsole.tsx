@@ -16,6 +16,7 @@ const LockerMessages = lazy(() => import('@/components/myathlete/LockerMessages'
 import { useQueryClient } from '@tanstack/react-query';
 import { SupabaseResponsiveImage } from '@/components/SupabaseResponsiveImage';
 import { ProfileDetailsCard } from '@/components/myathlete/ProfileDetailsCard';
+import { ProfileStatsCard } from '@/components/myathlete/ProfileStatsCard';
 import type { EditableProfile } from '@/pages/MyAthlete/mobile/types';
 import ProofOfSweat from '@/components/ProofOfSweat';
 import {
@@ -187,6 +188,9 @@ export function PersonalConsole({
         onFieldChange={onProfileFieldChange}
         onAvatarSelect={onAvatarSelect}
       />
+
+      {/* Stats Card - fetches its own data */}
+      <ProfileStatsCard className="glass-card" />
 
       {/* X.com Integration Card */}
       {xLoading ? (

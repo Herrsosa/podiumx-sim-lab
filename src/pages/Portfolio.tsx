@@ -20,6 +20,7 @@ import { AddFundsDialog } from '@/components/funding/AddFundsDialog';
 import { featureFlags } from '@/lib/config/featureFlags';
 import { CountUp } from '@/components/ui/count-up';
 import { cn } from '@/lib/utils';
+import { ContextualHelpButton } from '@/components/ContextualHelpButton';
 
 const SPORT_COLORS: Record<string, string> = {
   Running: 'bg-orange-500/10 text-orange-500 hover:bg-orange-500/20 border-orange-500/20',
@@ -280,7 +281,10 @@ export default function Portfolio() {
           <H1 className="mb-2 text-4xl">Portfolio</H1>
           <Body>Track your positions and performance</Body>
         </div>
-        <AddFundsDialog />
+        <div className="flex items-center gap-2">
+          <ContextualHelpButton screen="portfolio" />
+          <AddFundsDialog />
+        </div>
       </div>
 
       {/* Hero Section */}

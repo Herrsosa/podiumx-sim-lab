@@ -150,64 +150,82 @@ serve(async (req) => {
       stravaConnection = await refreshStravaToken(stravaConnection, supabaseClient);
     }
 
-    const fetchActivities = async (connectionToUse: OAuthConnection) =>
-      fetch('https://www.strava.com/api/v3/athlete/activities?per_page=50', {
+    // Fetch activities with pagination - up to 200 activities (4 pages of 50)
+    const MAX_PAGES = 4;
+    const PER_PAGE = 50;
+
+    const fetchActivitiesPage = async (connectionToUse: OAuthConnection, page: number) =>
+      fetch(`https://www.strava.com/api/v3/athlete/activities?per_page=${PER_PAGE}&page=${page}`, {
         headers: {
           Authorization: `Bearer ${connectionToUse.access_token}`,
         },
       });
 
-    let activitiesResponse = await fetchActivities(stravaConnection);
+    let allActivities: Record<string, unknown>[] = [];
 
-    if (!activitiesResponse.ok) {
-      const errorText = await activitiesResponse.text();
+    for (let page = 1; page <= MAX_PAGES; page++) {
+      let activitiesResponse = await fetchActivitiesPage(stravaConnection, page);
 
-      if (isAuthorizationError(activitiesResponse.status, errorText)) {
-        console.warn('Strava returned an authorization error. Attempting token refresh.');
+      if (!activitiesResponse.ok) {
+        const errorText = await activitiesResponse.text();
 
-        try {
-          stravaConnection = await refreshStravaToken(stravaConnection, supabaseClient);
-        } catch (refreshError) {
-          console.error('Strava token refresh failed:', refreshError);
-          const message = refreshError instanceof Error ? refreshError.message : 'Failed to refresh Strava token';
+        if (isAuthorizationError(activitiesResponse.status, errorText)) {
+          console.warn('Strava returned an authorization error. Attempting token refresh.');
 
-          if (message.toLowerCase().includes('invalid_grant') || message.toLowerCase().includes('refresh token')) {
-            await supabaseClient
-              .from('oauth_connections')
-              .delete()
-              .eq('id', stravaConnection.id);
+          try {
+            stravaConnection = await refreshStravaToken(stravaConnection, supabaseClient);
+          } catch (refreshError) {
+            console.error('Strava token refresh failed:', refreshError);
+            const message = refreshError instanceof Error ? refreshError.message : 'Failed to refresh Strava token';
 
-            throw new Error('Strava authorization has expired or been revoked. Please reconnect your Strava account.');
+            if (message.toLowerCase().includes('invalid_grant') || message.toLowerCase().includes('refresh token')) {
+              await supabaseClient
+                .from('oauth_connections')
+                .delete()
+                .eq('id', stravaConnection.id);
+
+              throw new Error('Strava authorization has expired or been revoked. Please reconnect your Strava account.');
+            }
+
+            throw new Error(message);
           }
 
-          throw new Error(message);
-        }
+          activitiesResponse = await fetchActivitiesPage(stravaConnection, page);
 
-        activitiesResponse = await fetchActivities(stravaConnection);
+          if (!activitiesResponse.ok) {
+            const retryErrorText = await activitiesResponse.text();
+            if (isAuthorizationError(activitiesResponse.status, retryErrorText)) {
+              console.error('Strava activities fetch still unauthorized after refresh:', retryErrorText);
+              await supabaseClient
+                .from('oauth_connections')
+                .delete()
+                .eq('id', stravaConnection.id);
 
-        if (!activitiesResponse.ok) {
-          const retryErrorText = await activitiesResponse.text();
-          if (isAuthorizationError(activitiesResponse.status, retryErrorText)) {
-            console.error('Strava activities fetch still unauthorized after refresh:', retryErrorText);
-            await supabaseClient
-              .from('oauth_connections')
-              .delete()
-              .eq('id', stravaConnection.id);
+              throw new Error('Strava authorization has expired or been revoked. Please reconnect your Strava account.');
+            }
 
-            throw new Error('Strava authorization has expired or been revoked. Please reconnect your Strava account.');
+            console.error('Failed to fetch Strava activities after refreshing token:', retryErrorText);
+            throw new Error(`Failed to fetch Strava activities: ${retryErrorText}`);
           }
-
-          console.error('Failed to fetch Strava activities after refreshing token:', retryErrorText);
-          throw new Error(`Failed to fetch Strava activities: ${retryErrorText}`);
+        } else {
+          console.error('Failed to fetch Strava activities:', errorText);
+          throw new Error(`Failed to fetch Strava activities: ${errorText}`);
         }
-      } else {
-        console.error('Failed to fetch Strava activities:', errorText);
-        throw new Error(`Failed to fetch Strava activities: ${errorText}`);
+      }
+
+      const pageActivities = await activitiesResponse.json() as Record<string, unknown>[];
+      console.log(`Fetched ${pageActivities.length} activities from Strava (page ${page})`);
+
+      allActivities = allActivities.concat(pageActivities);
+
+      // Stop if we got fewer than per_page (no more pages)
+      if (pageActivities.length < PER_PAGE) {
+        break;
       }
     }
 
-    const activities = await activitiesResponse.json();
-    console.log(`Fetched ${activities.length} activities from Strava`);
+    const activities = allActivities;
+    console.log(`Fetched ${activities.length} total activities from Strava`);
 
     let insertedCount = 0;
     let updatedCount = 0;

@@ -79,7 +79,7 @@ export function StravaCard({ className }: StravaCardProps) {
     setSelectedActivity(null);
   };
 
-  const { data: activities, isLoading: activitiesLoading } = useActivities({ enabled: activitiesLoaded, limit: 25 });
+  const { data: activities, isLoading: activitiesLoading } = useActivities({ enabled: activitiesLoaded, limit: 100 });
   const pendingImportActivities = useMemo(
     () => (activities ?? []).filter((activity) => !activity.imported_post_id),
     [activities],

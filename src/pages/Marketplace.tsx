@@ -17,6 +17,7 @@ import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import { queryClient } from '@/lib/queryClient';
 import { motion } from 'framer-motion';
 import { RecentTrades } from '@/components/RecentTrades';
+import { ContextualHelpButton } from '@/components/ContextualHelpButton';
 
 export default function Marketplace() {
   const navigate = useNavigate();
@@ -112,6 +113,13 @@ export default function Marketplace() {
   return (
     <div className="px-4 py-8 page-transition">
       <div className="mx-auto w-full max-w-6xl">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <H1 className="text-2xl md:text-3xl">Marketplace</H1>
+            <Body className="text-muted-foreground">Discover athletes and invest in their journey</Body>
+          </div>
+          <ContextualHelpButton screen="marketplace" />
+        </div>
       </div>
 
       {/* Search and Filter */}
