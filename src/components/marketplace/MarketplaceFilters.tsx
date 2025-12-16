@@ -61,7 +61,7 @@ export function MarketplaceFilters({
     const currentSortLabel = SORT_OPTIONS.find((opt) => opt.value === sortBy)?.label || 'Sort by';
 
     return (
-        <div className="sticky top-[72px] z-40 border-b border-border/40 bg-background/95 backdrop-blur-xl">
+        <div className="lg:sticky lg:top-[64px] z-50 border-b border-border/40 bg-background backdrop-blur-xl mb-6">
             <div className="container mx-auto px-4 sm:px-6 py-4">
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                     {/* Left: Sort Dropdown + Sport Filters */}
@@ -71,12 +71,13 @@ export function MarketplaceFilters({
                             <DropdownMenuTrigger asChild>
                                 <Button
                                     variant="outline"
-                                    className="gap-2 font-semibold min-w-[200px] justify-between"
+                                    size="lg"
+                                    className="gap-2 font-semibold min-w-[220px] justify-between h-11 text-base"
                                 >
                                     <span className="flex items-center gap-2">
                                         Sort by: <span className="text-primary">{currentSortLabel.split(' ')[0]}</span>
                                     </span>
-                                    <ChevronDown className="h-4 w-4 opacity-50" />
+                                    <ChevronDown className="h-5 w-5 opacity-50" />
                                 </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="start" className="w-[240px]">
@@ -100,7 +101,7 @@ export function MarketplaceFilters({
                         <div className="flex flex-wrap items-center gap-2">
                             <Badge
                                 variant={selectedSport === 'All' ? 'default' : 'outline'}
-                                className="cursor-pointer px-3 py-1.5 text-xs font-medium transition-all hover:scale-105"
+                                className="cursor-pointer px-4 py-2 text-sm font-medium transition-all hover:scale-105"
                                 onClick={() => onSportChange('All')}
                             >
                                 All Sports
@@ -110,7 +111,7 @@ export function MarketplaceFilters({
                                     key={sport}
                                     variant={selectedSport === sport ? 'default' : 'outline'}
                                     className={cn(
-                                        "cursor-pointer px-3 py-1.5 text-xs font-medium transition-all hover:scale-105",
+                                        "cursor-pointer px-4 py-2 text-sm font-medium transition-all hover:scale-105",
                                         selectedSport === sport && "shadow-lg shadow-primary/20"
                                     )}
                                     onClick={() => onSportChange(sport)}

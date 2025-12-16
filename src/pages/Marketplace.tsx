@@ -176,8 +176,7 @@ export default function Marketplace() {
             />
           ) : (
             <motion.div
-              className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
-              style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))' }}
+              className="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
               role="grid"
               aria-label="Athletes marketplace grid"
               initial="hidden"

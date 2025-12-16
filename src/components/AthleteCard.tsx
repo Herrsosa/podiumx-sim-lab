@@ -132,14 +132,14 @@ export const AthleteCard = memo(({ athlete, chartData, onClick, onMouseEnter }: 
             </div>
           </div>
 
-          <div className="p-4">
+          <div className="p-3">
             {/* Name & Sport */}
-            <div className="mb-3 flex items-start justify-between">
+            <div className="mb-2 flex items-start justify-between">
               <div className="flex-1 min-w-0">
-                <h3 className="font-bold truncate text-lg mb-1">{athlete.name}</h3>
+                <h3 className="font-bold truncate text-base mb-1">{athlete.name}</h3>
                 <Badge
                   variant="secondary"
-                  className={cn("text-xs px-2 py-0.5", SPORT_COLORS[athlete.sport] || "bg-secondary text-secondary-foreground")}
+                  className={cn("text-[10px] px-1.5 py-0", SPORT_COLORS[athlete.sport] || "bg-secondary text-secondary-foreground")}
                 >
                   {athlete.sport}
                 </Badge>
@@ -153,33 +153,33 @@ export const AthleteCard = memo(({ athlete, chartData, onClick, onMouseEnter }: 
             </div>
 
             {/* Price & Change - PROMINENT */}
-            <div className="mb-4">
-              <div className="flex items-baseline justify-between mb-1">
-                <div className="text-3xl font-bold tracking-tight">
+            <div className="mb-3">
+              <div className="flex items-baseline justify-between mb-0.5">
+                <div className="text-2xl font-bold tracking-tight">
                   $<CountUp value={athlete.price} decimalPlaces={2} duration={1.5} />
                 </div>
                 <div
                   className={cn(
-                    "flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-semibold",
+                    "flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold",
                     isPositive
                       ? 'bg-emerald-500/20 text-emerald-400'
                       : 'bg-red-500/20 text-red-400'
                   )}
                 >
                   {isPositive ? (
-                    <TrendingUp className="h-4 w-4" />
+                    <TrendingUp className="h-3 w-3" />
                   ) : (
-                    <TrendingDown className="h-4 w-4" />
+                    <TrendingDown className="h-3 w-3" />
                   )}
                   {isPositive ? '+' : ''}
                   {formatNumber(athlete.change24h)}%
                 </div>
               </div>
-              <div className="text-xs text-muted-foreground">24h change</div>
+              <div className="text-[10px] text-muted-foreground">24h change</div>
             </div>
 
-            {/* Chart Placeholder - Reserved Space */}
-            <div className="mb-4 h-[140px] rounded-lg overflow-hidden">
+            {/* Chart - Compact */}
+            <div className="mb-3 h-[100px] rounded-lg overflow-hidden">
               {hasChartData ? (
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart
@@ -241,14 +241,14 @@ export const AthleteCard = memo(({ athlete, chartData, onClick, onMouseEnter }: 
               )}
             </div>
 
-            {/* Stats - More Scannable */}
-            <div className="grid grid-cols-2 gap-3 text-sm">
-              <div className="space-y-1">
-                <div className="text-xs text-muted-foreground uppercase tracking-wide">Market Cap</div>
+            {/* Stats - Compact */}
+            <div className="grid grid-cols-2 gap-2 text-xs">
+              <div className="space-y-0.5">
+                <div className="text-[10px] text-muted-foreground uppercase tracking-wide">Market Cap</div>
                 <div className="font-semibold truncate">{formatMoney(athlete.marketCap)}</div>
               </div>
-              <div className="space-y-1">
-                <div className="text-xs text-muted-foreground uppercase tracking-wide">Supply</div>
+              <div className="space-y-0.5">
+                <div className="text-[10px] text-muted-foreground uppercase tracking-wide">Supply</div>
                 <div className="font-semibold truncate">{formatNumber(athlete.supply)}</div>
               </div>
             </div>
