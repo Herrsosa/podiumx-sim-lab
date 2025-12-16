@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
-import { Loader2, Upload } from 'lucide-react';
+import { Loader2, Upload, Pin, PinOff } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useUser } from '@/store/auth';
@@ -16,6 +16,8 @@ import { mapPostRowToLockerWorkout, mapPostRowToPost } from '@/hooks/useWorkouts
 import { LocationInput } from './LocationInput';
 import type { LocationResult } from '@/hooks/useLocationSearch';
 import { ActivityMap } from '@/components/ui/ActivityMap';
+import { usePinPost } from '@/hooks/usePinPost';
+import { cn } from '@/lib/utils';
 
 interface EditWorkoutModalProps {
   open: boolean;
@@ -26,6 +28,7 @@ interface EditWorkoutModalProps {
     token_gated: boolean;
     image_url?: string;
     strava_map_polyline?: string;
+    is_pinned?: boolean;
   };
   onSuccess: (result: WorkoutMutationResult) => void;
 }
@@ -33,10 +36,17 @@ interface EditWorkoutModalProps {
 export default function EditWorkoutModal({ open, onOpenChange, workoutPost, onSuccess }: EditWorkoutModalProps) {
   const { toast } = useToast();
   const user = useUser();
+  const { mutate: pinPost, isPending: isPinning } = usePinPost();
   const [loading, setLoading] = useState(false);
   const [newMediaFile, setNewMediaFile] = useState<File | null>(null);
   const [mediaPreviewUrl, setMediaPreviewUrl] = useState<string | null>(workoutPost.image_url || null);
   const [location, setLocation] = useState<LocationResult | null>(null);
+
+  const isPinned = workoutPost.is_pinned;
+
+  const handlePinToggle = () => {
+    pinPost({ postId: workoutPost.id, pin: !isPinned });
+  };
 
   const workout = (workoutPost.workout_json && typeof workoutPost.workout_json === 'object' && !Array.isArray(workoutPost.workout_json))
     ? workoutPost.workout_json as Partial<Workout>
@@ -189,8 +199,18 @@ export default function EditWorkoutModal({ open, onOpenChange, workoutPost, onSu
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
+        <DialogHeader className="flex flex-row items-center justify-between space-y-0">
           <DialogTitle>Edit Workout</DialogTitle>
+          <Button
+            variant="ghost"
+            size="sm"
+            className={cn("gap-2", isPinned ? "text-primary hover:text-primary/80" : "text-muted-foreground")}
+            onClick={handlePinToggle}
+            disabled={isPinning}
+          >
+            {isPinned ? <PinOff className="h-4 w-4" /> : <Pin className="h-4 w-4" />}
+            {isPinned ? 'Unpin' : 'Pin'}
+          </Button>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">

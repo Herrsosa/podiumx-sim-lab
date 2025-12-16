@@ -28,7 +28,7 @@ export function useAthlete(slug: string) {
       const { data: posts, error: postsError } = await supabase
         .from('posts')
         .select(
-          'id, created_at, author_id, workout_json, image_url, text, token_gated, strava_activity_id, visibility, min_tokens_required, strava_map_polyline',
+          'id, created_at, author_id, workout_json, image_url, text, token_gated, strava_activity_id, visibility, min_tokens_required, strava_map_polyline, is_pinned',
         )
         .eq('author_id', profile.id)
         .order('created_at', { ascending: false })
@@ -36,7 +36,7 @@ export function useAthlete(slug: string) {
 
       if (postsError) throw postsError;
 
-      const rawPosts: PostRow[] = (posts ?? []) as PostRow[];
+      const rawPosts: PostRow[] = (posts ?? []) as unknown as PostRow[];
 
       const typedPosts: Post[] = rawPosts.map((post) => ({
         id: post.id,
@@ -50,6 +50,8 @@ export function useAthlete(slug: string) {
         author_id: post.author_id,
         visibility: (post.visibility as 'public' | 'supporters' | 'backers') || 'public',
         min_tokens_required: post.min_tokens_required || 0,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        is_pinned: (post as any).is_pinned,
       }));
 
       const workouts = typedPosts

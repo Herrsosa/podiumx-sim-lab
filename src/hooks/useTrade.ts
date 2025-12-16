@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from './use-toast';
 import { walletService } from '@/services/wallet';
 import { useAuthStore, useUser } from '@/store/auth';
+import { useTradeCelebrationStore } from '@/store/tradeCelebration';
 import { logger } from '@/lib/logger';
 import {
   applyOptimisticTrade,
@@ -126,9 +127,24 @@ export function useTrade() {
       }
 
       const fillPrice = payload?.athletePrice?.price ?? payload?.priceTick?.price ?? 0;
-      toast({
-        title: `${variables.side === 'BUY' ? 'Bought' : 'Sold'}!`,
-        description: `Filled ${variables.quantity} @ $${fillPrice.toFixed(2)}`,
+      const totalCost = fillPrice * variables.quantity;
+
+      // Get new position from payload
+      const newPosition = payload?.positions?.[variables.athleteId]?.quantity;
+
+      // Get athlete info from cache if available
+      const athleteData = queryClient.getQueryData<{ name?: string; avatar?: string }>(['athlete', variables.athleteSlug]);
+
+      // Trigger celebration modal
+      const { showCelebration } = useTradeCelebrationStore.getState();
+      showCelebration({
+        side: variables.side,
+        quantity: variables.quantity,
+        fillPrice,
+        totalCost,
+        athleteName: athleteData?.name || variables.athleteSlug || 'Athlete',
+        athleteAvatar: athleteData?.avatar,
+        newPosition,
       });
     },
   });

@@ -80,11 +80,12 @@ export function ActivityMap({
     if (points.length === 0) return null;
 
     return (
-        <div className={`w-full h-full relative overflow-hidden ${className}`}>
+        <div className={`w-full h-full relative overflow-hidden ${className}`} style={{ zIndex: 0 }}>
             <MapContainer
+                key={polyline} // Force remount when polyline changes to prevent duplicate maps
                 center={points[0]}
                 zoom={13}
-                style={{ width: '100%', height: '100%', background: '#18181b' }} // bg-zinc-900
+                style={{ width: '100%', height: '100%', background: '#18181b', zIndex: 0 }} // bg-zinc-900
                 zoomControl={false}
                 dragging={false}
                 scrollWheelZoom={false}

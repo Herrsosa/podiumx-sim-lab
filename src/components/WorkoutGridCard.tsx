@@ -1,7 +1,7 @@
 import { memo } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Lock, Calendar } from 'lucide-react';
+import { Lock, Calendar, Pin } from 'lucide-react';
 import type { Workout, Post } from '@/types';
 import { SupabaseResponsiveImage } from '@/components/SupabaseResponsiveImage';
 import { ActivityMap } from '@/components/ui/ActivityMap';
@@ -142,6 +142,11 @@ function WorkoutGridCardComponent({ workout, post, canView, onClick, variant = '
                 <Badge className={cn('backdrop-blur-sm border', typeColor, typeBadgeClass)}>
                   {workout.type}
                 </Badge>
+                {post?.is_pinned && (
+                  <Badge variant="secondary" className="gap-1 px-1.5 py-0.5 bg-background/90 text-primary backdrop-blur-md border-primary/20">
+                    <Pin className="h-3 w-3 fill-current rotate-45" />
+                  </Badge>
+                )}
                 <div className={cn('flex items-center gap-1 text-foreground/90 backdrop-blur-sm bg-background/70 px-2 py-1 rounded-md border border-border/40', calendarClass)}>
                   <Calendar className="h-3 w-3" />
                   <span className="font-medium">

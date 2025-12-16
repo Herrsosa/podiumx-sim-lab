@@ -78,6 +78,7 @@ export function useProofOfSweatFeed(options: UseProofOfSweatFeedOptions = {}) {
             strava_activity_id,
             visibility,
             min_tokens_required,
+            is_pinned,
             profiles:profiles!posts_author_id_profiles_id_fk (
               id,
               display_name,
@@ -101,7 +102,7 @@ export function useProofOfSweatFeed(options: UseProofOfSweatFeedOptions = {}) {
         throw error;
       }
 
-      const rows = (data ?? []) as FeedPostRow[];
+      const rows = (data ?? []) as unknown as FeedPostRow[];
 
       const items: ProofOfSweatFeedItem[] = rows.map((row) => {
         const lockerWorkout = mapPostRowToLockerWorkout(row);

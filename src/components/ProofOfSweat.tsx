@@ -71,10 +71,24 @@ export default function ProofOfSweat({
   const [optimisticWorkouts, setOptimisticWorkouts] = useState<Workout[]>([]);
   const canDelete = useMemo(() => user?.id === athleteId, [athleteId, user?.id]);
 
-  // Sync optimistic state with actual workouts
+  // Sync optimistic state with actual workouts, sorted by pin status then date
   useEffect(() => {
-    setOptimisticWorkouts(workouts || []);
-  }, [workouts]);
+    const sorted = [...(workouts || [])].sort((a, b) => {
+      // Lookup posts to check pin status
+      const postA = posts.find(p => postMatchesWorkout(p, a.id));
+      const postB = posts.find(p => postMatchesWorkout(p, b.id));
+
+      // Pinned posts come first
+      if (postA?.is_pinned && !postB?.is_pinned) return -1;
+      if (!postA?.is_pinned && postB?.is_pinned) return 1;
+
+      // Then sort by date (newest first)
+      const dateA = new Date(a.date).getTime();
+      const dateB = new Date(b.date).getTime();
+      return dateB - dateA;
+    });
+    setOptimisticWorkouts(sorted);
+  }, [workouts, posts]);
 
   // Map workout IDs to their corresponding Post objects for O(1) lookup
   const workoutPostMap = useMemo(() => {

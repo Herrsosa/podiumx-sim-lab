@@ -266,6 +266,19 @@ function AppContent() {
 import { LazyMotion, domAnimation } from "framer-motion";
 
 import { BottomTabBar } from "@/components/BottomTabBar";
+import { TradeCelebration } from "@/components/TradeCelebration";
+import { useTradeCelebrationStore } from "@/store/tradeCelebration";
+
+function TradeCelebrationWrapper() {
+  const { isOpen, data, hideCelebration } = useTradeCelebrationStore();
+  return (
+    <TradeCelebration
+      open={isOpen}
+      onOpenChange={(open) => !open && hideCelebration()}
+      data={data}
+    />
+  );
+}
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -274,6 +287,7 @@ const App = () => (
         <ErrorBoundary>
           <Toaster />
           <Sonner />
+          <TradeCelebrationWrapper />
           <LazyMotion features={domAnimation}>
             <BrowserRouter>
               <AppContent />

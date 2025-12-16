@@ -41,6 +41,7 @@ export interface Post {
   author_id: string;
   visibility: 'public' | 'supporters' | 'backers';
   min_tokens_required: number;
+  is_pinned?: boolean;
   location_city?: string | null;
   location_country?: string | null;
   location_country_code?: string | null;

@@ -54,6 +54,7 @@ export const mapPostRowToLockerWorkout = (row: PostRow): LockerWorkout => {
   };
 };
 
+// Update Post mapper to include is_pinned
 export const mapPostRowToPost = (row: PostRow): Post => ({
   id: row.id,
   created_at: row.created_at,
@@ -65,6 +66,8 @@ export const mapPostRowToPost = (row: PostRow): Post => ({
   strava_activity_id: row.strava_activity_id,
   visibility: (row.visibility as WorkoutVisibility) ?? 'public',
   min_tokens_required: row.min_tokens_required ?? 0,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  is_pinned: (row as any).is_pinned,
 });
 
 interface UseWorkoutsOptions {
@@ -220,7 +223,7 @@ export function useWorkouts(
       const { data, error, count } = await supabase
         .from('posts')
         .select(
-          'id, created_at, author_id, workout_json, image_url, text, visibility, min_tokens_required, token_gated, strava_activity_id',
+          'id, created_at, author_id, workout_json, image_url, text, visibility, min_tokens_required, token_gated, strava_activity_id, is_pinned',
           { count: 'exact' },
         )
         .eq('author_id', athleteId)
@@ -229,7 +232,7 @@ export function useWorkouts(
 
       if (error) throw error;
 
-      const rows = (data ?? []) as PostRow[];
+      const rows = (data ?? []) as unknown as PostRow[];
       const items = rows.map(mapPostRowToLockerWorkout);
 
       const hasMore = items.length === pageSize;
