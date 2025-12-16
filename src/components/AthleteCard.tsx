@@ -132,108 +132,124 @@ export const AthleteCard = memo(({ athlete, chartData, onClick, onMouseEnter }: 
             </div>
           </div>
 
-          <div className="p-3">
-            {/* Avatar & Name */}
-            <div className="mb-2 flex items-center gap-2">
+          <div className="p-4">
+            {/* Name & Sport */}
+            <div className="mb-3 flex items-start justify-between">
               <div className="flex-1 min-w-0">
-                <h3 className="font-semibold truncate text-sm">{athlete.name}</h3>
+                <h3 className="font-bold truncate text-lg mb-1">{athlete.name}</h3>
                 <Badge
                   variant="secondary"
-                  className={cn("text-[10px] mt-1 border px-1.5 py-0", SPORT_COLORS[athlete.sport] || "bg-secondary text-secondary-foreground")}
+                  className={cn("text-xs px-2 py-0.5", SPORT_COLORS[athlete.sport] || "bg-secondary text-secondary-foreground")}
                 >
                   {athlete.sport}
                 </Badge>
               </div>
+              {/* Watchlist star placeholder */}
+              <button className="text-muted-foreground hover:text-yellow-500 transition-colors">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+                </svg>
+              </button>
             </div>
 
-            {/* Price */}
-            <div className="mb-2">
-              <div className="text-lg font-bold tracking-tight">
-                $<CountUp value={athlete.price} decimalPlaces={2} duration={1.5} />
+            {/* Price & Change - PROMINENT */}
+            <div className="mb-4">
+              <div className="flex items-baseline justify-between mb-1">
+                <div className="text-3xl font-bold tracking-tight">
+                  $<CountUp value={athlete.price} decimalPlaces={2} duration={1.5} />
+                </div>
+                <div
+                  className={cn(
+                    "flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-semibold",
+                    isPositive
+                      ? 'bg-emerald-500/20 text-emerald-400'
+                      : 'bg-red-500/20 text-red-400'
+                  )}
+                >
+                  {isPositive ? (
+                    <TrendingUp className="h-4 w-4" />
+                  ) : (
+                    <TrendingDown className="h-4 w-4" />
+                  )}
+                  {isPositive ? '+' : ''}
+                  {formatNumber(athlete.change24h)}%
+                </div>
               </div>
-              <div
-                className={`flex items-center gap-1 text-[10px] font-medium ${isPositive ? 'text-success' : 'text-destructive'
-                  }`}
-              >
-                {isPositive ? (
-                  <TrendingUp className="h-3 w-3" />
-                ) : (
-                  <TrendingDown className="h-3 w-3" />
-                )}
-                {isPositive ? '+' : ''}
-                {formatNumber(athlete.change24h)}% 24h
-              </div>
+              <div className="text-xs text-muted-foreground">24h change</div>
             </div>
 
-            {/* Price Trend */}
-            <div className="mb-2">
-              <div className="mb-1 flex items-center justify-between text-[0.65rem] uppercase tracking-wide text-muted-foreground">
-                <span>Price (7d)</span>
-              </div>
-              <div className="h-14">
-                {hasChartData ? (
-                  <ResponsiveContainer width="100%" height="100%">
-                    <LineChart
-                      data={sortedChartData}
-                      margin={{ top: 4, right: 8, left: -8, bottom: 0 }}
-                    >
-                      <CartesianGrid strokeDasharray="3 3" vertical={false} strokeOpacity={0.1} />
-                      <XAxis
-                        dataKey="timestamp"
-                        axisLine={false}
-                        tickLine={false}
-                        tickFormatter={(value) => format(new Date(value), 'MMM d')}
-                        minTickGap={16}
-                        tick={{ fontSize: 9, fill: 'var(--muted-foreground)' }}
-                      />
-                      <YAxis
-                        axisLine={false}
-                        tickLine={false}
-                        tickFormatter={(value) => `$${Number(value).toFixed(2)}`}
-                        width={36}
-                        domain={priceDomain ?? ['auto', 'auto']}
-                        tick={{ fontSize: 9, fill: 'var(--muted-foreground)' }}
-                      />
-                      <Tooltip
-                        contentStyle={{
-                          backgroundColor: 'hsl(var(--popover))',
-                          borderColor: 'hsl(var(--border))',
-                          borderRadius: '8px',
-                          fontSize: '11px',
-                          padding: '4px 8px'
-                        }}
-                        cursor={{ stroke: lineColor, strokeWidth: 1, opacity: 0.2 }}
-                        formatter={(value: number) => [`$${Number(value).toFixed(2)}`, 'Price']}
-                        labelFormatter={(value) => format(new Date(value), 'PPP p')}
-                      />
-                      <Line
-                        type="monotone"
-                        dataKey="price"
-                        stroke={lineColor}
-                        strokeWidth={1.5}
-                        dot={false}
-                        activeDot={{ r: 3, strokeWidth: 0 }}
-                        animationDuration={1500}
-                      />
-                    </LineChart>
-                  </ResponsiveContainer>
-                ) : (
-                  <div className="flex h-full items-center justify-center text-[10px] text-muted-foreground bg-muted/20 rounded-lg">
-                    No trade history
-                  </div>
-                )}
-              </div>
+            {/* Chart Placeholder - Reserved Space */}
+            <div className="mb-4 h-[140px] rounded-lg overflow-hidden">
+              {hasChartData ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart
+                    data={sortedChartData}
+                    margin={{ top: 8, right: 8, left: -8, bottom: 0 }}
+                  >
+                    <defs>
+                      <linearGradient id={`gradient-${athlete.id}`} x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor={lineColor} stopOpacity={0.3} />
+                        <stop offset="100%" stopColor={lineColor} stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} strokeOpacity={0.1} />
+                    <XAxis
+                      dataKey="timestamp"
+                      axisLine={false}
+                      tickLine={false}
+                      tickFormatter={(value) => format(new Date(value), 'MMM d')}
+                      minTickGap={24}
+                      tick={{ fontSize: 10, fill: 'var(--muted-foreground)' }}
+                    />
+                    <YAxis
+                      axisLine={false}
+                      tickLine={false}
+                      tickFormatter={(value) => `$${Number(value).toFixed(2)}`}
+                      width={40}
+                      domain={priceDomain ?? ['auto', 'auto']}
+                      tick={{ fontSize: 10, fill: 'var(--muted-foreground)' }}
+                    />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: 'hsl(var(--popover))',
+                        borderColor: 'hsl(var(--border))',
+                        borderRadius: '8px',
+                        fontSize: '11px',
+                        padding: '6px 10px'
+                      }}
+                      cursor={{ stroke: lineColor, strokeWidth: 1, opacity: 0.2 }}
+                      formatter={(value: number) => [`$${Number(value).toFixed(2)}`, 'Price']}
+                      labelFormatter={(value) => format(new Date(value), 'PPP p')}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="price"
+                      stroke={lineColor}
+                      strokeWidth={2}
+                      dot={false}
+                      activeDot={{ r: 4, strokeWidth: 0 }}
+                      animationDuration={1500}
+                      fill={`url(#gradient-${athlete.id})`}
+                      fillOpacity={1}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="flex h-full items-center justify-center text-xs text-muted-foreground bg-muted/10 rounded-lg border border-dashed border-border">
+                  No price history yet
+                </div>
+              )}
             </div>
 
-            {/* Stats */}
-            <div className="grid grid-cols-2 gap-2 text-[10px] border-t pt-2 border-border/50">
-              <div>
-                <div className="text-muted-foreground mb-0.5">Supply</div>
-                <div className="font-medium truncate">{formatNumber(athlete.supply)}</div>
+            {/* Stats - More Scannable */}
+            <div className="grid grid-cols-2 gap-3 text-sm">
+              <div className="space-y-1">
+                <div className="text-xs text-muted-foreground uppercase tracking-wide">Market Cap</div>
+                <div className="font-semibold truncate">{formatMoney(athlete.marketCap)}</div>
               </div>
-              <div>
-                <div className="text-muted-foreground mb-0.5">Mkt Cap</div>
-                <div className="font-medium truncate">{formatMoney(athlete.marketCap)}</div>
+              <div className="space-y-1">
+                <div className="text-xs text-muted-foreground uppercase tracking-wide">Supply</div>
+                <div className="font-semibold truncate">{formatNumber(athlete.supply)}</div>
               </div>
             </div>
           </div>

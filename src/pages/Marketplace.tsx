@@ -1,7 +1,5 @@
 import { useState, useMemo, useCallback, useEffect, startTransition } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search } from 'lucide-react';
-import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { usePaginatedAthletes } from '@/hooks/usePaginatedAthletes';
 import { useMarketplaceCharts } from '@/hooks/useMarketplaceCharts';
@@ -9,6 +7,7 @@ import type { MarketplaceChartPoint } from '@/hooks/useMarketplaceCharts';
 import { Sport, SPORTS } from '@/types';
 
 import { AthleteCard } from '@/components/AthleteCard';
+import { MarketplaceFilters, type SortOption, type ViewMode } from '@/components/marketplace/MarketplaceFilters';
 import { H1, Body } from '@/components/ui/typography';
 import { EmptyState } from '@/components/ui/empty-state';
 import { CardSkeleton } from '@/components/ui/skeletons';
@@ -25,6 +24,8 @@ export default function Marketplace() {
   const loading = useAuthLoading();
   const [search, setSearch] = useState('');
   const [selectedSport, setSelectedSport] = useState<Sport | 'All'>('All');
+  const [sortBy, setSortBy] = useState<SortOption>('top-gainers');
+  const [viewMode, setViewMode] = useState<ViewMode>('grid');
   const [pendingSlug, setPendingSlug] = useState<string | null>(null);
 
   // Debounce search to reduce re-renders
@@ -88,13 +89,37 @@ export default function Marketplace() {
     const lowered = debouncedSearch.trim().toLowerCase();
     const userId = user?.id;
 
-    return athletes.filter((athlete) => {
+    const filtered = athletes.filter((athlete) => {
       if (userId && athlete.id === userId) return false;
       const matchesSearch = (athlete.name || '').toLowerCase().includes(lowered);
       const matchesSport = selectedSport === 'All' || athlete.sport === selectedSport;
       return matchesSearch && matchesSport;
     });
-  }, [athletes, debouncedSearch, selectedSport, user?.id]);
+
+    // Sort athletes based on selected criteria
+    const sorted = [...filtered].sort((a, b) => {
+      switch (sortBy) {
+        case 'top-gainers':
+          return (b.change24h || 0) - (a.change24h || 0);
+        case 'market-cap':
+          return (b.marketCap || 0) - (a.marketCap || 0);
+        case 'newest':
+          // Assuming tokenCreatedAt exists, fallback to id
+          return (b.tokenCreatedAt || b.id).localeCompare(a.tokenCreatedAt || a.id);
+        case 'volume':
+          // Assuming volume24h exists, fallback to marketCap
+          return (b.volume24h || b.marketCap || 0) - (a.volume24h || a.marketCap || 0);
+        case 'price-desc':
+          return (b.price || 0) - (a.price || 0);
+        case 'price-asc':
+          return (a.price || 0) - (b.price || 0);
+        default:
+          return 0;
+      }
+    });
+
+    return sorted;
+  }, [athletes, debouncedSearch, selectedSport, user?.id, sortBy]);
 
   const athleteIds = useMemo(() => filteredAthletes.map((a) => a.id), [filteredAthletes]);
 
@@ -122,47 +147,15 @@ export default function Marketplace() {
         </div>
       </div>
 
-      {/* Search and Filter */}
-      <div className="sticky top-0 z-30 -mx-4 mb-8 px-4 py-4 backdrop-blur-xl transition-all duration-300 sm:static sm:mx-0 sm:bg-transparent sm:p-0 sm:backdrop-blur-none">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              placeholder="Search athletes..."
-              value={search}
-              onChange={(e) => {
-                const value = e.target.value;
-                startTransition(() => {
-                  setSearch(value);
-                });
-              }}
-              className="pl-10 bg-card/50 border-white/10 focus:border-primary/50 focus:ring-primary/20 transition-all duration-300 h-11"
-              aria-label="Search athletes"
-            />
-          </div>
-          <div className="flex flex-wrap gap-2 pb-2">
-            <Button
-              variant={selectedSport === 'All' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setSelectedSport('All')}
-              className={selectedSport === 'All' ? 'bg-primary text-primary-foreground' : 'bg-card/50 border-white/10 hover:bg-card/80'}
-            >
-              All
-            </Button>
-            {SPORTS.map((sport) => (
-              <Button
-                key={sport}
-                variant={selectedSport === sport ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setSelectedSport(sport)}
-                className={selectedSport === sport ? 'bg-primary text-primary-foreground' : 'bg-card/50 border-white/10 hover:bg-card/80'}
-              >
-                {sport}
-              </Button>
-            ))}
-          </div>
-        </div>
-      </div>
+      {/* Filters Bar */}
+      <MarketplaceFilters
+        selectedSport={selectedSport}
+        onSportChange={setSelectedSport}
+        sortBy={sortBy}
+        onSortChange={setSortBy}
+        viewMode={viewMode}
+        onViewModeChange={setViewMode}
+      />
 
       {/* Main Content Area: Recent Trades + Athletes Grid */}
       <div className="grid gap-8 lg:grid-cols-[320px_1fr]">
@@ -183,7 +176,8 @@ export default function Marketplace() {
             />
           ) : (
             <motion.div
-              className="grid grid-cols-2 gap-3 sm:gap-4 sm:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6"
+              className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
+              style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))' }}
               role="grid"
               aria-label="Athletes marketplace grid"
               initial="hidden"
