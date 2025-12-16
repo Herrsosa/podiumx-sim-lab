@@ -8,6 +8,7 @@ import { Sport, SPORTS } from '@/types';
 
 import { AthleteCard } from '@/components/AthleteCard';
 import { MarketplaceFilters, type SortOption, type ViewMode } from '@/components/marketplace/MarketplaceFilters';
+import { TrendingHero } from '@/components/marketplace/TrendingHero';
 import { H1, Body } from '@/components/ui/typography';
 import { EmptyState } from '@/components/ui/empty-state';
 import { CardSkeleton } from '@/components/ui/skeletons';
@@ -146,6 +147,16 @@ export default function Marketplace() {
           <ContextualHelpButton screen="marketplace" />
         </div>
       </div>
+
+      {/* Trending Hero Section - Top Gainers */}
+      {!isLoading && athletes && athletes.length > 0 && (
+        <div className="container mx-auto px-4 sm:px-6 mb-4">
+          <TrendingHero
+            athletes={athletes}
+            onAthleteClick={handleAthleteClick}
+          />
+        </div>
+      )}
 
       {/* Filters Bar */}
       <MarketplaceFilters
