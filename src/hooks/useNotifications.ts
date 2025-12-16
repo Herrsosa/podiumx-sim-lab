@@ -140,7 +140,7 @@ export function useNotifications(): UseNotificationsResult {
         },
     });
 
-    const notifications = data ?? [];
+    const notifications = useMemo(() => data ?? [], [data]);
 
     const unreadCount = useMemo(
         () => notifications.filter((n) => !n.read_at).length,
