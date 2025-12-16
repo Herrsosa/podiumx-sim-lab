@@ -89,11 +89,11 @@ export function TrendingHero({ athletes, onAthleteClick }: TrendingHeroProps) {
                 </div>
             </div>
 
-            {/* Carousel */}
-            <div className="relative overflow-hidden">
+            {/* Carousel - Desktop: animated, Mobile: horizontal scroll */}
+            <div className="relative overflow-x-auto md:overflow-hidden scrollbar-hide">
                 <motion.div
-                    className="flex gap-4"
-                    animate={{ x: `-${currentIndex * (100 / visibleCount)}%` }}
+                    className="flex gap-3 md:gap-4 pb-2 md:pb-0"
+                    animate={{ x: window?.innerWidth >= 768 ? `-${currentIndex * (100 / visibleCount)}%` : 0 }}
                     transition={{ type: 'spring', stiffness: 300, damping: 30 }}
                 >
                     {trendingAthletes.map((athlete, index) => (
@@ -137,12 +137,12 @@ function TrendingCard({ athlete, rank, onClick }: TrendingCardProps) {
 
     return (
         <motion.div
-            className="flex-shrink-0 w-[calc(100%-1rem)] sm:w-[calc(50%-0.5rem)] md:w-[calc(33.333%-0.67rem)] cursor-pointer group"
+            className="flex-shrink-0 w-[260px] sm:w-[280px] md:w-[calc(33.333%-0.67rem)] cursor-pointer group"
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             onClick={onClick}
         >
-            <div className="relative h-[280px] rounded-2xl overflow-hidden border border-border/50 bg-card">
+            <div className="relative h-[200px] sm:h-[240px] md:h-[280px] rounded-2xl overflow-hidden border border-border/50 bg-card">
                 {/* Background Image */}
                 {hasAvatar ? (
                     <img
@@ -169,30 +169,30 @@ function TrendingCard({ athlete, rank, onClick }: TrendingCardProps) {
                 </div>
 
                 {/* Percentage Badge */}
-                <div className="absolute top-4 right-4">
-                    <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-500/90 text-white font-bold text-lg">
-                        <TrendingUp className="h-5 w-5" />
+                <div className="absolute top-3 right-3 md:top-4 md:right-4">
+                    <div className="flex items-center gap-1 px-2 py-1 md:px-3 md:py-1.5 rounded-full bg-emerald-500/90 text-white font-bold text-sm md:text-lg">
+                        <TrendingUp className="h-3 w-3 md:h-5 md:w-5" />
                         +{athlete.change24h.toFixed(1)}%
                     </div>
                 </div>
 
                 {/* Content */}
-                <div className="absolute bottom-0 left-0 right-0 p-5">
+                <div className="absolute bottom-0 left-0 right-0 p-3 md:p-5">
                     <div className="flex items-end justify-between">
                         <div className="flex-1 min-w-0">
-                            <h3 className="text-xl font-bold text-white truncate mb-1">
+                            <h3 className="text-base md:text-xl font-bold text-white truncate mb-1">
                                 {athlete.name}
                             </h3>
-                            <Badge variant="secondary" className="bg-white/10 text-white/80 border-white/20">
+                            <Badge variant="secondary" className="bg-white/10 text-white/80 border-white/20 text-xs">
                                 {athlete.sport}
                             </Badge>
                         </div>
 
-                        <div className="text-right ml-4">
-                            <div className="text-3xl font-bold text-white">
+                        <div className="text-right ml-2 md:ml-4">
+                            <div className="text-xl md:text-3xl font-bold text-white">
                                 ${athlete.price.toFixed(2)}
                             </div>
-                            <div className="text-xs text-white/60">
+                            <div className="text-[10px] md:text-xs text-white/60">
                                 MCap: {formatMoney(athlete.marketCap)}
                             </div>
                         </div>
