@@ -1,8 +1,9 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { TrendingUp, TrendingDown, Activity } from 'lucide-react';
+import { Activity } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
+import { cn } from '@/lib/utils';
 
 interface RecentTrade {
     id: string;
@@ -39,27 +40,24 @@ export function RecentTrades() {
             if (error) throw error;
             return data as unknown as RecentTrade[];
         },
-        refetchInterval: 5000, // Refetch every 5 seconds to show new simulation trades
+        refetchInterval: 5000,
     });
 
     if (isLoading) {
         return (
             <Card className="glass-panel">
-                <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                        <Activity className="h-5 w-5" />
+                <CardHeader className="pb-3">
+                    <CardTitle className="flex items-center gap-2 text-sm font-semibold">
+                        <Activity className="h-4 w-4" />
                         Recent Activity
                     </CardTitle>
                 </CardHeader>
-                <CardContent>
-                    <div className="space-y-3">
+                <CardContent className="pt-0">
+                    <div className="space-y-2">
                         {[...Array(5)].map((_, i) => (
-                            <div key={i} className="flex items-center gap-3 animate-pulse">
-                                <div className="h-10 w-10 rounded-full bg-muted" />
-                                <div className="flex-1 space-y-2">
-                                    <div className="h-4 w-32 rounded bg-muted" />
-                                    <div className="h-3 w-24 rounded bg-muted" />
-                                </div>
+                            <div key={i} className="flex items-center gap-2 animate-pulse">
+                                <div className="h-6 w-6 rounded-full bg-muted" />
+                                <div className="flex-1 h-4 rounded bg-muted" />
                             </div>
                         ))}
                     </div>
@@ -71,15 +69,15 @@ export function RecentTrades() {
     if (!trades || trades.length === 0) {
         return (
             <Card className="glass-panel">
-                <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                        <Activity className="h-5 w-5" />
+                <CardHeader className="pb-3">
+                    <CardTitle className="flex items-center gap-2 text-sm font-semibold">
+                        <Activity className="h-4 w-4" />
                         Recent Activity
                     </CardTitle>
                 </CardHeader>
-                <CardContent>
-                    <p className="text-sm text-muted-foreground">
-                        No recent trades yet. Be the first!
+                <CardContent className="pt-0">
+                    <p className="text-xs text-muted-foreground">
+                        No recent trades yet
                     </p>
                 </CardContent>
             </Card>
@@ -88,43 +86,54 @@ export function RecentTrades() {
 
     return (
         <Card className="glass-panel">
-            <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                    <Activity className="h-5 w-5" />
+            <CardHeader className="pb-3">
+                <CardTitle className="flex items-center gap-2 text-sm font-semibold">
+                    <Activity className="h-4 w-4" />
                     Recent Activity
                 </CardTitle>
             </CardHeader>
-            <CardContent>
-                <div className="space-y-3">
+            <CardContent className="pt-0">
+                <div className="space-y-1">
                     {trades.map((trade) => {
                         const athleteName = trade.athlete?.display_name || trade.athlete?.username || 'Unknown';
+                        const shortName = athleteName.split(' ')[0];
                         const isBuy = trade.side === 'BUY';
+                        const timeAgo = formatDistanceToNow(new Date(trade.created_at), { addSuffix: false });
 
                         return (
                             <div
                                 key={trade.id}
-                                className="flex items-center gap-3 rounded-lg p-2 hover:bg-accent/50 transition-colors"
+                                className="flex items-center gap-2 py-1.5 text-xs"
                             >
-                                <div className={`flex h-10 w-10 items-center justify-center rounded-full ${isBuy ? 'bg-emerald-500/10' : 'bg-rose-500/10'
-                                    }`}>
-                                    {isBuy ? (
-                                        <TrendingUp className="h-5 w-5 text-emerald-500" />
-                                    ) : (
-                                        <TrendingDown className="h-5 w-5 text-rose-500" />
+                                {/* Buy/Sell Indicator */}
+                                <div
+                                    className={cn(
+                                        "w-2 h-2 rounded-full shrink-0",
+                                        isBuy ? "bg-emerald-500" : "bg-red-500"
                                     )}
+                                />
+
+                                {/* Trade Info */}
+                                <div className="flex-1 min-w-0 truncate">
+                                    <span className={cn(
+                                        "font-semibold",
+                                        isBuy ? "text-emerald-400" : "text-red-400"
+                                    )}>
+                                        {isBuy ? 'BUY' : 'SELL'}
+                                    </span>
+                                    {' '}
+                                    <span className="text-muted-foreground">
+                                        {trade.qty} of{' '}
+                                    </span>
+                                    <span className="text-foreground font-medium">
+                                        {shortName}
+                                    </span>
                                 </div>
-                                <div className="flex-1 min-w-0">
-                                    <p className="text-sm font-medium truncate">
-                                        <span className={isBuy ? 'text-emerald-500' : 'text-rose-500'}>
-                                            {isBuy ? 'BUY' : 'SELL'}
-                                        </span>
-                                        {' '}
-                                        {trade.qty} token{trade.qty !== 1 ? 's' : ''} of {athleteName}
-                                    </p>
-                                    <p className="text-xs text-muted-foreground">
-                                        {formatDistanceToNow(new Date(trade.created_at), { addSuffix: true })}
-                                    </p>
-                                </div>
+
+                                {/* Time */}
+                                <span className="text-[10px] text-muted-foreground shrink-0">
+                                    {timeAgo.replace('about ', '').replace(' minutes', 'm').replace(' minute', 'm').replace(' hours', 'h').replace(' hour', 'h').replace(' days', 'd').replace(' day', 'd').replace(' seconds', 's').replace(' second', 's')}
+                                </span>
                             </div>
                         );
                     })}

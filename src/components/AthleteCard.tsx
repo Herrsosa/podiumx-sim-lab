@@ -2,7 +2,7 @@ import { memo, useMemo } from 'react';
 import { TrendingUp, TrendingDown, ArrowUpRight } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { Athlete } from '@/types';
 import type { MarketplaceChartPoint } from '@/hooks/useMarketplaceCharts';
 import { formatMoney, formatNumber } from '@/lib/format';
@@ -182,33 +182,19 @@ export const AthleteCard = memo(({ athlete, chartData, onClick, onMouseEnter }: 
             <div className="mb-3 h-[100px] rounded-lg overflow-hidden">
               {hasChartData ? (
                 <ResponsiveContainer width="100%" height="100%">
-                  <LineChart
+                  <AreaChart
                     data={sortedChartData}
-                    margin={{ top: 8, right: 8, left: -8, bottom: 0 }}
+                    margin={{ top: 4, right: 4, left: 4, bottom: 0 }}
                   >
                     <defs>
                       <linearGradient id={`gradient-${athlete.id}`} x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor={lineColor} stopOpacity={0.3} />
+                        <stop offset="0%" stopColor={lineColor} stopOpacity={0.4} />
+                        <stop offset="50%" stopColor={lineColor} stopOpacity={0.15} />
                         <stop offset="100%" stopColor={lineColor} stopOpacity={0} />
                       </linearGradient>
                     </defs>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} strokeOpacity={0.1} />
-                    <XAxis
-                      dataKey="timestamp"
-                      axisLine={false}
-                      tickLine={false}
-                      tickFormatter={(value) => format(new Date(value), 'MMM d')}
-                      minTickGap={24}
-                      tick={{ fontSize: 10, fill: 'var(--muted-foreground)' }}
-                    />
-                    <YAxis
-                      axisLine={false}
-                      tickLine={false}
-                      tickFormatter={(value) => `$${Number(value).toFixed(2)}`}
-                      width={40}
-                      domain={priceDomain ?? ['auto', 'auto']}
-                      tick={{ fontSize: 10, fill: 'var(--muted-foreground)' }}
-                    />
+                    <XAxis dataKey="timestamp" hide />
+                    <YAxis hide domain={priceDomain ?? ['auto', 'auto']} />
                     <Tooltip
                       contentStyle={{
                         backgroundColor: 'hsl(var(--popover))',
@@ -219,20 +205,18 @@ export const AthleteCard = memo(({ athlete, chartData, onClick, onMouseEnter }: 
                       }}
                       cursor={{ stroke: lineColor, strokeWidth: 1, opacity: 0.2 }}
                       formatter={(value: number) => [`$${Number(value).toFixed(2)}`, 'Price']}
-                      labelFormatter={(value) => format(new Date(value), 'PPP p')}
+                      labelFormatter={(value) => format(new Date(value), 'MMM d, h:mm a')}
                     />
-                    <Line
+                    <Area
                       type="monotone"
                       dataKey="price"
                       stroke={lineColor}
                       strokeWidth={2}
-                      dot={false}
-                      activeDot={{ r: 4, strokeWidth: 0 }}
-                      animationDuration={1500}
                       fill={`url(#gradient-${athlete.id})`}
                       fillOpacity={1}
+                      animationDuration={1000}
                     />
-                  </LineChart>
+                  </AreaChart>
                 </ResponsiveContainer>
               ) : (
                 <div className="flex h-full items-center justify-center text-xs text-muted-foreground bg-muted/10 rounded-lg border border-dashed border-border">
