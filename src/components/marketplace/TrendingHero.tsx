@@ -29,12 +29,11 @@ const SPORT_COLORS: Record<string, string> = {
 export function TrendingHero({ athletes, onAthleteClick }: TrendingHeroProps) {
     const [currentIndex, setCurrentIndex] = useState(0);
 
-    // Get top 4 gainers
+    // Get top 3 athletes by highest 24h change (regardless of positive/negative)
     const trendingAthletes = useMemo(() => {
         return [...athletes]
-            .filter((a) => a.change24h > 0)
             .sort((a, b) => b.change24h - a.change24h)
-            .slice(0, 4);
+            .slice(0, 3);
     }, [athletes]);
 
     const visibleCount = 3; // Show 3 cards at a time on desktop
@@ -89,10 +88,10 @@ export function TrendingHero({ athletes, onAthleteClick }: TrendingHeroProps) {
                 </div>
             </div>
 
-            {/* Cards Grid - Desktop: 3 columns, Mobile: horizontal scroll */}
+            {/* Cards Grid - 3 columns */}
             <div className="overflow-hidden">
                 <div className="grid grid-cols-3 gap-4">
-                    {trendingAthletes.slice(0, 3).map((athlete, index) => (
+                    {trendingAthletes.map((athlete, index) => (
                         <TrendingCard
                             key={athlete.id}
                             athlete={athlete}

@@ -32,12 +32,13 @@ export default function Marketplace() {
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
   const [pendingSlug, setPendingSlug] = useState<string | null>(null);
 
-  // Sync search to URL
+  // Sync search from URL params (intentionally not including 'search' to avoid loop)
   useEffect(() => {
     const q = searchParams.get('q') || '';
     if (q !== search) {
       setSearch(q);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]);
 
   // Debounce search to reduce re-renders
