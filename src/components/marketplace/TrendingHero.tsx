@@ -89,14 +89,10 @@ export function TrendingHero({ athletes, onAthleteClick }: TrendingHeroProps) {
                 </div>
             </div>
 
-            {/* Carousel - Desktop: animated, Mobile: horizontal scroll */}
-            <div className="relative overflow-x-auto md:overflow-hidden scrollbar-hide">
-                <motion.div
-                    className="flex gap-3 md:gap-4 pb-2 md:pb-0"
-                    animate={{ x: window?.innerWidth >= 768 ? `-${currentIndex * (100 / visibleCount)}%` : 0 }}
-                    transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-                >
-                    {trendingAthletes.map((athlete, index) => (
+            {/* Cards Grid - Desktop: 3 columns, Mobile: horizontal scroll */}
+            <div className="overflow-hidden">
+                <div className="grid grid-cols-3 gap-4">
+                    {trendingAthletes.slice(0, 3).map((athlete, index) => (
                         <TrendingCard
                             key={athlete.id}
                             athlete={athlete}
@@ -104,7 +100,7 @@ export function TrendingHero({ athletes, onAthleteClick }: TrendingHeroProps) {
                             onClick={() => athlete.slug && onAthleteClick(athlete.slug)}
                         />
                     ))}
-                </motion.div>
+                </div>
             </div>
 
             {/* Mobile: Scroll Indicator */}
@@ -137,12 +133,12 @@ function TrendingCard({ athlete, rank, onClick }: TrendingCardProps) {
 
     return (
         <motion.div
-            className="flex-shrink-0 w-[260px] sm:w-[280px] md:w-[calc(33.333%-0.67rem)] cursor-pointer group"
+            className="cursor-pointer group"
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             onClick={onClick}
         >
-            <div className="relative h-[200px] sm:h-[240px] md:h-[280px] rounded-2xl overflow-hidden border border-border/50 bg-card">
+            <div className="relative h-[180px] rounded-xl overflow-hidden border border-border/50 bg-card">
                 {/* Background Image */}
                 {hasAvatar ? (
                     <img

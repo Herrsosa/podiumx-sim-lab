@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback, useEffect, startTransition } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { usePaginatedAthletes } from '@/hooks/usePaginatedAthletes';
 import { useMarketplaceCharts } from '@/hooks/useMarketplaceCharts';
@@ -21,13 +21,24 @@ import { ContextualHelpButton } from '@/components/ContextualHelpButton';
 
 export default function Marketplace() {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const user = useUser();
   const loading = useAuthLoading();
-  const [search, setSearch] = useState('');
+
+  // Initialize search from URL query param
+  const [search, setSearch] = useState(searchParams.get('q') || '');
   const [selectedSport, setSelectedSport] = useState<Sport | 'All'>('All');
   const [sortBy, setSortBy] = useState<SortOption>('top-gainers');
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
   const [pendingSlug, setPendingSlug] = useState<string | null>(null);
+
+  // Sync search to URL
+  useEffect(() => {
+    const q = searchParams.get('q') || '';
+    if (q !== search) {
+      setSearch(q);
+    }
+  }, [searchParams]);
 
   // Debounce search to reduce re-renders
   const debouncedSearch = useDebouncedValue(search, 300);
@@ -137,20 +148,11 @@ export default function Marketplace() {
   }, [hasNextPage, fetchNextPage]);
 
   return (
-    <div className="px-4 py-8 page-transition">
-      <div className="mx-auto w-full max-w-6xl">
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <H1 className="text-2xl md:text-3xl">Marketplace</H1>
-            <Body className="text-muted-foreground">Discover athletes and invest in their journey</Body>
-          </div>
-          <ContextualHelpButton screen="marketplace" />
-        </div>
-      </div>
+    <div className="page-transition">
 
       {/* Trending Hero Section - Top Gainers */}
       {!isLoading && athletes && athletes.length > 0 && (
-        <div className="container mx-auto px-4 sm:px-6 mb-4">
+        <div className="container mx-auto px-4 sm:px-6 pt-6 mb-6">
           <TrendingHero
             athletes={athletes}
             onAthleteClick={handleAthleteClick}
@@ -166,7 +168,29 @@ export default function Marketplace() {
         onSortChange={setSortBy}
         viewMode={viewMode}
         onViewModeChange={setViewMode}
+        search={search}
+        onSearchChange={setSearch}
       />
+
+      {/* Search Results Indicator */}
+      {search && (
+        <div className="container mx-auto px-4 sm:px-6 py-3">
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-muted-foreground">
+              Showing results for "{search}"
+            </span>
+            <button
+              onClick={() => {
+                setSearch('');
+                navigate('/marketplace', { replace: true });
+              }}
+              className="text-sm text-primary hover:underline"
+            >
+              ← Show all athletes
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Main Content Area: Recent Trades + Athletes Grid */}
       <div className="grid gap-8 lg:grid-cols-[320px_1fr]">
@@ -183,11 +207,15 @@ export default function Marketplace() {
           {showGridSkeleton && filteredAthletes.length === 0 ? (
             <CardSkeleton
               count={12}
-              className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+              className={viewMode === 'list'
+                ? "flex flex-col gap-4"
+                : "grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"}
             />
           ) : (
             <motion.div
-              className="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+              className={viewMode === 'list'
+                ? "flex flex-col gap-4 max-w-md"
+                : "grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"}
               role="grid"
               aria-label="Athletes marketplace grid"
               initial="hidden"

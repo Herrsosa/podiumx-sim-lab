@@ -1,5 +1,5 @@
-import { Link, useLocation } from 'react-router-dom';
-import { Activity, Home, TrendingUp, Wallet, User, Moon, Sun, LogOut, Search } from 'lucide-react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { TrendingUp, User, Moon, Sun, LogOut, Search, Activity } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useAppStore } from '@/store/useAppStore';
@@ -7,9 +7,11 @@ import { useToast } from '@/hooks/use-toast';
 import { useCallback, useEffect, useState } from 'react';
 import { useAuthStore, useUser } from '@/store/auth';
 import { NotificationCenter } from '@/components/NotificationCenter';
+import { cn } from '@/lib/utils';
 
 export default function Navigation() {
   const location = useLocation();
+  const navigate = useNavigate();
 
   const user = useUser();
   const signOut = useAuthStore((s) => s.signOut);
@@ -60,67 +62,103 @@ export default function Navigation() {
     void import('../pages/MyAthletePage');
   }, []);
 
+  const [navSearch, setNavSearch] = useState('');
+
+  const handleNavSearch = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (navSearch.trim()) {
+      navigate(`/marketplace?q=${encodeURIComponent(navSearch.trim())}`);
+      setNavSearch('');
+    }
+  };
+
   return (
-    <nav className="sticky top-0 z-50 border-b border-border/40 bg-background/95 backdrop-blur-xl shadow-md hidden md:block">
+    <nav className="sticky top-0 z-50 border-b border-border/40 bg-background/95 backdrop-blur-xl hidden md:block">
       <div className="container mx-auto px-4 sm:px-6">
-        <div className="flex h-16 items-center gap-6">
+        <div className="flex h-16 items-center gap-4">
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2 transition-opacity hover:opacity-80 shrink-0">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary shadow-lg shadow-primary/20">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary">
               <TrendingUp className="h-5 w-5 text-primary-foreground" />
             </div>
-            <span className="text-xl font-bold tracking-tight hidden lg:block">Athlyst</span>
+            <span className="text-lg font-bold tracking-tight">Athlyst</span>
           </Link>
 
-          {/* Primary Nav - Left aligned */}
-          <div className="flex items-center gap-1">
+          {/* Search Bar */}
+          <form onSubmit={handleNavSearch} className="flex-1 max-w-md">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                value={navSearch}
+                onChange={(e) => setNavSearch(e.target.value)}
+                placeholder="Search athletes, sports, or events..."
+                className="w-full h-10 pl-10 pr-10 bg-muted/20 border-border/20 focus:border-primary rounded-lg text-sm"
+                aria-label="Search athletes"
+              />
+              {navSearch && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setNavSearch('');
+                    navigate('/marketplace');
+                  }}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                >
+                  ✕
+                </button>
+              )}
+            </div>
+          </form>
+
+          {/* Primary Nav - Text links */}
+          <div className="flex items-center gap-0.5">
             <Link to="/marketplace" onMouseEnter={prefetchMarketplace} data-tour="marketplace">
               <Button
-                variant={isActive('/marketplace') ? 'secondary' : 'ghost'}
+                variant="ghost"
                 size="sm"
-                className="gap-2 font-semibold transition-all hover:scale-105"
+                className={cn(
+                  "font-medium transition-all px-3 h-8 relative",
+                  isActive('/marketplace') && "text-primary"
+                )}
               >
-                <Home className="h-4 w-4" />
                 Marketplace
+                {isActive('/marketplace') && (
+                  <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-full" />
+                )}
               </Button>
             </Link>
             <Link to="/feed" onMouseEnter={prefetchFeed} data-tour="feed">
               <Button
-                variant={isActive('/feed') ? 'secondary' : 'ghost'}
+                variant="ghost"
                 size="sm"
-                className="gap-2 font-semibold transition-all hover:scale-105"
+                className={cn(
+                  "font-medium transition-all px-3 h-8 relative",
+                  isActive('/feed') && "text-primary"
+                )}
               >
-                <Activity className="h-4 w-4" />
                 Feed
+                {isActive('/feed') && (
+                  <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-full" />
+                )}
               </Button>
             </Link>
             {user && (
               <Link to="/portfolio" onMouseEnter={prefetchPortfolio} data-tour="portfolio">
                 <Button
-                  variant={isActive('/portfolio') ? 'secondary' : 'ghost'}
+                  variant="ghost"
                   size="sm"
-                  className="gap-2 font-semibold transition-all hover:scale-105"
+                  className={cn(
+                    "font-medium transition-all px-3 h-8 relative",
+                    isActive('/portfolio') && "text-primary"
+                  )}
                 >
-                  <Wallet className="h-4 w-4" />
                   Portfolio
+                  {isActive('/portfolio') && (
+                    <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-full" />
+                  )}
                 </Button>
               </Link>
             )}
-          </div>
-
-          {/* Prominent Search Bar - Center */}
-          <div className="flex-1 max-w-xl mx-auto">
-            <div className="relative">
-              <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                placeholder="Search athletes, sports, or events..."
-                className="w-full h-11 pl-11 pr-4 bg-muted/50 border-border/50 focus:border-primary focus:ring-2 focus:ring-primary/20 rounded-xl text-sm"
-                aria-label="Search athletes"
-              />
-              <kbd className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none hidden sm:inline-flex h-6 select-none items-center gap-1 rounded border bg-muted px-2 font-mono text-[10px] font-medium text-muted-foreground">
-                <span className="text-xs">⌘</span>K
-              </kbd>
-            </div>
           </div>
 
           {/* Utility Nav - Right aligned */}
