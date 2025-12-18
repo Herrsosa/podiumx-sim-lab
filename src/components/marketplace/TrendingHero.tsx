@@ -143,7 +143,7 @@ function TrendingCard({ athlete, rank, onClick }: TrendingCardProps) {
                     <img
                         src={avatarUrl}
                         alt={athlete.name}
-                        className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                        className="absolute inset-0 w-full h-full object-cover object-top transition-transform duration-500 group-hover:scale-110"
                     />
                 ) : (
                     <div className="absolute inset-0 bg-gradient-to-br from-muted to-muted/50" />
