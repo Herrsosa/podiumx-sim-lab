@@ -1,14 +1,11 @@
 import { useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { TrendingUp, ChevronLeft, ChevronRight, ArrowUpRight } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
+import { TrendingUp, ArrowUpRight } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Athlete } from '@/types';
 import { formatMoney } from '@/lib/format';
 import { resolveAvatarUrl } from '@/utils/avatar';
 import { cn } from '@/lib/utils';
-import { useState, useCallback } from 'react';
 
 interface TrendingHeroProps {
     athletes: Athlete[];
@@ -27,91 +24,38 @@ const SPORT_COLORS: Record<string, string> = {
 };
 
 export function TrendingHero({ athletes, onAthleteClick }: TrendingHeroProps) {
-    const [currentIndex, setCurrentIndex] = useState(0);
-
-    // Get top 3 athletes by highest 24h change (regardless of positive/negative)
+    // Get top 3 athletes by highest 24h change
     const trendingAthletes = useMemo(() => {
         return [...athletes]
             .sort((a, b) => b.change24h - a.change24h)
             .slice(0, 3);
     }, [athletes]);
 
-    const visibleCount = 3; // Show 3 cards at a time on desktop
-    const maxIndex = Math.max(0, trendingAthletes.length - visibleCount);
-
-    const handlePrev = useCallback(() => {
-        setCurrentIndex((prev) => Math.max(0, prev - 1));
-    }, []);
-
-    const handleNext = useCallback(() => {
-        setCurrentIndex((prev) => Math.min(maxIndex, prev + 1));
-    }, [maxIndex]);
-
     if (trendingAthletes.length === 0) {
         return null;
     }
 
     return (
-        <div className="mb-8">
+        <div className="mb-6">
             {/* Header */}
-            <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/20">
-                        <TrendingUp className="h-5 w-5 text-emerald-400" />
-                    </div>
-                    <div>
-                        <h2 className="text-xl font-bold">Trending Now</h2>
-                        <p className="text-sm text-muted-foreground">Top performing athletes in the last 24h</p>
-                    </div>
+            <div className="flex items-center gap-3 mb-4">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/20">
+                    <TrendingUp className="h-5 w-5 text-emerald-400" />
                 </div>
-
-                {/* Navigation Arrows */}
-                <div className="hidden md:flex items-center gap-2">
-                    <Button
-                        variant="outline"
-                        size="icon"
-                        onClick={handlePrev}
-                        disabled={currentIndex === 0}
-                        className="h-8 w-8"
-                    >
-                        <ChevronLeft className="h-4 w-4" />
-                    </Button>
-                    <Button
-                        variant="outline"
-                        size="icon"
-                        onClick={handleNext}
-                        disabled={currentIndex >= maxIndex}
-                        className="h-8 w-8"
-                    >
-                        <ChevronRight className="h-4 w-4" />
-                    </Button>
+                <div>
+                    <h2 className="text-xl font-bold">Trending Now</h2>
+                    <p className="text-sm text-muted-foreground">Top performing athletes in the last 24h</p>
                 </div>
             </div>
 
             {/* Cards Grid - 3 columns */}
-            <div className="overflow-hidden">
-                <div className="grid grid-cols-3 gap-4">
-                    {trendingAthletes.map((athlete, index) => (
-                        <TrendingCard
-                            key={athlete.id}
-                            athlete={athlete}
-                            rank={index + 1}
-                            onClick={() => athlete.slug && onAthleteClick(athlete.slug)}
-                        />
-                    ))}
-                </div>
-            </div>
-
-            {/* Mobile: Scroll Indicator */}
-            <div className="flex md:hidden justify-center gap-2 mt-4">
-                {trendingAthletes.map((_, index) => (
-                    <button
-                        key={index}
-                        onClick={() => setCurrentIndex(index)}
-                        className={cn(
-                            "w-2 h-2 rounded-full transition-all",
-                            currentIndex === index ? "bg-primary w-4" : "bg-muted-foreground/30"
-                        )}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {trendingAthletes.map((athlete, index) => (
+                    <TrendingCard
+                        key={athlete.id}
+                        athlete={athlete}
+                        rank={index + 1}
+                        onClick={() => athlete.slug && onAthleteClick(athlete.slug)}
                     />
                 ))}
             </div>
@@ -137,7 +81,7 @@ function TrendingCard({ athlete, rank, onClick }: TrendingCardProps) {
             whileTap={{ scale: 0.98 }}
             onClick={onClick}
         >
-            <div className="relative h-[180px] rounded-xl overflow-hidden border border-border/50 bg-card">
+            <div className="relative h-[220px] rounded-xl overflow-hidden border border-border/50 bg-card">
                 {/* Background Image */}
                 {hasAvatar ? (
                     <img
