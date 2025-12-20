@@ -332,13 +332,36 @@ export function StravaCard({ className }: StravaCardProps) {
         throw new Error("Please sign in to import.");
       }
 
-      const { data, error } = await supabase.functions.invoke("import-strava-activities", {
+      const response = await supabase.functions.invoke("import-strava-activities", {
         headers: {
           Authorization: `Bearer ${session.access_token}`,
         },
       });
 
+      const { data, error } = response;
+
+      // Log the response for debugging
+      console.log('[StravaCard] Import response:', { data, error });
+
+      // Try to extract detailed error from response
       if (error) {
+        try {
+          const errorContext = (error as unknown as { context?: { json?: () => Promise<unknown> } })?.context;
+          if (errorContext?.json) {
+            const errorBody = await errorContext.json();
+            console.error('[StravaCard] Import error body:', errorBody);
+            // Extract the actual error message from the response
+            const detailedError = (errorBody as { error?: string })?.error;
+            if (detailedError) {
+              throw new Error(detailedError);
+            }
+          }
+        } catch (parseErr) {
+          if (parseErr instanceof Error && parseErr.message !== error.message) {
+            throw parseErr;
+          }
+          console.warn('[StravaCard] Could not parse error body:', parseErr);
+        }
         throw error;
       }
 

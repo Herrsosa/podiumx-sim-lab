@@ -34,12 +34,28 @@ export default function StravaLinkedResult() {
 
     (async () => {
       console.log('[StravaLinkedResult] Calling edge function with code:', code?.substring(0, 10) + '...', 'state:', state?.substring(0, 10) + '...');
-      
-      const { data, error } = await supabase.functions.invoke("strava-oauth-exchange", {
+
+      const response = await supabase.functions.invoke("strava-oauth-exchange", {
         body: { code, state },
       });
+      const { data, error } = response;
 
+      // Log full response for debugging
       console.log('[StravaLinkedResult] Edge function response:', { data, error });
+
+      // Try to extract detailed error from response context if available
+      if (error) {
+        try {
+          // The error context may contain the actual JSON response
+          const errorContext = (error as unknown as { context?: { json?: () => Promise<unknown> } })?.context;
+          if (errorContext?.json) {
+            const errorBody = await errorContext.json();
+            console.error('[StravaLinkedResult] Error body:', errorBody);
+          }
+        } catch (parseErr) {
+          console.warn('[StravaLinkedResult] Could not parse error body:', parseErr);
+        }
+      }
 
       if (!isMounted) return;
 

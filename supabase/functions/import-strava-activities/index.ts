@@ -31,6 +31,7 @@ type OAuthConnection = {
   refresh_token: string | null;
   expires_at: string | null;
   scope?: string | null;
+  last_activity_at?: string | null;
 };
 
 async function refreshStravaToken(connection: OAuthConnection, supabaseClient: SupabaseClient): Promise<OAuthConnection> {
@@ -78,7 +79,7 @@ async function refreshStravaToken(connection: OAuthConnection, supabaseClient: S
     .from('oauth_connections')
     .update(updates)
     .eq('id', connection.id)
-    .select('id, user_id, access_token, refresh_token, expires_at, scope, updated_at')
+    .select('id, user_id, access_token, refresh_token, expires_at, scope, updated_at, last_activity_at')
     .maybeSingle();
 
   if (updateError) {
@@ -100,6 +101,10 @@ serve(async (req) => {
   }
 
   try {
+    // Check if full sync is requested via query param
+    const url = new URL(req.url);
+    const forceFullSync = url.searchParams.get('full') === 'true';
+
     const authHeader = req.headers.get('Authorization');
 
     if (!authHeader) {
@@ -129,7 +134,7 @@ serve(async (req) => {
 
     const { data: connection, error: connectionError } = await supabaseClient
       .from('oauth_connections')
-      .select('id, user_id, access_token, refresh_token, expires_at, scope, updated_at')
+      .select('id, user_id, access_token, refresh_token, expires_at, scope, updated_at, last_activity_at')
       .eq('user_id', user.id)
       .eq('provider', 'strava')
       .maybeSingle();
@@ -150,16 +155,33 @@ serve(async (req) => {
       stravaConnection = await refreshStravaToken(stravaConnection, supabaseClient);
     }
 
-    // Fetch activities with pagination - up to 200 activities (4 pages of 50)
-    const MAX_PAGES = 4;
+    // Incremental sync: use 'after' parameter if we have a last activity timestamp
+    const lastActivityAt = stravaConnection.last_activity_at;
+    const afterTimestamp = (!forceFullSync && lastActivityAt)
+      ? Math.floor(new Date(lastActivityAt).getTime() / 1000)
+      : null;
+
+    if (afterTimestamp) {
+      console.log(`Incremental sync: fetching activities after ${lastActivityAt}`);
+    } else {
+      console.log('Full sync: fetching all activities');
+    }
+
+    // Fetch activities with pagination
+    const MAX_PAGES = forceFullSync ? 4 : 2; // Fewer pages needed for incremental
     const PER_PAGE = 50;
 
-    const fetchActivitiesPage = async (connectionToUse: OAuthConnection, page: number) =>
-      fetch(`https://www.strava.com/api/v3/athlete/activities?per_page=${PER_PAGE}&page=${page}`, {
+    const fetchActivitiesPage = async (connectionToUse: OAuthConnection, page: number) => {
+      let url = `https://www.strava.com/api/v3/athlete/activities?per_page=${PER_PAGE}&page=${page}`;
+      if (afterTimestamp) {
+        url += `&after=${afterTimestamp}`;
+      }
+      return fetch(url, {
         headers: {
           Authorization: `Bearer ${connectionToUse.access_token}`,
         },
       });
+    };
 
     let allActivities: Record<string, unknown>[] = [];
 
@@ -227,62 +249,85 @@ serve(async (req) => {
     const activities = allActivities;
     console.log(`Fetched ${activities.length} total activities from Strava`);
 
-    let insertedCount = 0;
-    let updatedCount = 0;
-
-    for (const activity of activities) {
-      const activityData = {
-        user_id: user.id,
-        source: 'strava',
-        external_id: activity.id.toString(),
-        name: activity.name,
-        sport_type: activity.sport_type || activity.type,
-        start_time: activity.start_date,
-        distance_m: activity.distance ? Math.round(activity.distance) : null,
-        moving_time_s: activity.moving_time || null,
-        elapsed_time_s: activity.elapsed_time || null,
-        avg_hr: activity.average_heartrate || null,
-        max_hr: activity.max_heartrate || null,
-        elev_gain_m: activity.total_elevation_gain || null,
-        calories: activity.calories || null,
-        raw: activity,
-      };
-
-      const { data: existing } = await supabaseClient
-        .from('activities')
-        .select('id')
-        .eq('external_id', activity.id.toString())
-        .eq('user_id', user.id)
-        .maybeSingle();
-
-      if (existing) {
-        const { error: updateError } = await supabaseClient
-          .from('activities')
-          .update(activityData)
-          .eq('id', existing.id);
-
-        if (!updateError) {
-          updatedCount++;
+    // If no new activities, return early
+    if (activities.length === 0) {
+      return new Response(
+        JSON.stringify({
+          success: true,
+          inserted: 0,
+          updated: 0,
+          total: 0,
+          message: 'No new activities to import',
+        }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         }
-      } else {
-        const { error: insertError } = await supabaseClient
-          .from('activities')
-          .insert(activityData);
-
-        if (!insertError) {
-          insertedCount++;
-        }
-      }
+      );
     }
 
-    console.log(`Import complete: ${insertedCount} inserted, ${updatedCount} updated`);
+    // Prepare all activity data for batch upsert
+    const activityRecords = activities.map((activity) => ({
+      user_id: user.id,
+      source: 'strava',
+      external_id: (activity.id as number).toString(),
+      name: activity.name as string,
+      sport_type: (activity.sport_type || activity.type) as string,
+      start_time: activity.start_date as string,
+      distance_m: activity.distance ? Math.round(activity.distance as number) : null,
+      moving_time_s: (activity.moving_time as number) || null,
+      elapsed_time_s: (activity.elapsed_time as number) || null,
+      avg_hr: (activity.average_heartrate as number) || null,
+      max_hr: (activity.max_heartrate as number) || null,
+      elev_gain_m: (activity.total_elevation_gain as number) || null,
+      calories: (activity.calories as number) || null,
+      raw: activity,
+    }));
+
+    // Batch upsert using unique constraint on (user_id, external_id)
+    const { data: upsertResult, error: upsertError } = await supabaseClient
+      .from('activities')
+      .upsert(activityRecords, {
+        onConflict: 'user_id,external_id',
+        ignoreDuplicates: false, // Update existing records
+      })
+      .select('id');
+
+    if (upsertError) {
+      console.error('Batch upsert failed:', upsertError);
+      throw new Error(`Failed to save activities: ${upsertError.message}`);
+    }
+
+    const savedCount = upsertResult?.length ?? activityRecords.length;
+    console.log(`Batch upsert complete: ${savedCount} activities saved`);
+
+    // Update last_activity_at to the most recent activity start time
+    const mostRecentActivity = activities.reduce((latest, current) => {
+      const currentTime = new Date(current.start_date as string).getTime();
+      const latestTime = latest ? new Date(latest.start_date as string).getTime() : 0;
+      return currentTime > latestTime ? current : latest;
+    }, null as Record<string, unknown> | null);
+
+    if (mostRecentActivity) {
+      const newLastActivityAt = mostRecentActivity.start_date as string;
+      const { error: updateError } = await supabaseClient
+        .from('oauth_connections')
+        .update({ last_activity_at: newLastActivityAt })
+        .eq('id', stravaConnection.id);
+
+      if (updateError) {
+        console.warn('Failed to update last_activity_at:', updateError);
+        // Non-fatal, continue
+      } else {
+        console.log(`Updated last_activity_at to ${newLastActivityAt}`);
+      }
+    }
 
     return new Response(
       JSON.stringify({
         success: true,
-        inserted: insertedCount,
-        updated: updatedCount,
+        saved: savedCount,
         total: activities.length,
+        incremental: !!afterTimestamp,
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
