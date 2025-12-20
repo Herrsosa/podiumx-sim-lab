@@ -210,12 +210,16 @@ export default function Onboarding() {
 
       const uid = user.id;
 
-      // 1. Create wallet if it doesn't exist
+      // 1. Create or update wallet with 1000 USDC starting balance
       const { error: walletError } = await supabase
         .from('wallets')
-        .insert({ user_id: uid, balance: 1000 });
+        .upsert(
+          { user_id: uid, balance: 1000 },
+          { onConflict: 'user_id' }
+        );
 
-      if (walletError && walletError.code !== '23505' && walletError.code !== '409') {
+      if (walletError) {
+        console.error('Wallet upsert error:', walletError);
         throw walletError;
       }
 

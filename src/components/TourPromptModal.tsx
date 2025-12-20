@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import {
     Dialog,
     DialogContent,
@@ -10,20 +11,38 @@ import {
 import { Button } from '@/components/ui/button';
 import { Compass, X } from 'lucide-react';
 import { useOnboardingTour } from '@/hooks/useOnboardingTour';
+import { useOnboardingStatus } from '@/hooks/useOnboardingStatus';
 import { useUser } from '@/store/auth';
 import { OnboardingTour } from '@/components/OnboardingTour';
 
 /**
  * First-run modal that asks user if they want a guided tour
+ * Only shows AFTER onboarding is complete and NOT on onboarding/auth routes
  */
 export function TourPromptModal() {
     const user = useUser();
-    const { tourCompleted, isLoading, markTourCompleted } = useOnboardingTour();
+    const location = useLocation();
+    const { tourCompleted, isLoading: tourLoading, markTourCompleted } = useOnboardingTour();
+    const { onboardingCompleted, isLoading: onboardingLoading, data: onboardingData } = useOnboardingStatus();
     const [showTour, setShowTour] = useState(false);
     const [dismissed, setDismissed] = useState(false);
 
-    // Don't show if: no user, tour completed, still loading, or dismissed
-    const shouldShow = user && !tourCompleted && !isLoading && !dismissed;
+    // Never show on onboarding, auth, or verify routes
+    const isOnboardingRoute = location.pathname.startsWith('/onboarding');
+    const isAuthRoute = location.pathname.startsWith('/auth') || location.pathname === '/verify-email';
+
+    // Must have a profile and onboarding_completed = true
+    const hasCompletedOnboarding = Boolean(onboardingData?.profile?.onboarding_completed);
+
+    // Don't show if: no user, on auth/onboarding routes, onboarding not complete, tour completed, still loading, or dismissed
+    const shouldShow = user
+        && !isOnboardingRoute
+        && !isAuthRoute
+        && hasCompletedOnboarding
+        && !tourCompleted
+        && !tourLoading
+        && !onboardingLoading
+        && !dismissed;
 
     const handleStartTour = () => {
         setDismissed(true);
