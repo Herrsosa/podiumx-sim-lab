@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { TrendingUp, User, Moon, Sun, LogOut, Search, Activity } from 'lucide-react';
+import { TrendingUp, User, Moon, Sun, LogOut, Search, Activity, Star } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useAppStore } from '@/store/useAppStore';
@@ -60,6 +60,10 @@ export default function Navigation() {
 
   const prefetchMyAthlete = useCallback(() => {
     void import('../pages/MyAthletePage');
+  }, []);
+
+  const prefetchWatchlist = useCallback(() => {
+    void import('../pages/Watchlist');
   }, []);
 
   const [navSearch, setNavSearch] = useState('');
@@ -154,6 +158,24 @@ export default function Navigation() {
                 >
                   Portfolio
                   {isActive('/portfolio') && (
+                    <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-full" />
+                  )}
+                </Button>
+              </Link>
+            )}
+            {user && (
+              <Link to="/watchlist" onMouseEnter={prefetchWatchlist}>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className={cn(
+                    "font-medium transition-all px-3 h-8 relative gap-1",
+                    isActive('/watchlist') && "text-primary"
+                  )}
+                >
+                  <Star className="h-3.5 w-3.5" />
+                  Watchlist
+                  {isActive('/watchlist') && (
                     <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-full" />
                   )}
                 </Button>

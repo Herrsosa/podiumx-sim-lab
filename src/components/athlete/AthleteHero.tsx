@@ -8,6 +8,7 @@ import { cn } from '@/lib/utils';
 import { Athlete } from '@/types';
 import { TrendingUp, TrendingDown, MapPin, Instagram } from 'lucide-react';
 import { CountUp } from '@/components/ui/count-up';
+import { WatchlistButton } from '@/components/WatchlistButton';
 
 interface AthleteHeroProps {
     athlete: Athlete;
@@ -69,6 +70,15 @@ export function AthleteHero({ athlete }: AthleteHeroProps) {
                         <Badge variant="secondary" className="backdrop-blur-md bg-black/50 border-white/10 text-white px-3 py-1 text-sm font-medium">
                             {athlete.sport}
                         </Badge>
+                    </div>
+
+                    {/* Watchlist Button - Top Right */}
+                    <div className="absolute top-4 right-4">
+                        <WatchlistButton
+                            athleteId={athlete.id}
+                            size="md"
+                            className="bg-black/40 backdrop-blur-sm hover:bg-black/60"
+                        />
                     </div>
                 </motion.div>
 

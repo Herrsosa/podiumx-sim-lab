@@ -35,6 +35,7 @@ const FeedPage = lazy(() => import("./pages/Feed"));
 const VerifyEmail = lazy(() => import("./pages/VerifyEmail"));
 const NotificationsPage = lazy(() => import("./pages/Notifications"));
 const LearnPage = lazy(() => import("./pages/Learn"));
+const WatchlistPage = lazy(() => import("./pages/Watchlist"));
 
 import { TourPromptModal } from "@/components/TourPromptModal";
 
@@ -253,6 +254,18 @@ function AppContent() {
               </div>
             }>
               <LearnPage />
+            </Suspense>
+          </RouteGuard>
+        } />
+        <Route path="/watchlist" element={
+          <RouteGuard requireAuth>
+            <Navigation />
+            <Suspense fallback={
+              <div className="min-h-screen flex items-center justify-center">
+                <LoadingSpinner size="lg" />
+              </div>
+            }>
+              <WatchlistPage />
             </Suspense>
           </RouteGuard>
         } />

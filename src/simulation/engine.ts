@@ -3,6 +3,137 @@ import { SIMULATION_PROFILES, SIMULATION_CONSTANTS } from './config';
 import { Workout } from '@/types';
 import { priceAt } from '@/utils/pricing';
 
+// Diverse post templates by workout type for realistic simulation
+const POS_TEMPLATES: Record<string, string[]> = {
+    Run: [
+        "Morning miles in the books 🌅 {duration}min easy pace, feeling good!",
+        "Tempo run done ✅ Pushed the pace today, legs are feeling it",
+        "Recovery jog through the park 🌳 Perfect weather for it",
+        "Intervals on the track today 🏃‍♂️ 6x800m, trying to get faster",
+        "Long run Sunday! {duration} minutes of pure zone 2 vibes",
+        "Hill repeats this morning 💪 Building that strength",
+        "Fartlek session done - love mixing it up!",
+        "Easy shakeout run before the week kicks off",
+        "Crushed a progression run today 📈 Started slow, finished fast",
+        "Trail run vibes 🌲 Nothing beats running in nature",
+    ],
+    Strength: [
+        "Leg day complete 🦵 Squats felt heavy but strong",
+        "Upper body session done 💪 Bench PR incoming?",
+        "Gym session in the books - consistency is key",
+        "Full body strength today. Core feeling solid 🔥",
+        "Deadlift day! Working on that posterior chain",
+        "Push session done - chest and shoulders are toast",
+        "Pull day complete 🏋️ Back gains loading...",
+        "Olympic lifts practice - technique over weight",
+        "Functional strength work today. Ready for anything!",
+        "Core and accessory work. The little things matter 💯",
+    ],
+    HIIT: [
+        "HIIT session destroyed me 😅 But in the best way",
+        "30 minutes of high intensity work - sweating buckets",
+        "Metabolic conditioning complete 🔥 Heart rate was maxed",
+        "Tabata workout done! 4 minutes never felt so long",
+        "AMRAP session today - pushed for every rep",
+        "Circuit training complete 💦 No rest for the wicked",
+        "EMOM workout crushed. Love the structure!",
+        "Sprint intervals on the bike 🚴 Legs are jelly now",
+        "Kettlebell HIIT session - simple but brutal",
+        "Cardio boxing done 🥊 Great way to destress",
+    ],
+    Cycling: [
+        "Morning ride done 🚴 {duration}min on the bike",
+        "Zone 2 ride today - building that aerobic base",
+        "Hill climbs this morning 🏔️ Quads are screaming",
+        "Zwift session complete - racing is always motivating",
+        "Recovery spin - easy does it today",
+        "Tempo ride in the books 📖 Holding power steady",
+        "Long ride Sunday! Beautiful weather for it ☀️",
+        "Interval session on the trainer 💪 VO2max work",
+        "Group ride with the crew - drafting makes it fun",
+        "Cadence drills today - spinning smooth",
+    ],
+    Yoga: [
+        "Yoga flow complete 🧘 Feeling centered and calm",
+        "Morning stretch session - great way to start the day",
+        "Power yoga done 💪 More strength than expected!",
+        "Yin yoga recovery - holding those deep stretches",
+        "Vinyasa flow today - breath and movement as one",
+        "Mobility work complete 🧘‍♀️ Flexibility is fitness too",
+        "Restorative yoga session - sometimes less is more",
+        "Hot yoga class done 🔥 Sweating out the stress",
+        "Balance and core focus today - tree pose for days",
+        "Yoga sculpt session - mixing strength with flow",
+    ],
+    Swimming: [
+        "Pool session done 🏊 {duration}min of laps",
+        "Drill work in the water today - technique focus",
+        "Endurance swim complete - steady effort throughout",
+        "Sprint set done! 10x50m all out 💦",
+        "Open water swim this morning - nature's pool",
+        "Pull set with paddles - building that swim strength",
+        "Recovery swim - easy laps, active recovery",
+        "IM practice today - all four strokes",
+        "Threshold set complete - holding race pace",
+        "Kick set done 🦵 Legs are feeling that one",
+    ],
+    HYROX: [
+        "HYROX training complete 🏆 Race prep mode activated",
+        "Sled push practice today - the struggle is real 😅",
+        "Ski erg intervals done ✅ That's a tough one",
+        "Wall balls and running combo - classic HYROX",
+        "Farmers carry work - grip strength loading",
+        "Roxzone simulation complete 💪 Ready to compete",
+        "Burpee broad jumps practice - coordination on point",
+        "Sandbag lunges done - functional fitness at its finest",
+        "Full HYROX simulation - {duration}min of pain and gain",
+        "Rowing and running back to back - heart rate was max",
+    ],
+    CrossFit: [
+        "WOD complete 💪 Left it all on the floor",
+        "MetCon done - chasing that score",
+        "Skill work today - practice makes progress",
+        "AMRAP crushed! Beat my previous best",
+        "Heavy lifting day - strength cycle week 3",
+        "Gymnastics focus - working on muscle ups",
+        "Partner WOD done - teamwork makes the dream work",
+        "Open workout prep - season is coming!",
+        "Engine builder session - long and steady",
+        "Benchmark workout done ⏱️ Testing those gains",
+    ],
+    Triathlon: [
+        "Brick session done 🧱 Bike to run transitions",
+        "Swim-bike today - multi-sport life!",
+        "Tri training complete - all three disciplines",
+        "Race simulation {duration}min - feeling race ready",
+        "T1 and T2 practice - seconds matter!",
+        "Long ride + brick run - Ironman prep mode",
+        "Open water swim + bike combo 🏊🚴",
+        "Sprint tri simulation complete - full send!",
+        "Recovery day - just an easy swim",
+        "Race pace work across all three today 💪",
+    ],
+    Other: [
+        "Training session complete ✅ Putting in the work",
+        "Good workout today - consistency over intensity",
+        "Active recovery day - movement is medicine",
+        "Cross training session done 💪 Mixing it up",
+        "Solid {duration}min session in the books",
+        "Training done for the day - rest and recover now",
+        "Great session! Feeling the progress",
+        "Workout complete 🔥 One more step forward",
+        "Put in the work today - no shortcuts",
+        "Another day, another session logged ✅",
+    ],
+};
+
+// Helper to get a random post template for a workout type
+function getRandomPostText(type: string, duration: number): string {
+    const templates = POS_TEMPLATES[type] || POS_TEMPLATES['Other'];
+    const template = templates[Math.floor(Math.random() * templates.length)];
+    return template.replace('{duration}', duration.toString());
+}
+
 interface SimulationResult {
     trades: number;
     posts: number;
@@ -182,7 +313,7 @@ export async function runDailySimulation(): Promise<SimulationResult> {
 
                 const { error } = await supabaseAdmin.from('posts').insert({
                     author_id: actorId,
-                    text: `Just finished a great ${type} session! #${type} #training`,
+                    text: getRandomPostText(type, duration),
                     workout_json: workoutData,
                     visibility: 'public',
                     min_tokens_required: 0,

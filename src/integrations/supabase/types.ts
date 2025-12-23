@@ -814,6 +814,39 @@ export type Database = {
         }
         Relationships: []
       }
+      watchlist: {
+        Row: {
+          user_id: string
+          athlete_id: string
+          created_at: string
+        }
+        Insert: {
+          user_id: string
+          athlete_id: string
+          created_at?: string
+        }
+        Update: {
+          user_id?: string
+          athlete_id?: string
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "watchlist_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "watchlist_athlete_id_fkey"
+            columns: ["athlete_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       athlete_metrics_24h: {

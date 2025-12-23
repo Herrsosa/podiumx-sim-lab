@@ -1,4 +1,4 @@
-export type ScreenKey = 'feed' | 'portfolio' | 'myAthlete' | 'marketplace' | 'notifications';
+export type ScreenKey = 'feed' | 'portfolio' | 'myAthlete' | 'marketplace' | 'notifications' | 'watchlist';
 
 interface HelpContent {
     title: string;
@@ -36,5 +36,11 @@ export const HELP_CONTENT: Record<ScreenKey, HelpContent> = {
         title: 'Notifications',
         description: 'Stay updated on activity related to your profile.',
         whatToDo: 'Click a notification to go to the relevant page. Mark all as read to clear the badge.',
+    },
+    watchlist: {
+        title: 'Watchlist',
+        description: 'Track athletes you are interested in without buying tokens.',
+        whatToDo: 'Add athletes by clicking the star icon on their profile. Click an athlete to view their page.',
+        commonMistakes: 'Forgetting to check back! Keep an eye on price movements for athletes you are watching.',
     },
 };

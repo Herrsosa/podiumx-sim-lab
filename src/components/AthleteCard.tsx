@@ -13,6 +13,7 @@ import { motion } from 'framer-motion';
 import { CountUp } from '@/components/ui/count-up';
 import { cn } from '@/lib/utils';
 import { use3DTilt } from '@/hooks/use3DTilt';
+import { WatchlistButton } from '@/components/WatchlistButton';
 
 const SPORT_COLORS: Record<string, string> = {
   Running: 'bg-orange-500/10 text-orange-500 hover:bg-orange-500/20 border-orange-500/20',
@@ -129,6 +130,15 @@ export const AthleteCard = memo(({ athlete, chartData, onClick, onMouseEnter }: 
               >
                 View Profile <ArrowUpRight className="w-4 h-4" />
               </motion.div>
+            </div>
+
+            {/* Watchlist Button - Top Right */}
+            <div className="absolute top-2 right-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+              <WatchlistButton
+                athleteId={athlete.id}
+                size="sm"
+                className="bg-black/40 backdrop-blur-sm hover:bg-black/60"
+              />
             </div>
           </div>
 
