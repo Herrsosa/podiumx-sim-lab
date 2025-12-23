@@ -7,6 +7,7 @@ import { SupabaseResponsiveImage } from '@/components/SupabaseResponsiveImage';
 import { ActivityMap } from '@/components/ui/ActivityMap';
 import { cn } from '@/lib/utils';
 import { PropButton } from '@/components/PropButton';
+import { CommentButtonWithModal } from '@/components/comments';
 
 interface WorkoutGridCardProps {
   workout: Workout;
@@ -133,7 +134,7 @@ function WorkoutGridCardComponent({ workout, post, canView, onClick, variant = '
           <>
             <div
               className={cn(
-                'absolute inset-0 bg-gradient-to-t',
+                'absolute inset-0 bg-gradient-to-t pointer-events-none',
                 hasPhoto ? 'from-black/80 via-black/40 to-black/20' : 'from-black/60 via-transparent to-transparent'
               )}
             />
@@ -170,10 +171,11 @@ function WorkoutGridCardComponent({ workout, post, canView, onClick, variant = '
                       </p>
                     )}
 
-                    {/* Props Button */}
+                    {/* Props & Comments Buttons */}
                     {post?.id && (
-                      <div className="flex items-center mt-2">
+                      <div className="flex items-center gap-3 mt-2 relative z-10">
                         <PropButton postId={post.id} size="sm" />
+                        <CommentButtonWithModal postId={post.id} size="sm" />
                       </div>
                     )}
                   </>

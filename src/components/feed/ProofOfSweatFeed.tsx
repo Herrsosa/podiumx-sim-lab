@@ -10,6 +10,8 @@ import type { ProofOfSweatFeedItem } from '@/hooks/useProofOfSweatFeed';
 import { useWalletPositions } from '@/hooks/useWallet';
 import { useUser } from '@/store/auth';
 import { UserAvatar } from '@/components/UserAvatar';
+import { PropButton } from '@/components/PropButton';
+import { CommentButtonWithModal } from '@/components/comments';
 import { cn } from '@/lib/utils';
 import type { Sport, Workout } from '@/types';
 
@@ -339,6 +341,14 @@ export function ProofOfSweatFeed({
                         onClick={() => navigate(`/athlete/${item.athlete.slug}`)}
                         variant="feed"
                       />
+                    </div>
+                  )}
+
+                  {/* Engagement Bar */}
+                  {canView && (
+                    <div className="flex items-center gap-4 pt-2">
+                      <PropButton postId={item.post.id} size="sm" />
+                      <CommentButtonWithModal postId={item.post.id} size="sm" />
                     </div>
                   )}
                 </div>

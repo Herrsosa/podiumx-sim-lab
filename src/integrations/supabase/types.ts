@@ -85,6 +85,48 @@ export type Database = {
           },
         ]
       }
+      comments: {
+        Row: {
+          id: string
+          created_at: string
+          updated_at: string
+          post_id: string
+          author_id: string
+          text: string
+        }
+        Insert: {
+          id?: string
+          created_at?: string
+          updated_at?: string
+          post_id: string
+          author_id: string
+          text: string
+        }
+        Update: {
+          id?: string
+          created_at?: string
+          updated_at?: string
+          post_id?: string
+          author_id?: string
+          text?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "comments_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "comments_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       athlete_chat_messages: {
         Row: {
           athlete_id: string
@@ -603,6 +645,7 @@ export type Database = {
           location_lng: number | null
           min_tokens_required: number
           props_count: number
+          comments_count: number
           strava_activity_id: number | null
           strava_map_polyline: string | null
           text: string | null
@@ -624,6 +667,7 @@ export type Database = {
           location_lng?: number | null
           min_tokens_required?: number
           props_count?: number
+          comments_count?: number
           strava_activity_id?: number | null
           strava_map_polyline?: string | null
           text?: string | null
@@ -645,6 +689,7 @@ export type Database = {
           location_lng?: number | null
           min_tokens_required?: number
           props_count?: number
+          comments_count?: number
           strava_activity_id?: number | null
           strava_map_polyline?: string | null
           text?: string | null
