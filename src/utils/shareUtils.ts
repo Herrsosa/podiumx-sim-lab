@@ -54,8 +54,38 @@ export function canShareFiles(): boolean {
 }
 
 /**
+ * Convert a blob to a data URL
+ */
+function blobToDataUrl(blob: Blob): Promise<string> {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+    });
+}
+
+/**
+ * Convert a data URL to a blob
+ */
+function dataUrlToBlob(dataUrl: string): Blob {
+    const arr = dataUrl.split(',');
+    const mime = arr[0].match(/:(.*?);/)?.[1] || 'image/png';
+    const bstr = atob(arr[1]);
+    let n = bstr.length;
+    const u8arr = new Uint8Array(n);
+    while (n--) {
+        u8arr[n] = bstr.charCodeAt(n);
+    }
+    return new Blob([u8arr], { type: mime });
+}
+
+/**
  * Share an image using the Web Share API
  * Returns true if successful, false if user cancelled or not supported
+ * 
+ * Note: Safari/WebKit has issues with blobs created directly from canvas.toBlob().
+ * Converting to data URL and back creates a more stable blob reference.
  */
 export async function shareImage(
     blob: Blob,
@@ -66,14 +96,19 @@ export async function shareImage(
         return false;
     }
 
-    const file = new File([blob], 'workout.png', { type: 'image/png' });
-
-    // Check if we can share this file
-    if (!navigator.canShare({ files: [file] })) {
-        return false;
-    }
-
     try {
+        // Convert blob to data URL and back to create a stable blob for Safari
+        // This fixes WebKitBlobResource error 1 on iOS Safari
+        const dataUrl = await blobToDataUrl(blob);
+        const stableBlob = dataUrlToBlob(dataUrl);
+
+        const file = new File([stableBlob], 'workout.png', { type: 'image/png' });
+
+        // Check if we can share this file
+        if (!navigator.canShare({ files: [file] })) {
+            return false;
+        }
+
         await navigator.share({
             files: [file],
             title,
