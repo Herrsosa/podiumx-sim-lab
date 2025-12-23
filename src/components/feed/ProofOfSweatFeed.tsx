@@ -12,6 +12,7 @@ import { useUser } from '@/store/auth';
 import { UserAvatar } from '@/components/UserAvatar';
 import { PropButton } from '@/components/PropButton';
 import { CommentButtonWithModal } from '@/components/comments';
+import { ShareButton } from '@/components/share';
 import { cn } from '@/lib/utils';
 import type { Sport, Workout } from '@/types';
 
@@ -349,6 +350,15 @@ export function ProofOfSweatFeed({
                     <div className="flex items-center gap-4 pt-2">
                       <PropButton postId={item.post.id} size="sm" />
                       <CommentButtonWithModal postId={item.post.id} size="sm" />
+                      <ShareButton
+                        workout={item.workout}
+                        athleteName={item.athlete.name}
+                        athleteHandle={item.athlete.slug}
+                        athleteAvatar={item.athlete.avatar}
+                        imageUrl={item.post.image_url || item.workout.mediaUrl}
+                        athleteProfileUrl={`${window.location.origin}/athlete/${item.athlete.slug}`}
+                        size="sm"
+                      />
                     </div>
                   )}
                 </div>

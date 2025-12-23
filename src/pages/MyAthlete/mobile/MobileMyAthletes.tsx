@@ -313,6 +313,8 @@ export default function MobileMyAthletes({
                     <ProofOfSweat
                       athleteId={athlete.id}
                       athleteName={athlete.name}
+                      athleteHandle={athlete.slug}
+                      athleteAvatar={athlete.avatar}
                       workouts={workouts}
                       posts={posts}
                       viewerHoldings={Number.MAX_SAFE_INTEGER}

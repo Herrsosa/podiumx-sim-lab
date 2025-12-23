@@ -680,6 +680,8 @@ export default function AthleteDetail() {
                   posts={athlete.posts || []}
                   athleteId={athlete.id}
                   athleteName={athlete.name}
+                  athleteHandle={athlete.slug}
+                  athleteAvatar={athlete.avatar}
                   viewerHoldings={userHoldings}
                   onUnlock={async () => {
                     await tradeMutation.mutateAsync({

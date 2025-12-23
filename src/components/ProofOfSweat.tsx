@@ -41,6 +41,8 @@ interface ProofOfSweatProps {
   posts: Post[];
   athleteId?: string;
   athleteName?: string;
+  athleteHandle?: string;
+  athleteAvatar?: string;
   viewerHoldings?: number;
   onUnlock?: () => void;
   onWorkoutDeleted?: (workoutId: string) => void;
@@ -55,6 +57,8 @@ export default function ProofOfSweat({
   posts,
   athleteId,
   athleteName,
+  athleteHandle,
+  athleteAvatar,
   viewerHoldings = 0,
   onUnlock,
   onWorkoutDeleted,
@@ -224,6 +228,9 @@ export default function ProofOfSweat({
               workout={workout}
               post={post}
               canView={canView}
+              athleteName={athleteName}
+              athleteHandle={athleteHandle}
+              athleteAvatar={athleteAvatar}
               onClick={() => {
                 if (canView && canDelete) {
                   handleEditClick(workout);
@@ -278,6 +285,9 @@ export default function ProofOfSweat({
           open={viewModalOpen}
           onOpenChange={setViewModalOpen}
           workoutPost={workoutToView}
+          athleteName={athleteName}
+          athleteHandle={athleteHandle}
+          athleteAvatar={athleteAvatar}
         />
       )}
     </>

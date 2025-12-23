@@ -107,7 +107,7 @@ export default function Overview() {
         </CardHeader>
         <CardContent className="space-y-4">
           <OverviewPriceChart athlete={athlete} timeRange={timeRange} onTimeRangeChange={setTimeRange} />
-          
+
           {/* Token Stats - Compact list style */}
           <div className="pt-4 border-t border-border">
             <h3 className="text-sm font-semibold mb-3 text-muted-foreground">Stats</h3>
@@ -156,6 +156,8 @@ export default function Overview() {
             <ProofOfSweat
               athleteId={athlete.id}
               athleteName={athlete.name}
+              athleteHandle={athlete.slug}
+              athleteAvatar={athlete.avatar}
               posts={athlete.posts.slice(0, 3)}
               workouts={athlete.workouts.slice(0, 3)}
               viewerHoldings={Number.MAX_SAFE_INTEGER}

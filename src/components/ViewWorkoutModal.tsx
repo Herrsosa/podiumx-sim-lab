@@ -1,23 +1,27 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Calendar, Clock, MapPin, Activity, Trophy, Pin, PinOff } from 'lucide-react';
+import { Calendar, Clock, MapPin, Activity, Trophy, Pin, PinOff, Share2 } from 'lucide-react';
 import { Workout, Post } from '@/types';
 import { ActivityMap } from '@/components/ui/ActivityMap';
 import { OptimizedImage } from '@/components/OptimizedImage';
 import { useUser } from '@/store/auth';
 import { usePinPost } from '@/hooks/usePinPost';
 import { cn } from '@/lib/utils';
+import { ShareButton } from '@/components/share';
 
 interface ViewWorkoutModalProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     workoutPost: Post;
+    athleteName?: string;
+    athleteHandle?: string;
+    athleteAvatar?: string;
 }
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
-export default function ViewWorkoutModal({ open, onOpenChange, workoutPost }: ViewWorkoutModalProps) {
+export default function ViewWorkoutModal({ open, onOpenChange, workoutPost, athleteName, athleteHandle, athleteAvatar }: ViewWorkoutModalProps) {
     const user = useUser();
     const { mutate: pinPost, isPending: isPinning } = usePinPost();
 
@@ -106,6 +110,19 @@ export default function ViewWorkoutModal({ open, onOpenChange, workoutPost }: Vi
                             {isPinned ? <PinOff className="h-4 w-4" /> : <Pin className="h-4 w-4" />}
                             {isPinned ? 'Unpin' : 'Pin'}
                         </Button>
+                    )}
+
+                    {/* Share Button */}
+                    {athleteName && athleteHandle && (
+                        <ShareButton
+                            workout={workout as Workout}
+                            athleteName={athleteName}
+                            athleteHandle={athleteHandle}
+                            athleteAvatar={athleteAvatar}
+                            imageUrl={mediaUrl}
+                            athleteProfileUrl={`${window.location.origin}/athlete/${athleteHandle}`}
+                            size="md"
+                        />
                     )}
                 </DialogHeader>
 

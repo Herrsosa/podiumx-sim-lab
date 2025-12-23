@@ -8,6 +8,7 @@ import { ActivityMap } from '@/components/ui/ActivityMap';
 import { cn } from '@/lib/utils';
 import { PropButton } from '@/components/PropButton';
 import { CommentButtonWithModal } from '@/components/comments';
+import { ShareButton } from '@/components/share';
 
 interface WorkoutGridCardProps {
   workout: Workout;
@@ -15,6 +16,9 @@ interface WorkoutGridCardProps {
   canView: boolean;
   onClick: () => void;
   variant?: 'grid' | 'feed';
+  athleteName?: string;
+  athleteHandle?: string;
+  athleteAvatar?: string;
 }
 
 const getTypeColor = (type: Workout['type']) => {
@@ -56,7 +60,7 @@ const formatDate = (dateString: string | undefined) => {
   return date.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' });
 };
 
-function WorkoutGridCardComponent({ workout, post, canView, onClick, variant = 'grid' }: WorkoutGridCardProps) {
+function WorkoutGridCardComponent({ workout, post, canView, onClick, variant = 'grid', athleteName, athleteHandle, athleteAvatar }: WorkoutGridCardProps) {
   const hasPhoto = post?.image_url || workout.mediaUrl;
   const hasMap = post?.strava_map_polyline;
   const photoUrl = post?.image_url || workout.mediaUrl;
@@ -171,11 +175,22 @@ function WorkoutGridCardComponent({ workout, post, canView, onClick, variant = '
                       </p>
                     )}
 
-                    {/* Props & Comments Buttons */}
+                    {/* Props, Comments & Share Buttons */}
                     {post?.id && (
                       <div className="flex items-center gap-3 mt-2 relative z-10">
                         <PropButton postId={post.id} size="sm" />
                         <CommentButtonWithModal postId={post.id} size="sm" />
+                        {athleteName && athleteHandle && (
+                          <ShareButton
+                            workout={workout}
+                            athleteName={athleteName}
+                            athleteHandle={athleteHandle}
+                            athleteAvatar={athleteAvatar}
+                            imageUrl={post.image_url || workout.mediaUrl}
+                            athleteProfileUrl={`${window.location.origin}/athlete/${athleteHandle}`}
+                            size="sm"
+                          />
+                        )}
                       </div>
                     )}
                   </>
