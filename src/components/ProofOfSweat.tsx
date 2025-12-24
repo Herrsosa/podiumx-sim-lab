@@ -96,10 +96,6 @@ export default function ProofOfSweat({
 
   // Map workout IDs to their corresponding Post objects for O(1) lookup
   const workoutPostMap = useMemo(() => {
-    // DEBUG: Log first post with location data
-    const postWithLocation = posts.find(p => p.location_lat != null);
-    console.log('[ProofOfSweat] Posts count:', posts.length, 'First post with location:', postWithLocation?.location_lat, postWithLocation?.location_lng);
-
     const map = new Map<string, Post>();
     posts.forEach((post) => {
       if (post.workout_json && typeof post.workout_json === 'object' && !Array.isArray(post.workout_json)) {

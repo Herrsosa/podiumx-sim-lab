@@ -72,9 +72,6 @@ function WorkoutGridCardComponent({ workout, post, canView, onClick, variant = '
   const typeColor = getTypeColor(workout.type);
   const displayDate = post?.created_at || workout.date;
 
-  // DEBUG: Log post location data
-  console.log('[WorkoutGridCard] Post location:', post?.location_lat, post?.location_lng);
-
   // Build metrics string
   const metrics: string[] = [];
   if (workout.distance) metrics.push(`${workout.distance} km`);

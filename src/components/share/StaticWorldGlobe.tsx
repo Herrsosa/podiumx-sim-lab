@@ -20,9 +20,6 @@ export function StaticWorldGlobe({
     location,
     accentColor = '#10b981', // emerald-500 default
 }: StaticWorldGlobeProps) {
-    // DEBUG: Log location
-    console.log('[StaticWorldGlobe] Location:', location, 'AccentColor:', accentColor);
-
     const radius = size / 2.5;
     const cx = size / 2;
     const cy = size / 2;
@@ -72,6 +69,9 @@ export function StaticWorldGlobe({
         }
     });
 
+    // DEBUG: Log path counts
+    console.log('[StaticWorldGlobe] World paths:', worldPaths.length, 'Location:', location);
+
     // Generate graticule (grid) lines
     const graticulePaths: string[] = [];
 
@@ -102,6 +102,9 @@ export function StaticWorldGlobe({
     // Project the location dot
     const locationPoint = location ? projectPoint(location.lat, location.lng) : null;
 
+    // DEBUG: Log location projection
+    console.log('[StaticWorldGlobe] LocationPoint:', locationPoint, 'from location:', location);
+
     return (
         <svg
             viewBox={`0 0 ${size} ${size}`}
@@ -125,7 +128,7 @@ export function StaticWorldGlobe({
                 <path
                     key={`grat-${i}`}
                     d={path}
-                    stroke="rgba(255, 255, 255, 0.12)"
+                    stroke="rgba(255, 255, 255, 0.2)"
                     strokeWidth="1"
                     fill="none"
                 />
@@ -136,43 +139,43 @@ export function StaticWorldGlobe({
                 <path
                     key={`land-${i}`}
                     d={path}
-                    stroke="rgba(255, 255, 255, 0.7)"
-                    strokeWidth="2"
+                    stroke="rgba(255, 255, 255, 0.9)"
+                    strokeWidth="2.5"
                     fill="none"
                 />
             ))}
 
-            {/* Location dot with glow effect */}
+            {/* Location dot with enhanced glow effect - brighter to compensate for container opacity */}
             {locationPoint && (
                 <>
-                    {/* Outer glow */}
+                    {/* Large outer glow */}
                     <circle
                         cx={locationPoint[0]}
                         cy={locationPoint[1]}
-                        r={16}
+                        r={24}
                         fill={accentColor}
-                        opacity={0.3}
+                        opacity={0.5}
                     />
                     {/* Middle ring */}
                     <circle
                         cx={locationPoint[0]}
                         cy={locationPoint[1]}
-                        r={10}
+                        r={14}
                         fill={accentColor}
-                        opacity={0.5}
+                        opacity={0.8}
                     />
                     {/* Inner dot */}
                     <circle
                         cx={locationPoint[0]}
                         cy={locationPoint[1]}
-                        r={6}
+                        r={8}
                         fill={accentColor}
                     />
                     {/* Bright center */}
                     <circle
                         cx={locationPoint[0]}
                         cy={locationPoint[1]}
-                        r={3}
+                        r={4}
                         fill="white"
                     />
                 </>

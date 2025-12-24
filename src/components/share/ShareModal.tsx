@@ -54,9 +54,6 @@ export function ShareModal({
     );
     const cardRef = useRef<ShareableWorkoutCardRef>(null);
 
-    // DEBUG: Log location data
-    console.log('[ShareModal] Location received:', location);
-
     const isMobile = typeof navigator !== 'undefined' && /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
     const supportsShare = canShareFiles();
 

@@ -74,19 +74,19 @@ export const ShareableWorkoutCard = forwardRef<ShareableWorkoutCardRef, Shareabl
                 {/* Background gradient with theme colors */}
                 <div className={`absolute inset-0 bg-gradient-to-br ${activeTheme.gradient}`} />
 
-                {/* Background globe - subtle world map decoration with location dot */}
-                <div className="absolute inset-0 flex items-center justify-center pointer-events-none" style={{ opacity: 0.25 }}>
+                {/* Animated gradient orbs with theme colors - render before globe */}
+                <div className={`absolute top-20 -left-20 w-80 h-80 ${activeTheme.orb1} rounded-full blur-3xl`} />
+                <div className={`absolute bottom-40 -right-20 w-96 h-96 ${activeTheme.orb2} rounded-full blur-3xl`} />
+                <div className={`absolute top-1/2 left-1/3 w-64 h-64 ${activeTheme.orb3} rounded-full blur-3xl`} />
+
+                {/* Background globe - subtle world map decoration - shifted down so location dot doesn't overlap stats */}
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none" style={{ opacity: 0.6, transform: 'translateY(12%)' }}>
                     <StaticWorldGlobe
                         size={650}
                         location={location}
                         accentColor={activeTheme.previewColor}
                     />
                 </div>
-
-                {/* Animated gradient orbs with theme colors */}
-                <div className={`absolute top-20 -left-20 w-80 h-80 ${activeTheme.orb1} rounded-full blur-3xl`} />
-                <div className={`absolute bottom-40 -right-20 w-96 h-96 ${activeTheme.orb2} rounded-full blur-3xl`} />
-                <div className={`absolute top-1/2 left-1/3 w-64 h-64 ${activeTheme.orb3} rounded-full blur-3xl`} />
 
                 {/* Background workout image if available */}
                 {imageUrl && (

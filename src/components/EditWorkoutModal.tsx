@@ -167,8 +167,6 @@ export default function EditWorkoutModal({ open, onOpenChange, workoutPost, onSu
       };
 
       // Update post in DB with location data
-      console.log('[EditWorkoutModal] Saving location:', location);
-
       const { data: updatedRow, error } = await supabase
         .from('posts')
         .update({
@@ -188,8 +186,6 @@ export default function EditWorkoutModal({ open, onOpenChange, workoutPost, onSu
         .select('id, created_at, author_id, workout_json, image_url, text, visibility, min_tokens_required, token_gated, strava_activity_id, location_city, location_country, location_country_code, location_lat, location_lng')
         .single();
 
-      console.log('[EditWorkoutModal] Save result:', { error, updatedRow });
-
       if (error) throw error;
       if (!updatedRow) throw new Error('Failed to load updated workout');
 
@@ -202,9 +198,6 @@ export default function EditWorkoutModal({ open, onOpenChange, workoutPost, onSu
         updatedRow as Parameters<typeof mapPostRowToLockerWorkout>[0],
       );
       const mappedPost = mapPostRowToPost(updatedRow as Parameters<typeof mapPostRowToPost>[0]);
-
-      console.log('[EditWorkoutModal] Mapped workout location:', mappedWorkout.locationLat, mappedWorkout.locationLng);
-      console.log('[EditWorkoutModal] Mapped post location:', mappedPost.location_lat, mappedPost.location_lng);
 
       onSuccess({ workout: mappedWorkout, post: mappedPost });
       onOpenChange(false);
