@@ -82,7 +82,7 @@ export interface Wallet {
 export interface Workout {
   id: string;
   date: string;
-  type: 'Run' | 'HYROX' | 'Swim' | 'Bike' | 'Strength' | 'Other';
+  type: 'Run' | 'HYROX' | 'Swim' | 'Bike' | 'Strength' | 'HIIT' | 'Other';
   distance?: number;
   duration: number;
   pace?: string;

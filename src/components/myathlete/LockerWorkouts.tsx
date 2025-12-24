@@ -41,6 +41,8 @@ export function LockerWorkouts({
   const isAddWorkoutOpen = searchParams.get('add-workout') === 'true';
   const effectiveAthleteId = lockerAthleteId ?? athlete?.id;
   const effectiveAthleteName = lockerAthleteName ?? athlete?.name ?? 'Athlete';
+  const effectiveAthleteHandle = athlete?.slug;
+  const effectiveAthleteAvatar = athlete?.avatar;
   const canEdit = isOwnerProp ?? (!lockerAthleteId && Boolean(athlete?.id));
   const viewerRole = useMemo<WorkoutViewerRole>(() => {
     if (canEdit) return 'owner';
@@ -143,8 +145,10 @@ export function LockerWorkouts({
   );
 
   const handleWorkoutUpdated = useCallback(
-    (result: WorkoutMutationResult) => {
+    async (result: WorkoutMutationResult) => {
       if (!effectiveAthleteId) return;
+
+      // Update the cache with the new workout data including location
       replaceWorkoutInCache(queryClient, workoutsKeyParams, result.workout);
 
       updateMyAthleteCache((prev) => {
@@ -159,6 +163,9 @@ export function LockerWorkouts({
           posts: nextPosts,
         };
       });
+
+      // Force refetch to ensure UI updates with fresh data from database
+      await queryClient.refetchQueries({ queryKey: ['workouts', workoutsKeyParams] });
     },
     [effectiveAthleteId, queryClient, updateMyAthleteCache, workoutsKeyParams],
   );
@@ -199,6 +206,12 @@ export function LockerWorkouts({
       strava_activity_id: null,
       visibility: item.visibility,
       min_tokens_required: item.minTokensRequired,
+      // Include location fields
+      location_city: item.locationCity,
+      location_country: item.locationCountry,
+      location_country_code: item.locationCountryCode,
+      location_lat: item.locationLat,
+      location_lng: item.locationLng,
     }));
 
     return {
@@ -293,6 +306,8 @@ export function LockerWorkouts({
         <ProofOfSweat
           athleteId={effectiveAthleteId}
           athleteName={effectiveAthleteName}
+          athleteHandle={effectiveAthleteHandle}
+          athleteAvatar={effectiveAthleteAvatar}
           posts={posts}
           workouts={workouts}
           viewerHoldings={effectiveViewerHoldings}

@@ -35,7 +35,7 @@ interface StravaImportDialogProps {
 
 interface FormState {
   date: string;
-  type: 'Run' | 'HYROX' | 'Swim' | 'Bike' | 'Strength' | 'Other';
+  type: 'Run' | 'HYROX' | 'Swim' | 'Bike' | 'Strength' | 'HIIT' | 'Other';
   distance: string;
   duration: string;
   rpe: string;
@@ -297,6 +297,7 @@ export function StravaImportDialog({ activity, open, onOpenChange, onImported }:
                         <SelectItem value="Swim">Swim</SelectItem>
                         <SelectItem value="Bike">Bike</SelectItem>
                         <SelectItem value="Strength">Strength</SelectItem>
+                        <SelectItem value="HIIT">HIIT</SelectItem>
                         <SelectItem value="Other">Other</SelectItem>
                       </SelectContent>
                     </Select>

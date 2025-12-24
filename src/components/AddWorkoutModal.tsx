@@ -109,7 +109,7 @@ export default function AddWorkoutModal({ open, onOpenChange, athleteId, onSucce
           location_lng: location?.lng || null,
           has_location: Boolean(location),
         })
-        .select('id, created_at, author_id, workout_json, image_url, text, visibility, min_tokens_required, token_gated, strava_activity_id')
+        .select('id, created_at, author_id, workout_json, image_url, text, visibility, min_tokens_required, token_gated, strava_activity_id, location_city, location_country, location_country_code, location_lat, location_lng')
         .single();
 
       if (postError) throw postError;
@@ -187,6 +187,7 @@ export default function AddWorkoutModal({ open, onOpenChange, athleteId, onSucce
                     <SelectItem value="Swim">Swim</SelectItem>
                     <SelectItem value="Bike">Bike</SelectItem>
                     <SelectItem value="Strength">Strength</SelectItem>
+                    <SelectItem value="HIIT">HIIT</SelectItem>
                     <SelectItem value="Other">Other</SelectItem>
                   </SelectContent>
                 </Select>

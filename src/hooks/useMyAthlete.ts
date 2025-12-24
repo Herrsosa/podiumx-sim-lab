@@ -55,7 +55,7 @@ export function useMyAthlete() {
         supabase
           .from('posts')
           .select(
-            'id, created_at, author_id, workout_json, image_url, text, token_gated, strava_activity_id, visibility, min_tokens_required, is_pinned',
+            'id, created_at, author_id, workout_json, image_url, text, token_gated, strava_activity_id, visibility, min_tokens_required, is_pinned, location_city, location_country, location_country_code, location_lat, location_lng',
           )
           .eq('author_id', user.id)
           .order('created_at', { ascending: false })
@@ -135,6 +135,12 @@ export function useMyAthlete() {
         min_tokens_required: post.min_tokens_required ?? 0,
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         is_pinned: (post as any).is_pinned,
+        // Location fields
+        location_city: post.location_city ?? null,
+        location_country: post.location_country ?? null,
+        location_country_code: post.location_country_code ?? null,
+        location_lat: post.location_lat ?? null,
+        location_lng: post.location_lng ?? null,
       }));
 
       const workouts: Workout[] = posts

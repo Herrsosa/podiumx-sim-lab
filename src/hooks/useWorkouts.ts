@@ -15,6 +15,12 @@ export interface LockerWorkout {
   minTokensRequired: number;
   imageUrl: string | null;
   notes: string | null;
+  // Location fields
+  locationCity: string | null;
+  locationCountry: string | null;
+  locationCountryCode: string | null;
+  locationLat: number | null;
+  locationLng: number | null;
 }
 
 export type WorkoutViewerRole = 'owner' | 'backer' | 'supporter' | 'fan';
@@ -51,10 +57,16 @@ export const mapPostRowToLockerWorkout = (row: PostRow): LockerWorkout => {
     minTokensRequired: row.min_tokens_required ?? 0,
     imageUrl: row.image_url,
     notes: row.text,
+    // Map location fields
+    locationCity: row.location_city ?? null,
+    locationCountry: row.location_country ?? null,
+    locationCountryCode: row.location_country_code ?? null,
+    locationLat: row.location_lat ?? null,
+    locationLng: row.location_lng ?? null,
   };
 };
 
-// Update Post mapper to include is_pinned
+// Update Post mapper to include is_pinned and location fields
 export const mapPostRowToPost = (row: PostRow): Post => ({
   id: row.id,
   created_at: row.created_at,
@@ -68,6 +80,12 @@ export const mapPostRowToPost = (row: PostRow): Post => ({
   min_tokens_required: row.min_tokens_required ?? 0,
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   is_pinned: (row as any).is_pinned,
+  // Location fields
+  location_city: row.location_city ?? null,
+  location_country: row.location_country ?? null,
+  location_country_code: row.location_country_code ?? null,
+  location_lat: row.location_lat ?? null,
+  location_lng: row.location_lng ?? null,
 });
 
 interface UseWorkoutsOptions {
@@ -223,7 +241,7 @@ export function useWorkouts(
       const { data, error, count } = await supabase
         .from('posts')
         .select(
-          'id, created_at, author_id, workout_json, image_url, text, visibility, min_tokens_required, token_gated, strava_activity_id, is_pinned',
+          'id, created_at, author_id, workout_json, image_url, text, visibility, min_tokens_required, token_gated, strava_activity_id, is_pinned, location_city, location_country, location_country_code, location_lat, location_lng',
           { count: 'exact' },
         )
         .eq('author_id', athleteId)

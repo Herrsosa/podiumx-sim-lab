@@ -29,6 +29,11 @@ interface EditWorkoutModalProps {
     image_url?: string;
     strava_map_polyline?: string;
     is_pinned?: boolean;
+    location_city?: string | null;
+    location_country?: string | null;
+    location_country_code?: string | null;
+    location_lat?: number | null;
+    location_lng?: number | null;
   };
   onSuccess: (result: WorkoutMutationResult) => void;
 }
@@ -77,6 +82,18 @@ export default function EditWorkoutModal({ open, onOpenChange, workoutPost, onSu
       notes: w.notes || '',
       tokenGated: workoutPost.token_gated || false,
     });
+    // Initialize location from workoutPost
+    if (workoutPost.location_lat != null && workoutPost.location_lng != null) {
+      setLocation({
+        lat: workoutPost.location_lat,
+        lng: workoutPost.location_lng,
+        city: workoutPost.location_city || undefined,
+        country: workoutPost.location_country || undefined,
+        country_code: workoutPost.location_country_code || undefined,
+      } as LocationResult);
+    } else {
+      setLocation(null);
+    }
   }, [workoutPost]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -150,6 +167,8 @@ export default function EditWorkoutModal({ open, onOpenChange, workoutPost, onSu
       };
 
       // Update post in DB with location data
+      console.log('[EditWorkoutModal] Saving location:', location);
+
       const { data: updatedRow, error } = await supabase
         .from('posts')
         .update({
@@ -166,8 +185,10 @@ export default function EditWorkoutModal({ open, onOpenChange, workoutPost, onSu
           has_location: Boolean(location),
         })
         .eq('id', workoutPost.id)
-        .select('id, created_at, author_id, workout_json, image_url, text, visibility, min_tokens_required, token_gated, strava_activity_id')
+        .select('id, created_at, author_id, workout_json, image_url, text, visibility, min_tokens_required, token_gated, strava_activity_id, location_city, location_country, location_country_code, location_lat, location_lng')
         .single();
+
+      console.log('[EditWorkoutModal] Save result:', { error, updatedRow });
 
       if (error) throw error;
       if (!updatedRow) throw new Error('Failed to load updated workout');
@@ -181,6 +202,9 @@ export default function EditWorkoutModal({ open, onOpenChange, workoutPost, onSu
         updatedRow as Parameters<typeof mapPostRowToLockerWorkout>[0],
       );
       const mappedPost = mapPostRowToPost(updatedRow as Parameters<typeof mapPostRowToPost>[0]);
+
+      console.log('[EditWorkoutModal] Mapped workout location:', mappedWorkout.locationLat, mappedWorkout.locationLng);
+      console.log('[EditWorkoutModal] Mapped post location:', mappedPost.location_lat, mappedPost.location_lng);
 
       onSuccess({ workout: mappedWorkout, post: mappedPost });
       onOpenChange(false);
@@ -238,6 +262,7 @@ export default function EditWorkoutModal({ open, onOpenChange, workoutPost, onSu
                   <SelectItem value="Swim">Swim</SelectItem>
                   <SelectItem value="Bike">Bike</SelectItem>
                   <SelectItem value="Strength">Strength</SelectItem>
+                  <SelectItem value="HIIT">HIIT</SelectItem>
                   <SelectItem value="Other">Other</SelectItem>
                 </SelectContent>
               </Select>

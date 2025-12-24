@@ -96,6 +96,10 @@ export default function ProofOfSweat({
 
   // Map workout IDs to their corresponding Post objects for O(1) lookup
   const workoutPostMap = useMemo(() => {
+    // DEBUG: Log first post with location data
+    const postWithLocation = posts.find(p => p.location_lat != null);
+    console.log('[ProofOfSweat] Posts count:', posts.length, 'First post with location:', postWithLocation?.location_lat, postWithLocation?.location_lng);
+
     const map = new Map<string, Post>();
     posts.forEach((post) => {
       if (post.workout_json && typeof post.workout_json === 'object' && !Array.isArray(post.workout_json)) {
@@ -273,7 +277,13 @@ export default function ProofOfSweat({
             workout_json: workoutToEdit.workout_json as Workout,
             token_gated: workoutToEdit.token_gated || false,
             image_url: workoutToEdit.image_url,
-            strava_map_polyline: workoutToEdit.strava_map_polyline
+            strava_map_polyline: workoutToEdit.strava_map_polyline,
+            is_pinned: workoutToEdit.is_pinned,
+            location_city: workoutToEdit.location_city,
+            location_country: workoutToEdit.location_country,
+            location_country_code: workoutToEdit.location_country_code,
+            location_lat: workoutToEdit.location_lat,
+            location_lng: workoutToEdit.location_lng,
           }}
           onSuccess={handleWorkoutUpdated}
         />

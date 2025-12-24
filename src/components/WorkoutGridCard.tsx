@@ -32,6 +32,8 @@ const getTypeColor = (type: Workout['type']) => {
       return 'bg-accent/20 text-accent border-accent/30';
     case 'Strength':
       return 'bg-warning/20 text-warning border-warning/30';
+    case 'HIIT':
+      return 'bg-orange-500/20 text-orange-400 border-orange-500/30';
     default:
       return 'bg-muted/40 text-muted-foreground border-muted/50';
   }
@@ -48,6 +50,8 @@ const getTypeGradient = (type: Workout['type']) => {
       return '!from-blue-600 !to-cyan-900';
     case 'Strength':
       return '!from-orange-600 !to-red-900';
+    case 'HIIT':
+      return '!from-orange-500 !to-rose-900';
     default:
       return '!from-slate-600 !to-gray-900';
   }
@@ -67,6 +71,9 @@ function WorkoutGridCardComponent({ workout, post, canView, onClick, variant = '
   const typeGradient = getTypeGradient(workout.type);
   const typeColor = getTypeColor(workout.type);
   const displayDate = post?.created_at || workout.date;
+
+  // DEBUG: Log post location data
+  console.log('[WorkoutGridCard] Post location:', post?.location_lat, post?.location_lng);
 
   // Build metrics string
   const metrics: string[] = [];
@@ -188,6 +195,9 @@ function WorkoutGridCardComponent({ workout, post, canView, onClick, variant = '
                             athleteAvatar={athleteAvatar}
                             imageUrl={post.image_url || workout.mediaUrl}
                             athleteProfileUrl={`${window.location.origin}/athlete/${athleteHandle}`}
+                            location={post.location_lat != null && post.location_lng != null
+                              ? { lat: post.location_lat, lng: post.location_lng }
+                              : null}
                             size="sm"
                           />
                         )}

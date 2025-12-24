@@ -1,6 +1,8 @@
 import { useRef, forwardRef, useImperativeHandle } from 'react';
-import { Timer, Activity, Flame, Zap } from 'lucide-react';
+import { Flame, Zap } from 'lucide-react';
 import { UserAvatar } from '@/components/UserAvatar';
+import { StaticWorldGlobe } from './StaticWorldGlobe';
+import { type ShareTheme, SHARE_THEMES } from './shareThemes';
 import type { Workout } from '@/types';
 
 interface ShareableWorkoutCardProps {
@@ -9,6 +11,8 @@ interface ShareableWorkoutCardProps {
     athleteHandle: string;
     athleteAvatar?: string;
     imageUrl?: string;
+    theme?: ShareTheme;
+    location?: { lat: number; lng: number } | null;
 }
 
 export interface ShareableWorkoutCardRef {
@@ -21,9 +25,11 @@ export interface ShareableWorkoutCardRef {
  */
 export const ShareableWorkoutCard = forwardRef<ShareableWorkoutCardRef, ShareableWorkoutCardProps>(
     function ShareableWorkoutCard(
-        { workout, athleteName, athleteHandle, athleteAvatar, imageUrl },
+        { workout, athleteName, athleteHandle, athleteAvatar, imageUrl, theme, location },
         ref
     ) {
+        // Default to emerald theme if not provided
+        const activeTheme = theme || SHARE_THEMES[0];
         const cardRef = useRef<HTMLDivElement>(null);
 
         useImperativeHandle(ref, () => ({
@@ -40,13 +46,21 @@ export const ShareableWorkoutCard = forwardRef<ShareableWorkoutCardRef, Shareabl
         // Get workout type emoji
         const getTypeEmoji = (type: string | undefined) => {
             switch (type?.toLowerCase()) {
-                case 'run': return '🏃';
-                case 'swim': return '🏊';
+                case 'run':
+                case 'running': return '🏃';
+                case 'swim':
+                case 'swimming': return '🏊';
                 case 'bike':
                 case 'cycling': return '🚴';
                 case 'hyrox': return '🏋️';
-                case 'strength': return '💪';
+                case 'hiit': return '🔥';
+                case 'strength':
+                case 'weight':
+                case 'weights': return '💪';
                 case 'yoga': return '🧘';
+                case 'crossfit': return '🏋️';
+                case 'walk':
+                case 'walking': return '🚶';
                 default: return '⚡';
             }
         };
@@ -57,13 +71,22 @@ export const ShareableWorkoutCard = forwardRef<ShareableWorkoutCardRef, Shareabl
                 className="relative w-[540px] h-[960px] overflow-hidden"
                 style={{ fontFamily: 'Inter, system-ui, sans-serif' }}
             >
-                {/* Background gradient with dynamic colors */}
-                <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-emerald-950 to-slate-900" />
+                {/* Background gradient with theme colors */}
+                <div className={`absolute inset-0 bg-gradient-to-br ${activeTheme.gradient}`} />
 
-                {/* Animated gradient orbs for visual interest */}
-                <div className="absolute top-20 -left-20 w-80 h-80 bg-emerald-500/20 rounded-full blur-3xl" />
-                <div className="absolute bottom-40 -right-20 w-96 h-96 bg-cyan-500/15 rounded-full blur-3xl" />
-                <div className="absolute top-1/2 left-1/3 w-64 h-64 bg-primary/10 rounded-full blur-3xl" />
+                {/* Background globe - subtle world map decoration with location dot */}
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none" style={{ opacity: 0.25 }}>
+                    <StaticWorldGlobe
+                        size={650}
+                        location={location}
+                        accentColor={activeTheme.previewColor}
+                    />
+                </div>
+
+                {/* Animated gradient orbs with theme colors */}
+                <div className={`absolute top-20 -left-20 w-80 h-80 ${activeTheme.orb1} rounded-full blur-3xl`} />
+                <div className={`absolute bottom-40 -right-20 w-96 h-96 ${activeTheme.orb2} rounded-full blur-3xl`} />
+                <div className={`absolute top-1/2 left-1/3 w-64 h-64 ${activeTheme.orb3} rounded-full blur-3xl`} />
 
                 {/* Background workout image if available */}
                 {imageUrl && (
@@ -80,33 +103,41 @@ export const ShareableWorkoutCard = forwardRef<ShareableWorkoutCardRef, Shareabl
                 <div className="relative flex flex-col h-full p-8">
                     {/* Top - Type Badge with emoji */}
                     <div className="flex items-center justify-center pt-8 pb-4">
-                        <div className="flex items-center gap-3 bg-white/10 backdrop-blur-xl rounded-full px-6 py-3 border border-white/20">
-                            <span className="text-3xl">{getTypeEmoji(workout.type)}</span>
-                            <span className="text-2xl font-bold text-white uppercase tracking-wider">
+                        <div
+                            className="inline-flex items-center justify-center bg-white/10 backdrop-blur-xl rounded-full px-6 py-3 border border-white/20"
+                            style={{ gap: '10px' }}
+                        >
+                            <span
+                                className="text-xl flex items-center justify-center"
+                                style={{ width: '28px', height: '28px' }}
+                            >
+                                {getTypeEmoji(workout.type)}
+                            </span>
+                            <span className="text-lg font-bold text-white uppercase tracking-wider" style={{ lineHeight: '28px' }}>
                                 {workout.type || 'WORKOUT'}
                             </span>
                         </div>
                     </div>
 
                     {/* Center - Big stats display */}
-                    <div className="flex-1 flex flex-col items-center justify-center space-y-8">
+                    <div className="flex-1 flex flex-col items-center justify-center space-y-6">
                         {/* Main metric - Duration or Distance */}
                         {workout.duration ? (
-                            <div className="text-center">
-                                <div className="text-8xl font-black text-white tracking-tight leading-none">
+                            <div className="flex flex-col items-center">
+                                <div className="text-7xl font-black text-white tracking-tight leading-none">
                                     {formatDuration(workout.duration)}
                                 </div>
-                                <div className="text-lg font-semibold text-emerald-400 uppercase tracking-widest mt-2">
+                                <div className={`text-base font-semibold ${activeTheme.accentText} uppercase tracking-[0.25em] mt-4`}>
                                     Duration
                                 </div>
                             </div>
                         ) : workout.distance ? (
-                            <div className="text-center">
-                                <div className="text-8xl font-black text-white tracking-tight leading-none">
+                            <div className="flex flex-col items-center">
+                                <div className="text-7xl font-black text-white tracking-tight leading-none">
                                     {workout.distance}
-                                    <span className="text-4xl font-bold text-white/60 ml-2">km</span>
+                                    <span className="text-3xl font-bold text-white/60 ml-2">km</span>
                                 </div>
-                                <div className="text-lg font-semibold text-emerald-400 uppercase tracking-widest mt-2">
+                                <div className={`text-base font-semibold ${activeTheme.accentText} uppercase tracking-[0.25em] mt-4`}>
                                     Distance
                                 </div>
                             </div>
@@ -150,24 +181,27 @@ export const ShareableWorkoutCard = forwardRef<ShareableWorkoutCardRef, Shareabl
                                 src={athleteAvatar}
                                 alt={athleteName}
                                 size={64}
-                                className="ring-3 ring-emerald-500/50"
+                                className={`ring-3 ${activeTheme.accentBorder.split(' ')[1]}`}
                             />
                             <div className="flex-1">
                                 <p className="text-xl font-bold text-white">{athleteName}</p>
                                 <p className="text-white/60">@{athleteHandle}</p>
                             </div>
-                            <div className="flex items-center gap-2 bg-emerald-500/20 rounded-full px-4 py-2 border border-emerald-500/30">
-                                <Zap className="h-4 w-4 text-emerald-400" />
-                                <span className="text-sm font-semibold text-emerald-400">Verified</span>
+                            <div className={`flex items-center gap-2 ${activeTheme.accentBg} rounded-full px-4 py-2 border ${activeTheme.accentBorder.split(' ')[0]}`}>
+                                <Zap className={`h-4 w-4 ${activeTheme.accentText}`} />
+                                <span className={`text-sm font-semibold ${activeTheme.accentText}`}>Verified</span>
                             </div>
                         </div>
 
                         {/* Branding */}
                         <div className="flex items-center justify-center gap-3">
-                            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-cyan-500 flex items-center justify-center shadow-lg shadow-emerald-500/25">
+                            <div
+                                className="w-10 h-10 rounded-xl flex items-center justify-center shadow-lg"
+                                style={{ background: `linear-gradient(135deg, ${activeTheme.previewColor}, ${activeTheme.previewColor}88)` }}
+                            >
                                 <Flame className="h-6 w-6 text-white" />
                             </div>
-                            <span className="text-xl font-bold text-emerald-400">
+                            <span className={`text-xl font-bold ${activeTheme.accentText}`}>
                                 Athlyst
                             </span>
                         </div>

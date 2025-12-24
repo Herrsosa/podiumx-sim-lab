@@ -357,6 +357,9 @@ export function ProofOfSweatFeed({
                         athleteAvatar={item.athlete.avatar}
                         imageUrl={item.post.image_url || item.workout.mediaUrl}
                         athleteProfileUrl={`${window.location.origin}/athlete/${item.athlete.slug}`}
+                        location={item.post.location_lat != null && item.post.location_lng != null
+                          ? { lat: item.post.location_lat, lng: item.post.location_lng }
+                          : null}
                         size="sm"
                       />
                     </div>

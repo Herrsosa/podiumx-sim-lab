@@ -121,6 +121,9 @@ export default function ViewWorkoutModal({ open, onOpenChange, workoutPost, athl
                             athleteAvatar={athleteAvatar}
                             imageUrl={mediaUrl}
                             athleteProfileUrl={`${window.location.origin}/athlete/${athleteHandle}`}
+                            location={workoutPost.location_lat != null && workoutPost.location_lng != null
+                                ? { lat: workoutPost.location_lat, lng: workoutPost.location_lng }
+                                : null}
                             size="md"
                         />
                     )}
