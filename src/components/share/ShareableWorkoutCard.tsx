@@ -79,8 +79,8 @@ export const ShareableWorkoutCard = forwardRef<ShareableWorkoutCardRef, Shareabl
                 <div className={`absolute bottom-40 -right-20 w-96 h-96 ${activeTheme.orb2} rounded-full blur-3xl`} />
                 <div className={`absolute top-1/2 left-1/3 w-64 h-64 ${activeTheme.orb3} rounded-full blur-3xl`} />
 
-                {/* Background globe - subtle world map decoration - shifted down so location dot doesn't overlap stats */}
-                <div className="absolute inset-0 flex items-center justify-center pointer-events-none" style={{ opacity: 0.6, transform: 'translateY(12%)' }}>
+                {/* Background globe - subtle world map decoration - shifted down more so stats appear clearly above */}
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none" style={{ opacity: 0.5, transform: 'translateY(25%)' }}>
                     <StaticWorldGlobe
                         size={650}
                         location={location}
@@ -99,28 +99,24 @@ export const ShareableWorkoutCard = forwardRef<ShareableWorkoutCardRef, Shareabl
                     </>
                 )}
 
-                {/* Content */}
-                <div className="relative flex flex-col h-full p-8">
+                {/* Content - positioned with higher z-index to appear above globe */}
+                <div className="relative flex flex-col h-full p-8" style={{ zIndex: 10 }}>
                     {/* Top - Type Badge with emoji */}
-                    <div className="flex items-center justify-center pt-8 pb-4">
+                    <div className="flex items-center justify-center pt-6 pb-2">
                         <div
-                            className="inline-flex items-center justify-center bg-white/10 backdrop-blur-xl rounded-full px-6 py-3 border border-white/20"
-                            style={{ gap: '10px' }}
+                            className="inline-flex items-center justify-center bg-white/10 backdrop-blur-xl rounded-full px-6 py-2.5 border border-white/20"
                         >
-                            <span
-                                className="text-xl flex items-center justify-center"
-                                style={{ width: '28px', height: '28px' }}
-                            >
+                            <span className="text-xl mr-2">
                                 {getTypeEmoji(workout.type)}
                             </span>
-                            <span className="text-lg font-bold text-white uppercase tracking-wider" style={{ lineHeight: '28px' }}>
+                            <span className="text-lg font-bold text-white uppercase tracking-wider">
                                 {workout.type || 'WORKOUT'}
                             </span>
                         </div>
                     </div>
 
-                    {/* Center - Big stats display */}
-                    <div className="flex-1 flex flex-col items-center justify-center space-y-6">
+                    {/* Center - Big stats display - positioned at top of remaining space */}
+                    <div className="flex flex-col items-center pt-6 space-y-4">
                         {/* Main metric - Duration or Distance */}
                         {workout.duration ? (
                             <div className="flex flex-col items-center">
@@ -173,15 +169,17 @@ export const ShareableWorkoutCard = forwardRef<ShareableWorkoutCardRef, Shareabl
                         )}
                     </div>
 
+                    {/* Spacer to push bottom to bottom */}
+                    <div className="flex-1" />
+
                     {/* Bottom - Athlete info and branding */}
                     <div className="space-y-6 pb-4">
                         {/* Athlete card */}
                         <div className="flex items-center gap-4 bg-white/10 backdrop-blur-xl rounded-2xl p-5 border border-white/20">
-                            <UserAvatar
+                            <img
                                 src={athleteAvatar}
                                 alt={athleteName}
-                                size={64}
-                                className={`ring-3 ${activeTheme.accentBorder.split(' ')[1]}`}
+                                className={`w-16 h-16 rounded-full object-cover ring-2 ${activeTheme.accentBorder.split(' ')[1]}`}
                             />
                             <div className="flex-1">
                                 <p className="text-xl font-bold text-white">{athleteName}</p>

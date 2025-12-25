@@ -208,7 +208,7 @@ export default function MobileMyAthletes({
             <TabsTrigger value="overview" className="text-xs px-3 flex-shrink-0">Overview</TabsTrigger>
             <TabsTrigger value="chart" className="text-xs px-3 flex-shrink-0">Chart</TabsTrigger>
             <TabsTrigger value="trades" className="text-xs px-3 flex-shrink-0">Trades</TabsTrigger>
-            <TabsTrigger value="posts" className="text-xs px-3 flex-shrink-0">Posts</TabsTrigger>
+            <TabsTrigger value="posts" className="text-xs px-3 flex-shrink-0">Workouts</TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview" className="min-w-0">
@@ -256,7 +256,7 @@ export default function MobileMyAthletes({
           <TabsContent value="posts" className="min-w-0 space-y-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <h2 className="text-base font-semibold">Activity</h2>
+                <h2 className="text-base font-semibold">Workouts</h2>
                 <div className="flex items-center bg-muted/50 rounded-lg p-0.5">
                   <Button
                     variant={postsView === 'feed' ? 'secondary' : 'ghost'}
@@ -294,6 +294,9 @@ export default function MobileMyAthletes({
               </Card>
             ) : (
               <>
+                {/* Strava Integration - prominently at top */}
+                <StravaCard className="mb-4" />
+
                 {isLoading ? (
                   <div className="space-y-3">
                     <Skeleton className="h-40 w-full" />
@@ -330,7 +333,6 @@ export default function MobileMyAthletes({
                         {isFetchingNextPage ? 'Loading…' : 'Load more'}
                       </Button>
                     )}
-                    <StravaCard className="mt-4" />
                   </>
                 )}
               </>

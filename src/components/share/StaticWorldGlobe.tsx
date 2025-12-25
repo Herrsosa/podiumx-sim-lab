@@ -24,8 +24,8 @@ export function StaticWorldGlobe({
     const cx = size / 2;
     const cy = size / 2;
 
-    // Fixed globe center at 20°N, 0°E (Europe/Africa view) for consistent map appearance
-    const lambda0 = 0; // 0° longitude
+    // Fixed globe center at 20°N, -40°W (Americas view) for consistent map appearance like reference
+    const lambda0 = (-40 * Math.PI) / 180; // -40° longitude (Americas centered)
     const phi0 = (20 * Math.PI) / 180; // 20° latitude
 
     // Orthographic projection centered on fixed point
@@ -69,16 +69,13 @@ export function StaticWorldGlobe({
         }
     });
 
-    // DEBUG: Log path counts
-    console.log('[StaticWorldGlobe] World paths:', worldPaths.length, 'Location:', location);
-
-    // Generate graticule (grid) lines
+    // Generate graticule (grid) lines - more dense for higher quality
     const graticulePaths: string[] = [];
 
-    // Latitude lines
-    [-60, -30, 0, 30, 60].forEach((lat) => {
+    // Latitude lines every 15° from -75° to 75°
+    [-75, -60, -45, -30, -15, 0, 15, 30, 45, 60, 75].forEach((lat) => {
         const points: string[] = [];
-        for (let lng = -90; lng <= 90; lng += 5) {
+        for (let lng = -180; lng <= 180; lng += 3) {
             const p = projectPoint(lat, lng);
             if (p) points.push(`${p[0].toFixed(1)},${p[1].toFixed(1)}`);
         }
@@ -87,10 +84,10 @@ export function StaticWorldGlobe({
         }
     });
 
-    // Longitude lines
-    [-60, -30, 0, 30, 60].forEach((lng) => {
+    // Longitude lines every 15° from -180° to 180°
+    [-165, -150, -135, -120, -105, -90, -75, -60, -45, -30, -15, 0, 15, 30, 45, 60, 75, 90, 105, 120, 135, 150, 165].forEach((lng) => {
         const points: string[] = [];
-        for (let lat = -90; lat <= 90; lat += 5) {
+        for (let lat = -90; lat <= 90; lat += 3) {
             const p = projectPoint(lat, lng);
             if (p) points.push(`${p[0].toFixed(1)},${p[1].toFixed(1)}`);
         }
@@ -102,9 +99,6 @@ export function StaticWorldGlobe({
     // Project the location dot
     const locationPoint = location ? projectPoint(location.lat, location.lng) : null;
 
-    // DEBUG: Log location projection
-    console.log('[StaticWorldGlobe] LocationPoint:', locationPoint, 'from location:', location);
-
     return (
         <svg
             viewBox={`0 0 ${size} ${size}`}
@@ -113,70 +107,77 @@ export function StaticWorldGlobe({
             className={className}
             xmlns="http://www.w3.org/2000/svg"
         >
-            {/* Globe circle outline */}
+            {/* Globe circle outline - subtle like reference */}
             <circle
                 cx={cx}
                 cy={cy}
                 r={radius}
                 fill="none"
-                stroke="rgba(255, 255, 255, 0.25)"
-                strokeWidth="2"
+                stroke="rgba(255, 255, 255, 0.3)"
+                strokeWidth="1"
             />
 
-            {/* Graticule (grid lines) */}
+            {/* Graticule (grid lines) - thin and subtle like reference */}
             {graticulePaths.map((path, i) => (
                 <path
                     key={`grat-${i}`}
                     d={path}
-                    stroke="rgba(255, 255, 255, 0.2)"
-                    strokeWidth="1"
+                    stroke="rgba(255, 255, 255, 0.15)"
+                    strokeWidth="0.5"
                     fill="none"
+                    strokeLinecap="round"
                 />
             ))}
 
-            {/* World landmasses - coastlines */}
+            {/* World landmasses - coastlines with clean strokes */}
             {worldPaths.map((path, i) => (
                 <path
                     key={`land-${i}`}
                     d={path}
-                    stroke="rgba(255, 255, 255, 0.9)"
-                    strokeWidth="2.5"
+                    stroke="rgba(255, 255, 255, 0.95)"
+                    strokeWidth="1.5"
                     fill="none"
+                    strokeLinejoin="round"
+                    strokeLinecap="round"
                 />
             ))}
 
-            {/* Location dot with enhanced glow effect - brighter to compensate for container opacity */}
+            {/* Location dot styled like reference - blue with concentric rings */}
             {locationPoint && (
                 <>
-                    {/* Large outer glow */}
+                    {/* Outer ring - translucent blue */}
                     <circle
                         cx={locationPoint[0]}
                         cy={locationPoint[1]}
-                        r={24}
-                        fill={accentColor}
-                        opacity={0.5}
+                        r={12}
+                        fill="none"
+                        stroke="#3B82F6"
+                        strokeWidth="1"
+                        opacity={0.6}
                     />
                     {/* Middle ring */}
                     <circle
                         cx={locationPoint[0]}
                         cy={locationPoint[1]}
-                        r={14}
-                        fill={accentColor}
+                        r={8}
+                        fill="none"
+                        stroke="#3B82F6"
+                        strokeWidth="1.5"
                         opacity={0.8}
                     />
-                    {/* Inner dot */}
-                    <circle
-                        cx={locationPoint[0]}
-                        cy={locationPoint[1]}
-                        r={8}
-                        fill={accentColor}
-                    />
-                    {/* Bright center */}
+                    {/* Inner solid dot */}
                     <circle
                         cx={locationPoint[0]}
                         cy={locationPoint[1]}
                         r={4}
-                        fill="white"
+                        fill="#3B82F6"
+                    />
+                    {/* Bright center highlight */}
+                    <circle
+                        cx={locationPoint[0]}
+                        cy={locationPoint[1]}
+                        r={2}
+                        fill="#93C5FD"
                     />
                 </>
             )}
