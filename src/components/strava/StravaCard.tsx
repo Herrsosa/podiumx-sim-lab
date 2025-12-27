@@ -365,7 +365,8 @@ export function StravaCard({ className }: StravaCardProps) {
         throw error;
       }
 
-      const importedCount = data?.inserted ?? 0;
+      // Edge function returns 'saved' (or 'inserted' for early return case)
+      const importedCount = data?.saved ?? data?.inserted ?? 0;
       toast({ title: "Import complete", description: `Added ${importedCount} new activities.` });
 
       await Promise.all([
