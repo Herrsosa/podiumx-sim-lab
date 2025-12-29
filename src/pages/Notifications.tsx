@@ -134,6 +134,8 @@ interface NotificationRowProps {
 
 function NotificationRow({ notification, onClick }: NotificationRowProps) {
     const isUnread = !notification.read_at;
+    const actor = notification.actor;
+    const actorName = actor?.display_name || actor?.username || 'Someone';
 
     const getIcon = () => {
         switch (notification.type) {
@@ -176,12 +178,21 @@ function NotificationRow({ notification, onClick }: NotificationRowProps) {
                 isUnread && 'bg-primary/5'
             )}
         >
-            <div className="flex-shrink-0 h-12 w-12 rounded-full bg-muted flex items-center justify-center">
-                {getIcon()}
+            {/* Actor avatar or icon */}
+            <div className="flex-shrink-0 h-12 w-12 rounded-full bg-muted flex items-center justify-center overflow-hidden">
+                {actor?.avatar_url ? (
+                    <img
+                        src={actor.avatar_url}
+                        alt={actorName}
+                        className="h-full w-full object-cover"
+                    />
+                ) : (
+                    getIcon()
+                )}
             </div>
             <div className="flex-1 min-w-0 pt-1">
                 <p className="text-sm text-foreground">
-                    <span className="font-semibold">Someone</span>{' '}
+                    <span className="font-semibold">{actorName}</span>{' '}
                     <span className="text-muted-foreground">{getMessage()}</span>
                 </p>
                 <p className="text-xs text-muted-foreground mt-1">

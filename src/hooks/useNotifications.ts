@@ -4,6 +4,13 @@ import { supabase } from '@/integrations/supabase/client';
 import { useUser } from '@/store/auth';
 import { featureFlags } from '@/lib/config/featureFlags';
 
+export interface NotificationActor {
+    id: string;
+    display_name: string | null;
+    avatar_url: string | null;
+    username: string | null;
+}
+
 export interface Notification {
     id: string;
     created_at: string;
@@ -20,6 +27,8 @@ export interface Notification {
         message_id?: string;
     };
     read_at: string | null;
+    // Enriched actor info
+    actor?: NotificationActor;
 }
 
 interface UseNotificationsResult {
@@ -41,7 +50,7 @@ export function useNotifications(): UseNotificationsResult {
     const user = useUser();
     const queryClient = useQueryClient();
 
-    // Fetch notifications
+    // Fetch notifications with actor profiles
     const { data, isLoading, isFetching, refetch } = useQuery({
         queryKey: NOTIFICATIONS_QUERY_KEY,
         enabled: !!user?.id && featureFlags.enableNotifications,
@@ -49,7 +58,8 @@ export function useNotifications(): UseNotificationsResult {
         queryFn: async (): Promise<Notification[]> => {
             if (!user?.id) return [];
 
-            const { data, error } = await supabase
+            // Step 1: Fetch notifications
+            const { data: notificationsData, error } = await supabase
                 .from('notifications')
                 .select('*')
                 .eq('user_id', user.id)
@@ -61,10 +71,46 @@ export function useNotifications(): UseNotificationsResult {
                 throw error;
             }
 
-            return (data ?? []).map((row) => ({
+            const notifications = (notificationsData ?? []).map((row) => ({
                 ...row,
                 payload: (row.payload as Notification['payload']) ?? {},
             }));
+
+            // Step 2: Collect unique actor IDs from payloads
+            const actorIds = new Set<string>();
+            for (const n of notifications) {
+                if (n.payload.actor_id) actorIds.add(n.payload.actor_id);
+                if (n.payload.sender_id) actorIds.add(n.payload.sender_id);
+            }
+
+            // Step 3: Fetch actor profiles if we have any
+            const actorMap = new Map<string, NotificationActor>();
+            if (actorIds.size > 0) {
+                const { data: profiles } = await supabase
+                    .from('profiles')
+                    .select('id, display_name, avatar_url, username')
+                    .in('id', Array.from(actorIds));
+
+                if (profiles) {
+                    for (const profile of profiles) {
+                        actorMap.set(profile.id, {
+                            id: profile.id,
+                            display_name: profile.display_name,
+                            avatar_url: profile.avatar_url,
+                            username: profile.username,
+                        });
+                    }
+                }
+            }
+
+            // Step 4: Enrich notifications with actor info
+            return notifications.map((n) => {
+                const actorId = n.payload.actor_id || n.payload.sender_id;
+                return {
+                    ...n,
+                    actor: actorId ? actorMap.get(actorId) : undefined,
+                };
+            });
         },
     });
 
