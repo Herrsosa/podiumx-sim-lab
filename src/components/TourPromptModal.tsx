@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import {
     Dialog,
     DialogContent,
@@ -9,11 +9,11 @@ import {
     DialogTitle,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Compass, X } from 'lucide-react';
+import { Compass } from 'lucide-react';
 import { useOnboardingTour } from '@/hooks/useOnboardingTour';
 import { useOnboardingStatus } from '@/hooks/useOnboardingStatus';
 import { useUser } from '@/store/auth';
-import { OnboardingTour } from '@/components/OnboardingTour';
+import { startTour } from '@/components/OnboardingTour';
 
 /**
  * First-run modal that asks user if they want a guided tour
@@ -22,9 +22,9 @@ import { OnboardingTour } from '@/components/OnboardingTour';
 export function TourPromptModal() {
     const user = useUser();
     const location = useLocation();
+    const navigate = useNavigate();
     const { tourCompleted, isLoading: tourLoading, markTourCompleted } = useOnboardingTour();
-    const { onboardingCompleted, isLoading: onboardingLoading, data: onboardingData } = useOnboardingStatus();
-    const [showTour, setShowTour] = useState(false);
+    const { isLoading: onboardingLoading, data: onboardingData } = useOnboardingStatus();
     const [dismissed, setDismissed] = useState(false);
 
     // Never show on onboarding, auth, or verify routes
@@ -46,21 +46,16 @@ export function TourPromptModal() {
 
     const handleStartTour = () => {
         setDismissed(true);
-        setShowTour(true);
+        // Use startTour which navigates to /my-athlete first, then runs tour
+        startTour(navigate, () => {
+            markTourCompleted();
+        });
     };
 
     const handleSkip = () => {
         markTourCompleted();
         setDismissed(true);
     };
-
-    const handleTourComplete = () => {
-        setShowTour(false);
-    };
-
-    if (showTour) {
-        return <OnboardingTour onComplete={handleTourComplete} onSkip={handleTourComplete} />;
-    }
 
     return (
         <Dialog open={shouldShow} onOpenChange={(open) => !open && handleSkip()}>
@@ -87,3 +82,4 @@ export function TourPromptModal() {
         </Dialog>
     );
 }
+

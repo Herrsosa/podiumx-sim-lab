@@ -27,6 +27,7 @@ export function BottomTabBar() {
             <div className="flex h-16 items-center justify-around px-2">
                 <Link
                     to="/feed"
+                    data-tour="feed"
                     className={cn(
                         "flex flex-col items-center justify-center gap-1 min-w-[64px] h-full text-xs font-medium transition-colors",
                         isActive('/feed') ? "text-primary" : "text-muted-foreground hover:text-foreground"
@@ -38,6 +39,7 @@ export function BottomTabBar() {
 
                 <Link
                     to="/marketplace"
+                    data-tour="marketplace"
                     className={cn(
                         "flex flex-col items-center justify-center gap-1 min-w-[64px] h-full text-xs font-medium transition-colors",
                         isActive('/marketplace') ? "text-primary" : "text-muted-foreground hover:text-foreground"
@@ -49,6 +51,7 @@ export function BottomTabBar() {
 
                 <Link
                     to="/portfolio"
+                    data-tour="portfolio"
                     className={cn(
                         "flex flex-col items-center justify-center gap-1 min-w-[64px] h-full text-xs font-medium transition-colors",
                         isActive('/portfolio') ? "text-primary" : "text-muted-foreground hover:text-foreground"

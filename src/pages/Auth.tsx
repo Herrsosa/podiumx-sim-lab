@@ -131,7 +131,7 @@ export default function Auth() {
         email,
         password,
         options: {
-          emailRedirectTo: 'https://athlyst.fun/onboarding',
+          emailRedirectTo: `${window.location.origin}/auth`,
         },
       });
 

@@ -22,7 +22,7 @@ export default function VerifyEmail() {
                 type: 'signup',
                 email: user.email,
                 options: {
-                    emailRedirectTo: `${window.location.origin}/onboarding`,
+                    emailRedirectTo: `${window.location.origin}/auth`,
                 }
             });
 

@@ -206,7 +206,7 @@ export function startTour(navigate?: (path: string) => void, onComplete?: () => 
 }
 
 function runTour(onComplete?: () => void) {
-    // Include ALL steps, but add onHighlightStarted for navigation steps
+    // Build steps: for navigation steps, add onHighlightStarted that navigates first
     const stepsWithNavigation = TOUR_STEPS.map((step) => {
         const elementSelector = step.element as string;
         const navPath = NAVIGATION_MAP[elementSelector];
@@ -214,7 +214,6 @@ function runTour(onComplete?: () => void) {
         if (navPath && navigateFn) {
             return {
                 ...step,
-                // onHighlightStarted is at step level, not in popover
                 onHighlightStarted: () => {
                     // Navigate to the page when this step is highlighted
                     if (!window.location.pathname.startsWith(navPath)) {
@@ -226,8 +225,17 @@ function runTour(onComplete?: () => void) {
         return step;
     });
 
-    // Filter to available elements on current page
+    // Filter steps: keep steps that EITHER have elements OR have navigation paths
     const availableSteps = stepsWithNavigation.filter((step) => {
+        const elementSelector = step.element as string;
+        const navPath = NAVIGATION_MAP[elementSelector];
+
+        // If this step has a navigation path, include it regardless of current DOM
+        if (navPath) {
+            return true;
+        }
+
+        // Otherwise, only include if element exists in current DOM
         if (typeof step.element === 'string') {
             return document.querySelector(step.element);
         }
