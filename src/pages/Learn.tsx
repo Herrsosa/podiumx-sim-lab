@@ -1,5 +1,5 @@
-import { Compass, BookOpen } from 'lucide-react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Compass } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import {
     Accordion,
@@ -91,12 +91,10 @@ export default function LearnPage() {
 
             {/* Back link */}
             <div className="pt-4 border-t">
-                <Link to="/my-athlete/locker/settings">
-                    <Button variant="ghost" className="gap-2">
-                        <BookOpen className="h-4 w-4" />
-                        Back to Settings
-                    </Button>
-                </Link>
+                <Button variant="ghost" className="gap-2" onClick={() => navigate(-1)}>
+                    <Compass className="h-4 w-4" />
+                    Go Back
+                </Button>
             </div>
         </div>
     );

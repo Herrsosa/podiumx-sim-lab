@@ -429,51 +429,45 @@ export default function Portfolio() {
               </div>
             </div>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Athlete</TableHead>
-                  <TableHead className="text-right hidden sm:table-cell">Qty</TableHead>
-                  <TableHead className="text-right hidden md:table-cell">Avg Cost</TableHead>
-                  <TableHead className="text-right hidden lg:table-cell">Current Price</TableHead>
-                  <TableHead className="text-right hidden md:table-cell">Value</TableHead>
-                  <TableHead className="text-right">P&L</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
+            <>
+              {/* Mobile Card Layout - visible only on small screens */}
+              <div className="md:hidden space-y-3">
                 {positions.map((position) => {
                   const athlete = athletes?.find((a) => a.id === position.athleteId);
                   if (!athlete) return null;
 
-                  const costBasis = position.avgCost * position.quantity;
                   const currentValue = position.currentPrice * position.quantity;
                   const pnlColor = safeNumber(position.pnl)
                     ? position.pnl >= 0
                       ? 'text-success'
                       : 'text-destructive'
                     : 'text-muted-foreground';
-                  const pnlClass = `font-bold ${pnlColor}`;
+                  const pnlBgColor = safeNumber(position.pnl)
+                    ? position.pnl >= 0
+                      ? 'bg-success/10'
+                      : 'bg-destructive/10'
+                    : 'bg-muted/50';
 
                   return (
-                    <TableRow
+                    <div
                       key={position.athleteId}
-                      className="cursor-pointer"
-                      onMouseEnter={prefetchAthleteDetail}
+                      className="p-4 rounded-xl border border-border/50 bg-card/50 backdrop-blur-sm cursor-pointer hover:bg-muted/30 active:bg-muted/50 transition-all"
                       onClick={() => {
                         prefetchAthleteDetail();
                         navigate(`/athlete/${athlete.slug}`);
                       }}
                     >
-                      <TableCell>
-                        <div className="flex items-center gap-3">
+                      {/* Top row: Avatar, Name, P&L */}
+                      <div className="flex items-center justify-between gap-3 mb-4">
+                        <div className="flex items-center gap-3 min-w-0">
                           <UserAvatar
                             src={athlete.avatar}
                             alt={athlete.name}
-                            size={40}
-                            className="ring-2 ring-primary/20"
+                            size={44}
+                            className="ring-2 ring-primary/20 flex-shrink-0"
                           />
-                          <div>
-                            <div className="font-semibold">{athlete.name}</div>
+                          <div className="min-w-0">
+                            <div className="font-semibold truncate">{athlete.name}</div>
                             <Badge
                               variant="secondary"
                               className={cn("text-xs border", SPORT_COLORS[athlete.sport] || "bg-secondary text-secondary-foreground")}
@@ -482,32 +476,123 @@ export default function Portfolio() {
                             </Badge>
                           </div>
                         </div>
-                      </TableCell>
-                      <TableCell className="text-right font-medium hidden sm:table-cell">
-                        {renderValue(position.quantity, formatNumber)}
-                      </TableCell>
-                      <TableCell className="text-right hidden md:table-cell">
-                        {renderValue(position.avgCost)}
-                      </TableCell>
-                      <TableCell className="text-right hidden lg:table-cell">
-                        {renderValue(position.currentPrice)}
-                      </TableCell>
-                      <TableCell className="text-right font-medium hidden md:table-cell">
-                        {renderValue(currentValue)}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className={pnlClass.replace('font-bold', 'font-semibold text-sm sm:text-base')}>
-                          {renderSignedMoney(position.pnl)}
-                          <div className={`text-xs ${pnlColor}`}>
+                        {/* P&L badge */}
+                        <div className={cn("flex flex-col items-end px-3 py-1.5 rounded-lg", pnlBgColor)}>
+                          <div className={cn("font-bold text-base", pnlColor)}>
+                            {renderSignedMoney(position.pnl)}
+                          </div>
+                          <div className={cn("text-xs font-medium", pnlColor)}>
                             {renderPercent(position.pnlPercent)}
                           </div>
                         </div>
-                      </TableCell>
-                    </TableRow>
+                      </div>
+
+                      {/* Metrics grid */}
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="p-2.5 rounded-lg bg-muted/30">
+                          <div className="text-[10px] text-muted-foreground uppercase tracking-wider mb-0.5">Quantity</div>
+                          <div className="font-semibold">{renderValue(position.quantity, formatNumber)}</div>
+                        </div>
+                        <div className="p-2.5 rounded-lg bg-muted/30">
+                          <div className="text-[10px] text-muted-foreground uppercase tracking-wider mb-0.5">Avg Cost</div>
+                          <div className="font-semibold">{renderValue(position.avgCost)}</div>
+                        </div>
+                        <div className="p-2.5 rounded-lg bg-muted/30">
+                          <div className="text-[10px] text-muted-foreground uppercase tracking-wider mb-0.5">Price</div>
+                          <div className="font-semibold">{renderValue(position.currentPrice)}</div>
+                        </div>
+                        <div className="p-2.5 rounded-lg bg-primary/10">
+                          <div className="text-[10px] text-muted-foreground uppercase tracking-wider mb-0.5">Value</div>
+                          <div className="font-bold text-primary">{renderValue(currentValue)}</div>
+                        </div>
+                      </div>
+                    </div>
                   );
                 })}
-              </TableBody>
-            </Table>
+              </div>
+
+              {/* Desktop Table Layout - hidden on mobile */}
+              <div className="hidden md:block">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Athlete</TableHead>
+                      <TableHead className="text-right">Qty</TableHead>
+                      <TableHead className="text-right">Avg Cost</TableHead>
+                      <TableHead className="text-right lg:table-cell hidden">Current Price</TableHead>
+                      <TableHead className="text-right">Value</TableHead>
+                      <TableHead className="text-right">P&L</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {positions.map((position) => {
+                      const athlete = athletes?.find((a) => a.id === position.athleteId);
+                      if (!athlete) return null;
+
+                      const currentValue = position.currentPrice * position.quantity;
+                      const pnlColor = safeNumber(position.pnl)
+                        ? position.pnl >= 0
+                          ? 'text-success'
+                          : 'text-destructive'
+                        : 'text-muted-foreground';
+                      const pnlClass = `font-bold ${pnlColor}`;
+
+                      return (
+                        <TableRow
+                          key={position.athleteId}
+                          className="cursor-pointer"
+                          onMouseEnter={prefetchAthleteDetail}
+                          onClick={() => {
+                            prefetchAthleteDetail();
+                            navigate(`/athlete/${athlete.slug}`);
+                          }}
+                        >
+                          <TableCell>
+                            <div className="flex items-center gap-3">
+                              <UserAvatar
+                                src={athlete.avatar}
+                                alt={athlete.name}
+                                size={40}
+                                className="ring-2 ring-primary/20"
+                              />
+                              <div>
+                                <div className="font-semibold">{athlete.name}</div>
+                                <Badge
+                                  variant="secondary"
+                                  className={cn("text-xs border", SPORT_COLORS[athlete.sport] || "bg-secondary text-secondary-foreground")}
+                                >
+                                  {athlete.sport}
+                                </Badge>
+                              </div>
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-right font-medium">
+                            {renderValue(position.quantity, formatNumber)}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            {renderValue(position.avgCost)}
+                          </TableCell>
+                          <TableCell className="text-right lg:table-cell hidden">
+                            {renderValue(position.currentPrice)}
+                          </TableCell>
+                          <TableCell className="text-right font-medium">
+                            {renderValue(currentValue)}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <div className={pnlClass.replace('font-bold', 'font-semibold')}>
+                              {renderSignedMoney(position.pnl)}
+                              <div className={`text-xs ${pnlColor}`}>
+                                {renderPercent(position.pnlPercent)}
+                              </div>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
+            </>
           )}
         </CardContent>
       </Card>

@@ -13,7 +13,7 @@ import type { Database } from '@/integrations/supabase/types';
 import { Upload, Trophy, ShoppingBag, Dumbbell, Rocket } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { FaucetButton } from "@/components/FaucetButton";
+
 import { useOnboardingStatus } from "@/hooks/useOnboardingStatus";
 import { useUser } from "@/store/auth";
 
@@ -309,7 +309,28 @@ export default function Onboarding() {
   if (checkingProfile) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
-        <p>Loading...</p>
+        <Card className="w-full max-w-2xl">
+          <CardHeader>
+            <div className="flex gap-2 mb-4">
+              {[1, 2, 3, 4, 5].map((i) => (
+                <div key={i} className="flex-1 h-1 rounded-full bg-muted animate-pulse" />
+              ))}
+            </div>
+            <div className="h-8 w-48 bg-muted rounded animate-pulse" />
+            <div className="h-4 w-32 bg-muted rounded animate-pulse mt-2" />
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex justify-center mb-6">
+              <div className="w-24 h-24 rounded-full bg-muted animate-pulse" />
+            </div>
+            <div className="space-y-3">
+              <div className="h-10 bg-muted rounded animate-pulse" />
+              <div className="h-10 bg-muted rounded animate-pulse" />
+              <div className="h-20 bg-muted rounded animate-pulse" />
+            </div>
+            <div className="h-10 bg-muted rounded animate-pulse mt-4" />
+          </CardContent>
+        </Card>
       </div>
     );
   }
@@ -437,13 +458,14 @@ export default function Onboarding() {
                   </div>
                   <div>
                     <h3 className="font-semibold">Your Wallet</h3>
-                    <p className="text-sm text-muted-foreground">Start with test USDC</p>
+                    <p className="text-sm text-muted-foreground">You're all set to start trading</p>
                   </div>
                 </div>
-                <div className="text-2xl font-bold">1,000 USDC</div>
+                <div className="text-3xl font-bold text-primary">1,000 USDC</div>
+                <p className="text-sm text-muted-foreground">
+                  This is test currency for exploring the platform. Use it to buy athlete tokens!
+                </p>
               </div>
-
-              <FaucetButton />
 
               <Button onClick={handleWalletNext} className="w-full">
                 Continue
