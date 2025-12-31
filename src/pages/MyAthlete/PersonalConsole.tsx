@@ -1,34 +1,20 @@
 import React, { useState, useMemo, useCallback, useRef, Suspense, lazy } from 'react';
-import { Plus, TrendingUp, Edit, Trash2, MessageSquare, DollarSign, Activity, Share2, MessageCircle } from 'lucide-react';
+import { Plus, TrendingUp, MessageSquare, DollarSign } from 'lucide-react';
 import type { TimeRangeKey } from '@/utils/chartData';
 import { formatNumber } from '@/lib/format';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { EarningsSection } from '@/components/EarningsSection';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Athlete, Workout, Post } from '@/types';
-import { toast } from 'sonner';
 import { useUser } from '@/store/auth';
-import { supabase } from '@/integrations/supabase/client';
 import TokengatedChat from '@/components/TokengatedChat';
 const LockerMessages = lazy(() => import('@/components/myathlete/LockerMessages').then(module => ({ default: module.LockerMessages })));
 import { useQueryClient } from '@tanstack/react-query';
-import { SupabaseResponsiveImage } from '@/components/SupabaseResponsiveImage';
 import { ProfileDetailsCard } from '@/components/myathlete/ProfileDetailsCard';
 import { ProfileStatsCard } from '@/components/myathlete/ProfileStatsCard';
 import type { EditableProfile } from '@/pages/MyAthlete/mobile/types';
 import ProofOfSweat from '@/components/ProofOfSweat';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
 import { StravaCard } from '@/components/strava/StravaCard';
 import ConnectXButton from '@/components/social/ConnectXButton';
 import { useXConnection } from '@/hooks/useXConnection';
@@ -110,8 +96,6 @@ export function PersonalConsole({
     const setter = onTimeRangeChange ?? setInternalTimeRange;
     setter(value);
   }, [availableRanges, onTimeRangeChange]);
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [workoutToDelete, setWorkoutToDelete] = useState<string | null>(null);
   const messagesSectionRef = useRef<HTMLDivElement | null>(null);
   const { isConnected: xConnected, loading: xLoading } = useXConnection();
 
@@ -147,33 +131,6 @@ export function PersonalConsole({
       minute: '2-digit',
     });
   }, []);
-
-  const handleDeleteClick = (workoutId: string) => {
-    setWorkoutToDelete(workoutId);
-    setDeleteDialogOpen(true);
-  };
-
-  const handleDeleteWorkout = async () => {
-    if (!workoutToDelete) return;
-
-    try {
-      const { error } = await supabase
-        .from('posts')
-        .delete()
-        .eq('id', workoutToDelete);
-
-      if (error) throw error;
-
-      toast.success('Workout deleted');
-
-      queryClient.invalidateQueries({ queryKey: ['my-athlete', user?.id] });
-    } catch (error: unknown) {
-      toast.error((error as Error).message || 'Failed to delete workout');
-    } finally {
-      setDeleteDialogOpen(false);
-      setWorkoutToDelete(null);
-    }
-  };
 
   return (
     <div className="space-y-6">
@@ -396,26 +353,6 @@ export function PersonalConsole({
           </Card>
         </TabsContent>
       </Tabs>
-
-      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete Workout?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete this workout.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleDeleteWorkout}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              Delete
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 }

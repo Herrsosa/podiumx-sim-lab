@@ -88,8 +88,6 @@ export default function MyAthletePage() {
   const [isEditing, setIsEditing] = useState(false);
   const [savingProfile, setSavingProfile] = useState(false);
   const [addWorkoutOpen, setAddWorkoutOpen] = useState(false);
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [workoutToDelete, setWorkoutToDelete] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'workouts' | 'community' | 'messages' | 'earnings'>('workouts');
   const [newAvatarFile, setNewAvatarFile] = useState<File | null>(null);
   const [chartTimeRange, setChartTimeRange] = useState<TimeRangeKey>('7d');
@@ -304,37 +302,6 @@ export default function MyAthletePage() {
     [updateMyAthleteCache],
   );
 
-  const handleDeleteClick = (workoutId: string) => {
-    setWorkoutToDelete(workoutId);
-    setDeleteDialogOpen(true);
-  };
-
-  const handleDeleteWorkout = async () => {
-    if (!workoutToDelete) return;
-
-    try {
-      const { error } = await supabase
-        .from('posts')
-        .delete()
-        .eq('id', workoutToDelete);
-
-      if (error) throw error;
-
-      toast.success('Workout deleted');
-
-      updateMyAthleteCache((prev) => ({
-        ...prev,
-        workouts: prev.workouts.filter((workout) => workout.id !== workoutToDelete),
-        posts: prev.posts.filter((post) => post.id !== workoutToDelete),
-      }));
-    } catch (error: unknown) {
-      toast.error((error as Error).message || 'Failed to delete workout');
-    } finally {
-      setDeleteDialogOpen(false);
-      setWorkoutToDelete(null);
-    }
-  };
-
   const handleMobileLogPos = useCallback(() => {
     setActiveTab('workouts');
     setAddWorkoutOpen(true);
@@ -418,26 +385,6 @@ export default function MyAthletePage() {
           }}
         />
       )}
-
-      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete Workout?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete this workout.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleDeleteWorkout}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              Delete
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </>
   );
 
@@ -509,10 +456,7 @@ export default function MyAthletePage() {
               onProfileFieldChange={updateEditedProfile}
               onAvatarSelect={handleAvatarFileSelected}
               onWorkoutEdit={handleEditWorkout}
-              onWorkoutDelete={(id) => {
-                setWorkoutToDelete(id);
-                setDeleteDialogOpen(true);
-              }}
+              onWorkoutDelete={() => { }}
               onAddWorkout={() => setAddWorkoutOpen(true)}
               hasNextPage={Boolean(hasNextPage)}
               fetchNextPage={hasNextPage ? () => { void fetchNextPage(); } : undefined}

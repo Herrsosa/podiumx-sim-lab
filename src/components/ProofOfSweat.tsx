@@ -1,15 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { Activity } from 'lucide-react';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
 import { Workout, Post } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -67,9 +57,6 @@ export default function ProofOfSweat({
 }: ProofOfSweatProps) {
   const user = useUser();
   const { toast } = useToast();
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [workoutToDelete, setWorkoutToDelete] = useState<string | null>(null);
-  const [deleting, setDeleting] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [workoutToEdit, setWorkoutToEdit] = useState<Post | null>(null);
   const [optimisticWorkouts, setOptimisticWorkouts] = useState<Workout[]>([]);
@@ -115,11 +102,6 @@ export default function ProofOfSweat({
   const [viewModalOpen, setViewModalOpen] = useState(false);
   const [workoutToView, setWorkoutToView] = useState<Post | null>(null);
 
-  const handleDeleteClick = useCallback((workoutId: string) => {
-    setWorkoutToDelete(workoutId);
-    setDeleteDialogOpen(true);
-  }, []);
-
   const handleEditClick = useCallback((workout: Workout) => {
     // Direct lookup by workout.id
     const post = workoutPostMap.get(workout.id);
@@ -141,48 +123,6 @@ export default function ProofOfSweat({
     }
     if (typeof window !== 'undefined') {
       window.open('https://www.strava.com/settings/apps', '_blank', 'noopener,noreferrer');
-    }
-  };
-
-  const handleConfirmDelete = async () => {
-    if (!workoutToDelete) return;
-
-    setDeleting(true);
-    try {
-      const post = Array.from(workoutPostMap.values()).find((p) => postMatchesWorkout(p, workoutToDelete));
-
-      if (post?.image_url) {
-        const url = new URL(post.image_url);
-        const pathParts = url.pathname.split('/');
-        const fileName = pathParts[pathParts.length - 1];
-        const bucketName = pathParts[pathParts.length - 3];
-
-        await supabase.storage.from(bucketName).remove([`public/${fileName}`]);
-      }
-
-      if (post) {
-        const { error } = await supabase.from('posts').delete().eq('id', post.id);
-        if (error) throw error;
-      }
-
-      setOptimisticWorkouts((prev) => prev.filter((w) => w.id !== workoutToDelete));
-
-      toast({ title: 'Workout deleted', description: 'Your workout has been removed.' });
-
-      if (onWorkoutDeleted) {
-        onWorkoutDeleted(workoutToDelete);
-      }
-    } catch (error) {
-      console.error('Error deleting workout:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to delete workout. Please try again.',
-        variant: 'destructive',
-      });
-    } finally {
-      setDeleting(false);
-      setDeleteDialogOpen(false);
-      setWorkoutToDelete(null);
     }
   };
 
@@ -245,26 +185,8 @@ export default function ProofOfSweat({
         })}
       </div>
 
-      {/* Delete confirmation dialog */}
-      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete workout?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete this workout and its media.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleConfirmDelete} disabled={deleting} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-              {deleting ? 'Deleting...' : 'Delete'}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      {/* Edit modal */}
-      {editModalOpen && workoutToEdit && workoutToEdit.workout_json && (
+      {/* Edit modal - keep mounted while workoutToEdit exists to preserve delete flow */}
+      {workoutToEdit && workoutToEdit.workout_json && (
         <EditWorkoutModal
           open={editModalOpen}
           onOpenChange={setEditModalOpen}
@@ -282,6 +204,13 @@ export default function ProofOfSweat({
             location_lng: workoutToEdit.location_lng,
           }}
           onSuccess={handleWorkoutUpdated}
+          onDelete={(workoutId) => {
+            setOptimisticWorkouts((prev) => prev.filter((w) => w.id !== workoutId));
+            setWorkoutToEdit(null); // Clear after delete
+            if (onWorkoutDeleted) {
+              onWorkoutDeleted(workoutId);
+            }
+          }}
         />
       )}
 

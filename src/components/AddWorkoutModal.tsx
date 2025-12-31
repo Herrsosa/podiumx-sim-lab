@@ -8,8 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Upload, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { CelebrationModal } from './CelebrationModal';
-import { celebrateAura } from '@/lib/celebrate';
+import { WorkoutCelebration, WorkoutCelebrationData } from './WorkoutCelebration';
 import type { WorkoutMutationResult } from '@/hooks/useWorkouts';
 import { mapPostRowToLockerWorkout, mapPostRowToPost } from '@/hooks/useWorkouts';
 import { LocationInput } from './LocationInput';
@@ -28,6 +27,7 @@ export default function AddWorkoutModal({ open, onOpenChange, athleteId, onSucce
   const [mediaFile, setMediaFile] = useState<File | null>(null);
   const [location, setLocation] = useState<LocationResult | null>(null);
   const [showCelebration, setShowCelebration] = useState(false);
+  const [celebrationData, setCelebrationData] = useState<WorkoutCelebrationData | null>(null);
 
   const [formData, setFormData] = useState({
     date: new Date().toISOString().split('T')[0],
@@ -115,8 +115,15 @@ export default function AddWorkoutModal({ open, onOpenChange, athleteId, onSucce
       if (postError) throw postError;
       if (!insertData) throw new Error('Workout was created but details are missing');
 
+      // Set celebration data and show celebration
+      setCelebrationData({
+        type: formData.type,
+        duration: formData.duration ? parseInt(formData.duration) : undefined,
+        distance: formData.distance ? parseFloat(formData.distance) : undefined,
+        notes: formData.notes || undefined,
+        location: location?.city || undefined,
+      });
       setShowCelebration(true);
-      celebrateAura();
 
       const workout = mapPostRowToLockerWorkout(
         insertData as Parameters<typeof mapPostRowToLockerWorkout>[0],
@@ -152,7 +159,11 @@ export default function AddWorkoutModal({ open, onOpenChange, athleteId, onSucce
 
   return (
     <>
-      <CelebrationModal open={showCelebration} onOpenChange={setShowCelebration} />
+      <WorkoutCelebration
+        open={showCelebration}
+        onOpenChange={setShowCelebration}
+        data={celebrationData}
+      />
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
