@@ -21,6 +21,8 @@ export interface LockerWorkout {
   locationCountryCode: string | null;
   locationLat: number | null;
   locationLng: number | null;
+  // Strava map
+  stravaMapPolyline: string | null;
 }
 
 export type WorkoutViewerRole = 'owner' | 'backer' | 'supporter' | 'fan';
@@ -63,6 +65,8 @@ export const mapPostRowToLockerWorkout = (row: PostRow): LockerWorkout => {
     locationCountryCode: row.location_country_code ?? null,
     locationLat: row.location_lat ?? null,
     locationLng: row.location_lng ?? null,
+    // Strava map
+    stravaMapPolyline: row.strava_map_polyline ?? null,
   };
 };
 
@@ -241,7 +245,7 @@ export function useWorkouts(
       const { data, error, count } = await supabase
         .from('posts')
         .select(
-          'id, created_at, author_id, workout_json, image_url, text, visibility, min_tokens_required, token_gated, strava_activity_id, is_pinned, location_city, location_country, location_country_code, location_lat, location_lng',
+          'id, created_at, author_id, workout_json, image_url, text, visibility, min_tokens_required, token_gated, strava_activity_id, is_pinned, location_city, location_country, location_country_code, location_lat, location_lng, strava_map_polyline',
           { count: 'exact' },
         )
         .eq('author_id', athleteId)

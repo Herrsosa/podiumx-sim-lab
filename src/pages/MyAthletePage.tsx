@@ -45,6 +45,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import type { MyAthletePageResult } from '@/hooks/useMyAthlete';
 import type { WorkoutMutationResult } from '@/hooks/useWorkouts';
+import { AthleteIdentityCard } from '@/components/identity';
 
 export default function MyAthletePage() {
   const user = useUser();
@@ -431,6 +432,9 @@ export default function MyAthletePage() {
           <h1 className="mb-2 text-4xl font-bold">My Athlete Profile</h1>
           <p className="text-muted-foreground">Manage your profile and workout timeline</p>
         </div>
+
+        {/* Identity Kernel Card */}
+        <AthleteIdentityCard className="mb-8 max-w-lg" />
 
         {/* Top-level tabs: Personal vs View Locker */}
         <Tabs value={currentTab} onValueChange={(v) => setTab(v as 'personal' | 'locker')} className="w-full mb-6">

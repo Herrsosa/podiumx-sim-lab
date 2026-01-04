@@ -27,6 +27,7 @@ import { ChartsTab } from './ChartsTab';
 import { TradesTab } from './TradesTab';
 import { LockerGlobe } from '@/components/myathlete/LockerGlobe';
 import { useXConnection } from '@/hooks/useXConnection';
+import { AthleteIdentityCard } from '@/components/identity';
 
 interface MobileMyAthletesProps {
   athlete?: Athlete;
@@ -203,7 +204,12 @@ export default function MobileMyAthletes({
       </header>
 
       <main className="flex-1 overflow-x-hidden pb-24">
-        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as typeof activeTab)} className="space-y-4 px-4 py-4">
+        {/* Identity Kernel Card - always visible */}
+        <div className="px-4 pt-4">
+          <AthleteIdentityCard className="mb-4" />
+        </div>
+
+        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as typeof activeTab)} className="space-y-4 px-4 py-0">
           <TabsList className="flex w-full gap-1 rounded-2xl bg-muted/40 p-1 overflow-x-auto no-scrollbar">
             <TabsTrigger value="overview" className="text-xs px-3 flex-shrink-0">Overview</TabsTrigger>
             <TabsTrigger value="chart" className="text-xs px-3 flex-shrink-0">Chart</TabsTrigger>

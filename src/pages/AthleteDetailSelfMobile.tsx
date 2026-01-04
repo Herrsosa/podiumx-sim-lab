@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import type { LockerTab } from '@/pages/MyAthlete/LockerView';
 import { cn } from '@/lib/utils';
+import { AthleteIdentityCard } from '@/components/identity';
 
 type FeedFilter = 'all' | 'pos' | 'media';
 
@@ -148,6 +149,9 @@ export function SelfMobileProfile({
       </header>
 
       <main className="flex-1 overflow-x-hidden px-4 pb-28 pt-4">
+        {/* Identity Card - always visible at top */}
+        <AthleteIdentityCard className="mb-4" />
+
         {activeTab === 'feed' && (
           <section className="space-y-4">
             <Card className="border border-border/60 shadow-sm">
@@ -262,9 +266,9 @@ export function SelfMobileProfile({
                   mode="embedded"
                 />
               </div>
-          )}
-        </section>
-      )}
+            )}
+          </section>
+        )}
       </main>
 
       <div className="fixed bottom-0 left-0 right-0 z-50 border-t border-border/60 bg-background/95 pb-[env(safe-area-inset-bottom)] shadow-lg min-h-[56px]">

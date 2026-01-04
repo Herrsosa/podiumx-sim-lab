@@ -1,0 +1,1 @@
+export { AthleteIdentityCard } from './AthleteIdentityCard';

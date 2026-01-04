@@ -1,3 +1,4 @@
 export { ShareButton } from './ShareButton';
 export { ShareModal } from './ShareModal';
 export { ShareableWorkoutCard } from './ShareableWorkoutCard';
+export { ShareableIdentityReceipt } from './ShareableIdentityReceipt';

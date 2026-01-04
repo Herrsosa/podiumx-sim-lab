@@ -2,8 +2,10 @@ import React, { useEffect, useCallback, useRef, useState } from 'react';
 import confetti from 'canvas-confetti';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Volume2, VolumeX } from 'lucide-react';
+import { Volume2, VolumeX, Share2, Flame, Zap } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useIdentityKernel } from '@/hooks/useIdentityKernel';
+import { toast } from 'sonner';
 
 export interface WorkoutCelebrationData {
     type: string;
@@ -19,6 +21,7 @@ interface WorkoutCelebrationProps {
     data: WorkoutCelebrationData | null;
     totalPoS?: number;
     onContinue?: () => void;
+    onShare?: () => void;
 }
 
 // Sound preference in localStorage
@@ -288,9 +291,11 @@ export function WorkoutCelebration({
     data,
     totalPoS = 1,
     onContinue,
+    onShare,
 }: WorkoutCelebrationProps) {
     const [soundEnabled, setSoundEnabled] = useState(getSoundPreference);
     const hasPlayedRef = useRef(false);
+    const { data: kernel, refetch: refetchKernel } = useIdentityKernel();
 
     const toggleSound = useCallback(() => {
         const newValue = !soundEnabled;
@@ -303,19 +308,28 @@ export function WorkoutCelebration({
         onContinue?.();
     }, [onOpenChange, onContinue]);
 
+    const handleShare = useCallback(() => {
+        if (onShare) {
+            onShare();
+        } else {
+            toast.info('Share feature coming soon!');
+        }
+    }, [onShare]);
+
     // Trigger celebration when opened
     useEffect(() => {
         if (open && data && !hasPlayedRef.current) {
             hasPlayedRef.current = true;
-
             fireParticles();
             playWorkoutSound();
+            // Refetch identity kernel to get updated stats
+            refetchKernel();
         }
 
         if (!open) {
             hasPlayedRef.current = false;
         }
-    }, [open, data]);
+    }, [open, data, refetchKernel]);
 
     if (!data) return null;
 
@@ -339,7 +353,7 @@ export function WorkoutCelebration({
                     {soundEnabled ? <Volume2 className="h-4 w-4 text-white/60" /> : <VolumeX className="h-4 w-4 text-white/40" />}
                 </button>
 
-                <div className="relative z-10 px-8 py-12 text-center space-y-6">
+                <div className="relative z-10 px-8 py-10 text-center space-y-5">
                     {/* Glowing badge */}
                     <div className="animate-in zoom-in-75 duration-700">
                         <GlowingBadge />
@@ -352,25 +366,92 @@ export function WorkoutCelebration({
                         </span>
                     </div>
 
-                    {/* Main headline */}
-                    <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 delay-300 space-y-2">
-                        <h2 className="text-2xl font-semibold text-white tracking-tight">
-                            Aura strengthened.
-                        </h2>
-                        <p className="text-lg text-zinc-400">
-                            Discipline compounds.
-                        </p>
-                    </div>
+                    {/* Aura Score Change - Identity Kernel Integration */}
+                    {kernel && (
+                        <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 delay-300 space-y-2">
+                            <div className="flex items-center justify-center gap-2">
+                                <Zap className="w-5 h-5 text-emerald-400" />
+                                <span
+                                    className={cn(
+                                        'text-3xl font-bold',
+                                        kernel.auraChange.delta >= 0 ? 'text-emerald-400' : 'text-rose-400'
+                                    )}
+                                >
+                                    {kernel.auraChange.delta >= 0 ? '+' : ''}{kernel.auraChange.delta} Aura
+                                </span>
+                            </div>
+                            <p className="text-sm text-zinc-400">
+                                {kernel.auraChange.reason}
+                            </p>
+                        </div>
+                    )}
 
-                    {/* Total PoS counter */}
-                    <div className="animate-in fade-in duration-500 delay-500">
-                        <p className="text-sm text-zinc-500">
-                            TOTAL PoS: <span className="text-white font-semibold">{totalPoS}</span>
-                        </p>
-                    </div>
+                    {/* Streak & Archetype Row */}
+                    {kernel && (
+                        <div className="animate-in fade-in duration-500 delay-400 flex items-center justify-center gap-4">
+                            {/* Streak */}
+                            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/5 border border-white/10">
+                                <Flame className="w-4 h-4 text-orange-400" />
+                                <span className="text-sm font-semibold text-white">{kernel.streak}d</span>
+                            </div>
+                            {/* Archetype */}
+                            <div className={cn(
+                                'flex items-center gap-1.5 px-3 py-1.5 rounded-full',
+                                'bg-white/5 border border-white/10'
+                            )}>
+                                <span className="text-base">{kernel.archetypeIcon}</span>
+                                <span className="text-xs font-medium text-zinc-300 uppercase tracking-wide">
+                                    {kernel.archetype}
+                                </span>
+                            </div>
+                        </div>
+                    )}
 
-                    {/* Continue button */}
-                    <div className="animate-in fade-in slide-in-from-bottom-8 duration-500 delay-700 pt-2">
+                    {/* Total Aura Score with Detailed Breakdown */}
+                    {kernel && (
+                        <div className="animate-in fade-in duration-500 delay-500 space-y-3">
+                            <p className="text-sm text-zinc-500">
+                                Total Aura: <span className="text-white font-semibold">{kernel.auraScore}</span>
+                            </p>
+                            {/* Detailed score breakdown with values */}
+                            <div className="grid grid-cols-3 gap-2 text-[10px]">
+                                <div className="flex flex-col items-center p-2 rounded-lg bg-white/5 border border-white/10">
+                                    <span className="text-zinc-400">📅 Discipline</span>
+                                    <span className="text-emerald-400 font-semibold text-sm">{kernel.scoreBreakdown.discipline.score}</span>
+                                    <span className="text-zinc-600 text-center leading-tight">
+                                        {kernel.scoreBreakdown.discipline.detail}
+                                    </span>
+                                </div>
+                                <div className="flex flex-col items-center p-2 rounded-lg bg-white/5 border border-white/10">
+                                    <span className="text-zinc-400">🔥 Momentum</span>
+                                    <span className="text-orange-400 font-semibold text-sm">{kernel.scoreBreakdown.momentum.score}</span>
+                                    <span className="text-zinc-600 text-center leading-tight">
+                                        {kernel.scoreBreakdown.momentum.detail}
+                                    </span>
+                                </div>
+                                <div className="flex flex-col items-center p-2 rounded-lg bg-white/5 border border-white/10">
+                                    <span className="text-zinc-400">💪 Output</span>
+                                    <span className="text-purple-400 font-semibold text-sm">{kernel.scoreBreakdown.output.score}</span>
+                                    <span className="text-zinc-600 text-center leading-tight">
+                                        {kernel.scoreBreakdown.output.detail}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Action buttons */}
+                    <div className="animate-in fade-in slide-in-from-bottom-8 duration-500 delay-700 pt-2 space-y-3">
+                        {/* Share Receipt Button */}
+                        <Button
+                            onClick={handleShare}
+                            className="w-full bg-gradient-to-r from-emerald-500/20 to-cyan-500/20 hover:from-emerald-500/30 hover:to-cyan-500/30 text-white border border-emerald-500/30 hover:border-emerald-500/50 backdrop-blur-sm transition-all"
+                            variant="ghost"
+                        >
+                            <Share2 className="w-4 h-4 mr-2" />
+                            Share Receipt
+                        </Button>
+                        {/* Continue Button */}
                         <Button
                             onClick={handleContinue}
                             className="w-full bg-white/10 hover:bg-white/15 text-white border border-white/20 backdrop-blur-sm transition-all hover:border-white/30"

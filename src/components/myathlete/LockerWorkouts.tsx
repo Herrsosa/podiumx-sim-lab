@@ -171,8 +171,10 @@ export function LockerWorkouts({
   );
 
   const handleWorkoutDeleted = useCallback(
-    (workoutId: string) => {
+    async (workoutId: string) => {
       if (!effectiveAthleteId) return;
+
+      // Remove from local caches immediately for optimistic UI
       removeWorkoutFromCache(queryClient, workoutsKeyParams, workoutId);
 
       updateMyAthleteCache((prev) => ({
@@ -180,6 +182,21 @@ export function LockerWorkouts({
         workouts: prev.workouts.filter((workout) => workout.id !== workoutId),
         posts: prev.posts.filter((post) => post.id !== workoutId),
       }));
+
+      // Invalidate related queries to ensure fresh data on tab switch
+      // Using invalidate instead of refetch to mark as stale
+      await queryClient.invalidateQueries({
+        queryKey: ['workouts'],
+        refetchType: 'none', // Don't auto-refetch, just mark stale
+      });
+      await queryClient.invalidateQueries({
+        queryKey: ['my-athlete'],
+        refetchType: 'none',
+      });
+      // Also invalidate identity kernel as workout count affects score
+      await queryClient.invalidateQueries({
+        queryKey: ['identity-kernel'],
+      });
     },
     [effectiveAthleteId, queryClient, updateMyAthleteCache, workoutsKeyParams],
   );
@@ -212,6 +229,8 @@ export function LockerWorkouts({
       location_country_code: item.locationCountryCode,
       location_lat: item.locationLat,
       location_lng: item.locationLng,
+      // Include Strava map polyline for map rendering
+      strava_map_polyline: item.stravaMapPolyline,
     }));
 
     return {

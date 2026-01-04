@@ -37,6 +37,7 @@ import { useChartPosts } from '@/hooks/useChartPosts';
 import { usePriceSeries } from '@/hooks/usePriceSeries';
 
 import { AthleteHero } from '@/components/athlete/AthleteHero';
+import { AthleteIdentityCard } from '@/components/identity';
 
 const AthletePriceChart = lazy(() => import('@/components/charts/AthletePriceChart'));
 
@@ -353,6 +354,11 @@ export default function AthleteDetail() {
       <div className="space-y-8">
         {/* Hero Section */}
         <AthleteHero athlete={athlete} />
+
+        {/* Identity Kernel Card - only show for authenticated user's own profile */}
+        {isOwnProfile && (
+          <AthleteIdentityCard className="max-w-lg" />
+        )}
 
         {/* Chart Section */}
         <Card className="glass-card">
