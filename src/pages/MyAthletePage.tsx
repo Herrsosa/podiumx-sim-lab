@@ -285,7 +285,7 @@ export default function MyAthletePage() {
   };
 
   const handleWorkoutCreated = useCallback(
-    (result: WorkoutMutationResult) => {
+    async (result: WorkoutMutationResult) => {
       updateMyAthleteCache((prev) => {
         const workoutData = result.workout.workout;
         const nextWorkouts = workoutData
@@ -299,8 +299,13 @@ export default function MyAthletePage() {
         };
       });
       setAddWorkoutOpen(false);
+
+      // Invalidate identity kernel so Aura Score updates
+      await queryClient.invalidateQueries({
+        queryKey: ['identity-kernel'],
+      });
     },
-    [updateMyAthleteCache],
+    [queryClient, updateMyAthleteCache],
   );
 
   const handleMobileLogPos = useCallback(() => {
@@ -428,13 +433,11 @@ export default function MyAthletePage() {
   return (
     <>
       <div className="container mx-auto px-4 pb-32 pt-8 md:pb-8 overflow-x-hidden">
+        {/* Page Header */}
         <div className="mb-8">
           <h1 className="mb-2 text-4xl font-bold">My Athlete Profile</h1>
           <p className="text-muted-foreground">Manage your profile and workout timeline</p>
         </div>
-
-        {/* Identity Kernel Card */}
-        <AthleteIdentityCard className="mb-8 max-w-lg" />
 
         {/* Top-level tabs: Personal vs View Locker */}
         <Tabs value={currentTab} onValueChange={(v) => setTab(v as 'personal' | 'locker')} className="w-full mb-6">
@@ -467,6 +470,7 @@ export default function MyAthletePage() {
               isFetchingNextPage={isFetchingNextPage}
               timeRange={chartTimeRange}
               onTimeRangeChange={setChartTimeRange}
+              auraCard={<AthleteIdentityCard />}
             />
           </TabsContent>
 

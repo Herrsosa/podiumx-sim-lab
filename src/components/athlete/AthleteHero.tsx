@@ -12,6 +12,8 @@ import { WatchlistButton } from '@/components/WatchlistButton';
 
 interface AthleteHeroProps {
     athlete: Athlete;
+    /** Optional Aura Score card to render on the right side (desktop only) */
+    auraCard?: React.ReactNode;
 }
 
 const SPORT_COLORS: Record<string, string> = {
@@ -36,7 +38,7 @@ const SPORT_BG_GLOW: Record<string, string> = {
     Rowing: 'bg-indigo-500',
 };
 
-export function AthleteHero({ athlete }: AthleteHeroProps) {
+export function AthleteHero({ athlete, auraCard }: AthleteHeroProps) {
     const isPositive = athlete.change24h >= 0;
 
     const sportStyle = SPORT_COLORS[athlete.sport] || 'from-primary/20 to-primary/5 border-primary/20 text-primary';
@@ -47,56 +49,64 @@ export function AthleteHero({ athlete }: AthleteHeroProps) {
             {/* Dynamic Background Glow */}
             <div className={cn("absolute -top-[50%] -left-[10%] h-[150%] w-[60%] opacity-20 blur-[120px] rounded-full pointer-events-none", glowColor)} />
 
-            <div className="relative z-10 grid gap-8 p-6 md:grid-cols-[300px_1fr] md:p-8 lg:gap-12">
-                {/* Left Column: Avatar */}
+            {/* Desktop: 3-column grid | Mobile: stacked */}
+            <div className={cn(
+                "relative z-10 p-6 md:p-8",
+                "grid gap-6 md:gap-8",
+                // Mobile: single column, Desktop: avatar(220px) | content(1fr) | aura(auto)
+                auraCard
+                    ? "md:grid-cols-[220px_1fr_auto]"
+                    : "md:grid-cols-[220px_1fr]"
+            )}>
+                {/* Column 1: Avatar */}
                 <motion.div
                     initial={{ opacity: 0, scale: 0.9 }}
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ duration: 0.5 }}
-                    className="relative aspect-[3/4] w-full overflow-hidden rounded-2xl md:h-full md:aspect-auto"
+                    className="relative aspect-[3/4] w-full overflow-hidden rounded-2xl md:h-full md:aspect-auto md:min-h-[280px]"
                 >
                     <div className={cn("absolute inset-0 bg-gradient-to-br opacity-30", sportStyle)} />
                     <OptimizedImage
-                        src={resolveAvatarUrl(athlete.avatar, { size: 640 })}
+                        src={resolveAvatarUrl(athlete.avatar, { size: 480 })}
                         webpSrc={getAvatarAsset(athlete.avatar)?.webp}
                         alt={athlete.name}
-                        width={640}
-                        height={853}
+                        width={480}
+                        height={640}
                         className="h-full w-full object-cover transition-transform duration-700 hover:scale-105"
                     />
 
                     {/* Sport Badge Overlay */}
-                    <div className="absolute bottom-4 left-4">
-                        <Badge variant="secondary" className="backdrop-blur-md bg-black/50 border-white/10 text-white px-3 py-1 text-sm font-medium">
+                    <div className="absolute bottom-3 left-3">
+                        <Badge variant="secondary" className="backdrop-blur-md bg-black/50 border-white/10 text-white px-2.5 py-0.5 text-xs font-medium">
                             {athlete.sport}
                         </Badge>
                     </div>
 
                     {/* Watchlist Button - Top Right */}
-                    <div className="absolute top-4 right-4">
+                    <div className="absolute top-3 right-3">
                         <WatchlistButton
                             athleteId={athlete.id}
-                            size="md"
+                            size="sm"
                             className="bg-black/40 backdrop-blur-sm hover:bg-black/60"
                         />
                     </div>
                 </motion.div>
 
-                {/* Right Column: Info & HUD Stats */}
-                <div className="flex flex-col justify-center space-y-8">
+                {/* Column 2: Identity + Market Stats */}
+                <div className="flex flex-col justify-center space-y-5">
 
-                    {/* Header Info */}
+                    {/* Header Info: Name, Location, Bio */}
                     <motion.div
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.5, delay: 0.1 }}
-                        className="space-y-4"
+                        className="space-y-3"
                     >
-                        <h1 className="font-display text-4xl font-bold tracking-tight text-white md:text-5xl lg:text-6xl glow-text">
+                        <h1 className="font-display text-3xl font-bold tracking-tight text-white md:text-4xl lg:text-5xl glow-text">
                             {athlete.name}
                         </h1>
 
-                        <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
+                        <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
                             <div className="flex items-center gap-1.5">
                                 <MapPin className="h-4 w-4" />
                                 {athlete.location}
@@ -109,56 +119,78 @@ export function AthleteHero({ athlete }: AthleteHeroProps) {
                             )}
                         </div>
 
-                        <p className="max-w-2xl text-base leading-relaxed text-muted-foreground/90 md:text-lg">
+                        <p className="max-w-xl text-sm leading-relaxed text-muted-foreground/90 md:text-base">
                             {athlete.bio}
                         </p>
                     </motion.div>
 
-                    {/* HUD Stats Grid */}
+                    {/* Market Stats: 4-tile row */}
                     <motion.div
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.5, delay: 0.2 }}
-                        className="grid grid-cols-2 gap-3 sm:grid-cols-4 md:gap-4"
+                        className="grid grid-cols-2 gap-2 sm:grid-cols-4 md:gap-3"
                     >
-                        {/* Price Pill */}
-                        <div className="group relative overflow-hidden rounded-xl border border-white/5 bg-white/5 p-4 backdrop-blur-sm transition-all hover:bg-white/10">
-                            <div className="mb-1 text-xs font-medium text-muted-foreground uppercase tracking-wider">Current Price</div>
-                            <div className="text-2xl font-bold text-white md:text-3xl">
+                        {/* Price Tile */}
+                        <div className="group relative overflow-hidden rounded-xl border border-white/5 bg-white/5 p-3 backdrop-blur-sm transition-all hover:bg-white/10">
+                            <div className="mb-0.5 text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Price</div>
+                            <div className="text-xl font-bold text-white md:text-2xl">
                                 $<CountUp value={athlete.price} decimalPlaces={2} duration={1.5} />
                             </div>
-                            <div className={cn("mt-1 flex items-center gap-1 text-xs font-medium", isPositive ? "text-success" : "text-destructive")}>
+                            <div className={cn("mt-0.5 flex items-center gap-1 text-[10px] font-medium", isPositive ? "text-success" : "text-destructive")}>
                                 {isPositive ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
                                 {isPositive ? '+' : ''}{formatNumber(athlete.change24h)}%
                             </div>
                         </div>
 
-                        {/* Market Cap Pill */}
-                        <div className="group relative overflow-hidden rounded-xl border border-white/5 bg-white/5 p-4 backdrop-blur-sm transition-all hover:bg-white/10">
-                            <div className="mb-1 text-xs font-medium text-muted-foreground uppercase tracking-wider">Market Cap</div>
-                            <div className="text-xl font-bold text-white md:text-2xl">
+                        {/* Market Cap Tile */}
+                        <div className="group relative overflow-hidden rounded-xl border border-white/5 bg-white/5 p-3 backdrop-blur-sm transition-all hover:bg-white/10">
+                            <div className="mb-0.5 text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Market Cap</div>
+                            <div className="text-lg font-bold text-white md:text-xl">
                                 {formatMoney(athlete.marketCap)}
                             </div>
                         </div>
 
-                        {/* Supply Pill */}
-                        <div className="group relative overflow-hidden rounded-xl border border-white/5 bg-white/5 p-4 backdrop-blur-sm transition-all hover:bg-white/10">
-                            <div className="mb-1 text-xs font-medium text-muted-foreground uppercase tracking-wider">Supply</div>
-                            <div className="text-xl font-bold text-white md:text-2xl">
+                        {/* Supply Tile */}
+                        <div className="group relative overflow-hidden rounded-xl border border-white/5 bg-white/5 p-3 backdrop-blur-sm transition-all hover:bg-white/10">
+                            <div className="mb-0.5 text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Supply</div>
+                            <div className="text-lg font-bold text-white md:text-xl">
                                 {formatNumber(athlete.supply)}
                             </div>
                         </div>
 
-                        {/* Volume Pill */}
-                        <div className="group relative overflow-hidden rounded-xl border border-white/5 bg-white/5 p-4 backdrop-blur-sm transition-all hover:bg-white/10">
-                            <div className="mb-1 text-xs font-medium text-muted-foreground uppercase tracking-wider">24h Volume</div>
-                            <div className="text-xl font-bold text-white md:text-2xl">
+                        {/* Volume Tile */}
+                        <div className="group relative overflow-hidden rounded-xl border border-white/5 bg-white/5 p-3 backdrop-blur-sm transition-all hover:bg-white/10">
+                            <div className="mb-0.5 text-[10px] font-medium text-muted-foreground uppercase tracking-wider">24h Vol</div>
+                            <div className="text-lg font-bold text-white md:text-xl">
                                 {formatMoney(athlete.volume24h)}
                             </div>
                         </div>
                     </motion.div>
                 </div>
+
+                {/* Column 3: Aura Card (desktop only, if provided) */}
+                {auraCard && (
+                    <motion.div
+                        initial={{ opacity: 0, x: 20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ duration: 0.5, delay: 0.3 }}
+                        className="hidden md:flex md:items-stretch"
+                    >
+                        <div className="w-full min-w-[280px] max-w-[320px]">
+                            {auraCard}
+                        </div>
+                    </motion.div>
+                )}
             </div>
+
+            {/* Mobile: Aura Card below hero content */}
+            {auraCard && (
+                <div className="md:hidden px-6 pb-6">
+                    {auraCard}
+                </div>
+            )}
         </div>
     );
 }
+

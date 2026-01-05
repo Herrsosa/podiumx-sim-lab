@@ -223,15 +223,17 @@ function determineArchetype(workouts: WorkoutData[]): Archetype {
 }
 
 /**
- * Hook to compute the Identity Kernel metrics for the authenticated user.
+ * Hook to compute the Identity Kernel metrics for an athlete.
+ * If athleteId is not provided, uses the authenticated user's ID.
  */
-export function useIdentityKernel() {
+export function useIdentityKernel(athleteId?: string) {
     const user = useUser();
+    const targetId = athleteId ?? user?.id;
 
     return useQuery<IdentityKernel>({
-        queryKey: ['identity-kernel', user?.id],
+        queryKey: ['identity-kernel', targetId],
         queryFn: async () => {
-            if (!user?.id) {
+            if (!targetId) {
                 return getEmptyKernel();
             }
 
@@ -242,7 +244,7 @@ export function useIdentityKernel() {
             const { data: allPosts, error } = await supabase
                 .from('posts')
                 .select('created_at, workout_json')
-                .eq('author_id', user.id)
+                .eq('author_id', targetId)
                 .not('workout_json', 'is', null)
                 .order('created_at', { ascending: false });
 
@@ -374,7 +376,7 @@ export function useIdentityKernel() {
                 progressDelta: { percent: Math.abs(progressPercent), direction: progressDirection },
             };
         },
-        enabled: !!user?.id,
+        enabled: !!targetId,
         staleTime: 2 * 60 * 1000, // 2 minutes
     });
 }

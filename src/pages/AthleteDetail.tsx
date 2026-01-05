@@ -238,7 +238,7 @@ export default function AthleteDetail() {
   );
 
   const handleWorkoutCreated = useCallback(
-    (result: WorkoutMutationResult) => {
+    async (result: WorkoutMutationResult) => {
       updateAthleteCache((prev) => {
         const workoutData = result.workout.workout;
         const nextWorkouts = workoutData
@@ -251,8 +251,13 @@ export default function AthleteDetail() {
           posts: nextPosts,
         };
       });
+
+      // Invalidate identity kernel so Aura Score updates
+      await queryClient.invalidateQueries({
+        queryKey: ['identity-kernel'],
+      });
     },
-    [updateAthleteCache],
+    [queryClient, updateAthleteCache],
   );
 
   const handleWorkoutUpdated = useCallback(
@@ -352,13 +357,11 @@ export default function AthleteDetail() {
       </Button>
 
       <div className="space-y-8">
-        {/* Hero Section */}
-        <AthleteHero athlete={athlete} />
-
-        {/* Identity Kernel Card - only show for authenticated user's own profile */}
-        {isOwnProfile && (
-          <AthleteIdentityCard className="max-w-lg" />
-        )}
+        {/* Hero Section with Aura Card */}
+        <AthleteHero
+          athlete={athlete}
+          auraCard={<AthleteIdentityCard athleteId={athlete.id} />}
+        />
 
         {/* Chart Section */}
         <Card className="glass-card">

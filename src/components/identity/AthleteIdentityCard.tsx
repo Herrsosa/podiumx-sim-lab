@@ -5,6 +5,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 
 interface AthleteIdentityCardProps {
     className?: string;
+    athleteId?: string;
 }
 
 // Archetype color themes
@@ -54,8 +55,8 @@ const ARCHETYPE_THEMES: Record<Archetype, { gradient: string; glow: string; text
  * - This Week (sessions + minutes)
  * - Progress Delta (vs last 30d)
  */
-export function AthleteIdentityCard({ className }: AthleteIdentityCardProps) {
-    const { data: kernel, isLoading } = useIdentityKernel();
+export function AthleteIdentityCard({ className, athleteId }: AthleteIdentityCardProps) {
+    const { data: kernel, isLoading } = useIdentityKernel(athleteId);
 
     if (isLoading) {
         return <IdentityCardSkeleton className={className} />;
@@ -77,7 +78,7 @@ export function AthleteIdentityCard({ className }: AthleteIdentityCardProps) {
             className={cn(
                 'relative overflow-hidden rounded-2xl border border-white/10',
                 'bg-gradient-to-br from-zinc-900/90 via-zinc-900/80 to-zinc-950/90',
-                'backdrop-blur-xl p-5',
+                'backdrop-blur-xl p-5 h-full',
                 `shadow-lg ${theme.glow}`,
                 className
             )}

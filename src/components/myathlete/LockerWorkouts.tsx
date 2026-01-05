@@ -124,7 +124,7 @@ export function LockerWorkouts({
   );
 
   const handleWorkoutCreated = useCallback(
-    (result: WorkoutMutationResult) => {
+    async (result: WorkoutMutationResult) => {
       if (!effectiveAthleteId) return;
       addWorkoutToCache(queryClient, workoutsKeyParams, result.workout);
 
@@ -139,6 +139,11 @@ export function LockerWorkouts({
           workouts: nextWorkouts,
           posts: nextPosts,
         };
+      });
+
+      // Invalidate identity kernel so Aura Score updates
+      await queryClient.invalidateQueries({
+        queryKey: ['identity-kernel'],
       });
     },
     [effectiveAthleteId, queryClient, updateMyAthleteCache, workoutsKeyParams],

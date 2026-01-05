@@ -49,6 +49,8 @@ interface PersonalConsoleProps {
   isFetchingNextPage?: boolean;
   timeRange?: TimeRangeKey;
   onTimeRangeChange?: (range: TimeRangeKey) => void;
+  /** Optional Aura Score card to render alongside the profile (desktop only) */
+  auraCard?: React.ReactNode;
 }
 
 export function PersonalConsole({
@@ -74,6 +76,7 @@ export function PersonalConsole({
   isFetchingNextPage = false,
   timeRange: externalTimeRange,
   onTimeRangeChange,
+  auraCard,
 }: PersonalConsoleProps) {
   const user = useUser();
   const queryClient = useQueryClient();
@@ -134,17 +137,34 @@ export function PersonalConsole({
 
   return (
     <div className="space-y-6">
-      <ProfileDetailsCard
-        athlete={athlete}
-        editedProfile={editedProfile}
-        isEditing={isEditing}
-        savingProfile={savingProfile}
-        onStartEdit={onStartEditProfile}
-        onCancelEdit={onCancelEditProfile}
-        onSave={onSaveProfile}
-        onFieldChange={onProfileFieldChange}
-        onAvatarSelect={onAvatarSelect}
-      />
+      {/* Desktop: Two-column layout for Profile + Aura Card */}
+      <div className="grid gap-6 md:grid-cols-[1fr_320px]">
+        <ProfileDetailsCard
+          athlete={athlete}
+          editedProfile={editedProfile}
+          isEditing={isEditing}
+          savingProfile={savingProfile}
+          onStartEdit={onStartEditProfile}
+          onCancelEdit={onCancelEditProfile}
+          onSave={onSaveProfile}
+          onFieldChange={onProfileFieldChange}
+          onAvatarSelect={onAvatarSelect}
+        />
+
+        {/* Aura Card - right side on desktop, hidden since it shows below ProfileDetailsCard on mobile */}
+        {auraCard && (
+          <div className="hidden md:block">
+            {auraCard}
+          </div>
+        )}
+      </div>
+
+      {/* Mobile: Aura Card below profile */}
+      {auraCard && (
+        <div className="md:hidden">
+          {auraCard}
+        </div>
+      )}
 
       {/* Stats Card - fetches its own data */}
       <ProfileStatsCard className="glass-card" />

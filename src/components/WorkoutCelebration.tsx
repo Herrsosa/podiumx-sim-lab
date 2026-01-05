@@ -271,10 +271,10 @@ function GlowingBadge() {
             {/* Center badge */}
             <div className="absolute inset-6 rounded-full bg-gradient-to-br from-zinc-800 via-zinc-900 to-black flex items-center justify-center border border-white/10">
                 <span
-                    className="text-3xl font-bold bg-gradient-to-b from-white via-zinc-200 to-zinc-400 bg-clip-text text-transparent"
+                    className="text-xl font-bold bg-gradient-to-b from-white via-zinc-200 to-zinc-400 bg-clip-text text-transparent"
                     style={{ textShadow: '0 0 20px rgba(255,255,255,0.3)' }}
                 >
-                    A
+                    PoS
                 </span>
             </div>
 

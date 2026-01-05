@@ -1,7 +1,8 @@
 import { Suspense, lazy, useState, useMemo, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FixedSizeList as List } from 'react-window';
-import { DollarSign, TrendingUp, TrendingDown, Coins, Download } from 'lucide-react';
+import { DollarSign, TrendingUp, TrendingDown, Coins, Download, Zap } from 'lucide-react';
+import { useAthletesAuraScores } from '@/hooks/useAthletesAuraScores';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -43,6 +44,7 @@ export default function Portfolio() {
   const athleteIds = useMemo(() => Object.keys(wallet?.positions || {}), [wallet]);
   const { data: athletes, isLoading: athletesLoading } = useAthletesByIds(athleteIds);
   const { data: userTrades, isLoading: tradesLoading } = useUserTrades();
+  const { data: auraScores } = useAthletesAuraScores(athleteIds);
 
   // All hooks MUST be before any conditional returns
   const renderValue = useCallback(
@@ -468,12 +470,20 @@ export default function Portfolio() {
                           />
                           <div className="min-w-0">
                             <div className="font-semibold truncate">{athlete.name}</div>
-                            <Badge
-                              variant="secondary"
-                              className={cn("text-xs border", SPORT_COLORS[athlete.sport] || "bg-secondary text-secondary-foreground")}
-                            >
-                              {athlete.sport}
-                            </Badge>
+                            <div className="flex items-center gap-2 mt-0.5">
+                              <Badge
+                                variant="secondary"
+                                className={cn("text-xs border", SPORT_COLORS[athlete.sport] || "bg-secondary text-secondary-foreground")}
+                              >
+                                {athlete.sport}
+                              </Badge>
+                              {auraScores?.[position.athleteId] && (
+                                <div className="flex items-center gap-1 text-xs text-emerald-500">
+                                  <Zap className="h-3 w-3" />
+                                  <span className="font-medium">{auraScores[position.athleteId].auraScore}</span>
+                                </div>
+                              )}
+                            </div>
                           </div>
                         </div>
                         {/* P&L badge */}
@@ -557,12 +567,20 @@ export default function Portfolio() {
                               />
                               <div>
                                 <div className="font-semibold">{athlete.name}</div>
-                                <Badge
-                                  variant="secondary"
-                                  className={cn("text-xs border", SPORT_COLORS[athlete.sport] || "bg-secondary text-secondary-foreground")}
-                                >
-                                  {athlete.sport}
-                                </Badge>
+                                <div className="flex items-center gap-2 mt-0.5">
+                                  <Badge
+                                    variant="secondary"
+                                    className={cn("text-xs border", SPORT_COLORS[athlete.sport] || "bg-secondary text-secondary-foreground")}
+                                  >
+                                    {athlete.sport}
+                                  </Badge>
+                                  {auraScores?.[position.athleteId] && (
+                                    <div className="flex items-center gap-1 text-xs text-emerald-500">
+                                      <Zap className="h-3 w-3" />
+                                      <span className="font-medium">{auraScores[position.athleteId].auraScore}</span>
+                                    </div>
+                                  )}
+                                </div>
                               </div>
                             </div>
                           </TableCell>
