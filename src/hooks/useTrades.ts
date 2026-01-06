@@ -55,6 +55,7 @@ export function useTrades(athleteId?: string, options?: { enabled?: boolean }) {
       return trades;
     },
     enabled: options?.enabled ?? true,
+    staleTime: 30_000, // 30 seconds
   });
 }
 
@@ -96,5 +97,6 @@ export function useUserTrades() {
       return trades;
     },
     enabled: !!user,
+    staleTime: 30_000, // 30 seconds
   });
 }

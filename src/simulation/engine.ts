@@ -1,7 +1,11 @@
 import { supabaseAdmin } from '@/integrations/supabase/admin';
 import { SIMULATION_PROFILES, SIMULATION_CONSTANTS } from './config';
+import { STORY_ARCS, getCurrentPhase, getStoryPost, type AthleteStoryState } from './storyArcs';
 import { Workout } from '@/types';
 import { priceAt } from '@/utils/pricing';
+
+// In-memory story state tracking (resets on server restart, but that's fine for simulation)
+const storyStates: Map<string, AthleteStoryState> = new Map();
 
 // Diverse post templates by workout type for realistic simulation
 const POS_TEMPLATES: Record<string, string[]> = {
@@ -296,24 +300,71 @@ export async function runDailySimulation(): Promise<SimulationResult> {
                 }
             }
 
-            // --- PROOF OF SWEAT ---
+            // --- PROOF OF SWEAT (Story-Driven) ---
             const posProb = SIMULATION_CONSTANTS.POS_PROBABILITY[profile.behavior.posFrequency];
             if (Math.random() < posProb) {
-                const workoutTypes = ['Run', 'Strength', 'HIIT', 'Cycling', 'Yoga'];
+                // Get or initialize story state for this athlete
+                let storyState = storyStates.get(actorId);
+                const arc = STORY_ARCS.find(a => a.id === profile.storyArcId) || STORY_ARCS[0];
+
+                if (!storyState) {
+                    storyState = {
+                        athleteId: actorId,
+                        arcId: arc.id,
+                        currentDay: Math.floor(Math.random() * arc.totalDays) + 1, // Start at random point
+                        sessionCount: 0,
+                        lastPostDate: null,
+                    };
+                    storyStates.set(actorId, storyState);
+                }
+
+                // Advance the story day
+                storyState.currentDay = (storyState.currentDay % arc.totalDays) + 1;
+                storyState.sessionCount++;
+                storyState.lastPostDate = today;
+
+                // Get current phase and generate contextual post
+                const phase = getCurrentPhase(arc, storyState.currentDay);
+
+                // Workout types weighted by sport
+                const sportWorkoutTypes: Record<string, string[]> = {
+                    'HYROX': ['HYROX', 'Strength', 'Run', 'HIIT'],
+                    'Running': ['Run', 'HIIT', 'Strength'],
+                    'Cycling': ['Cycling', 'Strength', 'HIIT'],
+                    'Triathlon': ['Run', 'Cycling', 'Swimming', 'Strength'],
+                    'CrossFit': ['CrossFit', 'HIIT', 'Strength'],
+                    'Swimming': ['Swimming', 'Strength', 'HIIT'],
+                    'Trail Run': ['Run', 'Strength', 'HIIT'],
+                    'Rowing': ['Strength', 'HIIT', 'Cycling'],
+                };
+
+                const workoutTypes = sportWorkoutTypes[profile.sport] || ['Run', 'Strength', 'HIIT'];
                 const type = workoutTypes[Math.floor(Math.random() * workoutTypes.length)];
                 const duration = Math.floor(Math.random() * 60) + 30;
+
+                // Generate story-driven post text
+                const postText = getStoryPost(phase, {
+                    type,
+                    duration,
+                    weekNum: Math.ceil(storyState.currentDay / 7),
+                    dayNum: storyState.currentDay,
+                    sessionNum: storyState.sessionCount,
+                    daysToRace: Math.max(1, arc.totalDays - storyState.currentDay),
+                    bodyPart: ['knee', 'ankle', 'hip', 'shoulder'][Math.floor(Math.random() * 4)],
+                    daysOff: Math.floor(Math.random() * 7) + 3,
+                });
 
                 const workoutData: Partial<Workout> = {
                     type: type as Workout['type'],
                     duration,
                     rpe: Math.floor(Math.random() * 4) + 6,
                     date: today,
-                    notes: `Simulated ${type} session for ${profile.name}`,
+                    notes: `${phase.emotionalTone} phase - ${profile.name}`,
                 };
 
                 const { error } = await supabaseAdmin.from('posts').insert({
                     author_id: actorId,
-                    text: getRandomPostText(type, duration),
+                    text: postText,
                     workout_json: workoutData,
                     visibility: 'public',
                     min_tokens_required: 0,
@@ -323,6 +374,7 @@ export async function runDailySimulation(): Promise<SimulationResult> {
                     result.errors.push(`Post error: ${error.message}`);
                 } else {
                     result.posts++;
+                    console.log(`[Story] ${profile.name} - Day ${storyState.currentDay}/${arc.totalDays} (${phase.phase}): "${postText.slice(0, 50)}..."`);
                 }
             }
 

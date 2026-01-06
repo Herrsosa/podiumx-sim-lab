@@ -1,10 +1,12 @@
 import { Sport } from '@/types';
 import { athleteAvatarAssets } from '@/utils/athleteAvatars';
+import type { StoryArc } from './storyArcs';
 
 export interface SimulationProfile {
     id: string;
     name: string;
     sport: Sport;
+    storyArcId: string; // Which narrative arc this athlete follows
     behavior: {
         tradeFrequency: 'high' | 'medium' | 'low'; // Trades per day: high=5-10, medium=2-5, low=0-2
         posFrequency: 'daily' | 'often' | 'rare'; // Posts per week: daily=7, often=3-4, rare=1
@@ -22,6 +24,7 @@ export const SIMULATION_PROFILES: SimulationProfile[] = [
         id: '1', // Nils
         name: 'Nils Bergström',
         sport: 'Running',
+        storyArcId: 'hyrox_journey',
         avatar: athleteAvatarAssets.nils.src,
         behavior: {
             tradeFrequency: 'medium',
@@ -34,6 +37,7 @@ export const SIMULATION_PROFILES: SimulationProfile[] = [
         id: '2', // Mara
         name: 'Mara Chen',
         sport: 'HYROX',
+        storyArcId: 'hyrox_journey',
         avatar: athleteAvatarAssets.mara.src,
         behavior: {
             tradeFrequency: 'high',
@@ -46,6 +50,7 @@ export const SIMULATION_PROFILES: SimulationProfile[] = [
         id: '3', // Leo
         name: 'Leo Martinez',
         sport: 'Cycling',
+        storyArcId: 'consistent_grinder',
         avatar: athleteAvatarAssets.leo.src,
         behavior: {
             tradeFrequency: 'low',
@@ -58,6 +63,7 @@ export const SIMULATION_PROFILES: SimulationProfile[] = [
         id: '4', // Ava
         name: 'Ava Thompson',
         sport: 'Triathlon',
+        storyArcId: 'hyrox_journey',
         avatar: athleteAvatarAssets.ava.src,
         behavior: {
             tradeFrequency: 'medium',
@@ -70,6 +76,7 @@ export const SIMULATION_PROFILES: SimulationProfile[] = [
         id: '5', // Kai
         name: 'Kai Anderson',
         sport: 'CrossFit',
+        storyArcId: 'comeback_story',
         avatar: athleteAvatarAssets.kai.src,
         behavior: {
             tradeFrequency: 'high',
@@ -82,6 +89,7 @@ export const SIMULATION_PROFILES: SimulationProfile[] = [
         id: '6', // Rio
         name: 'Rio Silva',
         sport: 'Swimming',
+        storyArcId: 'consistent_grinder',
         avatar: athleteAvatarAssets.rio.src,
         behavior: {
             tradeFrequency: 'low',
@@ -94,6 +102,7 @@ export const SIMULATION_PROFILES: SimulationProfile[] = [
         id: '7', // Zara
         name: 'Zara Williams',
         sport: 'Trail Run',
+        storyArcId: 'comeback_story',
         avatar: athleteAvatarAssets.zara.src,
         behavior: {
             tradeFrequency: 'medium',
@@ -106,6 +115,7 @@ export const SIMULATION_PROFILES: SimulationProfile[] = [
         id: '8', // Max
         name: 'Max Jensen',
         sport: 'Rowing',
+        storyArcId: 'consistent_grinder',
         avatar: athleteAvatarAssets.max.src,
         behavior: {
             tradeFrequency: 'low',
