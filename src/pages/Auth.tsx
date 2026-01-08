@@ -7,7 +7,8 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Instagram, CheckCircle2 } from "lucide-react";
+import { Loader2, Instagram, CheckCircle2, Eye, EyeOff } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 export default function Auth() {
   const navigate = useNavigate();
@@ -24,6 +25,33 @@ export default function Auth() {
   const [waitlistEmail, setWaitlistEmail] = useState("");
   const [waitlistSuccess, setWaitlistSuccess] = useState(false);
   const [waitlistError, setWaitlistError] = useState("");
+
+  // Password visibility toggles
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  // Email validation regex
+  const isValidEmail = (email: string) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
+
+  // Password strength calculation
+  const getPasswordStrength = (pwd: string): { level: 'weak' | 'medium' | 'strong'; score: number } => {
+    let score = 0;
+    if (pwd.length >= 6) score++;
+    if (pwd.length >= 8) score++;
+    if (/[A-Z]/.test(pwd)) score++;
+    if (/[a-z]/.test(pwd)) score++;
+    if (/[0-9]/.test(pwd)) score++;
+    if (/[^A-Za-z0-9]/.test(pwd)) score++;
+
+    if (score <= 2) return { level: 'weak', score };
+    if (score <= 4) return { level: 'medium', score };
+    return { level: 'strong', score };
+  };
+
+  const passwordStrength = password ? getPasswordStrength(password) : null;
 
   const redirectTarget = useMemo(() => {
     const sanitizePath = (value?: string | null) => {
@@ -84,8 +112,8 @@ export default function Auth() {
     e.preventDefault();
     setWaitlistError("");
 
-    if (!waitlistEmail || !waitlistEmail.includes('@')) {
-      setWaitlistError("That doesn’t look like a valid email.");
+    if (!waitlistEmail || !isValidEmail(waitlistEmail)) {
+      setWaitlistError("Please enter a valid email address.");
       return;
     }
 
@@ -106,6 +134,7 @@ export default function Auth() {
       }
 
       setWaitlistSuccess(true);
+      setWaitlistEmail(""); // Clear email on success
     } catch (error: unknown) {
       console.error('Waitlist error:', error);
       setWaitlistError("Something went wrong – please try again in a moment to build that Athlete Identity.");
@@ -304,15 +333,25 @@ export default function Auth() {
                         Forgot password?
                       </button>
                     </div>
-                    <Input
-                      id="signin-password"
-                      type="password"
-                      placeholder="••••••••"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      required
-                      className="bg-background/50"
-                    />
+                    <div className="relative">
+                      <Input
+                        id="signin-password"
+                        type={showPassword ? "text" : "password"}
+                        placeholder="••••••••"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        required
+                        className="bg-background/50 pr-10"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                        aria-label={showPassword ? "Hide password" : "Show password"}
+                      >
+                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </button>
+                    </div>
                   </div>
                   <Button type="submit" className="w-full" disabled={loading}>
                     {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
@@ -394,29 +433,77 @@ export default function Auth() {
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="signup-password">Password</Label>
-                      <Input
-                        id="signup-password"
-                        type="password"
-                        placeholder="••••••••"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        required
-                        minLength={6}
-                        className="bg-background/50"
-                      />
+                      <div className="relative">
+                        <Input
+                          id="signup-password"
+                          type={showPassword ? "text" : "password"}
+                          placeholder="••••••••"
+                          value={password}
+                          onChange={(e) => setPassword(e.target.value)}
+                          required
+                          minLength={6}
+                          className="bg-background/50 pr-10"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowPassword(!showPassword)}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                          aria-label={showPassword ? "Hide password" : "Show password"}
+                        >
+                          {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        </button>
+                      </div>
+                      {/* Password strength indicator */}
+                      {passwordStrength && (
+                        <div className="space-y-1">
+                          <div className="flex gap-1">
+                            {[1, 2, 3].map((bar) => (
+                              <div
+                                key={bar}
+                                className={cn(
+                                  "h-1 flex-1 rounded-full transition-colors",
+                                  bar === 1 && passwordStrength.level !== 'weak' ? "bg-green-500" :
+                                    bar === 1 ? "bg-red-500" :
+                                      bar === 2 && passwordStrength.level === 'strong' ? "bg-green-500" :
+                                        bar === 2 && passwordStrength.level === 'medium' ? "bg-yellow-500" :
+                                          "bg-muted"
+                                )}
+                              />
+                            ))}
+                          </div>
+                          <p className={cn(
+                            "text-xs capitalize",
+                            passwordStrength.level === 'weak' && "text-red-500",
+                            passwordStrength.level === 'medium' && "text-yellow-500",
+                            passwordStrength.level === 'strong' && "text-green-500"
+                          )}>
+                            {passwordStrength.level} password
+                          </p>
+                        </div>
+                      )}
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="signup-confirm-password">Confirm Password</Label>
-                      <Input
-                        id="signup-confirm-password"
-                        type="password"
-                        placeholder="••••••••"
-                        value={confirmPassword}
-                        onChange={(e) => setConfirmPassword(e.target.value)}
-                        required
-                        minLength={6}
-                        className="bg-background/50"
-                      />
+                      <div className="relative">
+                        <Input
+                          id="signup-confirm-password"
+                          type={showConfirmPassword ? "text" : "password"}
+                          placeholder="••••••••"
+                          value={confirmPassword}
+                          onChange={(e) => setConfirmPassword(e.target.value)}
+                          required
+                          minLength={6}
+                          className="bg-background/50 pr-10"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                          aria-label={showConfirmPassword ? "Hide password" : "Show password"}
+                        >
+                          {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        </button>
+                      </div>
                     </div>
                     <Button type="submit" className="w-full" disabled={loading}>
                       {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
