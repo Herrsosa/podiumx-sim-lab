@@ -7,7 +7,7 @@ import {
     DialogTitle,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { ShareableWorkoutCard, type ShareableWorkoutCardRef } from './ShareableWorkoutCard';
+import { ShareableCapChart, type ShareableCapChartRef } from './ShareableCapChart';
 import {
     generateShareImage,
     downloadBlob,
@@ -16,43 +16,42 @@ import {
     canShareFiles,
 } from '@/utils/shareUtils';
 import { toast } from 'sonner';
-import type { Workout } from '@/types';
+import type { Athlete } from '@/types';
 
-interface ShareModalProps {
+interface ShareCapChartModalProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
-    workout: Workout;
+    athlete: Athlete;
     athleteName: string;
     athleteHandle: string;
     athleteAvatar?: string;
-    imageUrl?: string;
     athleteProfileUrl?: string;
-    location?: { lat: number; lng: number } | null;
+    priceHistory?: { price: number }[];
 }
 
-export function ShareModal({
+export function ShareCapChartModal({
     open,
     onOpenChange,
-    workout,
+    athlete,
     athleteName,
     athleteHandle,
     athleteAvatar,
     athleteProfileUrl,
-    location,
-}: ShareModalProps) {
+    priceHistory,
+}: ShareCapChartModalProps) {
     const [isGenerating, setIsGenerating] = useState(false);
     const [generatedBlob, setGeneratedBlob] = useState<Blob | null>(null);
-    const cardRef = useRef<ShareableWorkoutCardRef>(null);
+    const cardRef = useRef<ShareableCapChartRef>(null);
 
     const isMobile = typeof navigator !== 'undefined' && /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
     const supportsShare = canShareFiles();
 
-    // Reset blob when modal opens/closes or workout changes
+    // Reset blob when modal opens/closes
     useEffect(() => {
         if (open) {
             setGeneratedBlob(null);
         }
-    }, [open, workout.id]);
+    }, [open]);
 
     // Generate the image (lazy, on first action)
     const ensureImageGenerated = useCallback(async () => {
@@ -79,8 +78,8 @@ export function ShareModal({
             const blob = await ensureImageGenerated();
             const success = await shareImage(
                 blob,
-                `${athleteName}'s Workout`,
-                `Check out this workout on Athlyst! ${athleteProfileUrl || ''}`
+                `${athleteName}'s Athlete Card`,
+                `Check out my Athlete Card on Athlyst! ${athleteProfileUrl || ''}`
             );
             if (success) {
                 toast.success('Opening share sheet...');
@@ -88,7 +87,7 @@ export function ShareModal({
             } else {
                 // Fallback to download
                 toast.info('Open Instagram and share the downloaded image');
-                downloadBlob(blob, `${athleteHandle}-workout.png`);
+                downloadBlob(blob, `${athleteHandle}-card.png`);
             }
         } catch (error) {
             console.error('Share failed:', error);
@@ -100,7 +99,7 @@ export function ShareModal({
     const handleDownload = async () => {
         try {
             const blob = await ensureImageGenerated();
-            downloadBlob(blob, `${athleteHandle}-workout.png`);
+            downloadBlob(blob, `${athleteHandle}-card.png`);
             toast.success('Image downloaded!');
         } catch (error) {
             console.error('Download failed:', error);
@@ -122,7 +121,7 @@ export function ShareModal({
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent
-                className="max-w-md"
+                className="max-w-sm"
                 onClick={(e) => e.stopPropagation()}
                 onKeyDown={(e) => e.stopPropagation()}
                 onPointerDownOutside={(e) => e.preventDefault()}
@@ -130,35 +129,9 @@ export function ShareModal({
                 <DialogHeader>
                     <DialogTitle className="flex items-center gap-2">
                         <Share2 className="h-5 w-5" />
-                        Share Workout
+                        Share Athlete Card
                     </DialogTitle>
                 </DialogHeader>
-
-                {/* Preview - scaled down shareable card */}
-                <div className="flex justify-center mb-4">
-                    <div
-                        className="rounded-lg overflow-hidden border border-white/10 shadow-lg"
-                        style={{
-                            width: '180px',
-                            height: '320px',
-                        }}
-                    >
-                        <div style={{
-                            transform: 'scale(0.333)',
-                            transformOrigin: 'top left',
-                            width: '540px',
-                            height: '960px',
-                        }}>
-                            <ShareableWorkoutCard
-                                workout={workout}
-                                athleteName={athleteName}
-                                athleteHandle={athleteHandle}
-                                athleteAvatar={athleteAvatar}
-                                location={location}
-                            />
-                        </div>
-                    </div>
-                </div>
 
                 <div className="space-y-3">
                     {/* Instagram / Native Share (mobile) */}
@@ -204,15 +177,15 @@ export function ShareModal({
                     </Button>
                 </div>
 
-                {/* Hidden shareable card for image generation (full size) */}
+                {/* Hidden shareable card for image generation */}
                 <div className="fixed -left-[9999px] -top-[9999px]">
-                    <ShareableWorkoutCard
+                    <ShareableCapChart
                         ref={cardRef}
-                        workout={workout}
+                        athlete={athlete}
                         athleteName={athleteName}
                         athleteHandle={athleteHandle}
                         athleteAvatar={athleteAvatar}
-                        location={location}
+                        priceHistory={priceHistory}
                     />
                 </div>
             </DialogContent>

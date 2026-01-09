@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, type RefObject } from 'react';
 import { Share2, Download, Link, Instagram, Loader2 } from 'lucide-react';
 import {
     Dialog,
@@ -7,7 +7,6 @@ import {
     DialogTitle,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { ShareableWorkoutCard, type ShareableWorkoutCardRef } from './ShareableWorkoutCard';
 import {
     generateShareImage,
     downloadBlob,
@@ -16,51 +15,68 @@ import {
     canShareFiles,
 } from '@/utils/shareUtils';
 import { toast } from 'sonner';
-import type { Workout } from '@/types';
 
-interface ShareModalProps {
+interface ShareChartModalProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
-    workout: Workout;
+    /** Ref to the chart container element to capture */
+    chartRef: RefObject<HTMLDivElement>;
     athleteName: string;
     athleteHandle: string;
-    athleteAvatar?: string;
-    imageUrl?: string;
     athleteProfileUrl?: string;
-    location?: { lat: number; lng: number } | null;
 }
 
-export function ShareModal({
+/**
+ * Modal for sharing the actual chart element from the page.
+ * Captures the exact chart as displayed, including PoS dots.
+ */
+export function ShareChartModal({
     open,
     onOpenChange,
-    workout,
+    chartRef,
     athleteName,
     athleteHandle,
-    athleteAvatar,
     athleteProfileUrl,
-    location,
-}: ShareModalProps) {
+}: ShareChartModalProps) {
     const [isGenerating, setIsGenerating] = useState(false);
     const [generatedBlob, setGeneratedBlob] = useState<Blob | null>(null);
-    const cardRef = useRef<ShareableWorkoutCardRef>(null);
+    const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
     const isMobile = typeof navigator !== 'undefined' && /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
     const supportsShare = canShareFiles();
 
-    // Reset blob when modal opens/closes or workout changes
+    // Generate preview when modal opens
     useEffect(() => {
-        if (open) {
+        if (open && chartRef.current && !previewUrl) {
+            // Generate a preview image when modal opens
+            generateShareImage(chartRef.current)
+                .then(blob => {
+                    const url = URL.createObjectURL(blob);
+                    setPreviewUrl(url);
+                    setGeneratedBlob(blob);
+                })
+                .catch(err => {
+                    console.error('Failed to generate preview:', err);
+                });
+        }
+
+        // Cleanup preview URL when modal closes
+        if (!open) {
+            if (previewUrl) {
+                URL.revokeObjectURL(previewUrl);
+            }
+            setPreviewUrl(null);
             setGeneratedBlob(null);
         }
-    }, [open, workout.id]);
+    }, [open, chartRef, previewUrl]);
 
-    // Generate the image (lazy, on first action)
+    // Generate the image from the actual chart element
     const ensureImageGenerated = useCallback(async () => {
         if (generatedBlob) return generatedBlob;
 
-        const element = cardRef.current?.getElement();
+        const element = chartRef.current;
         if (!element) {
-            throw new Error('Card element not available');
+            throw new Error('Chart element not available');
         }
 
         setIsGenerating(true);
@@ -71,7 +87,7 @@ export function ShareModal({
         } finally {
             setIsGenerating(false);
         }
-    }, [generatedBlob]);
+    }, [generatedBlob, chartRef]);
 
     // Share to Instagram (uses native share on mobile)
     const handleShareInstagram = async () => {
@@ -79,8 +95,8 @@ export function ShareModal({
             const blob = await ensureImageGenerated();
             const success = await shareImage(
                 blob,
-                `${athleteName}'s Workout`,
-                `Check out this workout on Athlyst! ${athleteProfileUrl || ''}`
+                `${athleteName}'s Chart`,
+                `Check out my Athlete Card on Athlyst! ${athleteProfileUrl || ''}`
             );
             if (success) {
                 toast.success('Opening share sheet...');
@@ -88,7 +104,7 @@ export function ShareModal({
             } else {
                 // Fallback to download
                 toast.info('Open Instagram and share the downloaded image');
-                downloadBlob(blob, `${athleteHandle}-workout.png`);
+                downloadBlob(blob, `${athleteHandle}-chart.png`);
             }
         } catch (error) {
             console.error('Share failed:', error);
@@ -100,7 +116,7 @@ export function ShareModal({
     const handleDownload = async () => {
         try {
             const blob = await ensureImageGenerated();
-            downloadBlob(blob, `${athleteHandle}-workout.png`);
+            downloadBlob(blob, `${athleteHandle}-chart.png`);
             toast.success('Image downloaded!');
         } catch (error) {
             console.error('Download failed:', error);
@@ -130,33 +146,32 @@ export function ShareModal({
                 <DialogHeader>
                     <DialogTitle className="flex items-center gap-2">
                         <Share2 className="h-5 w-5" />
-                        Share Workout
+                        Share Chart
                     </DialogTitle>
                 </DialogHeader>
 
-                {/* Preview - scaled down shareable card */}
+                {/* Preview - captured chart image */}
                 <div className="flex justify-center mb-4">
                     <div
-                        className="rounded-lg overflow-hidden border border-white/10 shadow-lg"
+                        className="rounded-lg overflow-hidden border border-white/10 shadow-lg bg-background"
                         style={{
-                            width: '180px',
-                            height: '320px',
+                            width: '100%',
+                            maxWidth: '360px',
+                            aspectRatio: '16/9',
                         }}
                     >
-                        <div style={{
-                            transform: 'scale(0.333)',
-                            transformOrigin: 'top left',
-                            width: '540px',
-                            height: '960px',
-                        }}>
-                            <ShareableWorkoutCard
-                                workout={workout}
-                                athleteName={athleteName}
-                                athleteHandle={athleteHandle}
-                                athleteAvatar={athleteAvatar}
-                                location={location}
+                        {previewUrl ? (
+                            <img
+                                src={previewUrl}
+                                alt="Chart preview"
+                                className="w-full h-full object-contain"
                             />
-                        </div>
+                        ) : (
+                            <div className="w-full h-full flex items-center justify-center text-muted-foreground">
+                                <Loader2 className="h-6 w-6 animate-spin mr-2" />
+                                Loading preview...
+                            </div>
+                        )}
                     </div>
                 </div>
 
@@ -202,18 +217,6 @@ export function ShareModal({
                         <Link className="h-5 w-5 text-green-500" />
                         <span>Copy Link</span>
                     </Button>
-                </div>
-
-                {/* Hidden shareable card for image generation (full size) */}
-                <div className="fixed -left-[9999px] -top-[9999px]">
-                    <ShareableWorkoutCard
-                        ref={cardRef}
-                        workout={workout}
-                        athleteName={athleteName}
-                        athleteHandle={athleteHandle}
-                        athleteAvatar={athleteAvatar}
-                        location={location}
-                    />
                 </div>
             </DialogContent>
         </Dialog>

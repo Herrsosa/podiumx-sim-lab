@@ -16,6 +16,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 import { useOnboardingStatus } from "@/hooks/useOnboardingStatus";
 import { useUser } from "@/store/auth";
+import { WORKOUT_TYPES, DISTANCE_WORKOUT_TYPES, WorkoutTypeValue } from "@/constants/workoutTypes";
 
 type ProfileInsert = Database['public']['Tables']['profiles']['Insert'];
 
@@ -44,9 +45,10 @@ export default function Onboarding() {
   const [bio, setBio] = useState("");
 
   // Workout fields
-  const [workoutType, setWorkoutType] = useState<Workout['type']>("Run");
+  const [workoutType, setWorkoutType] = useState<WorkoutTypeValue>("Run");
   const [distance, setDistance] = useState("");
   const [duration, setDuration] = useState("");
+  const [rpe, setRpe] = useState("5");
   const [notes, setNotes] = useState("");
   const [workoutDate, setWorkoutDate] = useState(new Date().toISOString().split('T')[0]);
 
@@ -231,7 +233,7 @@ export default function Onboarding() {
           distance: distance ? parseFloat(distance) : undefined,
           duration: parseInt(duration),
           notes,
-          rpe: 7,
+          rpe: parseInt(rpe),
         };
 
         const { error: postError } = await supabase
@@ -495,16 +497,14 @@ export default function Onboarding() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Type</Label>
-                  <Select value={workoutType} onValueChange={(v) => setWorkoutType(v as Workout['type'])}>
+                  <Select value={workoutType} onValueChange={(v) => setWorkoutType(v as WorkoutTypeValue)}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="Run">Run</SelectItem>
-                      <SelectItem value="Lift">Lift</SelectItem>
-                      <SelectItem value="Cycle">Cycle</SelectItem>
-                      <SelectItem value="Swim">Swim</SelectItem>
-                      <SelectItem value="HIIT">HIIT</SelectItem>
+                      {WORKOUT_TYPES.map((wt) => (
+                        <SelectItem key={wt.value} value={wt.value}>{wt.label}</SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
@@ -517,6 +517,30 @@ export default function Onboarding() {
                     onChange={(e) => setDuration(e.target.value)}
                   />
                 </div>
+              </div>
+
+              {DISTANCE_WORKOUT_TYPES.includes(workoutType) && (
+                <div className="space-y-2">
+                  <Label>Distance (km)</Label>
+                  <Input
+                    type="number"
+                    step="0.1"
+                    placeholder="10.5"
+                    value={distance}
+                    onChange={(e) => setDistance(e.target.value)}
+                  />
+                </div>
+              )}
+
+              <div className="space-y-2">
+                <Label>RPE (Rate of Perceived Exertion: 1-10)</Label>
+                <Input
+                  type="number"
+                  min="1"
+                  max="10"
+                  value={rpe}
+                  onChange={(e) => setRpe(e.target.value)}
+                />
               </div>
 
               <div className="space-y-2">

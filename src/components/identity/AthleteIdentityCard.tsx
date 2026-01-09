@@ -1,7 +1,10 @@
-import { Flame, TrendingUp, TrendingDown, Minus, Zap, Calendar } from 'lucide-react';
+import { useState } from 'react';
+import { Flame, TrendingUp, TrendingDown, Minus, Zap, Calendar, Share2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useIdentityKernel, type Archetype } from '@/hooks/useIdentityKernel';
 import { Skeleton } from '@/components/ui/skeleton';
+import { ShareAuraModal } from '@/components/share/ShareAuraModal';
+import { useMyAthlete } from '@/hooks/useMyAthlete';
 
 interface AthleteIdentityCardProps {
     className?: string;
@@ -57,6 +60,9 @@ const ARCHETYPE_THEMES: Record<Archetype, { gradient: string; glow: string; text
  */
 export function AthleteIdentityCard({ className, athleteId }: AthleteIdentityCardProps) {
     const { data: kernel, isLoading } = useIdentityKernel(athleteId);
+    const { data: myAthleteData } = useMyAthlete();
+    const athlete = myAthleteData?.athlete;
+    const [shareOpen, setShareOpen] = useState(false);
 
     if (isLoading) {
         return <IdentityCardSkeleton className={className} />;
@@ -88,6 +94,28 @@ export function AthleteIdentityCard({ className, athleteId }: AthleteIdentityCar
                 'absolute -top-10 -right-10 w-40 h-40 rounded-full blur-3xl opacity-60',
                 `bg-gradient-to-br ${theme.gradient}`
             )} />
+
+            {/* Share button */}
+            <button
+                onClick={() => setShareOpen(true)}
+                className="absolute top-3 right-3 p-2 rounded-full bg-white/5 hover:bg-white/10 transition-colors border border-white/10 z-20"
+                title="Share Aura Score"
+            >
+                <Share2 className="w-4 h-4 text-white/70" />
+            </button>
+
+            {/* Share Modal */}
+            {athlete && (
+                <ShareAuraModal
+                    open={shareOpen}
+                    onOpenChange={setShareOpen}
+                    kernel={kernel}
+                    athleteName={athlete.name}
+                    athleteHandle={athlete.slug || ''}
+                    athleteAvatar={athlete.avatar}
+                    athleteProfileUrl={`${window.location.origin}/athlete/${athlete.id}`}
+                />
+            )}
 
             {/* Content */}
             <div className="relative z-10">

@@ -4,12 +4,11 @@
 
 \## 1) What this project is (Context)
 
-\- \*\*Athlyst\*\*: a web app where athletes mint tokens, share “Proof-of-Sweat” posts (workouts/media), and fans trade those tokens on a bonding-curve marketplace.
+\- \*\*Athlyst\*\*: a web app where athletes mint tokens, share “Proof-of-Sweat” posts (workouts/media), and fans trade those tokens on marketplace.
 
 \- Core flows: auth → create/view athlete profiles → post workouts (manual + Strava/Garmin sync) → marketplace buy/sell → token-gated chat/content.
 
 \- Non-goals: not a generic DEX or wallet app; crypto UX should stay “under the hood” and simple.
-
 
 
 \## 2) Tech \& conventions (Stack)

@@ -13,6 +13,7 @@ import type { WorkoutMutationResult } from '@/hooks/useWorkouts';
 import { mapPostRowToLockerWorkout, mapPostRowToPost } from '@/hooks/useWorkouts';
 import { LocationInput } from './LocationInput';
 import type { LocationResult } from '@/hooks/useLocationSearch';
+import { WORKOUT_TYPES, DISTANCE_WORKOUT_TYPES } from '@/constants/workoutTypes';
 
 interface AddWorkoutModalProps {
   open: boolean;
@@ -39,8 +40,7 @@ export default function AddWorkoutModal({ open, onOpenChange, athleteId, onSucce
     visibility: 'public',
   });
 
-  const distanceApplicableTypes = ['Run', 'Bike', 'Swim'];
-  const showDistanceField = distanceApplicableTypes.includes(formData.type);
+  const showDistanceField = DISTANCE_WORKOUT_TYPES.includes(formData.type as typeof DISTANCE_WORKOUT_TYPES[number]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -193,13 +193,9 @@ export default function AddWorkoutModal({ open, onOpenChange, athleteId, onSucce
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Run">Run</SelectItem>
-                    <SelectItem value="HYROX">HYROX</SelectItem>
-                    <SelectItem value="Swim">Swim</SelectItem>
-                    <SelectItem value="Bike">Bike</SelectItem>
-                    <SelectItem value="Strength">Strength</SelectItem>
-                    <SelectItem value="HIIT">HIIT</SelectItem>
-                    <SelectItem value="Other">Other</SelectItem>
+                    {WORKOUT_TYPES.map((wt) => (
+                      <SelectItem key={wt.value} value={wt.value}>{wt.label}</SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
