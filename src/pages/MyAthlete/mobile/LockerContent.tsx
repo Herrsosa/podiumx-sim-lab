@@ -9,6 +9,7 @@ import { LockerWorkouts } from '@/components/myathlete/LockerWorkouts';
 import { useOnboardingTour } from '@/hooks/useOnboardingTour';
 import { startTour } from '@/components/OnboardingTour';
 import { Link } from 'react-router-dom';
+import { PushNotificationPrompt } from '@/components/PushNotificationPrompt';
 
 interface LockerContentProps {
     athleteId: string;
@@ -131,6 +132,12 @@ export function LockerContent({ athleteId, athleteName }: LockerContentProps) {
                                         </Button>
                                     </div>
                                 </div>
+                            </div>
+
+                            {/* Notifications Section */}
+                            <div className="border-t pt-4">
+                                <h3 className="text-base font-semibold mb-3">Notifications</h3>
+                                <PushNotificationPrompt variant="card" />
                             </div>
 
                             <div className="border-t pt-4">

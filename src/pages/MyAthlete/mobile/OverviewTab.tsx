@@ -173,8 +173,8 @@ export function OverviewTab({
                         <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center mb-2">
                             <Activity className="h-5 w-5 text-primary" />
                         </div>
-                        <p className="text-sm font-medium">Settings</p>
-                        <p className="text-xs text-muted-foreground mt-1">Edit profile</p>
+                        <p className="text-sm font-medium">Edit Profile</p>
+                        <p className="text-xs text-muted-foreground mt-1">Update your info</p>
                     </CardContent>
                 </Card>
 

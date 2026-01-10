@@ -8,6 +8,7 @@ export const featureFlags = {
   enableVirtualScroll: true,
   enableProps: true,
   enableNotifications: true,
+  enablePushNotifications: true,
 } as const;
 
 export type FeatureFlagKey = keyof typeof featureFlags;

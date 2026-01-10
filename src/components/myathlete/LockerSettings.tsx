@@ -4,6 +4,7 @@ import { Compass, RotateCcw, BookOpen, CheckCircle2 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useOnboardingTour } from '@/hooks/useOnboardingTour';
 import { startTour } from '@/components/OnboardingTour';
+import { PushNotificationPrompt } from '@/components/PushNotificationPrompt';
 
 /**
  * Settings tab content for the Locker
@@ -65,6 +66,11 @@ export function LockerSettings() {
                         </Button>
                     )}
                 </div>
+            </div>
+
+            <div className="border-t pt-6">
+                <h3 className="text-lg font-semibold mb-4">Notifications</h3>
+                <PushNotificationPrompt variant="card" />
             </div>
 
             <div className="border-t pt-6">
