@@ -9,6 +9,7 @@ import { cn } from '@/lib/utils';
 import { PropButton } from '@/components/PropButton';
 import { CommentButtonWithModal } from '@/components/comments';
 import { ShareButton } from '@/components/share';
+import { ReactionBar } from '@/components/ReactionBar';
 
 interface WorkoutGridCardProps {
   workout: Workout;
@@ -189,6 +190,7 @@ function WorkoutGridCardComponent({ workout, post, canView, onClick, variant = '
                     {/* Props, Comments & Share Buttons */}
                     {post?.id && (
                       <div className="flex items-center gap-3 mt-2 relative z-10">
+                        <ReactionBar postId={post.id} compact />
                         <PropButton postId={post.id} size="sm" />
                         <CommentButtonWithModal postId={post.id} size="sm" />
                         {athleteName && athleteHandle && (
