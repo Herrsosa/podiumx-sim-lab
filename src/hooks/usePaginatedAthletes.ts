@@ -53,8 +53,11 @@ export function usePaginatedAthletes() {
 
       const rows = (data || []) as BatchAthleteRow[];
 
+      // Filter out users without tokens (supply === 0 means no token launched)
+      const athleteRows = rows.filter(row => row.supply > 0);
+
       // Combine profile + token data (posts are intentionally omitted for marketplace views)
-      const athletes: Athlete[] = rows.map((row) => {
+      const athletes: Athlete[] = athleteRows.map((row) => {
         const price = priceAt(row.supply, { a: row.a, b: row.b, c: row.c });
         const marketCap = price * row.supply;
         const avatarSource = athleteAvatars[row.username] ?? row.avatar_url;

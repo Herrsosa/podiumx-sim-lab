@@ -28,6 +28,7 @@ import { TradesTab } from './TradesTab';
 import { LockerGlobe } from '@/components/myathlete/LockerGlobe';
 import { useXConnection } from '@/hooks/useXConnection';
 import { AthleteIdentityCard } from '@/components/identity';
+import { LaunchTokenPrompt } from '@/components/LaunchTokenPrompt';
 
 interface MobileMyAthletesProps {
   athlete?: Athlete;
@@ -52,6 +53,7 @@ interface MobileMyAthletesProps {
   timeRange?: TimeRangeKey;
   onTimeRangeChange?: (range: TimeRangeKey) => void;
   onRefetchWorkouts?: () => void;
+  hasToken?: boolean;
 }
 
 const currencyFormatter = new Intl.NumberFormat('en-US', {
@@ -89,6 +91,7 @@ export default function MobileMyAthletes({
   timeRange = '7d',
   onTimeRangeChange,
   onRefetchWorkouts,
+  hasToken = true,
 }: MobileMyAthletesProps) {
   const [activeTab, setActiveTab] = useState<(typeof MOBILE_TAB_KEYS)[number]>('overview');
   const [consoleTab, setConsoleTab] = useState<'personal' | 'locker'>('personal');
@@ -204,8 +207,13 @@ export default function MobileMyAthletes({
       </header>
 
       <main className="flex-1 overflow-x-hidden pb-24">
-        {/* Identity Kernel Card - always visible */}
         <div className="px-4 pt-4">
+          {/* Show launch token prompt if user hasn't created a token */}
+          {!hasToken && (
+            <div className="mb-4">
+              <LaunchTokenPrompt />
+            </div>
+          )}
           <AthleteIdentityCard className="mb-4" />
         </div>
 

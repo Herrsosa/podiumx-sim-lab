@@ -1,7 +1,7 @@
 import { memo } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Lock, Calendar, Pin } from 'lucide-react';
+import { Lock, Calendar, Pin, CheckCircle2 } from 'lucide-react';
 import type { Workout, Post } from '@/types';
 import { SupabaseResponsiveImage } from '@/components/SupabaseResponsiveImage';
 import { ActivityMap } from '@/components/ui/ActivityMap';
@@ -71,6 +71,7 @@ function WorkoutGridCardComponent({ workout, post, canView, onClick, variant = '
   const typeGradient = getTypeGradient(workout.type);
   const typeColor = getTypeColor(workout.type);
   const displayDate = post?.created_at || workout.date;
+  const isStravaVerified = !!post?.strava_activity_id;
 
   // Build metrics string
   const metrics: string[] = [];
@@ -162,6 +163,12 @@ function WorkoutGridCardComponent({ workout, post, canView, onClick, variant = '
                     {formatDate(displayDate)}
                   </span>
                 </div>
+                {isStravaVerified && (
+                  <Badge variant="secondary" className="gap-1 px-1.5 py-0.5 bg-orange-500/20 text-orange-500 backdrop-blur-md border-orange-500/30">
+                    <CheckCircle2 className="h-3 w-3" />
+                    <span className="text-[10px]">Strava</span>
+                  </Badge>
+                )}
               </div>
 
               <div className="space-y-2">

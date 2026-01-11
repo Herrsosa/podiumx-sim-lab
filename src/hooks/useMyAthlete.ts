@@ -20,6 +20,7 @@ type ProfileSummary = Pick<
 
 export type MyAthletePageResult = {
   athlete: Athlete;
+  hasToken: boolean;
   nextPage?: number;
 };
 
@@ -112,6 +113,7 @@ export function useMyAthlete() {
       if (tokenError) throw tokenError;
       const tokenRows = (tokens ?? []) as TokenRow[];
       const token = tokenRows[0];
+      const hasToken = !!token;
 
       // Calculate current price from bonding curve
       const supply = token?.supply || 0;
@@ -197,6 +199,7 @@ export function useMyAthlete() {
 
       return {
         athlete,
+        hasToken,
         nextPage: posts.length === POSTS_PAGE_SIZE ? currentPage + 1 : undefined,
       };
     },

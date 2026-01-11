@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, type RefObject } from 'react';
-import { Share2, Download, Link, Instagram, Loader2 } from 'lucide-react';
+import { Share2, Download, Link, Instagram, Loader2, Twitter } from 'lucide-react';
 import {
     Dialog,
     DialogContent,
@@ -135,6 +135,15 @@ export function ShareChartModal({
         }
     };
 
+    // Share to X/Twitter
+    const handleShareX = () => {
+        const text = `Check out ${athleteName}'s performance chart on Athlyst!\n\n#Athlyst #ProofOfSweat`;
+        const url = `https://athlyst.fun/athlete/${athleteHandle}`;
+        const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`;
+        window.open(twitterUrl, '_blank', 'width=550,height=420');
+        toast.success('Opening X...');
+    };
+
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent
@@ -192,6 +201,16 @@ export function ShareChartModal({
                             <span>Share to Instagram Stories</span>
                         </Button>
                     )}
+
+                    {/* Share to X/Twitter */}
+                    <Button
+                        variant="outline"
+                        className="w-full justify-start gap-3 h-12"
+                        onClick={handleShareX}
+                    >
+                        <Twitter className="h-5 w-5" />
+                        <span>Share to X</span>
+                    </Button>
 
                     {/* Download */}
                     <Button

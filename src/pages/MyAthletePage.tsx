@@ -46,6 +46,7 @@ import {
 import type { MyAthletePageResult } from '@/hooks/useMyAthlete';
 import type { WorkoutMutationResult } from '@/hooks/useWorkouts';
 import { AthleteIdentityCard } from '@/components/identity';
+import { LaunchTokenPrompt } from '@/components/LaunchTokenPrompt';
 
 export default function MyAthletePage() {
   const user = useUser();
@@ -424,6 +425,7 @@ export default function MyAthletePage() {
               void queryClient.invalidateQueries({ queryKey: ['my-athlete', user.id] });
             }
           }}
+          hasToken={myAthletePage?.hasToken ?? true}
         />
         {modalStack}
       </>
@@ -438,6 +440,13 @@ export default function MyAthletePage() {
           <h1 className="mb-2 text-4xl font-bold">My Athlete Profile</h1>
           <p className="text-muted-foreground">Manage your profile and workout timeline</p>
         </div>
+
+        {/* Show launch token prompt if user hasn't created a token */}
+        {myAthletePage && !myAthletePage.hasToken && (
+          <div className="mb-6 max-w-md">
+            <LaunchTokenPrompt />
+          </div>
+        )}
 
         {/* Top-level tabs: Personal vs View Locker */}
         <Tabs value={currentTab} onValueChange={(v) => setTab(v as 'personal' | 'locker')} className="w-full mb-6">

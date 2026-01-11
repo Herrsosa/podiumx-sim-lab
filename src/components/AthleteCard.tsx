@@ -14,6 +14,7 @@ import { CountUp } from '@/components/ui/count-up';
 import { cn } from '@/lib/utils';
 import { use3DTilt } from '@/hooks/use3DTilt';
 import { WatchlistButton } from '@/components/WatchlistButton';
+import { usePriceFlash } from '@/hooks/usePriceFlash';
 
 const SPORT_COLORS: Record<string, string> = {
   Running: 'bg-orange-500/10 text-orange-500 hover:bg-orange-500/20 border-orange-500/20',
@@ -43,6 +44,9 @@ export const AthleteCard = memo(({ athlete, chartData, onClick, onMouseEnter }: 
     scale: 1.02,
     speed: 400
   });
+
+  // Price flash animation
+  const { flashClass } = usePriceFlash(athlete.price);
 
   const sortedChartData = useMemo(
     () => chartData.slice().sort((a, b) => a.timestamp - b.timestamp),
@@ -159,7 +163,7 @@ export const AthleteCard = memo(({ athlete, chartData, onClick, onMouseEnter }: 
             {/* Price & Change - PROMINENT */}
             <div className="mb-3">
               <div className="flex items-baseline justify-between mb-0.5">
-                <div className="text-2xl font-bold tracking-tight">
+                <div className={cn("text-2xl font-bold tracking-tight rounded px-1 -mx-1 transition-colors", flashClass)}>
                   $<CountUp value={athlete.price} decimalPlaces={2} duration={1.5} />
                 </div>
                 <div
