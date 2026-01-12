@@ -40,21 +40,21 @@ const getTypeColor = (type: Workout['type']) => {
   }
 };
 
-const getTypeGradient = (type: Workout['type']) => {
+const getTypeGradient = (type: Workout['type']): React.CSSProperties => {
   switch (type) {
     case 'Run':
     case 'HYROX':
-      return '!from-emerald-600 !to-teal-900';
+      return { background: 'linear-gradient(to bottom right, #059669, #0f766e)' }; // emerald to teal
     case 'Swim':
-      return '!from-indigo-600 !to-blue-900';
+      return { background: 'linear-gradient(to bottom right, #4f46e5, #1d4ed8)' }; // indigo to blue
     case 'Bike':
-      return '!from-blue-600 !to-cyan-900';
+      return { background: 'linear-gradient(to bottom right, #2563eb, #0891b2)' }; // blue to cyan
     case 'Strength':
-      return '!from-orange-600 !to-red-900';
+      return { background: 'linear-gradient(to bottom right, #ea580c, #b91c1c)' }; // orange to red
     case 'HIIT':
-      return '!from-orange-500 !to-rose-900';
+      return { background: 'linear-gradient(to bottom right, #f97316, #be123c)' }; // orange to rose
     default:
-      return '!from-slate-600 !to-gray-900';
+      return { background: 'linear-gradient(to bottom right, #475569, #1f2937)' }; // slate to gray
   }
 };
 
@@ -137,7 +137,7 @@ function WorkoutGridCardComponent({ workout, post, canView, onClick, variant = '
             />
           </div>
         ) : (
-          <div className={cn('absolute inset-0 bg-gradient-to-br overflow-hidden', variant === 'feed' ? 'rounded-2xl' : '', typeGradient)} />
+          <div className={cn('absolute inset-0 overflow-hidden', variant === 'feed' ? 'rounded-2xl' : '')} style={typeGradient} />
         )}
 
         {showOverlayContent && (

@@ -56,11 +56,25 @@ export function PushNotificationPrompt({
     };
 
     if (variant === 'card') {
+        const handleCardClick = () => {
+            if (isLoading) return;
+            if (isSubscribed) {
+                unsubscribe();
+            } else {
+                handleSubscribe();
+            }
+        };
+
         return (
             <Card className={cn('glass-card', className)}>
                 <CardContent className="p-4">
                     <div className="flex items-center justify-between gap-4">
-                        <div className="flex items-center gap-3">
+                        <button
+                            type="button"
+                            className="flex items-center gap-3 text-left cursor-pointer hover:opacity-80 transition-opacity flex-1"
+                            onClick={handleCardClick}
+                            disabled={isLoading}
+                        >
                             {isSubscribed ? (
                                 <Bell className="h-5 w-5 text-emerald-500" />
                             ) : (
@@ -76,7 +90,7 @@ export function PushNotificationPrompt({
                                         : 'Get notified about trades, messages, and activity'}
                                 </p>
                             </div>
-                        </div>
+                        </button>
                         <Button
                             variant={isSubscribed ? 'outline' : 'default'}
                             size="sm"

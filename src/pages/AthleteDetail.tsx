@@ -38,6 +38,9 @@ import { usePriceSeries } from '@/hooks/usePriceSeries';
 
 import { AthleteHero } from '@/components/athlete/AthleteHero';
 import { AthleteIdentityCard } from '@/components/identity';
+import { MobileAthleteProfile } from '@/pages/AthleteDetail/MobileAthleteProfile';
+import { useMediaQuery } from '@/hooks/useMediaQuery';
+import { useIdentityKernel } from '@/hooks/useIdentityKernel';
 
 const AthletePriceChart = lazy(() => import('@/components/charts/AthletePriceChart'));
 
@@ -72,6 +75,8 @@ export default function AthleteDetail() {
     enabled: Boolean(athlete?.id),
   });
   const tradeMutation = useTrade();
+  const isMobile = !useMediaQuery('(min-width: 480px)', true);
+  const { data: identityKernel } = useIdentityKernel(athlete?.id);
   const [initialLoadComplete, setInitialLoadComplete] = useState(false);
   useEffect(() => {
     setInitialLoadComplete(false);
@@ -291,6 +296,17 @@ export default function AthleteDetail() {
 
   const isOwnProfile = user?.id === athlete?.id;
 
+  // Calculate holders count from trades data
+  const holdersCount = useMemo(() => {
+    if (!trades) return 0;
+    const holdings = new Map<string, number>();
+    trades.forEach(trade => {
+      const current = holdings.get(trade.athleteId) ?? 0;
+      holdings.set(trade.athleteId, current + (trade.type === 'buy' ? trade.quantity : -trade.quantity));
+    });
+    return Array.from(holdings.values()).filter(qty => qty > 0).length;
+  }, [trades]);
+
   const isBootstrapping = athleteLoading || walletLoading || tradesLoading;
 
   const scrollToTrade = useCallback(
@@ -314,6 +330,17 @@ export default function AthleteDetail() {
       chatSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }, 0);
   }, [isOwnProfile, setActiveTab, setLockerInitialTab]);
+
+  // Trade handler for mobile profile
+  const handleMobileTrade = useCallback(async (athleteId: string, quantity: number, side: 'BUY' | 'SELL') => {
+    if (!athlete) return;
+    await tradeMutation.mutateAsync({
+      athleteId,
+      athleteSlug: athlete.slug,
+      quantity,
+      side,
+    });
+  }, [athlete, tradeMutation]);
 
   useEffect(() => {
     if (activeTab === 'overview') {
@@ -915,6 +942,30 @@ export default function AthleteDetail() {
         {addProofOfSweatModal}
         {mobileActionBar}
       </>
+    );
+  }
+
+  // Non-own profile: show mobile view on small screens, desktop on larger
+  if (isMobile) {
+    return (
+      <MobileAthleteProfile
+        athlete={athlete}
+        priceSeries={priceSeries}
+        trades={athleteTrades}
+        position={position}
+        userBalance={wallet?.usdc ?? 0}
+        timeRange={timeRange}
+        onTimeRangeChange={setTimeRange}
+        onBack={() => navigate(-1)}
+        onTrade={handleMobileTrade}
+        isTradePending={tradeMutation.isPending}
+        isLoading={showInitialSkeleton}
+        holdersCount={holdersCount}
+        auraScore={identityKernel?.auraScore}
+        auraBreakdown={identityKernel?.scoreBreakdown}
+        streak={identityKernel?.streak}
+        userId={user?.id}
+      />
     );
   }
 

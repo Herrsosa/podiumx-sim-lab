@@ -381,19 +381,7 @@ export default function Portfolio() {
       {/* Positions */}
       <Card className="glass-card">
         <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle>Your Positions</CardTitle>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleExportPositions}
-              disabled={positions.length === 0}
-              className="gap-2"
-            >
-              <Download className="h-4 w-4" />
-              Export CSV
-            </Button>
-          </div>
+          <CardTitle>Your Positions</CardTitle>
         </CardHeader>
         <CardContent>
           {positions.length === 0 ? (

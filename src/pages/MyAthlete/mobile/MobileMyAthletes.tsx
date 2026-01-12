@@ -1,34 +1,34 @@
-import { useMemo, useState, useRef, lazy, Suspense, useCallback } from 'react';
+import { useMemo, useState, Suspense, useCallback } from 'react';
 import { Athlete, Workout, Post } from '@/types';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import type { AthleteTrade } from '@/hooks/useAthleteTrades';
 import type { TimeRangeKey } from '@/utils/chartData';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import ProofOfSweat from '@/components/ProofOfSweat';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { cn } from '@/lib/utils';
-import { Activity, ArrowDownRight, ArrowUpRight, Plus, LogOut } from 'lucide-react';
-import { MOBILE_TAB_KEYS } from './mobile-config';
+import { Activity, Share2, Plus } from 'lucide-react';
 import type { EditableProfile } from './types';
 import { StravaCard } from '@/components/strava/StravaCard';
 import { MobileActionBar } from '@/components/MobileActionBar';
-import { LockerMessages } from '@/components/myathlete/LockerMessages';
 import type { PriceSeriesPoint } from '@/lib/charting/engine';
 import { getWindowUTC } from '@/lib/charting/engine';
 import { useChartPosts } from '@/hooks/useChartPosts';
 import { useAuthStore } from '@/store/auth';
 import { useToast } from '@/hooks/use-toast';
 
-import { OverviewTab } from './OverviewTab';
-import { ChartsTab } from './ChartsTab';
-import { TradesTab } from './TradesTab';
-import { LockerGlobe } from '@/components/myathlete/LockerGlobe';
-import { useXConnection } from '@/hooks/useXConnection';
 import { AthleteIdentityCard } from '@/components/identity';
 import { LaunchTokenPrompt } from '@/components/LaunchTokenPrompt';
+import { MobileSettingsSheet } from './MobileSettingsSheet';
+import { MarketHeroCard } from './MarketHeroCard';
+import { MarketDetailSheet } from './MarketDetailSheet';
+import { InnerCircleCard } from './InnerCircleCard';
+import TokengatedChat from '@/components/TokengatedChat';
+import { ProfileDetailsCard } from '@/components/myathlete/ProfileDetailsCard';
+import { useIdentityKernel } from '@/hooks/useIdentityKernel';
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { LockerMessages } from '@/components/myathlete/LockerMessages';
 
 interface MobileMyAthletesProps {
   athlete?: Athlete;
@@ -36,7 +36,7 @@ interface MobileMyAthletesProps {
   posts: Post[];
   priceSeries: PriceSeriesPoint[];
   hasRealTrades: boolean;
-  trades?: Array<Record<string, unknown>>;
+  trades?: AthleteTrade[];
   onAddWorkout: () => void;
   editedProfile: EditableProfile;
   isEditingProfile: boolean;
@@ -55,18 +55,6 @@ interface MobileMyAthletesProps {
   onRefetchWorkouts?: () => void;
   hasToken?: boolean;
 }
-
-const currencyFormatter = new Intl.NumberFormat('en-US', {
-  style: 'currency',
-  currency: 'USD',
-  maximumFractionDigits: 2,
-});
-
-const percentFormatter = new Intl.NumberFormat('en-US', {
-  style: 'percent',
-  minimumFractionDigits: 2,
-  maximumFractionDigits: 2,
-});
 
 export default function MobileMyAthletes({
   athlete,
@@ -93,25 +81,14 @@ export default function MobileMyAthletes({
   onRefetchWorkouts,
   hasToken = true,
 }: MobileMyAthletesProps) {
-  const [activeTab, setActiveTab] = useState<(typeof MOBILE_TAB_KEYS)[number]>('overview');
-  const [consoleTab, setConsoleTab] = useState<'personal' | 'locker'>('personal');
-  const [postsView, setPostsView] = useState<'feed' | 'globe'>('feed');
-  const { isConnected: xConnected, loading: xLoading } = useXConnection();
-  const signOut = useAuthStore((s) => s.signOut);
+  const [showMarketDetail, setShowMarketDetail] = useState(false);
+  const [showChat, setShowChat] = useState(false);
+  const [showDMs, setShowDMs] = useState(false);
+  const [showProfileEdit, setShowProfileEdit] = useState(false);
   const { toast } = useToast();
 
-  const handleSignOut = useCallback(async () => {
-    try {
-      await signOut();
-    } catch (error) {
-      const message = error instanceof Error ? error.message : undefined;
-      toast({
-        title: "Sign out failed",
-        description: message || "Unable to sign out. Please try again.",
-        variant: "destructive",
-      });
-    }
-  }, [signOut, toast]);
+  // Identity kernel for Aura score
+  const { data: kernel } = useIdentityKernel();
 
   const chartWindow = useMemo(() => getWindowUTC(timeRange || '7d'), [timeRange]);
   const chartStartDate = chartWindow.start;
@@ -121,47 +98,44 @@ export default function MobileMyAthletes({
     isFetching: isFetchingChartPosts,
   } = useChartPosts(athlete?.id, chartStartDate);
 
-  const priceChange = athlete?.change24h ?? 0;
-  const isPriceUp = priceChange >= 0;
-  const PriceChangeIcon = isPriceUp ? ArrowUpRight : ArrowDownRight;
+  const handleEditProfile = useCallback(() => {
+    setShowProfileEdit(true);
+    onStartEditProfile();
+  }, [onStartEditProfile]);
 
-  const stickyHeaderContent = useMemo(() => {
-    if (!athlete) return null;
+  const handleCloseProfileEdit = useCallback(() => {
+    setShowProfileEdit(false);
+    onCancelEditProfile();
+  }, [onCancelEditProfile]);
 
-    return (
-      <div className="flex items-center gap-4">
-        <Avatar className="h-16 w-16 ring-4 ring-primary/20">
-          <AvatarImage src={athlete.avatar} alt={athlete.name} />
-          <AvatarFallback>{athlete.name.slice(0, 2).toUpperCase()}</AvatarFallback>
-        </Avatar>
-        <div className="min-w-0 flex-1">
-          <h1 className="truncate text-lg font-semibold">{athlete.name}</h1>
-          <p className="text-sm text-muted-foreground">{athlete.sport}</p>
-        </div>
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={handleSignOut}
-          className="h-10 w-10 rounded-full bg-muted/40 hover:bg-destructive/10 hover:text-destructive"
-        >
-          <LogOut className="h-5 w-5" />
-        </Button>
-      </div>
-    );
-  }, [athlete, handleSignOut]);
+  const handleSaveProfile = useCallback(() => {
+    onSaveProfile();
+    setShowProfileEdit(false);
+  }, [onSaveProfile]);
 
-  const latestWorkout = useMemo(() => {
-    if (workouts.length === 0) return null;
-    return workouts[0];
-  }, [workouts]);
+  const handleShare = useCallback(() => {
+    // TODO: Implement share functionality
+    toast({
+      title: 'Share',
+      description: 'Share feature coming soon!',
+    });
+  }, [toast]);
 
-  const contentRef = useRef<HTMLDivElement>(null);
-
-  const scrollToContent = () => {
-    setTimeout(() => {
-      contentRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }, 100);
-  };
+  // Calculate holders from trades - count unique traders with positive net holdings
+  // NOTE: Must be before any early returns to maintain consistent hooks order
+  const holdersCount = useMemo(() => {
+    const holdings = new Map<string, number>();
+    trades.forEach(trade => {
+      // Group by user_id (the trader), not athlete_id
+      const traderId = trade.user_id;
+      if (!traderId) return;
+      const current = holdings.get(traderId) ?? 0;
+      const qty = trade.qty ?? 0;
+      const isBuy = trade.side === 'BUY';
+      holdings.set(traderId, current + (isBuy ? qty : -qty));
+    });
+    return Array.from(holdings.values()).filter(qty => qty > 0).length;
+  }, [trades]);
 
   if (!athlete) {
     return (
@@ -171,192 +145,115 @@ export default function MobileMyAthletes({
         </header>
         <main className="flex-1 space-y-4 px-4 py-6">
           <Skeleton className="h-40 w-full" />
+          <Skeleton className="h-24 w-full" />
           <Skeleton className="h-64 w-full" />
-          <Skeleton className="h-32 w-full" />
         </main>
       </div>
     );
   }
 
+  const priceChange = athlete.change24h ?? 0;
+  const auraScore = kernel?.auraScore ?? 82;
+  const streak = kernel?.streak ?? 0;
+
   return (
     <div className="flex min-h-screen flex-col bg-background text-foreground">
-      <header className="sticky top-0 z-30 border-b border-white/10 bg-gradient-to-b from-background via-background/95 to-background/90 px-4 py-4 backdrop-blur-xl">
-        {stickyHeaderContent}
-        <div className="mt-4 flex items-center justify-between">
-          <div className="flex-1">
-            <span className="text-xs uppercase tracking-wider text-muted-foreground/80">Current Price</span>
-            <p className="text-2xl font-bold bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
-              {currencyFormatter.format(athlete.price ?? 0)}
-            </p>
-          </div>
-          <div className="flex items-center gap-2">
-            <Badge
-              variant={isPriceUp ? 'default' : 'secondary'}
-              className={cn(
-                'gap-1.5 px-3 py-1.5 text-sm font-semibold',
-                isPriceUp
-                  ? 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border-emerald-500/30'
-                  : 'bg-rose-500/20 text-rose-600 dark:text-rose-400 border-rose-500/30',
-              )}
-            >
-              <PriceChangeIcon className="h-4 w-4" />
-              {percentFormatter.format((priceChange || 0) / 100)}
-            </Badge>
-          </div>
+      {/* Header: Settings (left) + Share (right) */}
+      <header className="sticky top-0 z-30 border-b border-white/10 bg-gradient-to-b from-background via-background/95 to-background/90 px-4 py-3 backdrop-blur-xl">
+        <div className="flex items-center justify-between">
+          <MobileSettingsSheet onEditProfile={handleEditProfile} />
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={handleShare}
+            className="h-10 w-10 rounded-full bg-muted/40 hover:bg-muted/60"
+          >
+            <Share2 className="h-5 w-5" />
+          </Button>
         </div>
       </header>
 
-      <main className="flex-1 overflow-x-hidden pb-24">
-        <div className="px-4 pt-4">
-          {/* Show launch token prompt if user hasn't created a token */}
-          {!hasToken && (
-            <div className="mb-4">
-              <LaunchTokenPrompt />
+      <main className="flex-1 overflow-x-hidden pb-32 px-4 space-y-4 pt-4">
+        {/* Show launch token prompt if user hasn't created a token */}
+        {!hasToken && (
+          <LaunchTokenPrompt />
+        )}
+
+        {/* Market Cap Hero Card - tappable */}
+        <MarketHeroCard
+          marketCap={athlete.marketCap ?? 0}
+          priceChange={priceChange}
+          holders={holdersCount}
+          auraScore={auraScore}
+          streak={streak}
+          onTap={() => setShowMarketDetail(true)}
+        />
+
+        {/* Inner Circle (Group Chat + DMs) */}
+        <InnerCircleCard
+          groupChatMembers={holdersCount}
+          unreadDMs={3} // TODO: Get from actual data
+          onGroupChatClick={() => setShowChat(true)}
+          onDMsClick={() => setShowDMs(true)}
+        />
+
+        {/* Strava Integration */}
+        <StravaCard />
+
+        {/* Proof of Sweat Section */}
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+              Proof of Sweat
+            </h2>
+            <Button onClick={onAddWorkout} size="sm" variant="outline" className="gap-2">
+              <Plus className="h-4 w-4" />
+              Add
+            </Button>
+          </div>
+
+          {isLoading ? (
+            <div className="space-y-3">
+              <Skeleton className="h-40 w-full" />
+              <Skeleton className="h-40 w-full" />
             </div>
-          )}
-          <AthleteIdentityCard className="mb-4" />
-        </div>
-
-        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as typeof activeTab)} className="space-y-4 px-4 py-0">
-          <TabsList className="flex w-full gap-1 rounded-2xl bg-muted/40 p-1 overflow-x-auto no-scrollbar">
-            <TabsTrigger value="overview" className="text-xs px-3 flex-shrink-0">Overview</TabsTrigger>
-            <TabsTrigger value="chart" className="text-xs px-3 flex-shrink-0">Chart</TabsTrigger>
-            <TabsTrigger value="trades" className="text-xs px-3 flex-shrink-0">Trades</TabsTrigger>
-            <TabsTrigger value="posts" className="text-xs px-3 flex-shrink-0">Workouts</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="overview" className="min-w-0">
-            <OverviewTab
-              athlete={athlete}
-              priceSeries={priceSeries}
-              priceChange={priceChange}
-              isPriceUp={isPriceUp}
-              onStartEditProfile={onStartEditProfile}
-              onCancelEditProfile={onCancelEditProfile}
-              onSaveProfile={onSaveProfile}
-              onProfileFieldChange={onProfileFieldChange}
-              onAvatarSelect={onAvatarSelect}
-              savingProfile={savingProfile}
-              onAddWorkout={onAddWorkout}
-              latestWorkout={latestWorkout}
-              xConnected={xConnected}
-              xLoading={xLoading}
-              editedProfile={editedProfile}
-              isEditingProfile={isEditingProfile}
-              consoleTab={consoleTab}
-              setConsoleTab={setConsoleTab}
-              scrollToContent={scrollToContent}
-              contentRef={contentRef}
-            />
-          </TabsContent>
-
-          <TabsContent value="chart" className="min-w-0 space-y-4">
-            <ChartsTab
-              priceSeries={priceSeries}
-              hasRealTrades={hasRealTrades}
-              timeRange={timeRange || '7d'}
-              onTimeRangeChange={onTimeRangeChange}
-              isLoading={isLoading}
-              chartPosts={chartPosts}
-              isLoadingChartPosts={isLoadingChartPosts}
-              isFetchingChartPosts={isFetchingChartPosts}
-            />
-          </TabsContent>
-
-          <TabsContent value="trades" className="min-w-0 space-y-4">
-            <TradesTab trades={trades} />
-          </TabsContent>
-
-          <TabsContent value="posts" className="min-w-0 space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <h2 className="text-base font-semibold">Workouts</h2>
-                <div className="flex items-center bg-muted/50 rounded-lg p-0.5">
-                  <Button
-                    variant={postsView === 'feed' ? 'secondary' : 'ghost'}
-                    size="sm"
-                    className="h-7 text-xs px-2"
-                    onClick={() => setPostsView('feed')}
-                  >
-                    Feed
-                  </Button>
-                  <Button
-                    variant={postsView === 'globe' ? 'secondary' : 'ghost'}
-                    size="sm"
-                    className="h-7 text-xs px-2"
-                    onClick={() => setPostsView('globe')}
-                  >
-                    Globe
-                  </Button>
-                </div>
-              </div>
-              {postsView === 'feed' && (
-                <Button onClick={onAddWorkout} size="sm">
-                  <Plus className="mr-2 h-4 w-4" />
-                  Add
+          ) : workouts.length === 0 ? (
+            <Card className="border-white/10 bg-card/60">
+              <CardContent className="space-y-4 p-6 text-center text-sm text-muted-foreground">
+                <p>No workouts yet. Add your first session to begin your Proof-of-Sweat streak.</p>
+                <Button onClick={onAddWorkout} className="w-full">
+                  Log Workout
+                </Button>
+              </CardContent>
+            </Card>
+          ) : (
+            <>
+              <ProofOfSweat
+                athleteId={athlete.id}
+                athleteName={athlete.name}
+                athleteHandle={athlete.slug}
+                athleteAvatar={athlete.avatar}
+                workouts={workouts}
+                posts={posts}
+                viewerHoldings={Number.MAX_SAFE_INTEGER}
+                onWorkoutDeleted={() => { }}
+                onWorkoutUpdated={() => {
+                  if (onRefetchWorkouts) {
+                    onRefetchWorkouts();
+                  }
+                }}
+              />
+              {hasNextPage && (
+                <Button onClick={fetchNextPage} disabled={isFetchingNextPage} variant="outline" className="w-full">
+                  {isFetchingNextPage ? 'Loading…' : 'Load more'}
                 </Button>
               )}
-            </div>
-
-            {postsView === 'globe' ? (
-              <Card className="border-white/5 bg-card/60 backdrop-blur-sm overflow-hidden">
-                <CardContent className="p-0">
-                  <Suspense fallback={<div className="p-8"><Skeleton className="h-64 w-full" /></div>}>
-                    <LockerGlobe athleteId={athlete.id} athleteName={athlete.name} />
-                  </Suspense>
-                </CardContent>
-              </Card>
-            ) : (
-              <>
-                {/* Strava Integration - prominently at top */}
-                <StravaCard className="mb-4" />
-
-                {isLoading ? (
-                  <div className="space-y-3">
-                    <Skeleton className="h-40 w-full" />
-                    <Skeleton className="h-40 w-full" />
-                  </div>
-                ) : workouts.length === 0 ? (
-                  <Card>
-                    <CardContent className="space-y-4 p-6 text-center text-sm text-muted-foreground">
-                      <p>No workouts yet. Add your first session to begin your Proof-of-Sweat streak.</p>
-                      <Button onClick={onAddWorkout} className="w-full">
-                        Log Workout
-                      </Button>
-                    </CardContent>
-                  </Card>
-                ) : (
-                  <>
-                    <ProofOfSweat
-                      athleteId={athlete.id}
-                      athleteName={athlete.name}
-                      athleteHandle={athlete.slug}
-                      athleteAvatar={athlete.avatar}
-                      workouts={workouts}
-                      posts={posts}
-                      viewerHoldings={Number.MAX_SAFE_INTEGER}
-                      onWorkoutDeleted={() => { }}
-                      onWorkoutUpdated={() => {
-                        if (onRefetchWorkouts) {
-                          onRefetchWorkouts();
-                        }
-                      }}
-                    />
-                    {hasNextPage && (
-                      <Button onClick={fetchNextPage} disabled={isFetchingNextPage} variant="outline" className="w-full">
-                        {isFetchingNextPage ? 'Loading…' : 'Load more'}
-                      </Button>
-                    )}
-                  </>
-                )}
-              </>
-            )}
-          </TabsContent>
-
-
-        </Tabs>
+            </>
+          )}
+        </div>
       </main>
 
+      {/* Floating Action Button */}
       <MobileActionBar
         className="bottom-16"
         actions={[
@@ -370,6 +267,82 @@ export default function MobileMyAthletes({
           },
         ]}
       />
+
+      {/* Market Detail Sheet */}
+      <MarketDetailSheet
+        open={showMarketDetail}
+        onOpenChange={setShowMarketDetail}
+        athleteId={athlete.id}
+        athleteName={athlete.name}
+        marketCap={athlete.marketCap ?? 0}
+        price={athlete.price ?? 0}
+        priceChange={priceChange}
+        priceSeries={priceSeries}
+        posts={chartPosts}
+        trades={trades}
+        holdersCount={holdersCount}
+        auraScore={auraScore}
+        auraBreakdown={kernel?.scoreBreakdown}
+        streak={streak}
+        timeRange={timeRange}
+        onTimeRangeChange={onTimeRangeChange}
+        isLoading={isLoadingChartPosts || isFetchingChartPosts}
+      />
+
+      {/* Group Chat Sheet */}
+      <Sheet open={showChat} onOpenChange={setShowChat}>
+        <SheetContent side="right" className="w-full sm:max-w-lg p-0">
+          <SheetHeader className="px-4 py-3 border-b border-white/10">
+            <SheetTitle>Inner Circle Chat</SheetTitle>
+          </SheetHeader>
+          <div className="h-[calc(100vh-60px)]">
+            <TokengatedChat
+              athleteId={athlete.id}
+              athleteName={athlete.name}
+              userHoldings={1}
+              onBuyClick={() => { }}
+            />
+          </div>
+        </SheetContent>
+      </Sheet>
+
+      {/* DMs Sheet */}
+      <Sheet open={showDMs} onOpenChange={setShowDMs}>
+        <SheetContent side="right" className="w-full sm:max-w-lg p-0">
+          <SheetHeader className="px-4 py-3 border-b border-white/10">
+            <SheetTitle>Direct Messages</SheetTitle>
+          </SheetHeader>
+          <div className="h-[calc(100vh-60px)] overflow-y-auto">
+            <LockerMessages
+              athleteId={athlete.id}
+              athleteName={athlete.name}
+              mode="embedded"
+            />
+          </div>
+        </SheetContent>
+      </Sheet>
+
+      {/* Profile Edit Sheet */}
+      <Sheet open={showProfileEdit} onOpenChange={setShowProfileEdit}>
+        <SheetContent side="right" className="w-full sm:max-w-lg overflow-y-auto">
+          <SheetHeader className="pb-4">
+            <SheetTitle>Edit Profile</SheetTitle>
+          </SheetHeader>
+          <ProfileDetailsCard
+            variant="mobile"
+            className="shadow-none"
+            athlete={athlete}
+            editedProfile={editedProfile}
+            isEditing={isEditingProfile}
+            savingProfile={savingProfile}
+            onStartEdit={onStartEditProfile}
+            onCancelEdit={handleCloseProfileEdit}
+            onSave={handleSaveProfile}
+            onFieldChange={onProfileFieldChange}
+            onAvatarSelect={onAvatarSelect}
+          />
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }

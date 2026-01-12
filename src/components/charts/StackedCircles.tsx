@@ -43,9 +43,11 @@ export const StackedCircles = memo<StackedCirclesProps>(
 
     const targetRadius = typeof radius === 'number' ? radius : 11;
     const isMobile = typeof window !== 'undefined' && window.innerWidth < 640;
-    const resolvedRadius = isMobile ? Math.max(4, targetRadius - 2) : targetRadius;
-    const effectiveGap = typeof gap === 'number' ? gap : 8;
-    const mobileMax = isMobile ? Math.min(maxCircles, 5) : maxCircles;
+    // Much smaller circles on mobile for cleaner look
+    const resolvedRadius = isMobile ? Math.max(3, Math.floor(targetRadius / 2)) : targetRadius;
+    const effectiveGap = typeof gap === 'number' ? gap : (isMobile ? 3 : 8);
+    // Limit to 3 circles on mobile to reduce visual clutter
+    const mobileMax = isMobile ? Math.min(maxCircles, 3) : maxCircles;
 
     const resolvedCx =
       typeof cx === 'number'

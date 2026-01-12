@@ -1,0 +1,117 @@
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Settings, Compass, Bell, BookOpen, User, CheckCircle2, X } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
+import { useOnboardingTour } from '@/hooks/useOnboardingTour';
+import { startTour } from '@/components/OnboardingTour';
+import { PushNotificationPrompt } from '@/components/PushNotificationPrompt';
+import { Link } from 'react-router-dom';
+import { cn } from '@/lib/utils';
+
+interface MobileSettingsSheetProps {
+    onEditProfile?: () => void;
+    className?: string;
+}
+
+/**
+ * Settings sheet accessible from the mobile header.
+ * Contains: Push Notifications, Onboarding Tour, Help, Edit Profile.
+ */
+export function MobileSettingsSheet({ onEditProfile, className }: MobileSettingsSheetProps) {
+    const [open, setOpen] = useState(false);
+    const navigate = useNavigate();
+    const { tourCompleted, isLoading: tourLoading } = useOnboardingTour();
+
+    const handleStartTour = () => {
+        setOpen(false);
+        startTour(navigate);
+    };
+
+    const handleEditProfile = () => {
+        setOpen(false);
+        onEditProfile?.();
+    };
+
+    return (
+        <Sheet open={open} onOpenChange={setOpen}>
+            <SheetTrigger asChild>
+                <Button
+                    variant="ghost"
+                    size="icon"
+                    className={cn("h-10 w-10 rounded-full bg-muted/40 hover:bg-muted/60", className)}
+                >
+                    <Settings className="h-5 w-5" />
+                </Button>
+            </SheetTrigger>
+            <SheetContent side="bottom" className="rounded-t-3xl pb-safe">
+                <SheetHeader className="pb-4">
+                    <SheetTitle className="text-lg">Settings</SheetTitle>
+                </SheetHeader>
+
+                <div className="space-y-4">
+                    {/* Edit Profile */}
+                    {onEditProfile && (
+                        <button
+                            onClick={handleEditProfile}
+                            className="flex items-center gap-3 w-full p-3 rounded-xl bg-muted/30 hover:bg-muted/50 transition-colors text-left"
+                        >
+                            <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                                <User className="h-5 w-5 text-primary" />
+                            </div>
+                            <div>
+                                <p className="font-medium text-sm">Edit Profile</p>
+                                <p className="text-xs text-muted-foreground">Update your info and avatar</p>
+                            </div>
+                        </button>
+                    )}
+
+                    {/* Push Notifications */}
+                    <div>
+                        <h3 className="text-sm font-semibold mb-2 text-muted-foreground">Notifications</h3>
+                        <PushNotificationPrompt variant="card" />
+                    </div>
+
+                    {/* Onboarding Tour */}
+                    <div>
+                        <h3 className="text-sm font-semibold mb-2 text-muted-foreground">Onboarding</h3>
+                        <button
+                            onClick={handleStartTour}
+                            disabled={tourLoading}
+                            className="flex items-center justify-between w-full p-3 rounded-xl bg-muted/30 hover:bg-muted/50 transition-colors"
+                        >
+                            <div className="flex items-center gap-3">
+                                <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                                    <Compass className="h-5 w-5 text-primary" />
+                                </div>
+                                <div className="text-left">
+                                    <p className="font-medium text-sm">Guided Tour</p>
+                                    <p className="text-xs text-muted-foreground">
+                                        {tourCompleted ? 'Completed' : 'Learn how Athlyst works'}
+                                    </p>
+                                </div>
+                            </div>
+                            {tourCompleted && <CheckCircle2 className="h-5 w-5 text-emerald-500" />}
+                        </button>
+                    </div>
+
+                    {/* Help */}
+                    <div>
+                        <h3 className="text-sm font-semibold mb-2 text-muted-foreground">Help</h3>
+                        <Link to="/learn" onClick={() => setOpen(false)}>
+                            <button className="flex items-center gap-3 w-full p-3 rounded-xl bg-muted/30 hover:bg-muted/50 transition-colors">
+                                <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                                    <BookOpen className="h-5 w-5 text-primary" />
+                                </div>
+                                <div className="text-left">
+                                    <p className="font-medium text-sm">Learn About Athlyst</p>
+                                    <p className="text-xs text-muted-foreground">Guides and tutorials</p>
+                                </div>
+                            </button>
+                        </Link>
+                    </div>
+                </div>
+            </SheetContent>
+        </Sheet>
+    );
+}

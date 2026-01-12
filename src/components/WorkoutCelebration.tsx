@@ -337,6 +337,7 @@ export function WorkoutCelebration({
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent
                 className="max-w-sm p-0 overflow-hidden border border-white/10 bg-black/90 backdrop-blur-xl"
+                hideCloseButton
                 style={{
                     background: 'radial-gradient(ellipse at center, rgba(20, 20, 25, 0.98) 0%, rgba(0, 0, 0, 0.99) 100%)',
                 }}
