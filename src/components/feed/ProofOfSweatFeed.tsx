@@ -14,6 +14,7 @@ import { PropButton } from '@/components/PropButton';
 import { CommentButtonWithModal } from '@/components/comments';
 import { ShareButton } from '@/components/share';
 import { cn } from '@/lib/utils';
+import { formatMoney } from '@/lib/format';
 import type { Sport, Workout } from '@/types';
 
 interface ProofOfSweatFeedProps {
@@ -321,6 +322,31 @@ export function ProofOfSweatFeed({
                       <p className="text-sm font-medium text-foreground leading-snug">
                         {item.post.text}
                       </p>
+                    )}
+                    {(item.athlete.marketCap !== undefined || item.athlete.holdersCount !== undefined) && (
+                      <div className="flex items-center gap-3 text-xs text-muted-foreground pt-2">
+                        {item.athlete.marketCap !== undefined && (
+                          <span className="font-medium">
+                            {formatMoney(item.athlete.marketCap)} cap
+                          </span>
+                        )}
+                        {item.athlete.holdersCount !== undefined && (
+                          <>
+                            <span className="text-border">·</span>
+                            <span className="font-medium">
+                              {item.athlete.holdersCount} holder{item.athlete.holdersCount !== 1 ? 's' : ''}
+                            </span>
+                          </>
+                        )}
+                        <Button
+                          variant="link"
+                          size="sm"
+                          className="ml-auto p-0 h-auto text-xs text-primary hover:text-primary/80"
+                          onClick={() => navigate(`/athlete/${item.athlete.slug}`)}
+                        >
+                          View →
+                        </Button>
+                      </div>
                     )}
                     {showSupportCta && (
                       <Button

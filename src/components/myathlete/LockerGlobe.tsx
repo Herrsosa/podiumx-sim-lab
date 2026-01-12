@@ -59,9 +59,9 @@ export function LockerGlobe({ athleteId, athleteName }: LockerGlobeProps) {
         <MiniGlobe
           rotation={rotation}
           pins={pins}
-          width={600}
-          height={600}
-          className="w-full md:w-auto"
+          width={320}
+          height={320}
+          className="w-full max-w-[320px] mx-auto sm:max-w-[400px] md:max-w-[600px]"
         />
       </div>
 

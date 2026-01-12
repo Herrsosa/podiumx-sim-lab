@@ -27,6 +27,7 @@ export function TrendingHero({ athletes, onAthleteClick }: TrendingHeroProps) {
     // Get top 3 athletes by highest 24h change
     const trendingAthletes = useMemo(() => {
         return [...athletes]
+            .filter(athlete => athlete.change24h > 0)
             .sort((a, b) => b.change24h - a.change24h)
             .slice(0, 3);
     }, [athletes]);

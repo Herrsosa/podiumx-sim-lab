@@ -4,6 +4,7 @@ import type { Database } from '@/integrations/supabase/types';
 import type { Post, Sport, Workout } from '@/types';
 import { resolveAvatarUrl } from '@/utils/avatar';
 import { mapPostRowToLockerWorkout, mapPostRowToPost } from '@/hooks/useWorkouts';
+import { priceAt } from '@/utils/pricing';
 
 type PostRow = Database['public']['Tables']['posts']['Row'];
 type ProfileRow = Database['public']['Tables']['profiles']['Row'];
@@ -21,6 +22,8 @@ export interface ProofOfSweatFeedItem {
     slug: string;
     avatar?: string | null;
     sport?: Sport;
+    marketCap?: number;
+    holdersCount?: number;
   };
 }
 
@@ -104,6 +107,51 @@ export function useProofOfSweatFeed(options: UseProofOfSweatFeedOptions = {}) {
 
       const rows = (data ?? []) as unknown as FeedPostRow[];
 
+      // Batch fetch athlete tokens for market cap calculation
+      const authorIds = rows.map(row => row.author_id).filter(Boolean);
+      const uniqueAuthorIds = [...new Set(authorIds)];
+
+      let tokensMap = new Map<string, { supply: number; a: number; b: number; c: number }>();
+      if (uniqueAuthorIds.length > 0) {
+        const { data: tokensData } = await supabase
+          .from('athlete_tokens')
+          .select('athlete_id, supply, a, b, c')
+          .in('athlete_id', uniqueAuthorIds);
+
+        if (tokensData) {
+          tokensData.forEach((token) => {
+            tokensMap.set(token.athlete_id, {
+              supply: token.supply,
+              a: token.a,
+              b: token.b,
+              c: token.c,
+            });
+          });
+        }
+      }
+
+      // Batch fetch holder counts
+      let holdersMap = new Map<string, number>();
+      if (uniqueAuthorIds.length > 0) {
+        const { data: holdingsData } = await supabase
+          .from('holdings')
+          .select('athlete_id, user_id')
+          .in('athlete_id', uniqueAuthorIds)
+          .gt('qty', 0);
+
+        if (holdingsData) {
+          // Count unique holders per athlete
+          const holderCounts = holdingsData.reduce((acc, holding) => {
+            acc[holding.athlete_id] = (acc[holding.athlete_id] || 0) + 1;
+            return acc;
+          }, {} as Record<string, number>);
+
+          Object.entries(holderCounts).forEach(([athleteId, count]) => {
+            holdersMap.set(athleteId, count);
+          });
+        }
+      }
+
       const items: ProofOfSweatFeedItem[] = rows.map((row) => {
         const lockerWorkout = mapPostRowToLockerWorkout(row);
         const post = mapPostRowToPost(row);
@@ -114,6 +162,21 @@ export function useProofOfSweatFeed(options: UseProofOfSweatFeedOptions = {}) {
         const profile = row.profiles;
         const slug = profile?.username ?? row.author_id;
         const name = profile?.display_name || profile?.username || 'Unknown Athlete';
+
+        // Calculate market cap from bonding curve
+        let marketCap: number | undefined;
+        const tokenData = tokensMap.get(row.author_id);
+        if (tokenData && tokenData.supply > 0) {
+          const price = priceAt(tokenData.supply, {
+            a: tokenData.a,
+            b: tokenData.b,
+            c: tokenData.c,
+          });
+          marketCap = price * tokenData.supply;
+        }
+
+        // Get holder count
+        const holdersCount = holdersMap.get(row.author_id);
 
         return {
           post,
@@ -129,6 +192,8 @@ export function useProofOfSweatFeed(options: UseProofOfSweatFeedOptions = {}) {
             slug,
             sport: (profile?.sport as Sport) || 'Running',
             avatar: resolveAvatarUrl(profile?.avatar_url ?? undefined, { size: 160 }),
+            marketCap,
+            holdersCount,
           },
         };
       });

@@ -8,7 +8,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import ProofOfSweat from '@/components/ProofOfSweat';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Activity, Share2, Plus } from 'lucide-react';
+import { Activity, Share2, Plus, Globe } from 'lucide-react';
 import type { EditableProfile } from './types';
 import { StravaCard } from '@/components/strava/StravaCard';
 import { MobileActionBar } from '@/components/MobileActionBar';
@@ -29,6 +29,7 @@ import { ProfileDetailsCard } from '@/components/myathlete/ProfileDetailsCard';
 import { useIdentityKernel } from '@/hooks/useIdentityKernel';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { LockerMessages } from '@/components/myathlete/LockerMessages';
+import { LockerGlobe } from '@/components/myathlete/LockerGlobe';
 
 interface MobileMyAthletesProps {
   athlete?: Athlete;
@@ -85,6 +86,7 @@ export default function MobileMyAthletes({
   const [showChat, setShowChat] = useState(false);
   const [showDMs, setShowDMs] = useState(false);
   const [showProfileEdit, setShowProfileEdit] = useState(false);
+  const [showGlobe, setShowGlobe] = useState(false);
   const { toast } = useToast();
 
   // Identity kernel for Aura score
@@ -196,6 +198,16 @@ export default function MobileMyAthletes({
           onGroupChatClick={() => setShowChat(true)}
           onDMsClick={() => setShowDMs(true)}
         />
+
+        {/* Globe Button */}
+        <Button
+          variant="outline"
+          className="w-full gap-2 py-6 border-white/10 bg-card/60 hover:bg-card/80 transition-colors"
+          onClick={() => setShowGlobe(true)}
+        >
+          <Globe className="h-5 w-5 text-primary" />
+          <span className="font-medium">View Proof-of-Sweat Globe</span>
+        </Button>
 
         {/* Strava Integration */}
         <StravaCard />
@@ -340,6 +352,19 @@ export default function MobileMyAthletes({
             onSave={handleSaveProfile}
             onFieldChange={onProfileFieldChange}
             onAvatarSelect={onAvatarSelect}
+          />
+        </SheetContent>
+      </Sheet>
+
+      {/* Globe Sheet */}
+      <Sheet open={showGlobe} onOpenChange={setShowGlobe}>
+        <SheetContent side="bottom" className="h-[90vh] overflow-y-auto">
+          <SheetHeader className="pb-4">
+            <SheetTitle>🌍 Proof-of-Sweat Globe</SheetTitle>
+          </SheetHeader>
+          <LockerGlobe
+            athleteId={athlete.id}
+            athleteName={athlete.name}
           />
         </SheetContent>
       </Sheet>

@@ -14,6 +14,7 @@ import { MobileTradeModal } from './MobileTradeModal';
 import WorkoutPosts from '@/components/WorkoutPosts';
 import TokengatedChat from '@/components/TokengatedChat';
 import { LockerMessages } from '@/components/myathlete/LockerMessages';
+import { LockerGlobe } from '@/components/myathlete/LockerGlobe';
 import { ChartSkeleton } from '@/components/ui/skeletons';
 import type { Athlete, Trade, Position } from '@/types';
 import type { PriceSeriesPoint } from '@/lib/charting/engine';
@@ -72,7 +73,7 @@ export function MobileAthleteProfile({
     streak = 0,
     userId,
 }: MobileAthleteProfileProps) {
-    const [activeTab, setActiveTab] = useState<'pos' | 'stats'>('pos');
+    const [activeTab, setActiveTab] = useState<'pos' | 'stats' | 'globe'>('pos');
     const [tradeModalOpen, setTradeModalOpen] = useState(false);
     const [tradeMode, setTradeMode] = useState<'buy' | 'sell'>('buy');
     const [showChat, setShowChat] = useState(false);
@@ -164,11 +165,12 @@ export function MobileAthleteProfile({
                     onSendDM={handleSendDM}
                 />
 
-                {/* Tabs: Proof of Sweat | Stats */}
-                <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'pos' | 'stats')}>
-                    <TabsList className="grid w-full grid-cols-2">
+                {/* Tabs: Proof of Sweat | Stats | Globe */}
+                <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'pos' | 'stats' | 'globe')}>
+                    <TabsList className="grid w-full grid-cols-3">
                         <TabsTrigger value="pos">Proof of Sweat</TabsTrigger>
                         <TabsTrigger value="stats">Stats</TabsTrigger>
+                        <TabsTrigger value="globe">Globe</TabsTrigger>
                     </TabsList>
 
                     {/* Proof of Sweat Tab */}
@@ -335,6 +337,18 @@ export function MobileAthleteProfile({
                                 }
                             </p>
                         </div>
+                    </TabsContent>
+
+                    {/* Globe Tab */}
+                    <TabsContent value="globe" className="mt-4">
+                        <Card className="border-white/10 bg-card/60">
+                            <CardContent className="p-0">
+                                <LockerGlobe
+                                    athleteId={athlete.id}
+                                    athleteName={athlete.name}
+                                />
+                            </CardContent>
+                        </Card>
                     </TabsContent>
                 </Tabs>
             </main>

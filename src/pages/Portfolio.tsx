@@ -165,7 +165,7 @@ export default function Portfolio() {
                 className="ring-2 ring-primary/20 flex-shrink-0"
               />
               <div className="min-w-0">
-                <div className="font-semibold truncate">{athlete.name}</div>
+                <div className="font-semibold break-words">{athlete.name}</div>
                 <Badge
                   variant="secondary"
                   className={cn("text-xs border", SPORT_COLORS[athlete.sport] || "bg-secondary text-secondary-foreground")}
@@ -457,7 +457,7 @@ export default function Portfolio() {
                             className="ring-2 ring-primary/20 flex-shrink-0"
                           />
                           <div className="min-w-0">
-                            <div className="font-semibold truncate">{athlete.name}</div>
+                            <div className="font-semibold break-words">{athlete.name}</div>
                             <div className="flex items-center gap-2 mt-0.5">
                               <Badge
                                 variant="secondary"
