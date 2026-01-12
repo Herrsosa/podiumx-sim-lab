@@ -141,15 +141,25 @@ export function useProofOfSweatFeed(options: UseProofOfSweatFeedOptions = {}) {
 
         if (holdingsData) {
           // Count unique holders per athlete
-          const holderCounts = holdingsData.reduce((acc, holding) => {
-            acc[holding.athlete_id] = (acc[holding.athlete_id] || 0) + 1;
+          const holdersByAthlete = holdingsData.reduce((acc, holding) => {
+            if (!acc[holding.athlete_id]) {
+              acc[holding.athlete_id] = new Set<string>();
+            }
+            acc[holding.athlete_id].add(holding.user_id);
             return acc;
-          }, {} as Record<string, number>);
+          }, {} as Record<string, Set<string>>);
 
-          Object.entries(holderCounts).forEach(([athleteId, count]) => {
-            holdersMap.set(athleteId, count);
+          Object.entries(holdersByAthlete).forEach(([athleteId, userIds]) => {
+            holdersMap.set(athleteId, userIds.size);
           });
         }
+
+        // For any athletes with tokens but no holdings data, set holders to 0
+        uniqueAuthorIds.forEach(athleteId => {
+          if (!holdersMap.has(athleteId)) {
+            holdersMap.set(athleteId, 0);
+          }
+        });
       }
 
       const items: ProofOfSweatFeedItem[] = rows.map((row) => {

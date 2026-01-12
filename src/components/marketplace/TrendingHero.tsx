@@ -32,7 +32,8 @@ export function TrendingHero({ athletes, onAthleteClick }: TrendingHeroProps) {
             .slice(0, 3);
     }, [athletes]);
 
-    if (trendingAthletes.length === 0) {
+    // Only show trending section if we have at least 3 athletes to make it look substantial
+    if (trendingAthletes.length < 3) {
         return null;
     }
 
