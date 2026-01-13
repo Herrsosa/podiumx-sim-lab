@@ -294,7 +294,7 @@ export default function Portfolio() {
             <div className="flex justify-between items-start">
               <div>
                 <p className="text-sm font-medium text-muted-foreground mb-2 uppercase tracking-wider">Total Portfolio Value</p>
-                <div className="text-4xl sm:text-6xl font-bold tracking-tight text-foreground">
+                <div className="text-4xl sm:text-6xl font-bold tracking-tight text-foreground tabular-nums">
                   <CountUp
                     value={totalValue}
                     prefix="$"
@@ -304,7 +304,7 @@ export default function Portfolio() {
                 </div>
               </div>
               <div className="text-right">
-                <div className={cn("flex items-center justify-end gap-1 text-sm font-medium mb-1", percentClass)}>
+                <div className={cn("flex items-center justify-end gap-1 text-sm font-medium mb-1 tabular-nums", percentClass)}>
                   {percentChange && percentChange >= 0 ? <TrendingUp className="h-4 w-4" /> : <TrendingDown className="h-4 w-4" />}
                   <CountUp
                     value={Math.abs(percentChange || 0)}
@@ -312,7 +312,7 @@ export default function Portfolio() {
                     decimalPlaces={2}
                   />
                 </div>
-                <div className={cn("text-xl font-bold", totalPnlClass.split(' ')[2])}>
+                <div className={cn("text-xl font-bold tabular-nums", totalPnlClass.split(' ')[2])}>
                   {totalPnL >= 0 ? '+' : '-'}$
                   <CountUp
                     value={Math.abs(totalPnL)}
@@ -326,13 +326,13 @@ export default function Portfolio() {
             <div className="mt-8 flex gap-12 border-t border-border/30 pt-6">
               <div>
                 <p className="text-xs text-muted-foreground mb-1 uppercase tracking-wider">Invested</p>
-                <p className="text-xl font-semibold text-foreground/80">
+                <p className="text-xl font-semibold text-foreground/80 tabular-nums">
                   <CountUp value={totalCostBasis} prefix="$" decimalPlaces={2} />
                 </p>
               </div>
               <div>
                 <p className="text-xs text-muted-foreground mb-1 uppercase tracking-wider">Realized P&L</p>
-                <p className={cn("text-xl font-semibold", realizedPnL >= 0 ? "text-success" : "text-destructive")}>
+                <p className={cn("text-xl font-semibold tabular-nums", realizedPnL >= 0 ? "text-success" : "text-destructive")}>
                   {realizedPnL >= 0 ? '+' : '-'}$
                   <CountUp value={Math.abs(realizedPnL)} decimalPlaces={2} />
                 </p>
@@ -349,7 +349,7 @@ export default function Portfolio() {
                 <span className="text-sm text-muted-foreground">USDC Balance</span>
                 <DollarSign className="h-4 w-4 text-primary/60" />
               </div>
-              <div className="text-2xl font-bold">
+              <div className="text-2xl font-bold tabular-nums">
                 <CountUp value={wallet.usdc} prefix="$" decimalPlaces={2} />
               </div>
             </CardContent>
@@ -361,7 +361,7 @@ export default function Portfolio() {
                 <span className="text-sm text-muted-foreground">Active Positions</span>
                 <Coins className="h-4 w-4 text-primary/60" />
               </div>
-              <div className="text-2xl font-bold">
+              <div className="text-2xl font-bold tabular-nums">
                 <CountUp value={positions.length} duration={1} />
               </div>
               <p className="text-xs text-muted-foreground mt-1">

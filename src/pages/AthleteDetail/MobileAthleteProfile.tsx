@@ -253,7 +253,11 @@ export function MobileAthleteProfile({
                                             {auraBreakdown?.momentum.score ?? 0}
                                         </p>
                                         <p className="text-[10px] text-muted-foreground flex items-center justify-center gap-1">
-                                            {streak}d <Flame className="h-3 w-3 text-orange-500" />
+                                            {streak > 0 ? (
+                                                <>{streak}d <Flame className="h-3 w-3 text-orange-500" /></>
+                                            ) : (
+                                                'No streak'
+                                            )}
                                         </p>
                                     </CardContent>
                                 </Card>

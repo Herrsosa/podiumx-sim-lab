@@ -1,11 +1,11 @@
-import { KeyboardEvent, Suspense, useCallback, useEffect, useMemo, useState } from "react";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { useCallback, useMemo, useState } from "react";
+import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
 import { Skeleton } from "@/components/ui/skeleton";
-import { ChevronDown, ChevronUp, Activity, BarChart3, Play, Link as LinkIcon, Settings, ExternalLink } from "lucide-react";
+import { Activity, Play, Link as LinkIcon, ExternalLink } from "lucide-react";
 import { useStravaConnection, stravaConnectionQueryKey } from "@/hooks/useStravaConnection";
 import { useActivities } from "@/hooks/useActivities";
 import { cn } from "@/lib/utils";
@@ -17,9 +17,7 @@ import { prepareStravaAuthorizeUrl } from "@/utils/stravaAuth";
 import { useUser } from "@/store/auth";
 import StravaImportDialog from "@/components/strava/StravaImportDialog";
 import {
-  getActivityDescription,
   getAverageSpeedFromActivity,
-  formatPaceFromSpeed,
   type StoredActivity,
 } from "@/utils/stravaActivity";
 
@@ -35,40 +33,29 @@ export function StravaCard({ className }: StravaCardProps) {
   const userId = user?.id;
   const queryClient = useQueryClient();
   const { toast } = useToast();
-  const [collapsed, setCollapsed] = useState(false);
-  const [activeTab, setActiveTab] = useState<"summary" | "activities">("summary");
-  const [showAll, setShowAll] = useState(false);
-  const [activitiesLoaded, setActivitiesLoaded] = useState(false);
   const [importing, setImporting] = useState(false);
   const [selectedActivity, setSelectedActivity] = useState<ActivityRecord | null>(null);
   const [activityDialogOpen, setActivityDialogOpen] = useState(false);
   const [activityToImport, setActivityToImport] = useState<ActivityRecord | null>(null);
   const [importDialogOpen, setImportDialogOpen] = useState(false);
+  const [selectionModalOpen, setSelectionModalOpen] = useState(false);
+  const [selectedWorkouts, setSelectedWorkouts] = useState<Set<string>>(new Set());
 
-  useEffect(() => {
-    const stored = typeof window !== "undefined" ? window.localStorage.getItem("strava-card-collapsed") : null;
-    if (stored !== null) {
-      setCollapsed(stored === "true");
-    }
-  }, []);
+  const { data: activities, isLoading: activitiesLoading } = useActivities({ enabled: !!connection, limit: 100 });
+  const pendingImportActivities = useMemo(
+    () => (activities ?? []).filter((activity) => !activity.imported_post_id),
+    [activities],
+  );
+  const pendingImportCount = pendingImportActivities.length;
 
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      window.localStorage.setItem("strava-card-collapsed", collapsed ? "true" : "false");
+  const lastSync = useMemo(() => {
+    if (!connection?.updated_at) return "Never";
+    try {
+      return format(new Date(connection.updated_at), "MMM d, h:mm a");
+    } catch (error) {
+      return "Unknown";
     }
-  }, [collapsed]);
-
-  useEffect(() => {
-    if (activeTab === "activities" && !activitiesLoaded) {
-      setActivitiesLoaded(true);
-    }
-  }, [activeTab, activitiesLoaded]);
-
-  useEffect(() => {
-    if (!collapsed) {
-      setActivitiesLoaded(true);
-    }
-  }, [collapsed]);
+  }, [connection?.updated_at]);
 
   const handleActivitySelect = (activity: ActivityRecord) => {
     setSelectedActivity(activity);
@@ -78,74 +65,6 @@ export function StravaCard({ className }: StravaCardProps) {
   const resetSelectedActivity = () => {
     setSelectedActivity(null);
   };
-
-  const { data: activities, isLoading: activitiesLoading } = useActivities({ enabled: activitiesLoaded, limit: 100 });
-  const pendingImportActivities = useMemo(
-    () => (activities ?? []).filter((activity) => !activity.imported_post_id),
-    [activities],
-  );
-  const pendingImportCount = pendingImportActivities.length;
-  const nextPendingActivity = pendingImportActivities[0] ?? null;
-
-  const handleToggleCollapse = () => setCollapsed((prev) => !prev);
-
-  const lastSync = useMemo(() => {
-    if (!connection?.updated_at) return "Never";
-    try {
-      return format(new Date(connection.updated_at), "MMM d, yyyy h:mm a");
-    } catch (error) {
-      return "Unknown";
-    }
-  }, [connection?.updated_at]);
-
-  const summaryKpis = useMemo(() => {
-    if (!activities || activities.length === 0) {
-      return [
-        { label: "This Week", value: "0 km" },
-        { label: "Activities", value: "0" },
-        { label: "Avg HR", value: "-" },
-      ];
-    }
-
-    const now = new Date();
-    const weekMs = 7 * 24 * 60 * 60 * 1000;
-    let distance = 0;
-    let hrTotal = 0;
-    let hrCount = 0;
-    let count = 0;
-
-    activities.forEach((activity) => {
-      if (!activity.start_time) {
-        return;
-      }
-      const start = new Date(activity.start_time);
-      const diff = now.getTime() - start.getTime();
-      if (diff >= 0 && diff <= weekMs) {
-        distance += activity.distance_m || 0;
-        if (activity.avg_hr) {
-          hrTotal += activity.avg_hr;
-          hrCount += 1;
-        }
-        count += 1;
-      }
-    });
-
-    const averageHr = hrCount > 0 ? Math.round(hrTotal / hrCount) : null;
-    const distanceKm = (distance / 1000).toFixed(1) + " km";
-
-    return [
-      { label: "This Week", value: distanceKm },
-      { label: "Activities", value: String(count) },
-      { label: "Avg HR", value: averageHr ? `${averageHr} bpm` : "-" },
-    ];
-  }, [activities]);
-
-  const recentActivities = useMemo(() => {
-    if (!activities) {
-      return [];
-    }
-    return activities.slice(0, showAll ? 10 : 3);
-  }, [activities, showAll]);
 
   const handleOpenImportDialog = useCallback((activity: ActivityRecord) => {
     setActivityDialogOpen(false);
@@ -164,105 +83,6 @@ export function StravaCard({ className }: StravaCardProps) {
       void queryClient.invalidateQueries({ queryKey: ['my-athlete'] });
     }
   }, [queryClient, userId]);
-
-  const selectedActivityDetails = useMemo(() => {
-    if (!selectedActivity) {
-      return null;
-    }
-
-    const rawValue = selectedActivity.raw;
-    const raw =
-      typeof rawValue === "object" && rawValue !== null
-        ? (rawValue as Record<string, unknown>)
-        : {};
-
-    const toNumber = (value: unknown) => {
-      if (value === null || value === undefined) return null;
-      const numeric = Number(value);
-      return Number.isFinite(numeric) ? numeric : null;
-    };
-
-    const toStringValue = (value: unknown) => (typeof value === "string" ? value : null);
-
-    const startTime =
-      selectedActivity.start_time ??
-      toStringValue(raw["start_date"]) ??
-      toStringValue(raw["start_date_local"]);
-    const distanceMeters = toNumber(selectedActivity.distance_m ?? raw["distance"]);
-    const movingTime = toNumber(selectedActivity.moving_time_s ?? raw["moving_time"]);
-    const elapsedTime = toNumber(selectedActivity.elapsed_time_s ?? raw["elapsed_time"]);
-    const avgHr = toNumber(selectedActivity.avg_hr ?? raw["average_heartrate"]);
-    const maxHr = toNumber(selectedActivity.max_hr ?? raw["max_heartrate"]);
-    const elevGain = toNumber(selectedActivity.elev_gain_m ?? raw["total_elevation_gain"]);
-    const calories = toNumber(selectedActivity.calories ?? raw["kilojoules"] ?? raw["calories"]);
-    const averageSpeed = getAverageSpeedFromActivity(selectedActivity);
-
-    const subtitle = startTime ? format(new Date(startTime), "PPP p") : null;
-
-    const metrics: { label: string; value: string }[] = [];
-
-    const sport =
-      selectedActivity.sport_type ??
-      toStringValue(raw["sport_type"]) ??
-      toStringValue(raw["type"]);
-    if (sport) {
-      metrics.push({ label: "Sport", value: String(sport) });
-    }
-
-    if (subtitle) {
-      metrics.push({ label: "Start", value: subtitle });
-    }
-
-    if (distanceMeters !== null) {
-      metrics.push({ label: "Distance", value: formatDistance(distanceMeters) });
-    }
-
-    if (movingTime) {
-      metrics.push({ label: "Moving Time", value: formatDuration(movingTime) });
-    }
-
-    if (elapsedTime) {
-      metrics.push({ label: "Elapsed Time", value: formatDuration(elapsedTime) });
-    }
-
-    if (averageSpeed) {
-      metrics.push({ label: "Avg Pace", value: formatPace(averageSpeed) });
-    }
-
-    if (avgHr) {
-      metrics.push({ label: "Avg Heart Rate", value: `${Math.round(avgHr)} bpm` });
-    }
-
-    if (maxHr) {
-      metrics.push({ label: "Max Heart Rate", value: `${Math.round(maxHr)} bpm` });
-    }
-
-    if (elevGain) {
-      metrics.push({ label: "Elevation Gain", value: formatElevation(elevGain) });
-    }
-
-    if (calories) {
-      metrics.push({ label: "Calories", value: formatCalories(calories) });
-    }
-
-    const description = getActivityDescription(selectedActivity);
-
-    const permalink = toStringValue(raw["permalink"]);
-    const rawId = toNumber(raw["id"]);
-    const stravaUrl = permalink ?? (rawId ? `https://www.strava.com/activities/${rawId}` : null);
-
-    return {
-      title: selectedActivity.name ?? toStringValue(raw["name"]) ?? "Strava activity",
-      subtitle,
-      metrics,
-      description,
-      stravaUrl,
-    };
-  }, [selectedActivity]);
-
-  const detailMetrics = selectedActivityDetails?.metrics ?? [];
-
-  const canToggleActivityView = !!activities && activities.length > 3;
 
   const handleConnect = async () => {
     try {
@@ -312,6 +132,7 @@ export function StravaCard({ className }: StravaCardProps) {
         queryClient.invalidateQueries({ queryKey: ["activities"] }),
       ]);
 
+      setSelectionModalOpen(false);
       toast({ title: "Disconnected from Strava" });
     } catch (error) {
       const message = error instanceof Error ? error.message : "Something went wrong";
@@ -323,7 +144,7 @@ export function StravaCard({ className }: StravaCardProps) {
     }
   };
 
-  const handleImport = async () => {
+  const handleSync = async () => {
     setImporting(true);
     try {
       const { data: sessionData } = await supabase.auth.getSession();
@@ -340,17 +161,11 @@ export function StravaCard({ className }: StravaCardProps) {
 
       const { data, error } = response;
 
-      // Log the response for debugging
-      console.log('[StravaCard] Import response:', { data, error });
-
-      // Try to extract detailed error from response
       if (error) {
         try {
           const errorContext = (error as unknown as { context?: { json?: () => Promise<unknown> } })?.context;
           if (errorContext?.json) {
             const errorBody = await errorContext.json();
-            console.error('[StravaCard] Import error body:', errorBody);
-            // Extract the actual error message from the response
             const detailedError = (errorBody as { error?: string })?.error;
             if (detailedError) {
               throw new Error(detailedError);
@@ -360,14 +175,12 @@ export function StravaCard({ className }: StravaCardProps) {
           if (parseErr instanceof Error && parseErr.message !== error.message) {
             throw parseErr;
           }
-          console.warn('[StravaCard] Could not parse error body:', parseErr);
         }
         throw error;
       }
 
-      // Edge function returns 'saved' (or 'inserted' for early return case)
       const importedCount = data?.saved ?? data?.inserted ?? 0;
-      toast({ title: "Import complete", description: `Added ${importedCount} new activities.` });
+      toast({ title: "Sync complete", description: `Added ${importedCount} new activities.` });
 
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["activities"] }),
@@ -376,23 +189,10 @@ export function StravaCard({ className }: StravaCardProps) {
           : queryClient.invalidateQueries({ queryKey: ["connections"] }),
       ]);
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Could not import Strava activities.";
-      const normalized = message.toLowerCase();
-      const helpfulMessage = normalized.includes('failed to send a request to the edge function')
-        ? 'Unable to reach the Supabase Edge Function. Make sure "import-strava-activities" is running locally (supabase start / supabase functions serve) or deployed via supabase functions deploy.'
-        : message;
-
-      if (message.toLowerCase().includes("strava authorization has expired")) {
-        if (userId) {
-          await queryClient.invalidateQueries({ queryKey: stravaConnectionQueryKey(userId) });
-        } else {
-          await queryClient.invalidateQueries({ queryKey: ["connections"] });
-        }
-      }
-
+      const message = error instanceof Error ? error.message : "Could not sync Strava activities.";
       toast({
-        title: "Import failed",
-        description: helpfulMessage,
+        title: "Sync failed",
+        description: message,
         variant: "destructive",
       });
     } finally {
@@ -400,138 +200,258 @@ export function StravaCard({ className }: StravaCardProps) {
     }
   };
 
+  const handleToggleWorkout = (activityKey: string) => {
+    setSelectedWorkouts(prev => {
+      const next = new Set(prev);
+      if (next.has(activityKey)) {
+        next.delete(activityKey);
+      } else {
+        next.add(activityKey);
+      }
+      return next;
+    });
+  };
+
+  const handleSelectAll = () => {
+    if (selectedWorkouts.size === pendingImportActivities.length) {
+      setSelectedWorkouts(new Set());
+    } else {
+      setSelectedWorkouts(new Set(pendingImportActivities.map(a => getActivityKey(a))));
+    }
+  };
+
+  const handleImportSelected = async () => {
+    const toImport = pendingImportActivities.filter(a => selectedWorkouts.has(getActivityKey(a)));
+    if (toImport.length === 0) return;
+
+    // Import selected workouts one by one via the existing dialog flow
+    if (toImport.length === 1) {
+      handleOpenImportDialog(toImport[0]);
+    } else {
+      // For multiple, we open the first one (user can import sequentially)
+      handleOpenImportDialog(toImport[0]);
+    }
+    setSelectionModalOpen(false);
+  };
+
+  const getActivityKey = (activity: ActivityRecord): string => {
+    const key = activity.id ?? activity.external_id ?? activity.start_time ?? activity.name ?? '';
+    return String(key);
+  };
+
+  // Disconnected state
+  if (!connection && !connectionLoading) {
+    return (
+      <Card className={cn("bg-card/60 border-border/60", className)} data-tour="strava-card">
+        <CardContent className="p-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-full bg-[#FC4C02]/10 flex items-center justify-center">
+                <LinkIcon className="h-5 w-5 text-[#FC4C02]" />
+              </div>
+              <div>
+                <p className="text-sm font-medium">Connect Strava</p>
+                <p className="text-xs text-muted-foreground">Import your workouts</p>
+              </div>
+            </div>
+            <Button variant="outline" size="sm" onClick={handleConnect}>
+              Connect
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // Loading state
+  if (connectionLoading) {
+    return (
+      <Card className={cn("bg-card/60 border-border/60", className)} data-tour="strava-card">
+        <CardContent className="p-4">
+          <div className="flex items-center gap-3">
+            <Skeleton className="h-10 w-10 rounded-full" />
+            <div className="space-y-1.5">
+              <Skeleton className="h-4 w-32" />
+              <Skeleton className="h-3 w-24" />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // Connected state - compact 2-line view
   return (
     <>
       <Card className={cn("bg-card/60 border-border/60", className)} data-tour="strava-card">
-        <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between space-y-0 px-4 py-3">
-          <div className="flex items-center gap-3 w-full sm:w-auto">
-            <button
-              type="button"
-              onClick={handleToggleCollapse}
-              className="inline-flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-md border border-border/60 bg-background/60 text-muted-foreground hover:bg-background"
-              aria-label={collapsed ? "Expand Strava card" : "Collapse Strava card"}
-            >
-              {collapsed ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
-            </button>
-            <div className="flex flex-col gap-1 min-w-0">
-              <div className="flex flex-wrap items-center gap-2 text-sm font-medium">
-                <span className="flex items-center gap-1 whitespace-nowrap">
-                  <LinkIcon className="h-4 w-4" />
-                  Strava Training
-                </span>
-                <Badge variant={connection ? "default" : "secondary"} className="text-xs whitespace-nowrap">
-                  {connection ? "Connected" : "Not Connected"}
-                </Badge>
+        <CardContent className="p-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-full bg-emerald-500/10 flex items-center justify-center">
+                <Activity className="h-5 w-5 text-emerald-500" />
               </div>
-              <p className="text-xs text-muted-foreground truncate">
-                Last sync: {connectionLoading ? "Loading..." : lastSync}
-              </p>
+              <div>
+                <p className="text-sm font-medium flex items-center gap-2">
+                  <span className="text-emerald-500">✓</span> Strava Connected
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {activitiesLoading ? 'Loading...' : `${pendingImportCount} workouts ready`}
+                </p>
+              </div>
             </div>
-          </div>
-          <div className="flex items-center justify-end gap-2 w-full sm:w-auto">
             <Button
               variant="outline"
               size="sm"
-              className="h-8 px-2 flex-1 sm:flex-none"
-              onClick={handleImport}
-              disabled={importing || !connection}
+              onClick={() => setSelectionModalOpen(true)}
+              disabled={activitiesLoading}
             >
-              <Play className="mr-1 h-3.5 w-3.5" />
-              {importing ? "Importing" : "Import"}
-            </Button>
-            {connection ? (
-              <Button variant="outline" size="sm" className="h-8 px-2 flex-1 sm:flex-none" onClick={handleDisconnect}>
-                Disconnect
-              </Button>
-            ) : (
-              <Button variant="outline" size="sm" className="h-8 px-2 flex-1 sm:flex-none" onClick={handleConnect}>
-                Connect
-              </Button>
-            )}
-            <Button variant="ghost" size="sm" className="h-8 px-2" disabled>
-              <Settings className="h-4 w-4" />
+              View
             </Button>
           </div>
-        </CardHeader>
-        {!collapsed && (
-          <CardContent className="px-4 pb-4 pt-0">
-            {pendingImportCount > 0 && (
-              <div className="mb-4 flex flex-col gap-2 rounded-lg border border-dashed border-primary/40 bg-primary/5 px-3 py-2 text-sm sm:flex-row sm:items-center sm:justify-between">
-                <span>
-                  {pendingImportCount === 1
-                    ? '1 Strava workout is ready to import'
-                    : `${pendingImportCount} Strava workouts ready to import`}
-                </span>
-                <div className="flex flex-wrap gap-2">
-                  <Button
-                    size="sm"
-                    variant="secondary"
-                    className="h-8 px-3"
-                    onClick={() => nextPendingActivity && handleOpenImportDialog(nextPendingActivity)}
-                    disabled={!nextPendingActivity}
-                  >
-                    Review
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    className="h-8 px-3"
-                    onClick={() => {
-                      setCollapsed(false);
-                      setActivitiesLoaded(true);
-                      setActiveTab('activities');
-                    }}
-                  >
-                    View list
-                  </Button>
-                </div>
-              </div>
-            )}
-            <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as typeof activeTab)}>
-              <TabsList className="mb-3 grid h-9 w-full grid-cols-2">
-                <TabsTrigger value="summary" className="text-sm">
-                  Summary
-                </TabsTrigger>
-                <TabsTrigger value="activities" className="text-sm">
-                  Activities
-                </TabsTrigger>
-              </TabsList>
-              <TabsContent value="summary" className="mt-0">
-                <div className="grid gap-2 sm:grid-cols-3">
-                  {summaryKpis.map((kpi) => (
-                    <div
-                      key={kpi.label}
-                      className="flex items-center gap-2 rounded-lg border border-border/60 bg-background/40 px-3 py-2"
-                    >
-                      <BarChart3 className="h-4 w-4 text-primary" />
-                      <div>
-                        <p className="text-xs text-muted-foreground">{kpi.label}</p>
-                        <p className="text-sm font-semibold leading-tight">{kpi.value}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </TabsContent>
-              <TabsContent value="activities" className="mt-0">
-                <Suspense fallback={<ActivitiesSkeleton rows={3} />}>
-                  <ActivitiesList
-                    activities={recentActivities}
-                    loading={activitiesLoading}
-                    allowToggle={canToggleActivityView}
-                    showAll={showAll}
-                    onToggleShowAll={() => setShowAll((prev) => !prev)}
-                    onSelect={handleActivitySelect}
-                    onImport={handleOpenImportDialog}
-                  />
-                </Suspense>
-              </TabsContent>
-            </Tabs>
-          </CardContent>
-        )}
+        </CardContent>
       </Card>
 
+      {/* Selection Modal */}
+      <Dialog open={selectionModalOpen} onOpenChange={setSelectionModalOpen}>
+        <DialogContent className="max-w-lg max-h-[85vh] overflow-hidden flex flex-col">
+          <DialogHeader>
+            <DialogTitle>Import from Strava</DialogTitle>
+          </DialogHeader>
+
+          {/* Workout list */}
+          <div className="flex-1 overflow-y-auto py-2 -mx-6 px-6">
+            {activitiesLoading ? (
+              <ActivitiesSkeleton rows={5} />
+            ) : !activities || activities.length === 0 ? (
+              <div className="text-center py-8 text-sm text-muted-foreground">
+                No workouts found. Tap Sync to fetch from Strava.
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {activities.slice(0, 30).map((activity) => {
+                  const key = getActivityKey(activity);
+                  const isImported = Boolean(activity.imported_post_id);
+                  const isSelected = selectedWorkouts.has(key);
+                  const relativeDate = activity.start_time
+                    ? formatRelativeDate(new Date(activity.start_time))
+                    : '';
+                  const distance = activity.distance_m
+                    ? `${(activity.distance_m / 1000).toFixed(1)}km`
+                    : null;
+                  const duration = activity.moving_time_s
+                    ? formatDuration(activity.moving_time_s)
+                    : null;
+
+                  if (isImported) {
+                    // Already imported - show with green indicator, not clickable
+                    return (
+                      <div
+                        key={key}
+                        className="flex items-center gap-3 p-3 rounded-lg border border-emerald-500/30 bg-emerald-500/5"
+                      >
+                        <div className="h-5 w-5 rounded-full bg-emerald-500/20 flex items-center justify-center flex-shrink-0">
+                          <span className="text-xs text-emerald-500">✓</span>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium truncate">
+                            {activity.name || activity.sport_type || 'Workout'}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {[distance, duration, relativeDate].filter(Boolean).join(' · ')}
+                          </p>
+                        </div>
+                        <Badge variant="outline" className="text-[10px] text-emerald-500 border-emerald-500/30">
+                          Imported
+                        </Badge>
+                      </div>
+                    );
+                  }
+
+                  // Not imported - show with checkbox
+                  return (
+                    <button
+                      key={key}
+                      onClick={() => handleToggleWorkout(key)}
+                      className={cn(
+                        "w-full flex items-center gap-3 p-3 rounded-lg border text-left transition-colors",
+                        isSelected
+                          ? "border-primary/50 bg-primary/5"
+                          : "border-border/40 bg-muted/20 hover:bg-muted/40"
+                      )}
+                    >
+                      <div className={cn(
+                        "h-5 w-5 rounded border-2 flex items-center justify-center flex-shrink-0 transition-colors",
+                        isSelected
+                          ? "border-primary bg-primary text-primary-foreground"
+                          : "border-muted-foreground/40"
+                      )}>
+                        {isSelected && <span className="text-xs">✓</span>}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate">
+                          {activity.name || activity.sport_type || 'Workout'}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {[distance, duration, relativeDate].filter(Boolean).join(' · ')}
+                        </p>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          {/* Action buttons */}
+          {pendingImportActivities.length > 0 && (
+            <div className="flex items-center justify-between pt-4 border-t">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleSelectAll}
+              >
+                {selectedWorkouts.size === pendingImportActivities.length ? 'Deselect All' : 'Select All'}
+              </Button>
+              <Button
+                size="sm"
+                onClick={handleImportSelected}
+                disabled={selectedWorkouts.size === 0}
+              >
+                Import ({selectedWorkouts.size})
+              </Button>
+            </div>
+          )}
+
+          {/* Footer - sync and disconnect */}
+          <div className="pt-4 border-t mt-4 space-y-3">
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-muted-foreground">Last sync: {lastSync}</span>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleSync}
+                disabled={importing}
+                className="gap-2"
+              >
+                <Play className="h-3.5 w-3.5" />
+                {importing ? 'Syncing...' : 'Sync'}
+              </Button>
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="w-full text-muted-foreground hover:text-destructive"
+              onClick={handleDisconnect}
+            >
+              Disconnect Strava
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Activity detail dialog */}
       <Dialog
-        open={activityDialogOpen && Boolean(selectedActivityDetails)}
+        open={activityDialogOpen && Boolean(selectedActivity)}
         onOpenChange={(open) => {
           setActivityDialogOpen(open);
           if (!open) {
@@ -540,60 +460,16 @@ export function StravaCard({ className }: StravaCardProps) {
         }}
       >
         <DialogContent className="max-w-lg">
-          {selectedActivityDetails ? (
-            <>
-              <DialogHeader>
-                <DialogTitle>{selectedActivityDetails.title}</DialogTitle>
-                {selectedActivityDetails.subtitle ? (
-                  <p className="text-sm text-muted-foreground">{selectedActivityDetails.subtitle}</p>
-                ) : null}
-              </DialogHeader>
-
-              <div className="grid gap-3 py-2 text-sm">
-                {detailMetrics.map((metric) => (
-                  <div key={metric.label} className="flex items-center justify-between gap-4">
-                    <span className="text-muted-foreground">{metric.label}</span>
-                    <span className="font-medium text-right">{metric.value}</span>
-                  </div>
-                ))}
-              </div>
-
-              {selectedActivityDetails.description ? (
-                <div className="rounded-lg bg-muted/40 p-3 text-sm text-muted-foreground">
-                  {selectedActivityDetails.description}
-                </div>
-              ) : null}
-
-              {selectedActivityDetails.stravaUrl ? (
-                <Button asChild variant="outline" size="sm" className="mt-3 w-full gap-2">
-                  <a href={selectedActivityDetails.stravaUrl} target="_blank" rel="noopener noreferrer">
-                    View on Strava
-                    <ExternalLink className="h-3.5 w-3.5" />
-                  </a>
-                </Button>
-              ) : null}
-
-              {selectedActivity && (
-                selectedActivity.imported_post_id ? (
-                  <Badge variant="secondary" className="mt-3 w-full justify-center py-2 text-xs uppercase tracking-wide">
-                    Already on timeline
-                  </Badge>
-                ) : (
-                  <Button
-                    className="mt-3 w-full"
-                    onClick={() => handleOpenImportDialog(selectedActivity)}
-                  >
-                    Import to timeline
-                  </Button>
-                )
-              )}
-            </>
-          ) : (
-            <div className="py-8 text-center text-muted-foreground">Unable to load activity details.</div>
+          {selectedActivity && (
+            <ActivityDetailContent
+              activity={selectedActivity}
+              onImport={() => handleOpenImportDialog(selectedActivity)}
+            />
           )}
         </DialogContent>
       </Dialog>
 
+      {/* Import dialog */}
       <StravaImportDialog
         activity={activityToImport}
         open={importDialogOpen && Boolean(activityToImport)}
@@ -609,6 +485,116 @@ export function StravaCard({ className }: StravaCardProps) {
   );
 }
 
+function ActivityDetailContent({
+  activity,
+  onImport,
+}: {
+  activity: ActivityRecord;
+  onImport: () => void;
+}) {
+  const rawValue = activity.raw;
+  const raw =
+    typeof rawValue === "object" && rawValue !== null
+      ? (rawValue as Record<string, unknown>)
+      : {};
+
+  const toNumber = (value: unknown) => {
+    if (value === null || value === undefined) return null;
+    const numeric = Number(value);
+    return Number.isFinite(numeric) ? numeric : null;
+  };
+
+  const toStringValue = (value: unknown) => (typeof value === "string" ? value : null);
+
+  const startTime =
+    activity.start_time ??
+    toStringValue(raw["start_date"]) ??
+    toStringValue(raw["start_date_local"]);
+  const distanceMeters = toNumber(activity.distance_m ?? raw["distance"]);
+  const movingTime = toNumber(activity.moving_time_s ?? raw["moving_time"]);
+  const avgHr = toNumber(activity.avg_hr ?? raw["average_heartrate"]);
+  const elevGain = toNumber(activity.elev_gain_m ?? raw["total_elevation_gain"]);
+  const averageSpeed = getAverageSpeedFromActivity(activity);
+
+  const subtitle = startTime ? format(new Date(startTime), "PPP p") : null;
+  const title = activity.name ?? toStringValue(raw["name"]) ?? "Strava activity";
+
+  const rawId = toNumber(raw["id"]);
+  const stravaUrl = rawId ? `https://www.strava.com/activities/${rawId}` : null;
+
+  return (
+    <>
+      <DialogHeader>
+        <DialogTitle>{title}</DialogTitle>
+        {subtitle && <p className="text-sm text-muted-foreground">{subtitle}</p>}
+      </DialogHeader>
+
+      <div className="grid gap-3 py-2 text-sm">
+        {distanceMeters && (
+          <div className="flex items-center justify-between gap-4">
+            <span className="text-muted-foreground">Distance</span>
+            <span className="font-medium">{formatDistance(distanceMeters)}</span>
+          </div>
+        )}
+        {movingTime && (
+          <div className="flex items-center justify-between gap-4">
+            <span className="text-muted-foreground">Duration</span>
+            <span className="font-medium">{formatDuration(movingTime)}</span>
+          </div>
+        )}
+        {averageSpeed && (
+          <div className="flex items-center justify-between gap-4">
+            <span className="text-muted-foreground">Avg Pace</span>
+            <span className="font-medium">{formatPace(averageSpeed)}</span>
+          </div>
+        )}
+        {avgHr && (
+          <div className="flex items-center justify-between gap-4">
+            <span className="text-muted-foreground">Avg HR</span>
+            <span className="font-medium">{Math.round(avgHr)} bpm</span>
+          </div>
+        )}
+        {elevGain && (
+          <div className="flex items-center justify-between gap-4">
+            <span className="text-muted-foreground">Elevation</span>
+            <span className="font-medium">{formatElevation(elevGain)}</span>
+          </div>
+        )}
+      </div>
+
+      {stravaUrl && (
+        <Button asChild variant="outline" size="sm" className="w-full gap-2">
+          <a href={stravaUrl} target="_blank" rel="noopener noreferrer">
+            View on Strava
+            <ExternalLink className="h-3.5 w-3.5" />
+          </a>
+        </Button>
+      )}
+
+      {activity.imported_post_id ? (
+        <Badge variant="secondary" className="mt-3 w-full justify-center py-2 text-xs uppercase tracking-wide">
+          Already on timeline
+        </Badge>
+      ) : (
+        <Button className="mt-3 w-full" onClick={onImport}>
+          Import to timeline
+        </Button>
+      )}
+    </>
+  );
+}
+
+function formatRelativeDate(date: Date): string {
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+  if (diffDays === 0) return 'Today';
+  if (diffDays === 1) return 'Yesterday';
+  if (diffDays < 7) return `${diffDays} days ago`;
+  return format(date, 'MMM d');
+}
+
 function ActivitiesSkeleton({ rows }: { rows: number }) {
   return (
     <div className="space-y-2">
@@ -622,112 +608,6 @@ function ActivitiesSkeleton({ rows }: { rows: number }) {
           <Skeleton className="h-3 w-14" />
         </div>
       ))}
-    </div>
-  );
-}
-
-function ActivitiesList({
-  activities,
-  loading,
-  allowToggle,
-  showAll,
-  onToggleShowAll,
-  onSelect,
-  onImport,
-}: {
-  activities: ActivityRecord[];
-  loading: boolean;
-  allowToggle: boolean;
-  showAll: boolean;
-  onToggleShowAll: () => void;
-  onSelect?: (activity: ActivityRecord) => void;
-  onImport?: (activity: ActivityRecord) => void;
-}) {
-  if (loading) {
-    return <ActivitiesSkeleton rows={3} />;
-  }
-
-  if (!activities || activities.length === 0) {
-    return (
-      <div className="flex items-center justify-center rounded-md border border-border/40 bg-muted/20 px-4 py-6 text-sm text-muted-foreground">
-        No Strava activities found.
-      </div>
-    );
-  }
-
-  const handleKeyDown = onSelect
-    ? (activity: ActivityRecord) => (event: KeyboardEvent<HTMLDivElement>) => {
-      if (event.key === "Enter" || event.key === " ") {
-        event.preventDefault();
-        onSelect(activity);
-      }
-    }
-    : null;
-
-  return (
-    <div className="space-y-2">
-      <div className={cn("space-y-2", showAll ? "max-h-80 overflow-auto pr-1" : "")}>
-        {activities.map((activity) => {
-          const isInteractive = typeof onSelect === "function";
-          const key = activity.id ?? activity.external_id ?? activity.start_time ?? activity.name;
-          const paceValue = formatPaceFromSpeed(getAverageSpeedFromActivity(activity));
-          const imported = Boolean(activity.imported_post_id);
-          return (
-            <div
-              key={key}
-              className={cn(
-                "flex items-center gap-3 rounded-md border border-border/40 bg-muted/30 px-3 py-2",
-                isInteractive && "cursor-pointer transition hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
-              )}
-              role={isInteractive ? "button" : undefined}
-              tabIndex={isInteractive ? 0 : undefined}
-              onClick={isInteractive ? () => onSelect(activity) : undefined}
-              onKeyDown={isInteractive && handleKeyDown ? handleKeyDown(activity) : undefined}
-            >
-              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary">
-                <Activity className="h-4 w-4" />
-              </div>
-              <div className="flex-1">
-                <p className="text-sm font-medium leading-tight">
-                  {activity.name || "Strava activity"}
-                </p>
-                <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
-                  {activity.distance_m ? <span>{(activity.distance_m / 1000).toFixed(1)} km</span> : null}
-                  {activity.moving_time_s ? <span>{formatDuration(activity.moving_time_s)}</span> : null}
-                  {paceValue ? <span>{paceValue}</span> : null}
-                </div>
-              </div>
-              <div className="flex flex-col items-end gap-1 text-xs text-muted-foreground">
-                <span>
-                  {activity.start_time ? format(new Date(activity.start_time), "MMM d, yyyy") : "-"}
-                </span>
-                {imported ? (
-                  <Badge variant="outline" className="px-2 py-0 text-[10px] uppercase tracking-wide">
-                    On timeline
-                  </Badge>
-                ) : onImport ? (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-7 px-2 text-xs text-primary"
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      onImport(activity);
-                    }}
-                  >
-                    Import
-                  </Button>
-                ) : null}
-              </div>
-            </div>
-          );
-        })}
-      </div>
-      {allowToggle && (
-        <Button variant="ghost" size="sm" className="h-8 w-full" onClick={onToggleShowAll}>
-          {showAll ? "Show less" : "Show all"}
-        </Button>
-      )}
     </div>
   );
 }

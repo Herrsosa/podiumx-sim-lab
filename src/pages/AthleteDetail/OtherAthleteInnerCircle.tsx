@@ -41,7 +41,7 @@ export function OtherAthleteInnerCircle({
                             <h3 className="text-sm font-semibold text-emerald-400">
                                 Inner Circle
                             </h3>
-                            <p className="text-[10px] text-emerald-500/80">You're in! 🎉</p>
+                            <p className="text-[10px] text-emerald-500/80">You're in</p>
                         </div>
                     </div>
 
@@ -92,8 +92,7 @@ export function OtherAthleteInnerCircle({
                         <Lock className="h-4 w-4 text-muted-foreground" />
                     </div>
                     <div>
-                        <h3 className="text-sm font-semibold">Inner Circle</h3>
-                        <p className="text-[10px] text-muted-foreground">Exclusive access</p>
+                        <h3 className="text-sm font-semibold">🔒 Inner Circle</h3>
                     </div>
                 </div>
 
@@ -102,7 +101,7 @@ export function OtherAthleteInnerCircle({
                     <div className="flex items-center gap-2 text-sm">
                         <Users className="h-4 w-4 text-primary/60" />
                         <span className="text-muted-foreground">
-                            <span className="text-foreground font-medium">{holdersCount}</span> supporters chatting
+                            <span className="text-foreground font-medium">{holdersCount}</span> {holdersCount === 1 ? 'supporter' : 'supporters'} chatting
                         </span>
                     </div>
                     <div className="flex items-center gap-2 text-sm">

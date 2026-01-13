@@ -127,20 +127,15 @@ export function MarketDetailSheet({
             <SheetContent side="right" className="w-full sm:max-w-lg p-0 overflow-y-auto">
                 {/* Header */}
                 <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-xl border-b border-white/10 px-4 py-3">
-                    <div className="flex items-center justify-between">
-                        <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => onOpenChange(false)}
-                            className="gap-2"
-                        >
-                            <ArrowLeft className="h-4 w-4" />
-                            Back
-                        </Button>
-                        <Button size="sm" className="bg-primary hover:bg-primary/90">
-                            Trade
-                        </Button>
-                    </div>
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => onOpenChange(false)}
+                        className="gap-2"
+                    >
+                        <ArrowLeft className="h-4 w-4" />
+                        Back
+                    </Button>
                 </div>
 
                 <div className="p-4 space-y-6">

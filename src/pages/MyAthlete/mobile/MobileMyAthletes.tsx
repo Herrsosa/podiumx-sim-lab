@@ -8,7 +8,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import ProofOfSweat from '@/components/ProofOfSweat';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Activity, Share2, Plus, Globe } from 'lucide-react';
+import { Activity, Share2, Plus } from 'lucide-react';
 import type { EditableProfile } from './types';
 import { StravaCard } from '@/components/strava/StravaCard';
 import { MobileActionBar } from '@/components/MobileActionBar';
@@ -197,17 +197,8 @@ export default function MobileMyAthletes({
           unreadDMs={3} // TODO: Get from actual data
           onGroupChatClick={() => setShowChat(true)}
           onDMsClick={() => setShowDMs(true)}
+          onGlobeClick={() => setShowGlobe(true)}
         />
-
-        {/* Globe Button */}
-        <Button
-          variant="outline"
-          className="w-full gap-2 py-6 border-white/10 bg-card/60 hover:bg-card/80 transition-colors"
-          onClick={() => setShowGlobe(true)}
-        >
-          <Globe className="h-5 w-5 text-primary" />
-          <span className="font-medium">View Proof-of-Sweat Globe</span>
-        </Button>
 
         {/* Strava Integration */}
         <StravaCard />

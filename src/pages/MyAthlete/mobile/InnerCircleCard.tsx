@@ -1,4 +1,4 @@
-import { MessageSquare, Mail, ChevronRight, Lock } from 'lucide-react';
+import { MessageSquare, Mail, ChevronRight, Lock, Globe } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
@@ -8,6 +8,7 @@ interface InnerCircleCardProps {
     unreadDMs: number;
     onGroupChatClick: () => void;
     onDMsClick: () => void;
+    onGlobeClick?: () => void;
     className?: string;
 }
 
@@ -20,6 +21,7 @@ export function InnerCircleCard({
     unreadDMs,
     onGroupChatClick,
     onDMsClick,
+    onGlobeClick,
     className,
 }: InnerCircleCardProps) {
     return (
@@ -70,6 +72,18 @@ export function InnerCircleCard({
                         </p>
                     </button>
                 </div>
+
+                {/* Globe link */}
+                {onGlobeClick && (
+                    <button
+                        onClick={onGlobeClick}
+                        className="mt-4 flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                        <Globe className="h-4 w-4" />
+                        <span>View your Globe</span>
+                        <ChevronRight className="h-3 w-3 ml-auto" />
+                    </button>
+                )}
             </CardContent>
         </Card>
     );
