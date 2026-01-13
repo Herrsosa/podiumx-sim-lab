@@ -202,22 +202,6 @@ export function ProofOfSweatFeed({
 
   return (
     <section className={cn('space-y-6', className)}>
-      <header className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-        <div>
-          <div className="flex items-center gap-2 text-sm uppercase tracking-wide text-primary">
-            <Flame className="h-4 w-4" />
-            Live Proof-of-Sweat
-          </div>
-          <h2 className="text-2xl font-bold mt-2">{heading}</h2>
-          {subheading && <p className="text-muted-foreground">{subheading}</p>}
-        </div>
-        {seeAllHref && (
-          <Button asChild variant="ghost">
-            <Link to={seeAllHref}>Open full feed</Link>
-          </Button>
-        )}
-      </header>
-
       {isLoading ? (
         <div className="space-y-8">
           {Array.from({ length: maxVisible ?? 3 }).map((_, index) => (
@@ -273,7 +257,7 @@ export function ProofOfSweatFeed({
               const createdAt = new Date(item.post.created_at);
               const showSupportCta = !isOwner;
               const metrics = [
-                item.workout.type,
+                item.workout.type !== 'Other' ? item.workout.type : null,
                 item.workout.distance ? `${item.workout.distance} km` : null,
                 item.workout.duration
                   ? `${Math.floor(item.workout.duration / 60)}h ${item.workout.duration % 60}m`
@@ -286,110 +270,109 @@ export function ProofOfSweatFeed({
                   <div className="absolute left-0 top-2 hidden sm:flex h-4 w-4 -translate-x-1/2 items-center justify-center">
                     <span className="h-4 w-4 rounded-full border-2 border-primary bg-background" />
                   </div>
-                  <div className="flex flex-wrap items-center gap-3">
-                    <div className="flex items-center gap-3">
-                      <UserAvatar
-                        src={item.athlete.avatar}
-                        alt={item.athlete.name}
-                        size={48}
-                        className="ring-2 ring-primary/20"
-                      />
-                      <div>
-                        <p className="font-semibold leading-tight">{item.athlete.name}</p>
-                        <p className="text-sm text-muted-foreground">@{item.athlete.slug}</p>
+
+                  {/* Single card container */}
+                  <div className="rounded-2xl border border-border/60 bg-muted/30 overflow-hidden">
+                    {/* Header section with avatar and timestamp */}
+                    <div className="p-4 flex flex-wrap items-center gap-3">
+                      <div className="flex items-center gap-3">
+                        <UserAvatar
+                          src={item.athlete.avatar}
+                          alt={item.athlete.name}
+                          size={48}
+                          className="ring-2 ring-primary/20"
+                        />
+                        <div>
+                          <p className="font-semibold leading-tight">{item.athlete.name}</p>
+                          <p className="text-sm text-muted-foreground">@{item.athlete.slug}</p>
+                        </div>
+                      </div>
+                      <div className="ml-auto text-xs text-muted-foreground">
+                        {formatDistanceToNow(createdAt, { addSuffix: true })}
                       </div>
                     </div>
-                    <div className="ml-auto text-xs text-muted-foreground">
-                      {formatDistanceToNow(createdAt, { addSuffix: true })}
-                    </div>
-                  </div>
-                  <div className="rounded-2xl border border-border/60 bg-muted/30 p-4 flex flex-col gap-3">
-                    <div className="flex flex-wrap gap-2">
-                      {metrics.length > 0 ? (
-                        metrics.map((metric) => (
-                          <span
-                            key={metric}
-                            className="rounded-full bg-background/70 px-3 py-1 text-xs font-medium text-muted-foreground"
+
+                    {/* Content section */}
+                    <div className="px-4 pb-4 flex flex-col gap-3">
+                      <div className="flex flex-wrap gap-2">
+                        {metrics.length > 0 ? (
+                          metrics.map((metric) => (
+                            <span
+                              key={metric}
+                              className="rounded-full bg-background/70 px-3 py-1 text-xs font-medium text-muted-foreground"
+                            >
+                              {metric}
+                            </span>
+                          ))
+                        ) : (
+                          <span className="text-xs text-muted-foreground">Fresh drop</span>
+                        )}
+                      </div>
+                      {item.post.text && (
+                        <p className="text-sm font-medium text-foreground leading-snug">
+                          {item.post.text}
+                        </p>
+                      )}
+                      {(item.athlete.marketCap !== undefined || item.athlete.holdersCount !== undefined) && (
+                        <div className="flex items-center gap-3 text-xs text-muted-foreground pt-2">
+                          {item.athlete.marketCap !== undefined && (
+                            <span className="font-medium">
+                              {formatMoney(item.athlete.marketCap)} cap
+                            </span>
+                          )}
+                          {item.athlete.holdersCount !== undefined && (
+                            <>
+                              <span className="text-border">·</span>
+                              <span className="font-medium">
+                                {item.athlete.holdersCount} holder{item.athlete.holdersCount !== 1 ? 's' : ''}
+                              </span>
+                            </>
+                          )}
+                          <Button
+                            variant="link"
+                            size="sm"
+                            className="ml-auto p-0 h-auto text-xs text-primary hover:text-primary/80"
+                            onClick={() => navigate(`/athlete/${item.athlete.slug}`)}
                           >
-                            {metric}
-                          </span>
-                        ))
-                      ) : (
-                        <span className="text-xs text-muted-foreground">Fresh drop</span>
+                            View →
+                          </Button>
+                        </div>
                       )}
                     </div>
-                    {item.post.text && (
-                      <p className="text-sm font-medium text-foreground leading-snug">
-                        {item.post.text}
-                      </p>
-                    )}
-                    {(item.athlete.marketCap !== undefined || item.athlete.holdersCount !== undefined) && (
-                      <div className="flex items-center gap-3 text-xs text-muted-foreground pt-2">
-                        {item.athlete.marketCap !== undefined && (
-                          <span className="font-medium">
-                            {formatMoney(item.athlete.marketCap)} cap
-                          </span>
-                        )}
-                        {item.athlete.holdersCount !== undefined && (
-                          <>
-                            <span className="text-border">·</span>
-                            <span className="font-medium">
-                              {item.athlete.holdersCount} holder{item.athlete.holdersCount !== 1 ? 's' : ''}
-                            </span>
-                          </>
-                        )}
-                        <Button
-                          variant="link"
-                          size="sm"
-                          className="ml-auto p-0 h-auto text-xs text-primary hover:text-primary/80"
+
+                    {/* Image section inside card */}
+                    {(item.post.image_url || item.workout.mediaUrl) && (
+                      <div className="px-4 pb-3">
+                        <WorkoutGridCard
+                          workout={item.workout}
+                          post={item.post}
+                          canView={canView}
                           onClick={() => navigate(`/athlete/${item.athlete.slug}`)}
-                        >
-                          View →
-                        </Button>
+                          variant="feed"
+                        />
                       </div>
                     )}
-                    {showSupportCta && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="self-start p-0 text-primary hover:text-primary"
-                        onClick={() => navigate(`/athlete/${item.athlete.slug}`)}
-                      >
-                        View athlete →
-                      </Button>
+
+                    {/* Engagement Bar inside card with divider */}
+                    {canView && (
+                      <div className="flex items-center gap-4 px-4 pb-4 border-t border-white/5 pt-3">
+                        <PropButton postId={item.post.id} size="sm" />
+                        <CommentButtonWithModal postId={item.post.id} size="sm" />
+                        <ShareButton
+                          workout={item.workout}
+                          athleteName={item.athlete.name}
+                          athleteHandle={item.athlete.slug}
+                          athleteAvatar={item.athlete.avatar}
+                          imageUrl={item.post.image_url || item.workout.mediaUrl}
+                          athleteProfileUrl={`${window.location.origin}/athlete/${item.athlete.slug}`}
+                          location={item.post.location_lat != null && item.post.location_lng != null
+                            ? { lat: item.post.location_lat, lng: item.post.location_lng }
+                            : null}
+                          size="sm"
+                        />
+                      </div>
                     )}
                   </div>
-                  {(item.post.image_url || item.workout.mediaUrl) && (
-                    <div className="max-w-xs sm:max-w-sm">
-                      <WorkoutGridCard
-                        workout={item.workout}
-                        post={item.post}
-                        canView={canView}
-                        onClick={() => navigate(`/athlete/${item.athlete.slug}`)}
-                        variant="feed"
-                      />
-                    </div>
-                  )}
-
-                  {/* Engagement Bar */}
-                  {canView && (
-                    <div className="flex items-center gap-4 pt-2">
-                      <PropButton postId={item.post.id} size="sm" />
-                      <CommentButtonWithModal postId={item.post.id} size="sm" />
-                      <ShareButton
-                        workout={item.workout}
-                        athleteName={item.athlete.name}
-                        athleteHandle={item.athlete.slug}
-                        athleteAvatar={item.athlete.avatar}
-                        imageUrl={item.post.image_url || item.workout.mediaUrl}
-                        athleteProfileUrl={`${window.location.origin}/athlete/${item.athlete.slug}`}
-                        location={item.post.location_lat != null && item.post.location_lng != null
-                          ? { lat: item.post.location_lat, lng: item.post.location_lng }
-                          : null}
-                        size="sm"
-                      />
-                    </div>
-                  )}
                 </div>
               );
             })}
