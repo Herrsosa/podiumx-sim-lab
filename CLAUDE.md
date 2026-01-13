@@ -347,7 +347,6 @@ Athlyst is a Web3 social network where any athlete—pro or not—issues persona
 ```
 
 **Key rules:**
-- Remove unnecessary subtitle ("Track your positions and performance")
 - Show full athlete names, not truncated
 - Tapping an athlete goes to their profile
 
