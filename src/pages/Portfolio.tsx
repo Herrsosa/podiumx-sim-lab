@@ -1,16 +1,16 @@
-import { Suspense, lazy, useState, useMemo, useCallback, useRef } from 'react';
+import { useMemo, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FixedSizeList as List } from 'react-window';
-import { DollarSign, TrendingUp, TrendingDown, Coins, Download, Zap } from 'lucide-react';
+import { DollarSign, TrendingUp, TrendingDown, Coins, Zap } from 'lucide-react';
 import { useAthletesAuraScores } from '@/hooks/useAthletesAuraScores';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Table, TableBody, TableCell, TableRow } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
 import { CardSkeleton, TableSkeleton } from '@/components/ui/skeletons';
 import { EmptyState } from '@/components/ui/empty-state';
-import { H1, Body } from '@/components/ui/typography';
+import { H1 } from '@/components/ui/typography';
 import { formatMoney, formatNumber, safeNumber } from '@/lib/format';
 import { useWallet } from '@/hooks/useWallet';
 import { UserAvatar } from '@/components/UserAvatar';
@@ -21,7 +21,7 @@ import { AddFundsDialog } from '@/components/funding/AddFundsDialog';
 import { featureFlags } from '@/lib/config/featureFlags';
 import { CountUp } from '@/components/ui/count-up';
 import { cn } from '@/lib/utils';
-import { ContextualHelpButton } from '@/components/ContextualHelpButton';
+
 
 const SPORT_COLORS: Record<string, string> = {
   Running: 'bg-orange-500/10 text-orange-500 hover:bg-orange-500/20 border-orange-500/20',
@@ -164,8 +164,8 @@ export default function Portfolio() {
                 size={40}
                 className="ring-2 ring-primary/20 flex-shrink-0"
               />
-              <div className="flex-1">
-                <div className="font-semibold">{athlete.name}</div>
+              <div className="flex-1 min-w-0">
+                <div className="font-semibold whitespace-nowrap">{athlete.name}</div>
                 <Badge
                   variant="secondary"
                   className={cn("text-xs border", SPORT_COLORS[athlete.sport] || "bg-secondary text-secondary-foreground")}
@@ -279,14 +279,8 @@ export default function Portfolio() {
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="mb-8 flex items-center justify-between">
-        <div>
-          <H1 className="mb-2 text-4xl">Portfolio</H1>
-          <Body>Track your positions and performance</Body>
-        </div>
-        <div className="flex items-center gap-2">
-          <ContextualHelpButton screen="portfolio" />
-          <AddFundsDialog />
-        </div>
+        <H1 className="text-4xl">Portfolio</H1>
+        <AddFundsDialog />
       </div>
 
       {/* Hero Section */}
@@ -380,10 +374,7 @@ export default function Portfolio() {
 
       {/* Positions */}
       <Card className="glass-card">
-        <CardHeader>
-          <CardTitle>Your Positions</CardTitle>
-        </CardHeader>
-        <CardContent>
+        <CardContent className="pt-6">
           {positions.length === 0 ? (
             <EmptyState
               icon={<Coins className="h-6 w-6" />}
@@ -397,14 +388,6 @@ export default function Portfolio() {
             />
           ) : featureFlags.enableVirtualScroll ? (
             <div>
-              <div className="flex items-center px-4 py-3 border-b border-border/60 bg-muted/30 text-sm font-medium text-muted-foreground">
-                <div className="flex-1">Athlete</div>
-                <div className="text-right hidden sm:block w-20">Qty</div>
-                <div className="text-right hidden md:block w-24">Avg Cost</div>
-                <div className="text-right hidden lg:block w-28">Current Price</div>
-                <div className="text-right hidden md:block w-28">Value</div>
-                <div className="text-right w-32">P&L</div>
-              </div>
               <div tabIndex={0} role="table" aria-label="Portfolio positions table">
                 <List
                   ref={listRef}
@@ -456,8 +439,8 @@ export default function Portfolio() {
                             size={44}
                             className="ring-2 ring-primary/20 flex-shrink-0"
                           />
-                          <div className="flex-1">
-                            <div className="font-semibold">{athlete.name}</div>
+                          <div className="flex-1 min-w-0">
+                            <div className="font-semibold whitespace-nowrap">{athlete.name}</div>
                             <div className="flex items-center gap-2 mt-0.5">
                               <Badge
                                 variant="secondary"
@@ -512,16 +495,6 @@ export default function Portfolio() {
               {/* Desktop Table Layout - hidden on mobile */}
               <div className="hidden md:block">
                 <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Athlete</TableHead>
-                      <TableHead className="text-right">Qty</TableHead>
-                      <TableHead className="text-right">Avg Cost</TableHead>
-                      <TableHead className="text-right lg:table-cell hidden">Current Price</TableHead>
-                      <TableHead className="text-right">Value</TableHead>
-                      <TableHead className="text-right">P&L</TableHead>
-                    </TableRow>
-                  </TableHeader>
                   <TableBody>
                     {positions.map((position) => {
                       const athlete = athletes?.find((a) => a.id === position.athleteId);
@@ -553,8 +526,8 @@ export default function Portfolio() {
                                 size={40}
                                 className="ring-2 ring-primary/20"
                               />
-                              <div>
-                                <div className="font-semibold">{athlete.name}</div>
+                              <div className="min-w-0">
+                                <div className="font-semibold whitespace-nowrap">{athlete.name}</div>
                                 <div className="flex items-center gap-2 mt-0.5">
                                   <Badge
                                     variant="secondary"
