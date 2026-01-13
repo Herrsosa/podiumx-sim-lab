@@ -111,7 +111,7 @@ export function useProofOfSweatFeed(options: UseProofOfSweatFeedOptions = {}) {
       const authorIds = rows.map(row => row.author_id).filter(Boolean);
       const uniqueAuthorIds = [...new Set(authorIds)];
 
-      let tokensMap = new Map<string, { supply: number; a: number; b: number; c: number }>();
+      const tokensMap = new Map<string, { supply: number; a: number; b: number; c: number }>();
       if (uniqueAuthorIds.length > 0) {
         const { data: tokensData } = await supabase
           .from('athlete_tokens')
@@ -131,7 +131,7 @@ export function useProofOfSweatFeed(options: UseProofOfSweatFeedOptions = {}) {
       }
 
       // Batch fetch holder counts
-      let holdersMap = new Map<string, number>();
+      const holdersMap = new Map<string, number>();
       if (uniqueAuthorIds.length > 0) {
         const { data: holdingsData } = await supabase
           .from('holdings')
