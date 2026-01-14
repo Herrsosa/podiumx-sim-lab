@@ -18,12 +18,20 @@ import { queryClient } from '@/lib/queryClient';
 import { motion } from 'framer-motion';
 import { RecentTrades } from '@/components/RecentTrades';
 import { ContextualHelpButton } from '@/components/ContextualHelpButton';
+import { useMobile } from '@/hooks/use-mobile';
+import { MobileMarketplace } from '@/components/marketplace/MobileMarketplace';
 
 export default function Marketplace() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const user = useUser();
   const loading = useAuthLoading();
+  const isMobile = useMobile();
+
+  // Render mobile-specific marketplace on small screens
+  if (isMobile) {
+    return <MobileMarketplace />;
+  }
 
   // Initialize search from URL query param
   const [search, setSearch] = useState(searchParams.get('q') || '');
