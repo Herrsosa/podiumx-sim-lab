@@ -1,15 +1,14 @@
-import { useState, useMemo, useCallback, useEffect, startTransition } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { usePaginatedAthletes } from '@/hooks/usePaginatedAthletes';
 import { useMarketplaceCharts } from '@/hooks/useMarketplaceCharts';
 import type { MarketplaceChartPoint } from '@/hooks/useMarketplaceCharts';
-import { Sport, SPORTS } from '@/types';
+import { Sport } from '@/types';
 
 import { AthleteCard } from '@/components/AthleteCard';
 import { MarketplaceFilters, type SortOption, type ViewMode } from '@/components/marketplace/MarketplaceFilters';
 import { TrendingHero } from '@/components/marketplace/TrendingHero';
-import { H1, Body } from '@/components/ui/typography';
 import { EmptyState } from '@/components/ui/empty-state';
 import { CardSkeleton } from '@/components/ui/skeletons';
 import { useAuthLoading, useUser } from '@/store/auth';
@@ -17,21 +16,15 @@ import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import { queryClient } from '@/lib/queryClient';
 import { motion } from 'framer-motion';
 import { RecentTrades } from '@/components/RecentTrades';
-import { ContextualHelpButton } from '@/components/ContextualHelpButton';
 import { useMobile } from '@/hooks/use-mobile';
 import { MobileMarketplace } from '@/components/marketplace/MobileMarketplace';
 
 export default function Marketplace() {
   const navigate = useNavigate();
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchParams] = useSearchParams();
   const user = useUser();
   const loading = useAuthLoading();
   const isMobile = useMobile();
-
-  // Render mobile-specific marketplace on small screens
-  if (isMobile) {
-    return <MobileMarketplace />;
-  }
 
   // Initialize search from URL query param
   const [search, setSearch] = useState(searchParams.get('q') || '');
@@ -155,6 +148,12 @@ export default function Marketplace() {
   const handleLoadMore = useCallback(() => {
     if (hasNextPage) fetchNextPage();
   }, [hasNextPage, fetchNextPage]);
+
+  // Render mobile-specific marketplace on small screens
+  // Note: This must come AFTER all hooks to satisfy Rules of Hooks
+  if (isMobile) {
+    return <MobileMarketplace />;
+  }
 
   return (
     <div className="page-transition">
