@@ -72,7 +72,7 @@ export default function Landing() {
             </h1>
 
             <p className="text-xl text-muted-foreground max-w-2xl mx-auto lg:mx-0 leading-relaxed">
-              Your Sweat. Your Equity. The first athlete network where hard work builds athlete identity.
+              Post your training. Build your community. Unlock exclusive access for your supporters.
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
@@ -137,20 +137,20 @@ export default function Landing() {
               {[
                 {
                   step: "1",
-                  title: "Create Profile & Launch Token",
-                  desc: "Create your account and complete your athlete profile to get started.",
+                  title: "Post Proof of Sweat",
+                  desc: "Share your training",
                   color: "bg-success"
                 },
                 {
                   step: "2",
-                  title: "Log Proof of Sweat",
-                  desc: "Log your workouts and share your progress with the community.",
+                  title: "Grow your Market Cap",
+                  desc: "Supporters buy your token and watch it grow",
                   color: "bg-primary"
                 },
                 {
                   step: "3",
-                  title: "Grow Your Athlete Cap",
-                  desc: "Build your Athlete Cap and grow a strong community around you.",
+                  title: "Unlock your Inner Circle",
+                  desc: "Token holders get exclusive chat & DM access to you",
                   color: "bg-success"
                 }
               ].map((item, i) => (
@@ -211,9 +211,6 @@ export default function Landing() {
             >
               Trending Athletes
             </motion.h2>
-            <p className="text-muted-foreground max-w-2xl mx-auto text-lg">
-              Discover the top performers making moves in the marketplace
-            </p>
           </div>
 
           {/* Athletes Grid - Horizontal Scroll on Mobile */}
