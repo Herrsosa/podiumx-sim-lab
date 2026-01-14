@@ -24,6 +24,8 @@ import { mapPostRowToLockerWorkout, mapPostRowToPost, type WorkoutMutationResult
 import type { Database } from '@/integrations/supabase/types';
 import { ActivityMap } from '@/components/ui/ActivityMap';
 import { WorkoutCelebration, WorkoutCelebrationData } from '@/components/WorkoutCelebration';
+import { LocationInput } from '@/components/LocationInput';
+import type { LocationResult } from '@/hooks/useLocationSearch';
 
 type PostRow = Database['public']['Tables']['posts']['Row'];
 
@@ -68,6 +70,7 @@ export function StravaImportDialog({ activity, open, onOpenChange, onImported }:
   const [showCelebration, setShowCelebration] = useState(false);
   const [celebrationData, setCelebrationData] = useState<WorkoutCelebrationData | null>(null);
   const [importResult, setImportResult] = useState<WorkoutMutationResult | null>(null);
+  const [location, setLocation] = useState<LocationResult | null>(null);
   const defaults = useMemo(() => (activity ? deriveImportDefaults(activity) : null), [activity]);
   const [formState, setFormState] = useState<FormState>({
     date: defaults?.date ?? new Date().toISOString().split('T')[0],
@@ -95,6 +98,7 @@ export function StravaImportDialog({ activity, open, onOpenChange, onImported }:
   const handleOpenChange = (next: boolean) => {
     if (!next) {
       setSaving(false);
+      setLocation(null);
     }
     onOpenChange(next);
   };
@@ -181,6 +185,13 @@ export function StravaImportDialog({ activity, open, onOpenChange, onImported }:
           strava_activity_id: stravaActivityId,
           created_at: createdAt,
           strava_map_polyline: getActivityMapPolyline(activity),
+          location_city: location?.city || null,
+          location_country: location?.country || null,
+          location_country_code: location?.country_code || null,
+          location_geohash: location?.cell_id || null,
+          location_lat: location?.lat || null,
+          location_lng: location?.lng || null,
+          has_location: Boolean(location),
         })
         .select('id, created_at, author_id, workout_json, image_url, text, visibility, min_tokens_required, token_gated, strava_activity_id')
         .single();
@@ -206,6 +217,7 @@ export function StravaImportDialog({ activity, open, onOpenChange, onImported }:
         duration: durationValue,
         distance: distanceValue,
         notes: formState.notes || undefined,
+        location: location?.city || undefined,
       });
       setImportResult({ workout, post });
       setShowCelebration(true);
@@ -377,6 +389,13 @@ export function StravaImportDialog({ activity, open, onOpenChange, onImported }:
                       </SelectContent>
                     </Select>
                   </div>
+
+                  <LocationInput
+                    value={location}
+                    onChange={setLocation}
+                    label="Location (optional)"
+                    placeholder="Search for city..."
+                  />
                 </form>
               </div>
             )}
