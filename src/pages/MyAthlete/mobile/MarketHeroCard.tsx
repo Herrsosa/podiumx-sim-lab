@@ -1,5 +1,6 @@
-import { ArrowUpRight, ArrowDownRight, Flame, ChevronRight } from 'lucide-react';
+import { ArrowUpRight, ArrowDownRight, Flame, ChevronRight, Share2 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
 interface MarketHeroCardProps {
@@ -9,6 +10,7 @@ interface MarketHeroCardProps {
     auraScore: number;
     streak: number;
     onTap: () => void;
+    onShareAura?: () => void;
     className?: string;
 }
 
@@ -28,6 +30,7 @@ const percentFormatter = new Intl.NumberFormat('en-US', {
  * Hero card showing Market Cap as the primary metric
  * with holders, Aura, and streak on a single line.
  * Tapping opens the detailed market view.
+ * Optional share button for sharing the Aura card.
  */
 export function MarketHeroCard({
     marketCap,
@@ -36,10 +39,16 @@ export function MarketHeroCard({
     auraScore,
     streak,
     onTap,
+    onShareAura,
     className,
 }: MarketHeroCardProps) {
     const isPriceUp = priceChange >= 0;
     const PriceChangeIcon = isPriceUp ? ArrowUpRight : ArrowDownRight;
+
+    const handleShareClick = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        onShareAura?.();
+    };
 
     return (
         <Card
@@ -92,10 +101,23 @@ export function MarketHeroCard({
                     </span>
                 </div>
 
-                {/* Tap hint */}
-                <div className="flex items-center justify-center gap-1 mt-4 text-xs text-primary/70">
-                    <span>tap for details</span>
-                    <ChevronRight className="h-3 w-3" />
+                {/* Tap hint + Share button */}
+                <div className="flex items-center justify-center gap-4 mt-4">
+                    <div className="flex items-center gap-1 text-xs text-primary/70">
+                        <span>tap for details</span>
+                        <ChevronRight className="h-3 w-3" />
+                    </div>
+                    {onShareAura && (
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 gap-1.5 text-xs text-muted-foreground hover:text-foreground"
+                            onClick={handleShareClick}
+                        >
+                            <Share2 className="h-3.5 w-3.5" />
+                            Share Aura
+                        </Button>
+                    )}
                 </div>
             </CardContent>
         </Card>

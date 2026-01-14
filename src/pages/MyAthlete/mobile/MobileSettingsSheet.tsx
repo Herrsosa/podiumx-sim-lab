@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Settings, Compass, Bell, BookOpen, User, CheckCircle2, X } from 'lucide-react';
+import { Settings, Compass, BookOpen, User, CheckCircle2, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { useOnboardingTour } from '@/hooks/useOnboardingTour';
@@ -8,6 +8,7 @@ import { startTour } from '@/components/OnboardingTour';
 import { PushNotificationPrompt } from '@/components/PushNotificationPrompt';
 import { Link } from 'react-router-dom';
 import { cn } from '@/lib/utils';
+import { useAuthStore } from '@/store/auth';
 
 interface MobileSettingsSheetProps {
     onEditProfile?: () => void;
@@ -16,12 +17,14 @@ interface MobileSettingsSheetProps {
 
 /**
  * Settings sheet accessible from the mobile header.
- * Contains: Push Notifications, Onboarding Tour, Help, Edit Profile.
+ * Contains: Push Notifications, Onboarding Tour, Help, Edit Profile, Logout.
  */
 export function MobileSettingsSheet({ onEditProfile, className }: MobileSettingsSheetProps) {
     const [open, setOpen] = useState(false);
+    const [isLoggingOut, setIsLoggingOut] = useState(false);
     const navigate = useNavigate();
     const { tourCompleted, isLoading: tourLoading } = useOnboardingTour();
+    const signOut = useAuthStore((s) => s.signOut);
 
     const handleStartTour = () => {
         setOpen(false);
@@ -31,6 +34,16 @@ export function MobileSettingsSheet({ onEditProfile, className }: MobileSettings
     const handleEditProfile = () => {
         setOpen(false);
         onEditProfile?.();
+    };
+
+    const handleLogout = async () => {
+        setIsLoggingOut(true);
+        try {
+            await signOut();
+        } finally {
+            setIsLoggingOut(false);
+            setOpen(false);
+        }
     };
 
     return (
@@ -109,6 +122,25 @@ export function MobileSettingsSheet({ onEditProfile, className }: MobileSettings
                                 </div>
                             </button>
                         </Link>
+                    </div>
+
+                    {/* Logout */}
+                    <div className="pt-2 border-t border-white/10">
+                        <button
+                            onClick={handleLogout}
+                            disabled={isLoggingOut}
+                            className="flex items-center gap-3 w-full p-3 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 transition-colors text-left"
+                        >
+                            <div className="h-10 w-10 rounded-full bg-rose-500/20 flex items-center justify-center">
+                                <LogOut className="h-5 w-5 text-rose-500" />
+                            </div>
+                            <div>
+                                <p className="font-medium text-sm text-rose-500">
+                                    {isLoggingOut ? 'Logging out...' : 'Log Out'}
+                                </p>
+                                <p className="text-xs text-muted-foreground">Sign out of your account</p>
+                            </div>
+                        </button>
                     </div>
                 </div>
             </SheetContent>

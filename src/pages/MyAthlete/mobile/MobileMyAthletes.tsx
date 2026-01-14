@@ -8,7 +8,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import ProofOfSweat from '@/components/ProofOfSweat';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Activity, Share2, Plus } from 'lucide-react';
+import { Activity, Plus } from 'lucide-react';
 import type { EditableProfile } from './types';
 import { StravaCard } from '@/components/strava/StravaCard';
 import { MobileActionBar } from '@/components/MobileActionBar';
@@ -16,7 +16,6 @@ import type { PriceSeriesPoint } from '@/lib/charting/engine';
 import { getWindowUTC } from '@/lib/charting/engine';
 import { useChartPosts } from '@/hooks/useChartPosts';
 import { useAuthStore } from '@/store/auth';
-import { useToast } from '@/hooks/use-toast';
 
 import { AthleteIdentityCard } from '@/components/identity';
 import { LaunchTokenPrompt } from '@/components/LaunchTokenPrompt';
@@ -30,6 +29,7 @@ import { useIdentityKernel } from '@/hooks/useIdentityKernel';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { LockerMessages } from '@/components/myathlete/LockerMessages';
 import { LockerGlobe } from '@/components/myathlete/LockerGlobe';
+import { ShareAuraModal } from '@/components/share/ShareAuraModal';
 
 interface MobileMyAthletesProps {
   athlete?: Athlete;
@@ -87,7 +87,7 @@ export default function MobileMyAthletes({
   const [showDMs, setShowDMs] = useState(false);
   const [showProfileEdit, setShowProfileEdit] = useState(false);
   const [showGlobe, setShowGlobe] = useState(false);
-  const { toast } = useToast();
+  const [showShareAura, setShowShareAura] = useState(false);
 
   // Identity kernel for Aura score
   const { data: kernel } = useIdentityKernel();
@@ -115,13 +115,8 @@ export default function MobileMyAthletes({
     setShowProfileEdit(false);
   }, [onSaveProfile]);
 
-  const handleShare = useCallback(() => {
-    // TODO: Implement share functionality
-    toast({
-      title: 'Share',
-      description: 'Share feature coming soon!',
-    });
-  }, [toast]);
+
+
 
   // Calculate holders from trades - count unique traders with positive net holdings
   // NOTE: Must be before any early returns to maintain consistent hooks order
@@ -160,18 +155,10 @@ export default function MobileMyAthletes({
 
   return (
     <div className="flex min-h-screen flex-col bg-background text-foreground">
-      {/* Header: Settings (left) + Share (right) */}
+      {/* Header: Settings */}
       <header className="sticky top-0 z-30 border-b border-white/10 bg-gradient-to-b from-background via-background/95 to-background/90 px-4 py-3 backdrop-blur-xl">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center">
           <MobileSettingsSheet onEditProfile={handleEditProfile} />
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={handleShare}
-            className="h-10 w-10 rounded-full bg-muted/40 hover:bg-muted/60"
-          >
-            <Share2 className="h-5 w-5" />
-          </Button>
         </div>
       </header>
 
@@ -189,6 +176,7 @@ export default function MobileMyAthletes({
           auraScore={auraScore}
           streak={streak}
           onTap={() => setShowMarketDetail(true)}
+          onShareAura={kernel ? () => setShowShareAura(true) : undefined}
         />
 
         {/* Inner Circle (Group Chat + DMs) */}
@@ -359,6 +347,19 @@ export default function MobileMyAthletes({
           />
         </SheetContent>
       </Sheet>
+
+      {/* Share Aura Modal */}
+      {kernel && (
+        <ShareAuraModal
+          open={showShareAura}
+          onOpenChange={setShowShareAura}
+          kernel={kernel}
+          athleteName={athlete.name}
+          athleteHandle={athlete.slug}
+          athleteAvatar={athlete.avatar}
+          athleteProfileUrl={`https://athlyst.fun/athlete/${athlete.slug}`}
+        />
+      )}
     </div>
   );
 }
