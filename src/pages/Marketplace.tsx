@@ -8,7 +8,7 @@ import type { MarketplaceChartPoint } from '@/hooks/useMarketplaceCharts';
 import { Sport } from '@/types';
 
 import { AthleteCard } from '@/components/AthleteCard';
-import { MarketplaceFilters, type SortOption, type ViewMode } from '@/components/marketplace/MarketplaceFilters';
+import { MarketplaceFilters, type SortOption } from '@/components/marketplace/MarketplaceFilters';
 import { TrendingHero } from '@/components/marketplace/TrendingHero';
 import { EmptyState } from '@/components/ui/empty-state';
 import { CardSkeleton } from '@/components/ui/skeletons';
@@ -30,7 +30,6 @@ export default function Marketplace() {
   const [search, setSearch] = useState(searchParams.get('q') || '');
   const [selectedSport, setSelectedSport] = useState<Sport | 'All'>('All');
   const [sortBy, setSortBy] = useState<SortOption>('top-gainers');
-  const [viewMode, setViewMode] = useState<ViewMode>('grid');
   const [pendingSlug, setPendingSlug] = useState<string | null>(null);
 
   // Sync search from URL params (intentionally not including 'search' to avoid loop)
@@ -176,8 +175,6 @@ export default function Marketplace() {
         onSportChange={setSelectedSport}
         sortBy={sortBy}
         onSortChange={setSortBy}
-        viewMode={viewMode}
-        onViewModeChange={setViewMode}
         search={search}
         onSearchChange={setSearch}
       />
@@ -207,15 +204,11 @@ export default function Marketplace() {
         {showGridSkeleton && filteredAthletes.length === 0 ? (
           <CardSkeleton
             count={18}
-            className={viewMode === 'list'
-              ? "flex flex-col gap-4"
-              : "grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6"}
+            className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6"
           />
         ) : (
           <motion.div
-            className={viewMode === 'list'
-              ? "flex flex-col gap-4 max-w-md"
-              : "grid gap-4 grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6"}
+            className="grid gap-4 grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6"
             role="grid"
             aria-label="Athletes marketplace grid"
             initial="hidden"

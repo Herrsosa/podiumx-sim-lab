@@ -1,16 +1,17 @@
 import { useState } from 'react';
-import { ChevronDown, Grid3x3, List, Search } from 'lucide-react';
+import { ChevronDown, Activity } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import {
     DropdownMenu,
     DropdownMenuContent,
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { Sport, SPORTS } from '@/types';
+import { RecentTrades } from '@/components/RecentTrades';
 
 export type SortOption =
     | 'top-gainers'
@@ -20,15 +21,11 @@ export type SortOption =
     | 'price-asc'
     | 'price-desc';
 
-export type ViewMode = 'grid' | 'list';
-
 interface MarketplaceFiltersProps {
     selectedSport: Sport | 'All';
     onSportChange: (sport: Sport | 'All') => void;
     sortBy: SortOption;
     onSortChange: (sort: SortOption) => void;
-    viewMode: ViewMode;
-    onViewModeChange: (mode: ViewMode) => void;
     search?: string;
     onSearchChange?: (value: string) => void;
 }
@@ -58,11 +55,10 @@ export function MarketplaceFilters({
     onSportChange,
     sortBy,
     onSortChange,
-    viewMode,
-    onViewModeChange,
     search = '',
     onSearchChange,
 }: MarketplaceFiltersProps) {
+    const [activityOpen, setActivityOpen] = useState(false);
     const currentSortLabel = SORT_OPTIONS.find((opt) => opt.value === sortBy)?.label || 'Sort by';
 
     return (
@@ -130,27 +126,27 @@ export function MarketplaceFilters({
                     {/* Spacer */}
                     <div className="flex-1" />
 
-                    {/* View Toggle */}
-                    <div className="flex items-center gap-0.5 border rounded-md p-0.5 shrink-0">
-                        <Button
-                            variant={viewMode === 'grid' ? 'default' : 'ghost'}
-                            size="sm"
-                            onClick={() => onViewModeChange('grid')}
-                            className="h-7 w-7 p-0"
-                            title="Grid view"
-                        >
-                            <Grid3x3 className="h-3.5 w-3.5" />
-                        </Button>
-                        <Button
-                            variant={viewMode === 'list' ? 'default' : 'ghost'}
-                            size="sm"
-                            onClick={() => onViewModeChange('list')}
-                            className="h-7 w-7 p-0"
-                            title="List view"
-                        >
-                            <List className="h-3.5 w-3.5" />
-                        </Button>
-                    </div>
+                    {/* Activity Icon with Sheet */}
+                    <Sheet open={activityOpen} onOpenChange={setActivityOpen}>
+                        <SheetTrigger asChild>
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-8 gap-1.5 shrink-0"
+                            >
+                                <Activity className="h-4 w-4" />
+                                <span className="hidden sm:inline">Activity</span>
+                            </Button>
+                        </SheetTrigger>
+                        <SheetContent side="right" className="w-[350px] sm:w-[400px] p-0">
+                            <SheetHeader className="px-4 py-3 border-b border-border">
+                                <SheetTitle>Recent Activity</SheetTitle>
+                            </SheetHeader>
+                            <div className="h-[calc(100vh-60px)] overflow-y-auto">
+                                <RecentTrades />
+                            </div>
+                        </SheetContent>
+                    </Sheet>
                 </div>
             </div>
         </div>
