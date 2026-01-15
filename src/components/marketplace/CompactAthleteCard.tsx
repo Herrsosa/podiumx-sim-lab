@@ -111,15 +111,21 @@ export const CompactAthleteCard = memo(({ athlete, onClick }: CompactAthleteCard
                     <div
                         className={cn(
                             "flex items-center gap-0.5 text-xs font-medium",
-                            isPositive ? 'text-emerald-500' : 'text-red-500'
+                            changeValue === 0
+                                ? 'text-muted-foreground'
+                                : isPositive
+                                    ? 'text-emerald-500'
+                                    : 'text-red-500'
                         )}
                     >
-                        {isPositive ? (
-                            <TrendingUp className="h-3 w-3" />
-                        ) : (
-                            <TrendingDown className="h-3 w-3" />
+                        {changeValue !== 0 && (
+                            isPositive ? (
+                                <TrendingUp className="h-3 w-3" />
+                            ) : (
+                                <TrendingDown className="h-3 w-3" />
+                            )
                         )}
-                        {isPositive ? '+' : ''}
+                        {changeValue !== 0 && isPositive ? '+' : ''}
                         {formatNumber(changeValue)}%
                     </div>
                 </div>

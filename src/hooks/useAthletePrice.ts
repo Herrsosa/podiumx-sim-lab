@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { logger } from '@/lib/logger';
 import { priceAt } from '@/utils/pricing';
 import { subscribeToAthletePrice } from '@/lib/realtime/athleteRealtime';
 
@@ -56,12 +57,12 @@ export function useAthletePrice(athleteId: string | undefined) {
       ]);
 
       if (tokenError) {
-        console.error('Failed to fetch athlete token snapshot', tokenError);
+        logger.error('Failed to fetch athlete token snapshot', tokenError);
         throw tokenError;
       }
 
       if (priceError) {
-        console.error('Failed to fetch latest athlete price', priceError);
+        logger.error('Failed to fetch latest athlete price', priceError);
         throw priceError;
       }
 
@@ -98,7 +99,7 @@ export function useAthletePrice(athleteId: string | undefined) {
       };
 
       if (process.env.NODE_ENV !== 'production') {
-        console.log('[PriceDiag] latest price snapshot', {
+        logger.info('[PriceDiag] latest price snapshot', {
           athleteId: snapshot.athleteId,
           price: snapshot.price,
           updatedAt: snapshot.updatedAt,

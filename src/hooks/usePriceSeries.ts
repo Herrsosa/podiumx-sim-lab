@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { logger } from '@/lib/logger';
 import type { Database } from '@/integrations/supabase/types';
 import { subscribeToAthletePrice } from '@/lib/realtime/athleteRealtime';
 import type { PriceSeriesPoint } from '@/lib/charting/engine';
@@ -57,10 +58,10 @@ export function usePriceSeries(
         .eq('athlete_id', athleteId)
         .order('created_at', { ascending: true });
 
-      console.log(`[usePriceSeries] athleteId=${athleteId}, range=${range}, tradesCount=${data?.length ?? 0}`, { data, error });
+      logger.info(`[usePriceSeries] athleteId=${athleteId}, range=${range}, tradesCount=${data?.length ?? 0}`, { data, error });
 
       if (error) {
-        console.error('Failed to fetch price series', error);
+        logger.error('Failed to fetch price series', error);
         throw error;
       }
 
@@ -88,10 +89,10 @@ export function usePriceSeries(
 
       const normalized = normalizePriceSeries(points, range);
 
-      console.log(`[usePriceSeries] normalized points count=${normalized.length}, points=${JSON.stringify(normalized.slice(0, 3))}`);
+      logger.info(`[usePriceSeries] normalized points count=${normalized.length}, points=${JSON.stringify(normalized.slice(0, 3))}`);
 
       if (normalized.length === 0 && typeof options.fallbackPrice === 'number') {
-        console.log(`[usePriceSeries] Using fallback price=${options.fallbackPrice}`);
+        logger.info(`[usePriceSeries] Using fallback price=${options.fallbackPrice}`);
         return [toFallbackPoint(options.fallbackPrice, options.fallbackTimestamp ?? null)];
       }
 

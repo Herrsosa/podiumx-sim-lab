@@ -169,17 +169,21 @@ export const AthleteCard = memo(({ athlete, chartData, onClick, onMouseEnter }: 
                 <div
                   className={cn(
                     "flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold",
-                    isPositive
-                      ? 'bg-emerald-500/20 text-emerald-400'
-                      : 'bg-red-500/20 text-red-400'
+                    athlete.change24h === 0
+                      ? 'bg-muted text-muted-foreground'
+                      : isPositive
+                        ? 'bg-emerald-500/20 text-emerald-400'
+                        : 'bg-red-500/20 text-red-400'
                   )}
                 >
-                  {isPositive ? (
-                    <TrendingUp className="h-3 w-3" />
-                  ) : (
-                    <TrendingDown className="h-3 w-3" />
+                  {athlete.change24h !== 0 && (
+                    isPositive ? (
+                      <TrendingUp className="h-3 w-3" />
+                    ) : (
+                      <TrendingDown className="h-3 w-3" />
+                    )
                   )}
-                  {isPositive ? '+' : ''}
+                  {athlete.change24h !== 0 && isPositive ? '+' : ''}
                   {formatNumber(athlete.change24h)}%
                 </div>
               </div>

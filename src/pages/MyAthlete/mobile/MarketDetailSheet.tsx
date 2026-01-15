@@ -148,16 +148,22 @@ export function MarketDetailSheet({
                             {currencyFormatter.format(marketCap)}
                         </p>
                         <div className="flex items-center justify-center gap-1 mt-1">
-                            <PriceChangeIcon
-                                className={cn(
-                                    'h-4 w-4',
-                                    isPriceUp ? 'text-emerald-500' : 'text-rose-500'
-                                )}
-                            />
+                            {priceChange !== 0 && (
+                                <PriceChangeIcon
+                                    className={cn(
+                                        'h-4 w-4',
+                                        isPriceUp ? 'text-emerald-500' : 'text-rose-500'
+                                    )}
+                                />
+                            )}
                             <span
                                 className={cn(
                                     'text-sm font-medium',
-                                    isPriceUp ? 'text-emerald-500' : 'text-rose-500'
+                                    priceChange === 0
+                                        ? 'text-muted-foreground'
+                                        : isPriceUp
+                                            ? 'text-emerald-500'
+                                            : 'text-rose-500'
                                 )}
                             >
                                 {percentFormatter.format(priceChange / 100)} this week

@@ -305,7 +305,9 @@ export default function Portfolio() {
               </div>
               <div className="text-right">
                 <div className={cn("flex items-center justify-end gap-1 text-sm font-medium mb-1 tabular-nums", percentClass)}>
-                  {percentChange && percentChange >= 0 ? <TrendingUp className="h-4 w-4" /> : <TrendingDown className="h-4 w-4" />}
+                  {percentChange !== null && percentChange !== 0 && (
+                    percentChange >= 0 ? <TrendingUp className="h-4 w-4" /> : <TrendingDown className="h-4 w-4" />
+                  )}
                   <CountUp
                     value={Math.abs(percentChange || 0)}
                     suffix="%"

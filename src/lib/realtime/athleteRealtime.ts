@@ -1,5 +1,6 @@
 import { supabase } from '@/integrations/supabase/client';
 import { queryClient } from '@/lib/queryClient';
+import { logger } from '@/lib/logger';
 import type { RealtimeChannel } from '@supabase/supabase-js';
 import type { Database } from '@/integrations/supabase/types';
 import type { TimeRangeKey } from '@/utils/chartData';
@@ -61,16 +62,16 @@ function normalizePriceRow(row: AthletePriceRow): PriceUpdate {
  */
 function dedupeUpdates(updates: PriceUpdate[]): PriceUpdate[] {
   const map = new Map<string, PriceUpdate>();
-  
+
   for (const update of updates) {
     const key = `${update.athleteId}-${update.timestamp}`;
     const existing = map.get(key);
-    
+
     if (!existing || update.timestamp >= existing.timestamp) {
       map.set(key, update);
     }
   }
-  
+
   return Array.from(map.values()).sort((a, b) => a.timestamp - b.timestamp);
 }
 
@@ -80,7 +81,7 @@ function dedupeUpdates(updates: PriceUpdate[]): PriceUpdate[] {
 function updateQueryCaches(athleteId: string, updates: PriceUpdate[]) {
   if (updates.length === 0) return;
 
-  console.log(`[AthleteRealtime] Flushing ${updates.length} updates for athlete ${athleteId}`);
+  logger.info(`[AthleteRealtime] Flushing ${updates.length} updates for athlete ${athleteId}`);
 
   // Update athlete price snapshot (single latest price)
   const latestUpdate = updates[updates.length - 1];
@@ -106,7 +107,7 @@ function updateQueryCaches(athleteId: string, updates: PriceUpdate[]) {
 
   // Update trade history ranges
   const ranges = ['24h', '7d', '30d', 'all'] as const;
-  
+
   for (const range of ranges) {
     queryClient.setQueryData(
       ['athleteTradeHistory', athleteId, range],
@@ -180,8 +181,8 @@ function handlePriceUpdate(athleteId: string, row: AthletePriceRow) {
 
   const update = normalizePriceRow(row);
   state.pendingUpdates.push(update);
-  
-  console.log(`[AthleteRealtime] Received update for athlete ${athleteId}:`, {
+
+  logger.info(`[AthleteRealtime] Received update for athlete ${athleteId}:`, {
     price: update.price,
     timestamp: update.timestamp,
     pending: state.pendingUpdates.length,
@@ -195,21 +196,21 @@ function handlePriceUpdate(athleteId: string, row: AthletePriceRow) {
  */
 export function subscribeToAthletePrice(athleteId: string): () => void {
   if (!athleteId) {
-    console.warn('[AthleteRealtime] Invalid athleteId');
-    return () => {};
+    logger.warn('[AthleteRealtime] Invalid athleteId');
+    return () => { };
   }
 
   // Increment ref count if channel exists
   const existing = channels.get(athleteId);
   if (existing) {
     existing.refCount++;
-    console.log(`[AthleteRealtime] Ref count++ for ${athleteId}: ${existing.refCount}`);
+    logger.info(`[AthleteRealtime] Ref count++ for ${athleteId}: ${existing.refCount}`);
     return () => unsubscribeFromAthletePrice(athleteId);
   }
 
   // Create new channel
-  console.log(`[AthleteRealtime] Creating channel for athlete ${athleteId}`);
-  
+  logger.info(`[AthleteRealtime] Creating channel for athlete ${athleteId}`);
+
   const channel = supabase
     .channel(`athlete-prices:${athleteId}`)
     .on(
@@ -221,12 +222,12 @@ export function subscribeToAthletePrice(athleteId: string): () => void {
         filter: `athlete_id=eq.${athleteId}`,
       },
       (payload) => {
-        console.log(`[AthleteRealtime] INSERT event for ${athleteId}`, payload);
+        logger.info(`[AthleteRealtime] INSERT event for ${athleteId}`, payload);
         handlePriceUpdate(athleteId, payload.new as AthletePriceRow);
       }
     )
     .subscribe((status) => {
-      console.log(`[AthleteRealtime] Channel status for ${athleteId}:`, status);
+      logger.info(`[AthleteRealtime] Channel status for ${athleteId}:`, status);
     });
 
   channels.set(athleteId, {
@@ -247,7 +248,7 @@ function unsubscribeFromAthletePrice(athleteId: string) {
   if (!state) return;
 
   state.refCount--;
-  console.log(`[AthleteRealtime] Ref count-- for ${athleteId}: ${state.refCount}`);
+  logger.info(`[AthleteRealtime] Ref count-- for ${athleteId}: ${state.refCount}`);
 
   if (state.refCount <= 0) {
     // Flush any pending updates before cleanup
@@ -257,7 +258,7 @@ function unsubscribeFromAthletePrice(athleteId: string) {
     }
 
     // Remove channel
-    console.log(`[AthleteRealtime] Removing channel for athlete ${athleteId}`);
+    logger.info(`[AthleteRealtime] Removing channel for athlete ${athleteId}`);
     supabase.removeChannel(state.channel);
     channels.delete(athleteId);
   }

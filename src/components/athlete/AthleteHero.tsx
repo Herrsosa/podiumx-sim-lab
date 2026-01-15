@@ -137,9 +137,9 @@ export function AthleteHero({ athlete, auraCard }: AthleteHeroProps) {
                             <div className="text-xl font-bold text-white md:text-2xl">
                                 $<CountUp value={athlete.price} decimalPlaces={2} duration={1.5} />
                             </div>
-                            <div className={cn("mt-0.5 flex items-center gap-1 text-[10px] font-medium", isPositive ? "text-success" : "text-destructive")}>
-                                {isPositive ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
-                                {isPositive ? '+' : ''}{formatNumber(athlete.change24h)}%
+                            <div className={cn("mt-0.5 flex items-center gap-1 text-[10px] font-medium", athlete.change24h === 0 ? "text-muted-foreground" : isPositive ? "text-success" : "text-destructive")}>
+                                {athlete.change24h !== 0 && (isPositive ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />)}
+                                {athlete.change24h !== 0 && isPositive ? '+' : ''}{formatNumber(athlete.change24h)}%
                             </div>
                         </div>
 

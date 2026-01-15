@@ -2,6 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Activity, TrendingUp, Flame, Route } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAthleteStats } from '@/hooks/useAthleteStats';
+import { useIdentityKernel } from '@/hooks/useIdentityKernel';
 
 interface ProfileStatsCardProps {
     className?: string;
@@ -11,7 +12,10 @@ interface ProfileStatsCardProps {
  * Minimal stats card showing all-time athlete metrics
  */
 export function ProfileStatsCard({ className }: ProfileStatsCardProps) {
-    const { data: stats, isLoading } = useAthleteStats();
+    const { data: stats, isLoading: statsLoading } = useAthleteStats();
+    const { data: kernel, isLoading: kernelLoading } = useIdentityKernel();
+
+    const isLoading = statsLoading || kernelLoading;
 
     if (isLoading) {
         return (
@@ -38,11 +42,14 @@ export function ProfileStatsCard({ className }: ProfileStatsCardProps) {
         return null;
     }
 
+    // Use streak from identity kernel to ensure consistency with Aura Score card
+    const streak = kernel?.streak ?? stats.streak;
+
     const statItems = [
         { icon: Activity, label: 'Workouts', value: stats.totalWorkouts },
         { icon: Route, label: 'Distance', value: `${stats.totalDistance} km` },
         { icon: TrendingUp, label: 'Hours', value: stats.totalHours },
-        { icon: Flame, label: 'Streak', value: `${stats.streak}d` },
+        { icon: Flame, label: 'Streak', value: `${streak}d` },
     ];
 
     return (
@@ -64,3 +71,4 @@ export function ProfileStatsCard({ className }: ProfileStatsCardProps) {
         </Card>
     );
 }
+

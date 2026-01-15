@@ -81,10 +81,14 @@ export function OtherAthleteHeroCard({
                     <div className="text-right">
                         <div className={cn(
                             'flex items-center justify-end gap-1 text-sm font-medium',
-                            isPriceUp ? 'text-emerald-500' : 'text-rose-500'
+                            priceChange === 0
+                                ? 'text-muted-foreground'
+                                : isPriceUp
+                                    ? 'text-emerald-500'
+                                    : 'text-rose-500'
                         )}>
-                            <TrendIcon className="h-3.5 w-3.5" />
-                            <span>{isPriceUp ? '+' : ''}{priceChange.toFixed(1)}%</span>
+                            {priceChange !== 0 && <TrendIcon className="h-3.5 w-3.5" />}
+                            <span>{priceChange !== 0 && isPriceUp ? '+' : ''}{priceChange.toFixed(1)}%</span>
                         </div>
                         <div className="flex items-center justify-end gap-1 text-xs text-muted-foreground mt-1">
                             <Users className="h-3 w-3" />

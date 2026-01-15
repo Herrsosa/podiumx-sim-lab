@@ -114,13 +114,17 @@ export function OverviewTab({
                                 <p className="text-xs text-muted-foreground mb-1">24h Change</p>
                                 <div className="flex items-center gap-1">
                                     <Badge
-                                        variant={isPriceUp ? 'default' : 'secondary'}
+                                        variant={priceChange === 0 ? 'secondary' : isPriceUp ? 'default' : 'secondary'}
                                         className={cn(
                                             'gap-1',
-                                            isPriceUp ? 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-400' : 'bg-rose-500/20 text-rose-600 dark:text-rose-400',
+                                            priceChange === 0
+                                                ? 'bg-muted text-muted-foreground'
+                                                : isPriceUp
+                                                    ? 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-400'
+                                                    : 'bg-rose-500/20 text-rose-600 dark:text-rose-400',
                                         )}
                                     >
-                                        <PriceChangeIcon className="h-3 w-3" />
+                                        {priceChange !== 0 && <PriceChangeIcon className="h-3 w-3" />}
                                         {percentFormatter.format((priceChange || 0) / 100)}
                                     </Badge>
                                 </div>

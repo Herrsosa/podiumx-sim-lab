@@ -131,52 +131,50 @@ export default function Landing() {
             </p>
           </div>
 
-          {/* How It Works Steps - Horizontal Scroll on Mobile */}
-          <div className="-mx-4 px-4 md:mx-0 md:px-0">
-            <div className="flex md:grid md:grid-cols-3 gap-8 overflow-x-auto scrollbar-hide snap-x snap-mandatory pb-4 md:pb-0">
-              {[
-                {
-                  step: "1",
-                  title: "Post Proof of Sweat",
-                  desc: "Share your training",
-                  color: "bg-success"
-                },
-                {
-                  step: "2",
-                  title: "Grow your Market Cap",
-                  desc: "Supporters buy your token and watch it grow",
-                  color: "bg-primary"
-                },
-                {
-                  step: "3",
-                  title: "Unlock your Inner Circle",
-                  desc: "Token holders get exclusive chat & DM access to you",
-                  color: "bg-success"
-                }
-              ].map((item, i) => (
-                <motion.div
-                  key={i}
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: i * 0.2 }}
-                  className="text-center space-y-6 relative min-w-[280px] md:min-w-0 snap-center"
-                >
-                  <div className="relative mx-auto w-24 h-24 flex items-center justify-center">
-                    <div className={`absolute inset-0 ${item.color} opacity-20 blur-2xl rounded-full`} />
-                    <div className={`relative w-16 h-16 rounded-2xl ${item.color} flex items-center justify-center text-2xl font-bold text-white shadow-lg shadow-${item.color}/20`}>
-                      {item.step}
-                    </div>
+          {/* How It Works Steps - Vertical Stack on Mobile, Grid on Desktop */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
+            {[
+              {
+                step: "1",
+                title: "Post Proof of Sweat",
+                desc: "Share your training",
+                color: "bg-success"
+              },
+              {
+                step: "2",
+                title: "Grow your Market Cap",
+                desc: "Supporters buy your token and watch it grow",
+                color: "bg-primary"
+              },
+              {
+                step: "3",
+                title: "Unlock your Inner Circle",
+                desc: "Token holders get exclusive chat & DM access to you",
+                color: "bg-success"
+              }
+            ].map((item, i) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.1 }}
+                className="flex md:flex-col items-center md:text-center gap-4 md:gap-6 p-4 md:p-0 rounded-xl bg-white/5 md:bg-transparent border border-white/10 md:border-0"
+              >
+                <div className="relative shrink-0 w-14 h-14 md:w-24 md:h-24 md:mx-auto flex items-center justify-center">
+                  <div className={`absolute inset-0 ${item.color} opacity-20 blur-xl md:blur-2xl rounded-full`} />
+                  <div className={`relative w-12 h-12 md:w-16 md:h-16 rounded-xl md:rounded-2xl ${item.color} flex items-center justify-center text-lg md:text-2xl font-bold text-white shadow-lg`}>
+                    {item.step}
                   </div>
-                  <div className="space-y-3">
-                    <h3 className="text-xl font-bold">{item.title}</h3>
-                    <p className="text-muted-foreground leading-relaxed max-w-xs mx-auto">
-                      {item.desc}
-                    </p>
-                  </div>
-                </motion.div>
-              ))}
-            </div>
+                </div>
+                <div className="space-y-1 md:space-y-3 text-left md:text-center">
+                  <h3 className="text-lg md:text-xl font-bold">{item.title}</h3>
+                  <p className="text-sm md:text-base text-muted-foreground leading-relaxed md:max-w-xs md:mx-auto">
+                    {item.desc}
+                  </p>
+                </div>
+              </motion.div>
+            ))}
           </div>
         </div>
       </section >

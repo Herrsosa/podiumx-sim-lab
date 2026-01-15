@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { logger } from "@/lib/logger";
 import { useToast } from "@/hooks/use-toast";
 import { useUser } from "@/store/auth";
 import { useQueryClient } from "@tanstack/react-query";
@@ -33,7 +34,7 @@ export default function StravaLinkedResult() {
     setMessage(null);
 
     (async () => {
-      console.log('[StravaLinkedResult] Calling edge function with code:', code?.substring(0, 10) + '...', 'state:', state?.substring(0, 10) + '...');
+      logger.info('[StravaLinkedResult] Calling edge function with code:', code?.substring(0, 10) + '...', 'state:', state?.substring(0, 10) + '...');
 
       const response = await supabase.functions.invoke("strava-oauth-exchange", {
         body: { code, state },
@@ -41,7 +42,7 @@ export default function StravaLinkedResult() {
       const { data, error } = response;
 
       // Log full response for debugging
-      console.log('[StravaLinkedResult] Edge function response:', { data, error });
+      logger.info('[StravaLinkedResult] Edge function response:', { data, error });
 
       // Try to extract detailed error from response context if available
       if (error) {
@@ -50,10 +51,10 @@ export default function StravaLinkedResult() {
           const errorContext = (error as unknown as { context?: { json?: () => Promise<unknown> } })?.context;
           if (errorContext?.json) {
             const errorBody = await errorContext.json();
-            console.error('[StravaLinkedResult] Error body:', errorBody);
+            logger.error('[StravaLinkedResult] Error body:', errorBody);
           }
         } catch (parseErr) {
-          console.warn('[StravaLinkedResult] Could not parse error body:', parseErr);
+          logger.warn('[StravaLinkedResult] Could not parse error body:', parseErr);
         }
       }
 
@@ -62,7 +63,7 @@ export default function StravaLinkedResult() {
       if (error || (data && "error" in data)) {
         const reason =
           error?.message ?? (data && "error" in data ? String(data.error) : null);
-        console.error('[StravaLinkedResult] Connection failed:', reason, error);
+        logger.error('[StravaLinkedResult] Connection failed:', reason, error);
         setStatus("error");
         setMessage(reason ?? "We could not connect to Strava. Please try again.");
         toast({
@@ -89,13 +90,13 @@ export default function StravaLinkedResult() {
       if (user?.id) {
         queryClient.invalidateQueries({ queryKey: stravaConnectionQueryKey(user.id) }).catch(
           (invalidateError) => {
-            console.warn("Failed to invalidate Strava connection query:", invalidateError);
+            logger.warn("Failed to invalidate Strava connection query:", invalidateError);
           },
         );
       }
 
       queryClient.invalidateQueries({ queryKey: ["activities"] }).catch((invalidateError) => {
-        console.warn("Failed to invalidate activities query:", invalidateError);
+        logger.warn("Failed to invalidate activities query:", invalidateError);
       });
 
       setTimeout(() => {
