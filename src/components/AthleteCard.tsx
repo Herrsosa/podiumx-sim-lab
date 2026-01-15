@@ -2,12 +2,10 @@ import { memo, useMemo } from 'react';
 import { TrendingUp, TrendingDown, ArrowUpRight } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
-import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { Athlete } from '@/types';
 import type { MarketplaceChartPoint } from '@/hooks/useMarketplaceCharts';
 import { formatMoney, formatNumber } from '@/lib/format';
 import { getAvatarAsset, resolveAvatarUrl } from '@/utils/avatar';
-import { format } from 'date-fns';
 import { OptimizedImage } from '@/components/OptimizedImage';
 import { motion } from 'framer-motion';
 import { CountUp } from '@/components/ui/count-up';
@@ -109,7 +107,7 @@ export const AthleteCard = memo(({ athlete, chartData, holdersCount, onClick, on
         onMouseEnter={onMouseEnter}
       >
         <CardContent className="p-0">
-          <div className="relative aspect-square overflow-hidden">
+          <div className="relative aspect-[4/3] overflow-hidden">
             {hasAvatar ? (
               <OptimizedImage
                 src={avatarUrl}
@@ -197,63 +195,9 @@ export const AthleteCard = memo(({ athlete, chartData, holdersCount, onClick, on
               )}
             </div>
 
-            {/* Chart - Compact */}
-            <div className="mb-3 h-[100px] rounded-lg overflow-hidden">
-              {hasChartData ? (
-                <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart
-                    data={sortedChartData}
-                    margin={{ top: 4, right: 4, left: 4, bottom: 0 }}
-                  >
-                    <defs>
-                      <linearGradient id={`gradient-${athlete.id}`} x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor={lineColor} stopOpacity={0.4} />
-                        <stop offset="50%" stopColor={lineColor} stopOpacity={0.15} />
-                        <stop offset="100%" stopColor={lineColor} stopOpacity={0} />
-                      </linearGradient>
-                    </defs>
-                    <XAxis dataKey="timestamp" hide />
-                    <YAxis hide domain={priceDomain ?? ['auto', 'auto']} />
-                    <Tooltip
-                      contentStyle={{
-                        backgroundColor: 'hsl(var(--popover))',
-                        borderColor: 'hsl(var(--border))',
-                        borderRadius: '8px',
-                        fontSize: '11px',
-                        padding: '6px 10px'
-                      }}
-                      cursor={{ stroke: lineColor, strokeWidth: 1, opacity: 0.2 }}
-                      formatter={(value: number) => [`$${Number(value).toFixed(2)}`, 'Price']}
-                      labelFormatter={(value) => format(new Date(value), 'MMM d, h:mm a')}
-                    />
-                    <Area
-                      type="monotone"
-                      dataKey="price"
-                      stroke={lineColor}
-                      strokeWidth={2}
-                      fill={`url(#gradient-${athlete.id})`}
-                      fillOpacity={1}
-                      animationDuration={1000}
-                    />
-                  </AreaChart>
-                </ResponsiveContainer>
-              ) : (
-                <div className="flex h-full items-center justify-center text-xs text-muted-foreground bg-muted/10 rounded-lg border border-dashed border-border">
-                  No price history yet
-                </div>
-              )}
-            </div>
-
-            {/* Stats - Compact */}
-            <div className="grid grid-cols-2 gap-2 text-xs">
-              <div className="space-y-0.5">
-                <div className="text-[10px] text-muted-foreground uppercase tracking-wide">Market Cap</div>
-                <div className="font-semibold truncate">{formatMoney(athlete.marketCap)}</div>
-              </div>
-              <div className="space-y-0.5">
-                <div className="text-[10px] text-muted-foreground uppercase tracking-wide">Supply</div>
-                <div className="font-semibold truncate">{formatNumber(athlete.supply)}</div>
-              </div>
+            {/* Stats - Single line: Market Cap · Holders */}
+            <div className="text-xs text-muted-foreground">
+              {formatMoney(athlete.marketCap)} cap · {holdersCount !== undefined ? holdersCount : formatNumber(athlete.supply)} holder{(holdersCount !== undefined ? holdersCount : athlete.supply) !== 1 ? 's' : ''}
             </div>
           </div>
         </CardContent>
