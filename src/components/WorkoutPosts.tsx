@@ -294,8 +294,8 @@ export default function WorkoutPosts({
                       <div className="w-14 h-14 mx-auto mb-3 rounded-full bg-white/10 flex items-center justify-center backdrop-blur-md">
                         <Lock className="h-7 w-7" />
                       </div>
-                      <p className="font-bold text-lg">Token Holders Only</p>
-                      <p className="text-sm text-white/70 mt-1">Buy tokens to unlock</p>
+                      <p className="font-bold text-lg">Card Holders Only</p>
+                      <p className="text-sm text-white/70 mt-1">Buy Cards to unlock</p>
                     </div>
                   </div>
                 )}
@@ -379,7 +379,7 @@ export default function WorkoutPosts({
                       className="bg-primary hover:bg-primary/90 font-semibold gap-2"
                     >
                       <Lock className="h-4 w-4" />
-                      Buy Tokens to Unlock
+                      Buy Cards to Unlock
                     </Button>
                   </div>
                 )}

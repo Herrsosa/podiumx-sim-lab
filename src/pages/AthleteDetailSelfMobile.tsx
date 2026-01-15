@@ -214,7 +214,7 @@ export function SelfMobileProfile({
                   <div>
                     <p className="font-semibold">No locked content yet</p>
                     <p className="text-sm text-muted-foreground">
-                      Create an exclusive post for supporters — only token holders will see it.
+                      Create an exclusive post for supporters — only card holders will see it.
                     </p>
                   </div>
                   <Button variant="outline" onClick={onAddProof}>

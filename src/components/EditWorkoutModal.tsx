@@ -427,9 +427,9 @@ export default function EditWorkoutModal({ open, onOpenChange, workoutPost, onSu
 
             <div className="flex items-center justify-between p-4 rounded-lg bg-muted/50">
               <div>
-                <Label htmlFor="edit-tokenGated" className="font-semibold">Token Holders Only</Label>
+                <Label htmlFor="edit-tokenGated" className="font-semibold">Card Holders Only</Label>
                 <p className="text-xs text-muted-foreground mt-1">
-                  Only users holding your tokens can view this post
+                  Only users holding your Cards can view this post
                 </p>
               </div>
               <Switch

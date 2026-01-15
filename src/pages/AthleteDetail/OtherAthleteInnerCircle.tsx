@@ -119,7 +119,7 @@ export function OtherAthleteInnerCircle({
                     className="w-full bg-primary hover:bg-primary/90 gap-2"
                 >
                     <Lock className="h-4 w-4" />
-                    Buy to unlock access
+                    Buy Card to unlock access
                 </Button>
             </CardContent>
         </Card>

@@ -516,7 +516,7 @@ export default function AthleteDetail() {
                               }
 
                               if (parsed > 1000) {
-                                setQuantityError("Maximum quantity is 1,000 tokens per trade");
+                                setQuantityError("Maximum quantity is 1,000 Cards per trade");
                                 return;
                               }
 
@@ -531,7 +531,7 @@ export default function AthleteDetail() {
                             onClick={() => {
                               const newQty = quantity + 1;
                               if (newQty > 1000) {
-                                setQuantityError("Maximum quantity is 1,000 tokens per trade");
+                                setQuantityError("Maximum quantity is 1,000 Cards per trade");
                                 return;
                               }
                               setQuantity(newQty);
@@ -547,15 +547,15 @@ export default function AthleteDetail() {
                           <p className="mb-2 text-xs text-destructive">{quantityError}</p>
                         ) : isSelfBuy ? (
                           <p className="mb-2 text-xs text-muted-foreground">
-                            Athletes cannot buy their own tokens.
+                            Athletes cannot buy their own Cards.
                           </p>
                         ) : impact && wallet && (
                           <p className="mb-2 text-xs text-muted-foreground">
                             {tradeType === 'buy'
-                              ? `You can buy up to ${Math.floor(wallet.usdc / impact.avgPrice)} tokens with your balance`
+                              ? `You can buy up to ${Math.floor(wallet.usdc / impact.avgPrice)} Cards with your balance`
                               : position
-                                ? `You have ${position.quantity} token${position.quantity !== 1 ? 's' : ''}`
-                                : "You don't own any tokens"}
+                                ? `You have ${position.quantity} Card${position.quantity !== 1 ? 's' : ''}`
+                                : "You don't own any Cards"}
                           </p>
                         )}
 
@@ -645,7 +645,7 @@ export default function AthleteDetail() {
                         {position && (
                           <>
                             <div className="flex justify-between">
-                              <span className="text-muted-foreground">Your Tokens</span>
+                              <span className="text-muted-foreground">Your Cards</span>
                               <span className="font-medium">{position.quantity.toFixed(2)}</span>
                             </div>
                             <div className="flex justify-between">
@@ -682,7 +682,7 @@ export default function AthleteDetail() {
                                       ? `Need $${(impact.total - wallet.usdc).toFixed(2)} more USDC`
                                       : `Buy for $${impact.total.toFixed(2)}`
                                     : !position || position.quantity < quantity
-                                      ? `Need ${quantity - (position?.quantity || 0)} more token${quantity - (position?.quantity || 0) !== 1 ? 's' : ''}`
+                                      ? `Need ${quantity - (position?.quantity || 0)} more Card${quantity - (position?.quantity || 0) !== 1 ? 's' : ''}`
                                       : `Sell for $${impact.total.toFixed(2)}`
                         }
                       </Button>
@@ -825,7 +825,7 @@ export default function AthleteDetail() {
                         {trade.type}
                       </Badge>
                       <span>
-                        {trade.quantity.toFixed(2)} tokens @ ${trade.price.toFixed(2)}
+                        {trade.quantity.toFixed(2)} Cards @ ${trade.price.toFixed(2)}
                       </span>
                     </div>
                     <div className="text-right">
@@ -891,7 +891,7 @@ export default function AthleteDetail() {
                 scrollToTrade('buy');
               },
               variant: 'primary',
-              ariaLabel: 'Buy athlete tokens',
+              ariaLabel: 'Buy Athlete Card',
             },
             {
               id: 'sell',
@@ -902,7 +902,7 @@ export default function AthleteDetail() {
                 scrollToTrade('sell');
               },
               variant: 'secondary',
-              ariaLabel: 'Sell athlete tokens',
+              ariaLabel: 'Sell Athlete Card',
             },
             {
               id: 'message',

@@ -360,7 +360,7 @@ export default function Portfolio() {
           <Card className="glass-card flex flex-col justify-center">
             <CardContent className="p-6">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-sm text-muted-foreground">Active Positions</span>
+                <span className="text-sm text-muted-foreground">Your Collection</span>
                 <Coins className="h-4 w-4 text-primary/60" />
               </div>
               <div className="text-2xl font-bold tabular-nums">
@@ -380,17 +380,17 @@ export default function Portfolio() {
           {positions.length === 0 ? (
             <EmptyState
               icon={<Coins className="h-6 w-6" />}
-              title="No positions yet"
-              description="Explore the marketplace to discover athletes and pick your first token when you're ready."
+              title="No Cards yet"
+              description="Explore the marketplace to discover athletes and pick your first Card when you're ready."
               ctaLabel="Explore Marketplace"
               onCta={() => navigate('/marketplace')}
               ctaVariant="outline"
-              secondaryCtaLabel="Buy First Token"
+              secondaryCtaLabel="Buy First Card"
               onSecondaryCta={() => navigate('/marketplace')}
             />
           ) : featureFlags.enableVirtualScroll ? (
             <div>
-              <div tabIndex={0} role="table" aria-label="Portfolio positions table">
+              <div tabIndex={0} role="table" aria-label="Your collection">
                 <List
                   ref={listRef}
                   height={Math.min(600, positions.length * ROW_HEIGHT)}

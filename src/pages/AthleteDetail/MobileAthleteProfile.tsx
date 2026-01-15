@@ -331,7 +331,7 @@ export function MobileAthleteProfile({
                             <div className="flex items-center gap-2 mb-3">
                                 <Users className="h-4 w-4 text-primary" />
                                 <h3 className="text-sm font-semibold uppercase tracking-wide">
-                                    Holders ({holdersCount})
+                                    Card Holders ({holdersCount})
                                 </h3>
                             </div>
                             <p className="text-sm text-muted-foreground text-center py-4">

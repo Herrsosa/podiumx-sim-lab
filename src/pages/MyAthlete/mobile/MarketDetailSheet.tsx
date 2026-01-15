@@ -328,7 +328,7 @@ export function MarketDetailSheet({
                         <div className="flex items-center gap-2 mb-3">
                             <Users className="h-4 w-4 text-primary" />
                             <h3 className="text-sm font-semibold uppercase tracking-wide">
-                                Holders ({displayHoldersCount})
+                                Card Holders ({displayHoldersCount})
                             </h3>
                         </div>
                         {uniqueTraders.length > 0 ? (
@@ -359,7 +359,7 @@ export function MarketDetailSheet({
                             </div>
                         ) : (
                             <p className="text-sm text-muted-foreground text-center py-4">
-                                No holders yet
+                                No card holders yet
                             </p>
                         )}
                     </div>

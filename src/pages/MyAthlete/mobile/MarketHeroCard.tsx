@@ -94,7 +94,7 @@ export function MarketHeroCard({
                 {/* Stats row - compact single line */}
                 <div className="flex items-center justify-center gap-3 text-sm">
                     <span className="text-muted-foreground">
-                        <span className="font-semibold text-foreground">{holders}</span> holders
+                        <span className="font-semibold text-foreground">{holders}</span> card holders
                     </span>
                     <span className="text-muted-foreground/50">·</span>
                     <span className="text-muted-foreground">

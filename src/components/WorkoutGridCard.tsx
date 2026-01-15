@@ -213,7 +213,7 @@ function WorkoutGridCardComponent({ workout, post, canView, onClick, variant = '
                 ) : (
                   <div className="flex flex-col items-center justify-center py-4 text-center">
                     <Lock className="h-8 w-8 text-foreground mb-2" />
-                    <p className="text-foreground font-semibold text-sm">Token Holders Only</p>
+                    <p className="text-foreground font-semibold text-sm">Card Holders Only</p>
                   </div>
                 )}
               </div>

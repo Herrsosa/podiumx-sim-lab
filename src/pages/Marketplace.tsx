@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { usePaginatedAthletes } from '@/hooks/usePaginatedAthletes';
 import { useMarketplaceCharts } from '@/hooks/useMarketplaceCharts';
+import { useAthleteHolderCounts } from '@/hooks/useAthleteHolderCounts';
 import type { MarketplaceChartPoint } from '@/hooks/useMarketplaceCharts';
 import { Sport } from '@/types';
 
@@ -143,6 +144,8 @@ export default function Marketplace() {
     isFetching: chartsFetching,
   } = useMarketplaceCharts(athleteIds);
 
+  const { data: holderCounts } = useAthleteHolderCounts(athleteIds);
+
   const showGridSkeleton = isLoading || isFetching || chartsLoading || chartsFetching;
 
   const handleLoadMore = useCallback(() => {
@@ -247,6 +250,7 @@ export default function Marketplace() {
                     key={athlete.id}
                     athlete={athlete}
                     chartData={series}
+                    holdersCount={holderCounts?.[athlete.id]}
                     onClick={() => athlete.slug && handleAthleteClick(athlete.slug)}
                     onMouseEnter={() => prefetchAthleteDetail(athlete.id)}
                   />

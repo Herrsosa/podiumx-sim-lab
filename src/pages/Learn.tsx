@@ -17,13 +17,13 @@ const FAQ_ITEMS = [
     },
     {
         id: 'buying-tokens',
-        question: 'What does buying a token mean?',
-        answer: 'When you buy an athlete\'s token, you\'re investing in their success. Token prices go up when more people buy, and down when they sell. As an athlete performs well and gains popularity, their token value can increase. You can sell your tokens at any time.',
+        question: 'What does buying a Card mean?',
+        answer: 'When you buy an athlete\'s Card, you\'re investing in their success. Card prices go up when more people buy, and down when they sell. As an athlete performs well and gains popularity, their Card value can increase. You can sell your Cards at any time.',
     },
     {
         id: 'props-notifications',
         question: 'How do Props and Notifications work?',
-        answer: 'Props (❤️) are how you show appreciation for workouts. Tap the heart on any post to "prop" it. You\'ll get notifications when someone props your posts, trades your tokens, or sends you a message. Check the bell icon to see all your notifications.',
+        answer: 'Props (❤️) are how you show appreciation for workouts. Tap the heart on any post to "prop" it. You\'ll get notifications when someone props your posts, trades your Cards, or sends you a message. Check the bell icon to see all your notifications.',
     },
     {
         id: 'safety-privacy',

@@ -110,7 +110,7 @@ export default function NotificationsPage() {
                         </div>
                         <h2 className="text-lg font-semibold mb-1">No notifications yet</h2>
                         <p className="text-sm text-muted-foreground max-w-xs">
-                            When someone props your posts or trades your tokens, you'll see it here.
+                            When someone props your posts or trades your Cards, you'll see it here.
                         </p>
                     </div>
                 ) : (
@@ -161,7 +161,7 @@ function NotificationRow({ notification, onClick }: NotificationRowProps) {
             case 'token_trade': {
                 const side = notification.payload.side === 'BUY' ? 'bought' : 'sold';
                 const qty = notification.payload.qty ?? 0;
-                return `${side} ${qty} of your tokens`;
+                return `${side} ${qty} of your Cards`;
             }
             case 'dm_received':
                 return 'sent you a message';

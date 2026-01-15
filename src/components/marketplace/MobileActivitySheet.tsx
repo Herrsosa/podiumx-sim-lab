@@ -123,10 +123,13 @@ export function MobileActivitySheet({ open, onOpenChange }: MobileActivitySheetP
                                             </span>
                                             {' '}
                                             <span className="text-muted-foreground">
-                                                {trade.qty} of{' '}
+                                                {trade.qty}{' '}
                                             </span>
                                             <span className="text-foreground font-medium">
                                                 {shortName}
+                                            </span>
+                                            <span className="text-muted-foreground">
+                                                {' '}{trade.qty === 1 ? 'Card' : 'Cards'}
                                             </span>
                                         </div>
 

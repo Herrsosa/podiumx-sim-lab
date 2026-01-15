@@ -30,11 +30,12 @@ const SPORT_COLORS: Record<string, string> = {
 interface AthleteCardProps {
   athlete: Athlete;
   chartData: MarketplaceChartPoint[];
+  holdersCount?: number;
   onClick?: () => void;
   onMouseEnter?: () => void;
 }
 
-export const AthleteCard = memo(({ athlete, chartData, onClick, onMouseEnter }: AthleteCardProps) => {
+export const AthleteCard = memo(({ athlete, chartData, holdersCount, onClick, onMouseEnter }: AthleteCardProps) => {
   const isPositive = athlete.change24h >= 0;
   const lineColor = isPositive ? '#7CFF6B' : '#EF4444';
 
@@ -160,34 +161,40 @@ export const AthleteCard = memo(({ athlete, chartData, onClick, onMouseEnter }: 
               </div>
             </div>
 
-            {/* Price & Change - PROMINENT */}
-            <div className="mb-3">
-              <div className="flex items-baseline justify-between mb-0.5">
+            {/* Price & Change - On same line */}
+            <div className="mb-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <div className={cn("text-2xl font-bold tracking-tight rounded px-1 -mx-1 transition-colors", flashClass)}>
                   $<CountUp value={athlete.price} decimalPlaces={2} duration={1.5} />
                 </div>
+                <span className="text-muted-foreground text-sm">·</span>
                 <div
                   className={cn(
-                    "flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold",
+                    "flex items-center gap-0.5 text-sm font-semibold",
                     athlete.change24h === 0
-                      ? 'bg-muted text-muted-foreground'
+                      ? 'text-muted-foreground'
                       : isPositive
-                        ? 'bg-emerald-500/20 text-emerald-400'
-                        : 'bg-red-500/20 text-red-400'
+                        ? 'text-emerald-400'
+                        : 'text-red-400'
                   )}
                 >
                   {athlete.change24h !== 0 && (
                     isPositive ? (
-                      <TrendingUp className="h-3 w-3" />
+                      <TrendingUp className="h-3.5 w-3.5" />
                     ) : (
-                      <TrendingDown className="h-3 w-3" />
+                      <TrendingDown className="h-3.5 w-3.5" />
                     )
                   )}
                   {athlete.change24h !== 0 && isPositive ? '+' : ''}
                   {formatNumber(athlete.change24h)}%
                 </div>
               </div>
-              <div className="text-[10px] text-muted-foreground">24h change</div>
+              {/* Card Holders Count */}
+              {holdersCount !== undefined && (
+                <div className="text-xs text-muted-foreground mt-1">
+                  {holdersCount} card holder{holdersCount !== 1 ? 's' : ''}
+                </div>
+              )}
             </div>
 
             {/* Chart - Compact */}

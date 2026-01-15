@@ -19,8 +19,8 @@ const TOUR_STEPS: DriveStep[] = [
     {
         element: '[data-tour="token-widget"]',
         popover: {
-            title: '📈 Your Token',
-            description: 'Your token price reflects your performance and engagement. Fans can buy and trade your token!',
+            title: '📈 Your Card',
+            description: 'Your Card price reflects your performance and engagement. Fans can buy and trade your Card!',
             side: 'bottom',
             align: 'center',
         },
@@ -38,7 +38,7 @@ const TOUR_STEPS: DriveStep[] = [
         element: '[data-tour="locker-tab"]',
         popover: {
             title: '🔐 Your Locker',
-            description: 'The Locker is exclusive content for your token holders. Only fans who buy your token can access this area!',
+            description: 'The Locker is exclusive content for your card holders. Only fans who buy your Card can access this area!',
             side: 'bottom',
             align: 'start',
         },
@@ -56,7 +56,7 @@ const TOUR_STEPS: DriveStep[] = [
         element: '[data-tour="notifications"]',
         popover: {
             title: '🔔 Notifications',
-            description: 'Stay updated when someone props your workouts, trades your tokens, or sends you a message.',
+            description: 'Stay updated when someone props your workouts, trades your Cards, or sends you a message.',
             side: 'bottom',
             align: 'end',
         },
@@ -82,8 +82,8 @@ const TOUR_STEPS: DriveStep[] = [
     {
         element: '[data-tour="portfolio"]',
         popover: {
-            title: '💼 Portfolio',
-            description: 'Track your investments! See all the athlete tokens you own and your overall performance.',
+            title: '💼 Collection',
+            description: 'Track your investments! See all the Athlete Cards you own and your overall performance.',
             side: 'bottom',
             align: 'center',
         },

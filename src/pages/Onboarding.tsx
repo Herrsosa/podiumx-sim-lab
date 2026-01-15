@@ -465,7 +465,7 @@ export default function Onboarding() {
                 </div>
                 <div className="text-3xl font-bold text-primary">1,000 USDC</div>
                 <p className="text-sm text-muted-foreground">
-                  This is test currency for exploring the platform. Use it to buy athlete tokens!
+                  This is test currency for exploring the platform. Use it to buy Athlete Cards!
                 </p>
               </div>
 

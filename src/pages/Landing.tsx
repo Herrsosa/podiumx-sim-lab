@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { usePaginatedAthletes } from "@/hooks/usePaginatedAthletes";
 import { useMarketplaceCharts } from "@/hooks/useMarketplaceCharts";
+import { useAthleteHolderCounts } from "@/hooks/useAthleteHolderCounts";
 import { AthleteCard } from "@/components/AthleteCard";
 import { ProofOfSweatFeed } from "@/components/feed/ProofOfSweatFeed";
 import { motion } from "framer-motion";
@@ -25,6 +26,7 @@ export default function Landing() {
   const topAthletes = useMemo(() => athletes?.slice(0, 8) || [], [athletes]);
   const athleteIds = useMemo(() => topAthletes.map((athlete) => athlete.id), [topAthletes]);
   const { data: chartData } = useMarketplaceCharts(athleteIds);
+  const { data: holderCounts } = useAthleteHolderCounts(athleteIds);
 
   const handleScrollToExplore = () => {
     const element = document.getElementById('explore');
@@ -143,13 +145,13 @@ export default function Landing() {
               {
                 step: "2",
                 title: "Grow your Market Cap",
-                desc: "Supporters buy your token and watch it grow",
+                desc: "Supporters buy your Card and watch it grow",
                 color: "bg-primary"
               },
               {
                 step: "3",
                 title: "Unlock your Inner Circle",
-                desc: "Token holders get exclusive chat & DM access to you",
+                desc: "Card holders get exclusive chat & DM access to you",
                 color: "bg-success"
               }
             ].map((item, i) => (
@@ -233,6 +235,7 @@ export default function Landing() {
                     <AthleteCard
                       athlete={athlete}
                       chartData={chartData?.[athlete.id] || []}
+                      holdersCount={holderCounts?.[athlete.id]}
                     />
                   </motion.div>
                 ))

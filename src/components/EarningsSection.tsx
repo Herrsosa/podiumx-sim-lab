@@ -67,7 +67,7 @@ export function EarningsSection({ athleteId }: { athleteId?: string }) {
       </div>
 
       <div className="text-xs text-muted-foreground space-y-1">
-        <p>• You earn 1.5% on every trade (buy or sell) of your token</p>
+        <p>• You earn 1.5% on every trade (buy or sell) of your Card</p>
         <p>• Another 1.5% goes to the treasury reserve</p>
         <p>• Earnings are automatically tracked and can be withdrawn (coming soon)</p>
       </div>

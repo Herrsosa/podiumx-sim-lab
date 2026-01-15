@@ -150,13 +150,13 @@ export function MobileTradeModal({
 
     const buttonText = useMemo(() => {
         if (isPending) return 'Processing...';
-        if (isSelfBuy && isBuy) return 'Cannot buy own tokens';
+        if (isSelfBuy && isBuy) return 'Cannot buy own Cards';
         if (!impact) return 'Enter amount';
         if (isBuy && impact.total > userBalance) {
             return `Need ${currencyFormatter.format(impact.total - userBalance)} more`;
         }
         if (!isBuy && impact.quantity > userTokens) {
-            return `Only have ${userTokens} tokens`;
+            return `Only have ${userTokens} Cards`;
         }
         return `Confirm ${isBuy ? 'Purchase' : 'Sale'}`;
     }, [isPending, isSelfBuy, isBuy, impact, userBalance, userTokens]);
@@ -191,7 +191,7 @@ export function MobileTradeModal({
                         <p className="text-xs text-muted-foreground mt-1.5">
                             {isBuy
                                 ? `Balance: ${currencyFormatter.format(userBalance)}`
-                                : `You have ${userTokens} tokens`
+                                : `You have ${userTokens} Cards`
                             }
                         </p>
                     </div>
@@ -203,10 +203,10 @@ export function MobileTradeModal({
                                 <span className="text-muted-foreground">
                                     You'll {isBuy ? 'receive' : 'sell'}
                                 </span>
-                                <span className="font-semibold">~{impact.quantity} tokens</span>
+                                <span className="font-semibold">~{impact.quantity} Cards</span>
                             </div>
                             <div className="flex justify-between text-sm">
-                                <span className="text-muted-foreground">Price per token</span>
+                                <span className="text-muted-foreground">Price per Card</span>
                                 <span className="font-medium">
                                     {currencyFormatter.format(impact.pricePerToken)}
                                 </span>

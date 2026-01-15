@@ -92,7 +92,7 @@ export function OtherAthleteHeroCard({
                         </div>
                         <div className="flex items-center justify-end gap-1 text-xs text-muted-foreground mt-1">
                             <Users className="h-3 w-3" />
-                            <span>{holdersCount} holders</span>
+                            <span>{holdersCount} card holders</span>
                         </div>
                     </div>
                 </div>
