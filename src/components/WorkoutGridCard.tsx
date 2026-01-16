@@ -150,9 +150,11 @@ function WorkoutGridCardComponent({ workout, post, canView, onClick, variant = '
             />
             <CardContent className={cn('absolute inset-0 flex flex-col justify-between', padding)}>
               <div className="flex items-start justify-between gap-2">
-                <Badge className={cn('backdrop-blur-sm border', typeColor, typeBadgeClass)}>
-                  {workout.type}
-                </Badge>
+                {workout.type && workout.type !== 'Other' && (
+                  <Badge className={cn('backdrop-blur-sm border', typeColor, typeBadgeClass)}>
+                    {workout.type}
+                  </Badge>
+                )}
                 {post?.is_pinned && (
                   <Badge variant="secondary" className="gap-1 px-1.5 py-0.5 bg-background/90 text-primary backdrop-blur-md border-primary/20">
                     <Pin className="h-3 w-3 fill-current rotate-45" />
@@ -224,9 +226,11 @@ function WorkoutGridCardComponent({ workout, post, canView, onClick, variant = '
         {!showOverlayContent && (
           <div className="absolute inset-0 flex flex-col">
             <div className="flex items-start justify-between gap-2 p-3">
-              <Badge className={cn('bg-black/60 text-white border border-white/20', typeBadgeClass)}>
-                {workout.type}
-              </Badge>
+              {workout.type && workout.type !== 'Other' && (
+                <Badge className={cn('bg-black/60 text-white border border-white/20', typeBadgeClass)}>
+                  {workout.type}
+                </Badge>
+              )}
               <div className={cn('flex items-center gap-1 text-white/80 bg-black/40 px-2 py-1 rounded-md text-[10px]')}>
                 <Calendar className="h-3 w-3" />
                 <span>{formatDate(displayDate)}</span>

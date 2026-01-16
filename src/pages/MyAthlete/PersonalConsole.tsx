@@ -141,8 +141,8 @@ export function PersonalConsole({
   return (
     <>
       <div className="space-y-6">
-        {/* Desktop: Two-column layout for Profile + Aura Card */}
-        <div className="grid gap-6 md:grid-cols-[1fr_320px]">
+        {/* Desktop: Three-column layout for Profile + Market Cap + Aura Score */}
+        <div className="grid gap-4 md:grid-cols-3">
           <ProfileDetailsCard
             athlete={athlete}
             editedProfile={editedProfile}
@@ -155,7 +155,32 @@ export function PersonalConsole({
             onAvatarSelect={onAvatarSelect}
           />
 
-          {/* Aura Card - right side on desktop, hidden since it shows below ProfileDetailsCard on mobile */}
+          {/* Market Cap Card - center on desktop */}
+          <Card className="glass-card hidden md:flex flex-col">
+            <CardContent className="p-6 flex flex-col justify-between h-full">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-2">Your Market Cap</p>
+                <div className="text-3xl font-bold tracking-tight tabular-nums">
+                  ${formatNumber(athlete?.marketCap || 0)}
+                </div>
+                <div className={`flex items-center gap-1 mt-1 text-sm font-medium ${(athlete?.change24h || 0) >= 0 ? 'text-success' : 'text-destructive'}`}>
+                  {(athlete?.change24h || 0) >= 0 ? (
+                    <TrendingUp className="h-4 w-4" />
+                  ) : (
+                    <TrendingUp className="h-4 w-4 rotate-180" />
+                  )}
+                  {(athlete?.change24h || 0) >= 0 ? '+' : ''}{(athlete?.change24h || 0).toFixed(2)}%
+                </div>
+              </div>
+              <div className="mt-4 pt-4 border-t border-border/50">
+                <p className="text-sm text-muted-foreground">
+                  {formatNumber(athlete?.supply || 0)} card holders
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Aura Card - right side on desktop */}
           {auraCard && (
             <div className="hidden md:block">
               {auraCard}
@@ -163,12 +188,58 @@ export function PersonalConsole({
           )}
         </div>
 
-        {/* Mobile: Aura Card below profile */}
-        {auraCard && (
-          <div className="md:hidden">
-            {auraCard}
-          </div>
-        )}
+        {/* Mobile: Market Cap + Aura Card below profile */}
+        <div className="md:hidden space-y-4">
+          {/* Mobile Market Cap Card */}
+          <Card className="glass-card">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1">Your Market Cap</p>
+                  <div className="text-2xl font-bold tracking-tight tabular-nums">
+                    ${formatNumber(athlete?.marketCap || 0)}
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div className={`flex items-center gap-1 text-sm font-medium ${(athlete?.change24h || 0) >= 0 ? 'text-success' : 'text-destructive'}`}>
+                    {(athlete?.change24h || 0) >= 0 ? '+' : ''}{(athlete?.change24h || 0).toFixed(2)}%
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {formatNumber(athlete?.supply || 0)} holders
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          {auraCard}
+        </div>
+
+        {/* Inner Circle Card */}
+        <Card className="glass-card">
+          <CardContent className="p-6">
+            <div className="flex items-center gap-2 mb-4">
+              <span className="text-lg">🔐</span>
+              <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Your Inner Circle</h3>
+            </div>
+            <div className="grid grid-cols-3 gap-4">
+              <Button variant="outline" className="flex flex-col items-center gap-2 h-auto py-4" onClick={() => setActiveTab('community')}>
+                <MessageSquare className="h-5 w-5" />
+                <span className="text-sm font-medium">Group Chat</span>
+              </Button>
+              <Button variant="outline" className="flex flex-col items-center gap-2 h-auto py-4" onClick={() => setActiveTab('messages')}>
+                <MessageSquare className="h-5 w-5" />
+                <span className="text-sm font-medium">DMs</span>
+              </Button>
+              <Button variant="outline" className="flex flex-col items-center gap-2 h-auto py-4 opacity-60 cursor-not-allowed" disabled>
+                <span className="text-lg">🌍</span>
+                <span className="text-sm font-medium">Globe</span>
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Strava Card */}
+        <StravaCard />
 
         {/* Stats Card - fetches its own data */}
         <ProfileStatsCard className="glass-card" />
@@ -258,7 +329,7 @@ export function PersonalConsole({
                     <span className="font-medium">${formatNumber(athlete?.marketCap || 0)}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">Supply</span>
+                    <span className="text-muted-foreground">Card Holders</span>
                     <span className="font-medium">{formatNumber(athlete?.supply || 0)}</span>
                   </div>
                   <div className="flex justify-between">
@@ -275,22 +346,14 @@ export function PersonalConsole({
           </Card>
         )}
 
-        {/* Tabs for Workouts, Community Chat, Messages, and Earnings */}
+        {/* Tabs for Workouts and Earnings (Community/Messages hidden but accessible via Inner Circle) */}
         <Tabs
           value={activeTab}
           onValueChange={(value) => setActiveTab(value as typeof activeTab)}
           className="w-full"
         >
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="workouts">Workout Timeline</TabsTrigger>
-            <TabsTrigger value="community" className="gap-2">
-              <MessageSquare className="h-4 w-4" />
-              Community Chat
-            </TabsTrigger>
-            <TabsTrigger value="messages" className="gap-2">
-              <MessageSquare className="h-4 w-4" />
-              Direct Messages
-            </TabsTrigger>
+          <TabsList className="grid w-full grid-cols-2 max-w-md">
+            <TabsTrigger value="workouts">Proof of Sweat</TabsTrigger>
             <TabsTrigger value="earnings" className="gap-2">
               <DollarSign className="h-4 w-4" />
               Earnings
@@ -301,7 +364,7 @@ export function PersonalConsole({
             <Card className="glass-card">
               <CardHeader>
                 <div className="flex items-center justify-between">
-                  <CardTitle>Workout Timeline</CardTitle>
+                  <CardTitle>Proof of Sweat</CardTitle>
                   <Button className="gap-2" onClick={onAddWorkout}>
                     <Plus className="h-4 w-4" />
                     Add Workout
@@ -336,7 +399,6 @@ export function PersonalConsole({
                 )}
               </CardContent>
             </Card>
-            <StravaCard className="mt-4" />
           </TabsContent>
 
           <TabsContent value="community">

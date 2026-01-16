@@ -218,7 +218,7 @@ export default function Portfolio() {
     return (
       <div className="container mx-auto px-4 py-16 text-center">
         <H1 className="mb-4 text-2xl">Wallet not found</H1>
-        <Body className="mb-4">Initialize your wallet to get started</Body>
+        <p className="text-muted-foreground mb-4">Initialize your wallet to get started</p>
       </div>
     );
   }
