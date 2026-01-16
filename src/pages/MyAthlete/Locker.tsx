@@ -77,7 +77,7 @@ export default function Locker() {
             Back to Overview
           </Link>
         </Button>
-        <h1 className="text-3xl font-bold">Athlete Locker</h1>
+        <h1 className="text-3xl font-bold">Inner Circle</h1>
       </div>
 
       <Card className="glass-card">

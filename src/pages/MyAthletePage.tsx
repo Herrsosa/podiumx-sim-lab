@@ -480,6 +480,7 @@ export default function MyAthletePage() {
               timeRange={chartTimeRange}
               onTimeRangeChange={setChartTimeRange}
               auraCard={<AthleteIdentityCard />}
+              onNavigateToInnerCircle={() => setTab('locker')}
             />
           </TabsContent>
 

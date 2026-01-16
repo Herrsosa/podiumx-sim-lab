@@ -1,8 +1,9 @@
 import React, { useState, useMemo, useCallback, useRef, Suspense, lazy } from 'react';
-import { Plus, TrendingUp, MessageSquare, DollarSign, Share2 } from 'lucide-react';
+import { Plus, TrendingUp, MessageSquare, DollarSign, Share2, Mail, Globe } from 'lucide-react';
 import type { TimeRangeKey } from '@/utils/chartData';
 import { formatNumber } from '@/lib/format';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { EarningsSection } from '@/components/EarningsSection';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -10,6 +11,7 @@ import { Athlete, Workout, Post } from '@/types';
 import { useUser } from '@/store/auth';
 import TokengatedChat from '@/components/TokengatedChat';
 const LockerMessages = lazy(() => import('@/components/myathlete/LockerMessages').then(module => ({ default: module.LockerMessages })));
+const LockerGlobe = lazy(() => import('@/components/myathlete/LockerGlobe').then(module => ({ default: module.LockerGlobe })));
 import { useQueryClient } from '@tanstack/react-query';
 import { ProfileDetailsCard } from '@/components/myathlete/ProfileDetailsCard';
 import { ProfileStatsCard } from '@/components/myathlete/ProfileStatsCard';
@@ -52,6 +54,8 @@ interface PersonalConsoleProps {
   onTimeRangeChange?: (range: TimeRangeKey) => void;
   /** Optional Aura Score card to render alongside the profile (desktop only) */
   auraCard?: React.ReactNode;
+  /** Callback to navigate to the Inner Circle tab (for Group Chat/DMs buttons) */
+  onNavigateToInnerCircle?: () => void;
 }
 
 export function PersonalConsole({
@@ -78,11 +82,15 @@ export function PersonalConsole({
   timeRange: externalTimeRange,
   onTimeRangeChange,
   auraCard,
+  onNavigateToInnerCircle,
 }: PersonalConsoleProps) {
   const user = useUser();
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<'workouts' | 'community' | 'messages' | 'earnings'>('workouts');
   const [chartShareOpen, setChartShareOpen] = useState(false);
+  const [groupChatOpen, setGroupChatOpen] = useState(false);
+  const [dmsOpen, setDmsOpen] = useState(false);
+  const [globeOpen, setGlobeOpen] = useState(false);
   const chartContainerRef = useRef<HTMLDivElement>(null);
   const availableRanges = useMemo<TimeRangeKey[]>(() => {
     const ranges: TimeRangeKey[] = ['7d'];
@@ -141,8 +149,8 @@ export function PersonalConsole({
   return (
     <>
       <div className="space-y-6">
-        {/* Desktop: Three-column layout for Profile + Market Cap + Aura Score */}
-        <div className="grid gap-4 md:grid-cols-3">
+        {/* Desktop: Profile (larger) + Market Cap + Aura Score */}
+        <div className="grid gap-4 md:grid-cols-[1.2fr_1fr_1fr]">
           <ProfileDetailsCard
             athlete={athlete}
             editedProfile={editedProfile}
@@ -155,27 +163,39 @@ export function PersonalConsole({
             onAvatarSelect={onAvatarSelect}
           />
 
-          {/* Market Cap Card - center on desktop */}
-          <Card className="glass-card hidden md:flex flex-col">
-            <CardContent className="p-6 flex flex-col justify-between h-full">
+          {/* Market Cap Card - center on desktop (enhanced design) */}
+          <Card className="glass-card hidden md:flex flex-col relative overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-transparent pointer-events-none" />
+            <CardContent className="p-6 flex flex-col justify-between h-full relative">
               <div>
-                <p className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-2">Your Market Cap</p>
-                <div className="text-3xl font-bold tracking-tight tabular-nums">
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1">Your Market Cap</p>
+                <div className="text-4xl font-bold tracking-tight tabular-nums bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text">
                   ${formatNumber(athlete?.marketCap || 0)}
                 </div>
-                <div className={`flex items-center gap-1 mt-1 text-sm font-medium ${(athlete?.change24h || 0) >= 0 ? 'text-success' : 'text-destructive'}`}>
-                  {(athlete?.change24h || 0) >= 0 ? (
-                    <TrendingUp className="h-4 w-4" />
-                  ) : (
-                    <TrendingUp className="h-4 w-4 rotate-180" />
-                  )}
-                  {(athlete?.change24h || 0) >= 0 ? '+' : ''}{(athlete?.change24h || 0).toFixed(2)}%
+                <div className="flex items-center gap-2 mt-2">
+                  <span className={`text-sm font-semibold px-2 py-0.5 rounded ${(athlete?.change24h || 0) > 0 ? 'bg-success/10 text-success' : (athlete?.change24h || 0) < 0 ? 'bg-destructive/10 text-destructive' : 'bg-muted text-muted-foreground'}`}>
+                    {(athlete?.change24h || 0) !== 0 && (
+                      <TrendingUp className={`inline h-3.5 w-3.5 mr-0.5 ${(athlete?.change24h || 0) < 0 ? 'rotate-180' : ''}`} />
+                    )}
+                    {(athlete?.change24h || 0) > 0 ? '+' : ''}{(athlete?.change24h || 0).toFixed(2)}%
+                  </span>
+                  <span className="text-sm text-muted-foreground">24h</span>
                 </div>
               </div>
-              <div className="mt-4 pt-4 border-t border-border/50">
-                <p className="text-sm text-muted-foreground">
-                  {formatNumber(athlete?.supply || 0)} card holders
-                </p>
+
+              <div className="grid grid-cols-3 gap-3 mt-4 pt-4 border-t border-border/50">
+                <div>
+                  <p className="text-xs text-muted-foreground uppercase tracking-wider">Price</p>
+                  <p className="text-lg font-semibold">${formatNumber(athlete?.price || 0)}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground uppercase tracking-wider">Cards</p>
+                  <p className="text-lg font-semibold">{formatNumber(athlete?.supply || 0)}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground uppercase tracking-wider">Earnings</p>
+                  <p className="text-lg font-semibold">${formatNumber(athlete?.athleteRevenue || 0)}</p>
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -222,17 +242,20 @@ export function PersonalConsole({
               <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Your Inner Circle</h3>
             </div>
             <div className="grid grid-cols-3 gap-4">
-              <Button variant="outline" className="flex flex-col items-center gap-2 h-auto py-4" onClick={() => setActiveTab('community')}>
+              <Button variant="outline" className="flex flex-col items-center gap-1.5 h-auto py-4" onClick={() => setGroupChatOpen(true)}>
                 <MessageSquare className="h-5 w-5" />
                 <span className="text-sm font-medium">Group Chat</span>
+                <span className="text-xs text-muted-foreground">{formatNumber(athlete?.supply || 0)} members</span>
               </Button>
-              <Button variant="outline" className="flex flex-col items-center gap-2 h-auto py-4" onClick={() => setActiveTab('messages')}>
-                <MessageSquare className="h-5 w-5" />
+              <Button variant="outline" className="flex flex-col items-center gap-1.5 h-auto py-4" onClick={() => setDmsOpen(true)}>
+                <Mail className="h-5 w-5" />
                 <span className="text-sm font-medium">DMs</span>
+                <span className="text-xs text-muted-foreground">No new messages</span>
               </Button>
-              <Button variant="outline" className="flex flex-col items-center gap-2 h-auto py-4 opacity-60 cursor-not-allowed" disabled>
-                <span className="text-lg">🌍</span>
+              <Button variant="outline" className="flex flex-col items-center gap-1.5 h-auto py-4" onClick={() => setGlobeOpen(true)}>
+                <Globe className="h-5 w-5" />
                 <span className="text-sm font-medium">Globe</span>
+                <span className="text-xs text-muted-foreground">View locations</span>
               </Button>
             </div>
           </CardContent>
@@ -459,6 +482,71 @@ export function PersonalConsole({
           athleteProfileUrl={`${window.location.origin}/athlete/${athlete.id}`}
         />
       )}
+
+      {/* Group Chat Sheet */}
+      <Sheet open={groupChatOpen} onOpenChange={setGroupChatOpen}>
+        <SheetContent side="right" className="w-full sm:max-w-lg p-0 flex flex-col">
+          <SheetHeader className="p-4 border-b border-border">
+            <SheetTitle className="flex items-center gap-2">
+              <MessageSquare className="h-5 w-5" />
+              Group Chat
+            </SheetTitle>
+          </SheetHeader>
+          <div className="flex-1 overflow-hidden">
+            {user && (
+              <TokengatedChat
+                athleteId={user.id}
+                athleteName={athlete?.name || ''}
+                userHoldings={1}
+                onBuyClick={() => { }}
+              />
+            )}
+          </div>
+        </SheetContent>
+      </Sheet>
+
+      {/* DMs Sheet */}
+      <Sheet open={dmsOpen} onOpenChange={setDmsOpen}>
+        <SheetContent side="right" className="w-full sm:max-w-lg p-0 flex flex-col">
+          <SheetHeader className="p-4 border-b border-border">
+            <SheetTitle className="flex items-center gap-2">
+              <Mail className="h-5 w-5" />
+              Direct Messages
+            </SheetTitle>
+          </SheetHeader>
+          <div className="flex-1 overflow-auto p-4">
+            <Suspense fallback={<Skeleton className="h-64 w-full" />}>
+              <LockerMessages
+                athleteId={user?.id}
+                athleteName={athlete?.name}
+                mode="embedded"
+              />
+            </Suspense>
+          </div>
+        </SheetContent>
+      </Sheet>
+
+      {/* Globe Sheet */}
+      <Sheet open={globeOpen} onOpenChange={setGlobeOpen}>
+        <SheetContent side="right" className="w-full sm:max-w-2xl p-0 flex flex-col">
+          <SheetHeader className="p-4 border-b border-border">
+            <SheetTitle className="flex items-center gap-2">
+              <Globe className="h-5 w-5" />
+              Proof-of-Sweat Globe
+            </SheetTitle>
+          </SheetHeader>
+          <div className="flex-1 overflow-auto">
+            <Suspense fallback={<Skeleton className="h-96 w-full m-4" />}>
+              {user && (
+                <LockerGlobe
+                  athleteId={user.id}
+                  athleteName={athlete?.name || ''}
+                />
+              )}
+            </Suspense>
+          </div>
+        </SheetContent>
+      </Sheet>
     </>
   );
 }

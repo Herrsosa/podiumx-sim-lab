@@ -116,7 +116,7 @@ export function ProfileDetailsCard({
             </div>
           </div>
 
-          <div className="flex-1 space-y-4">
+          <div className="flex-1 min-w-0 space-y-4">
             {isEditing ? (
               <>
                 <div className="grid gap-4 sm:grid-cols-2">
@@ -238,7 +238,7 @@ export function ProfileDetailsCard({
                     </div>
                   ) : null}
                 </div>
-                <p className="text-muted-foreground">{athlete?.bio || 'No bio yet.'}</p>
+                <p className="text-muted-foreground whitespace-pre-wrap break-words">{athlete?.bio || 'No bio yet.'}</p>
                 {(athlete?.socials?.instagram || athlete?.socials?.strava) && (
                   <div className="flex flex-col gap-1 text-sm sm:flex-row sm:gap-4">
                     {athlete?.socials?.instagram && (
