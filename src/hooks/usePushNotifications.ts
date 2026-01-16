@@ -113,11 +113,15 @@ export function usePushNotifications(): UsePushNotificationsResult {
             const registration = await navigator.serviceWorker.ready;
 
             // Subscribe to push
-            const applicationServerKey = urlBase64ToUint8Array(VAPID_PUBLIC_KEY);
+            // TS DOM typings expect ArrayBuffer-backed views (not ArrayBufferLike).
+            const applicationServerKey =
+                urlBase64ToUint8Array(VAPID_PUBLIC_KEY) as unknown as Uint8Array<ArrayBuffer>;
             const subscription = await registration.pushManager.subscribe({
                 userVisibleOnly: true,
-                applicationServerKey: applicationServerKey as BufferSource,
+                applicationServerKey,
             });
+
+
 
             console.log('[Push] Subscription created:', subscription.endpoint);
 
