@@ -30,6 +30,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sh
 import { LockerMessages } from '@/components/myathlete/LockerMessages';
 import { LockerGlobe } from '@/components/myathlete/LockerGlobe';
 import { ShareAuraModal } from '@/components/share/ShareAuraModal';
+import { useDmConversations } from '@/hooks/useDmConversations';
 
 interface MobileMyAthletesProps {
   athlete?: Athlete;
@@ -91,6 +92,13 @@ export default function MobileMyAthletes({
 
   // Identity kernel for Aura score
   const { data: kernel } = useIdentityKernel();
+
+  // Get total unread DMs count
+  const { data: conversations } = useDmConversations();
+  const totalUnreadDMs = useMemo(() => {
+    if (!conversations) return 0;
+    return conversations.reduce((sum, c) => sum + (c.unread_count || 0), 0);
+  }, [conversations]);
 
   const chartWindow = useMemo(() => getWindowUTC(timeRange || '7d'), [timeRange]);
   const chartStartDate = chartWindow.start;
@@ -182,7 +190,7 @@ export default function MobileMyAthletes({
         {/* Inner Circle (Group Chat + DMs) */}
         <InnerCircleCard
           groupChatMembers={holdersCount}
-          unreadDMs={3} // TODO: Get from actual data
+          unreadDMs={totalUnreadDMs}
           onGroupChatClick={() => setShowChat(true)}
           onDMsClick={() => setShowDMs(true)}
           onGlobeClick={() => setShowGlobe(true)}

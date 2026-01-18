@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useEffect } from 'react';
 
@@ -11,6 +11,8 @@ export interface DmMessage {
 }
 
 export function useDmMessages(conversationId: string | undefined) {
+  const queryClient = useQueryClient();
+
   const queryResult = useQuery({
     queryKey: ['dm-messages', conversationId],
     queryFn: async () => {
@@ -25,6 +27,29 @@ export function useDmMessages(conversationId: string | undefined) {
     },
     enabled: !!conversationId,
   });
+
+  // Mark conversation as read when opened
+  useEffect(() => {
+    if (!conversationId) return;
+
+    const markAsRead = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      // Update last_read_at for the current user in this conversation
+      // Note: using 'as any' because conversation_participants isn't in generated types
+      await supabase
+        .from('conversation_participants' as any)
+        .update({ last_read_at: new Date().toISOString() })
+        .eq('conversation_id', conversationId)
+        .eq('user_id', user.id);
+
+      // Invalidate dm-conversations to update unread counts
+      void queryClient.invalidateQueries({ queryKey: ['dm-conversations'] });
+    };
+
+    void markAsRead();
+  }, [conversationId, queryClient]);
 
   useEffect(() => {
     if (!conversationId) return;

@@ -1,8 +1,9 @@
-import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
+import { useState, useMemo, useCallback, useEffect, useRef, Suspense, lazy } from 'react';
 import type { TimeRangeKey } from '@/utils/chartData';
-import { Plus, TrendingUp, Edit, Trash2, MessageSquare, DollarSign, Activity, Share2, MessageCircle } from 'lucide-react';
+import { Plus, TrendingUp, Edit, Trash2, MessageSquare, DollarSign, Activity, Share2, MessageCircle, Settings } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { EarningsSection } from '@/components/EarningsSection';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -47,6 +48,8 @@ import type { MyAthletePageResult } from '@/hooks/useMyAthlete';
 import type { WorkoutMutationResult } from '@/hooks/useWorkouts';
 import { AthleteIdentityCard } from '@/components/identity';
 import { LaunchTokenPrompt } from '@/components/LaunchTokenPrompt';
+import { Skeleton } from '@/components/ui/skeleton';
+const LockerSettings = lazy(() => import('@/components/myathlete/LockerSettings').then(m => ({ default: m.LockerSettings })));
 
 export default function MyAthletePage() {
   const user = useUser();
@@ -93,6 +96,7 @@ export default function MyAthletePage() {
   const [activeTab, setActiveTab] = useState<'workouts' | 'community' | 'messages' | 'earnings'>('workouts');
   const [newAvatarFile, setNewAvatarFile] = useState<File | null>(null);
   const [chartTimeRange, setChartTimeRange] = useState<TimeRangeKey>('7d');
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   // Tab management: "personal" or "locker"
   const currentTab = searchParams.get('tab') || 'personal';
@@ -436,9 +440,17 @@ export default function MyAthletePage() {
     <>
       <div className="container mx-auto px-4 pb-32 pt-8 md:pb-8 overflow-x-hidden">
         {/* Page Header */}
-        <div className="mb-8">
-          <h1 className="mb-2 text-4xl font-bold">My Athlete Profile</h1>
-          <p className="text-muted-foreground">Manage your profile and workout timeline</p>
+        <div className="mb-8 flex items-center justify-between">
+          <div>
+            <h1 className="mb-2 text-4xl font-bold">My Athlete Profile</h1>
+            <p className="text-muted-foreground">Manage your profile and workout timeline</p>
+          </div>
+          {isDesktop && (
+            <Button variant="ghost" size="icon" onClick={() => setSettingsOpen(true)} className="h-10 w-10">
+              <Settings className="h-5 w-5" />
+              <span className="sr-only">Settings</span>
+            </Button>
+          )}
         </div>
 
         {/* Show launch token prompt if user hasn't created a token */}
@@ -448,46 +460,75 @@ export default function MyAthletePage() {
           </div>
         )}
 
-        {/* Top-level tabs: Personal vs View Locker */}
-        <Tabs value={currentTab} onValueChange={(v) => setTab(v as 'personal' | 'locker')} className="w-full mb-6">
-          <TabsList className="grid w-full grid-cols-2 max-w-md">
-            <TabsTrigger value="personal">Personal</TabsTrigger>
-            <TabsTrigger value="locker" data-tour="locker-tab">Inner Circle</TabsTrigger>
-          </TabsList>
+        {/* Desktop: Single unified view (no tabs) */}
+        {isDesktop ? (
+          <PersonalConsole
+            athlete={myAthletePage?.athlete}
+            workouts={workouts}
+            posts={posts}
+            athleteTrades={athleteTrades ?? []}
+            priceSeries={priceSeries}
+            priceSeriesLoading={priceSeriesLoading}
+            editedProfile={editedProfile}
+            isEditing={isEditing}
+            savingProfile={savingProfile}
+            onStartEditProfile={handleStartEditProfile}
+            onCancelEditProfile={handleCancelEditProfile}
+            onSaveProfile={handleSaveProfile}
+            onProfileFieldChange={updateEditedProfile}
+            onAvatarSelect={handleAvatarFileSelected}
+            onWorkoutEdit={handleEditWorkout}
+            onWorkoutDelete={() => { }}
+            onAddWorkout={() => setAddWorkoutOpen(true)}
+            hasNextPage={Boolean(hasNextPage)}
+            fetchNextPage={hasNextPage ? () => { void fetchNextPage(); } : undefined}
+            isFetchingNextPage={isFetchingNextPage}
+            timeRange={chartTimeRange}
+            onTimeRangeChange={setChartTimeRange}
+            auraCard={<AthleteIdentityCard />}
+          />
+        ) : (
+          /* Mobile: Keep tabs for Personal vs Inner Circle */
+          <Tabs value={currentTab} onValueChange={(v) => setTab(v as 'personal' | 'locker')} className="w-full mb-6">
+            <TabsList className="grid w-full grid-cols-2 max-w-md">
+              <TabsTrigger value="personal">Personal</TabsTrigger>
+              <TabsTrigger value="locker" data-tour="locker-tab">Inner Circle</TabsTrigger>
+            </TabsList>
 
-          <TabsContent value="personal" className="mt-6">
-            <PersonalConsole
-              athlete={myAthletePage?.athlete}
-              workouts={workouts}
-              posts={posts}
-              athleteTrades={athleteTrades ?? []}
-              priceSeries={priceSeries}
-              priceSeriesLoading={priceSeriesLoading}
-              editedProfile={editedProfile}
-              isEditing={isEditing}
-              savingProfile={savingProfile}
-              onStartEditProfile={handleStartEditProfile}
-              onCancelEditProfile={handleCancelEditProfile}
-              onSaveProfile={handleSaveProfile}
-              onProfileFieldChange={updateEditedProfile}
-              onAvatarSelect={handleAvatarFileSelected}
-              onWorkoutEdit={handleEditWorkout}
-              onWorkoutDelete={() => { }}
-              onAddWorkout={() => setAddWorkoutOpen(true)}
-              hasNextPage={Boolean(hasNextPage)}
-              fetchNextPage={hasNextPage ? () => { void fetchNextPage(); } : undefined}
-              isFetchingNextPage={isFetchingNextPage}
-              timeRange={chartTimeRange}
-              onTimeRangeChange={setChartTimeRange}
-              auraCard={<AthleteIdentityCard />}
-              onNavigateToInnerCircle={() => setTab('locker')}
-            />
-          </TabsContent>
+            <TabsContent value="personal" className="mt-6">
+              <PersonalConsole
+                athlete={myAthletePage?.athlete}
+                workouts={workouts}
+                posts={posts}
+                athleteTrades={athleteTrades ?? []}
+                priceSeries={priceSeries}
+                priceSeriesLoading={priceSeriesLoading}
+                editedProfile={editedProfile}
+                isEditing={isEditing}
+                savingProfile={savingProfile}
+                onStartEditProfile={handleStartEditProfile}
+                onCancelEditProfile={handleCancelEditProfile}
+                onSaveProfile={handleSaveProfile}
+                onProfileFieldChange={updateEditedProfile}
+                onAvatarSelect={handleAvatarFileSelected}
+                onWorkoutEdit={handleEditWorkout}
+                onWorkoutDelete={() => { }}
+                onAddWorkout={() => setAddWorkoutOpen(true)}
+                hasNextPage={Boolean(hasNextPage)}
+                fetchNextPage={hasNextPage ? () => { void fetchNextPage(); } : undefined}
+                isFetchingNextPage={isFetchingNextPage}
+                timeRange={chartTimeRange}
+                onTimeRangeChange={setChartTimeRange}
+                auraCard={<AthleteIdentityCard />}
+                onNavigateToInnerCircle={() => setTab('locker')}
+              />
+            </TabsContent>
 
-          <TabsContent value="locker" className="mt-6">
-            <LockerView athleteId={user?.id} athleteName={myAthletePage?.athlete?.name} />
-          </TabsContent>
-        </Tabs>
+            <TabsContent value="locker" className="mt-6">
+              <LockerView athleteId={user?.id} athleteName={myAthletePage?.athlete?.name} />
+            </TabsContent>
+          </Tabs>
+        )}
 
         {isMobile && (
           <MobileActionBar
@@ -505,6 +546,21 @@ export default function MyAthletePage() {
         )}
       </div>
       {modalStack}
+
+      {/* Settings Sheet (Desktop) */}
+      <Sheet open={settingsOpen} onOpenChange={setSettingsOpen}>
+        <SheetContent side="right" className="w-full sm:max-w-md">
+          <SheetHeader>
+            <SheetTitle className="flex items-center gap-2">
+              <Settings className="h-5 w-5" />
+              Settings
+            </SheetTitle>
+          </SheetHeader>
+          <Suspense fallback={<Skeleton className="h-64 w-full mt-4" />}>
+            <LockerSettings />
+          </Suspense>
+        </SheetContent>
+      </Sheet>
     </>
   );
 }
