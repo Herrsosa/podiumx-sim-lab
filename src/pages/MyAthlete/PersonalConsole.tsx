@@ -148,7 +148,7 @@ export function PersonalConsole({
 
   return (
     <>
-      <div className="space-y-6">
+      <div className="space-y-6" data-tour="profile-section">
         {/* Desktop: Profile (larger) + Market Cap + Aura Score */}
         <div className="grid gap-4 md:grid-cols-[1.2fr_1fr_1fr]">
           <ProfileDetailsCard
@@ -235,7 +235,7 @@ export function PersonalConsole({
         </div>
 
         {/* Inner Circle Card */}
-        <Card className="glass-card">
+        <Card className="glass-card" data-tour="inner-circle">
           <CardContent className="p-6">
             <div className="flex items-center gap-2 mb-4">
               <span className="text-lg">🔐</span>
@@ -293,7 +293,7 @@ export function PersonalConsole({
 
         {/* Price Chart */}
         {priceSeries.length > 0 && (
-          <Card className="glass-card" data-tour="token-widget">
+          <Card className="glass-card" data-tour="card-chart">
             <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle className="flex items-center gap-2">
                 <TrendingUp className="h-5 w-5" />
@@ -383,7 +383,7 @@ export function PersonalConsole({
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="workouts">
+          <TabsContent value="workouts" data-tour="proof-of-sweat">
             <Card className="glass-card">
               <CardHeader>
                 <div className="flex items-center justify-between">

@@ -5,96 +5,125 @@ import 'driver.js/dist/driver.css';
 import { useOnboardingTour } from '@/hooks/useOnboardingTour';
 import { useUser } from '@/store/auth';
 
-// Tour step definitions
+// Tour step definitions - 11 steps in order
 const TOUR_STEPS: DriveStep[] = [
+    // 1. My Athlete Profile - General intro
+    {
+        element: '[data-tour="profile-section"]',
+        popover: {
+            title: '👋 Welcome to Your Profile',
+            description: 'This is your home base on Athlyst. Here you can manage your identity, track your progress, and connect with your community.',
+            side: 'bottom',
+            align: 'center',
+        },
+    },
+    // 2. Athlete Profile identity
     {
         element: '[data-tour="profile-identity"]',
         popover: {
-            title: '👋 Your Athlete Profile',
-            description: 'This is your identity on Athlyst. Customize your display name, sport, and bio to stand out.',
+            title: '🏃 Your Athlete Identity',
+            description: 'Customize your display name, sport, bio, and profile photo. This is how fans and other athletes will recognize you.',
             side: 'bottom',
             align: 'start',
         },
     },
+    // 3. Proof of Sweat - workouts
     {
-        element: '[data-tour="token-widget"]',
+        element: '[data-tour="proof-of-sweat"]',
         popover: {
-            title: '📈 Your Card',
-            description: 'Your Card price reflects your performance and engagement. Fans can buy and trade your Card!',
+            title: '💪 Proof of Sweat',
+            description: 'Log your workouts here! Every session you log builds your athlete story and shows your community you\'re putting in the work.',
+            side: 'top',
+            align: 'center',
+        },
+    },
+    // 4. Aura Score Card
+    {
+        element: '[data-tour="aura-score"]',
+        popover: {
+            title: '✨ Your Aura Score',
+            description: 'Your Aura Score reflects your consistency, output, and momentum. Keep training to boost your score and climb the leaderboard!',
             side: 'bottom',
             align: 'center',
         },
     },
+    // 5. Athlete Card Chart
+    {
+        element: '[data-tour="card-chart"]',
+        popover: {
+            title: '📈 Your Athlete Card',
+            description: 'Your Card price reflects your performance and engagement. Fans can buy and trade your Card — the more active you are, the more valuable it becomes!',
+            side: 'bottom',
+            align: 'center',
+        },
+    },
+    // 6. Strava connections
     {
         element: '[data-tour="strava-card"]',
         popover: {
-            title: '🏃 Strava Integration',
-            description: 'Connect Strava to auto-import workouts as Proof of Sweat. Your training data becomes part of your athlete story!',
+            title: '🔗 Strava Integration',
+            description: 'Connect Strava to auto-import your workouts. Your training data syncs automatically as Proof of Sweat!',
             side: 'top',
             align: 'center',
         },
     },
+    // 7. Inner Circle
     {
-        element: '[data-tour="locker-tab"]',
+        element: '[data-tour="inner-circle"]',
         popover: {
-            title: '🔐 Your Locker',
-            description: 'The Locker is exclusive content for your card holders. Only fans who buy your Card can access this area!',
+            title: '🔐 Your Inner Circle',
+            description: 'Exclusive access for your card holders! Group chat, direct messages, and your Proof-of-Sweat Globe are all here.',
             side: 'bottom',
             align: 'start',
         },
     },
-    {
-        element: '[data-tour="props-button"]',
-        popover: {
-            title: '❤️ Props',
-            description: 'Tap the heart to "prop" workouts you love. It\'s how athletes show support for each other.',
-            side: 'top',
-            align: 'center',
-        },
-    },
-    {
-        element: '[data-tour="notifications"]',
-        popover: {
-            title: '🔔 Notifications',
-            description: 'Stay updated when someone props your workouts, trades your Cards, or sends you a message.',
-            side: 'bottom',
-            align: 'end',
-        },
-    },
-    {
-        element: '[data-tour="feed"]',
-        popover: {
-            title: '📰 Feed',
-            description: 'Browse workouts from athletes across the platform. Discover new talent and prop their posts!',
-            side: 'bottom',
-            align: 'center',
-        },
-    },
+    // 8. Marketplace
     {
         element: '[data-tour="marketplace"]',
         popover: {
             title: '🏪 Marketplace',
-            description: 'Discover other athletes, buy their tokens, and build your portfolio.',
+            description: 'Discover other athletes and buy their Cards. Build your portfolio by investing in talent you believe in!',
             side: 'bottom',
             align: 'center',
         },
     },
+    // 9. Portfolio
     {
         element: '[data-tour="portfolio"]',
         popover: {
-            title: '💼 Collection',
-            description: 'Track your investments! See all the Athlete Cards you own and your overall performance.',
+            title: '💼 Your Portfolio',
+            description: 'Track your investments! See all the Athlete Cards you own and monitor your overall performance.',
             side: 'bottom',
             align: 'center',
+        },
+    },
+    // 10. Feed
+    {
+        element: '[data-tour="feed"]',
+        popover: {
+            title: '📰 Community Feed',
+            description: 'See workouts from athletes across the platform. Discover new talent and show support by "propping" their posts!',
+            side: 'bottom',
+            align: 'center',
+        },
+    },
+    // 11. Notifications
+    {
+        element: '[data-tour="notifications"]',
+        popover: {
+            title: '🔔 Notifications',
+            description: 'Stay updated! You\'ll be notified when someone props your workouts, trades your Cards, or sends you a message.',
+            side: 'bottom',
+            align: 'end',
         },
     },
 ];
 
 // Map tour element to navigation path (for clicking through during tour)
 const NAVIGATION_MAP: Record<string, string> = {
-    '[data-tour="feed"]': '/feed',
     '[data-tour="marketplace"]': '/marketplace',
     '[data-tour="portfolio"]': '/portfolio',
+    '[data-tour="feed"]': '/feed',
 };
 
 interface OnboardingTourProps {
@@ -192,8 +221,8 @@ export function startTour(navigate?: (path: string) => void, onComplete?: () => 
 
     // If we have a navigate function, go to My Athlete page first
     if (navigate) {
-        // Navigate to My Athlete Personal tab where all tour elements are visible
-        navigate('/my-athlete?tab=personal');
+        // Navigate to My Athlete page where all tour elements are visible
+        navigate('/my-athlete');
 
         // Wait for navigation and DOM to settle
         setTimeout(() => {

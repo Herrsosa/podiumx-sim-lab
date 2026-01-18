@@ -170,37 +170,41 @@ export default function MobileMyAthletes({
         </div>
       </header>
 
-      <main className="flex-1 overflow-x-hidden pb-32 px-4 space-y-4 pt-4">
+      <main className="flex-1 overflow-x-hidden pb-32 px-4 space-y-4 pt-4" data-tour="profile-section">
         {/* Show launch token prompt if user hasn't created a token */}
         {!hasToken && (
           <LaunchTokenPrompt />
         )}
 
         {/* Market Cap Hero Card - tappable */}
-        <MarketHeroCard
-          marketCap={athlete.marketCap ?? 0}
-          priceChange={priceChange}
-          holders={holdersCount}
-          auraScore={auraScore}
-          streak={streak}
-          onTap={() => setShowMarketDetail(true)}
-          onShareAura={kernel ? () => setShowShareAura(true) : undefined}
-        />
+        <div data-tour="card-chart">
+          <MarketHeroCard
+            marketCap={athlete.marketCap ?? 0}
+            priceChange={priceChange}
+            holders={holdersCount}
+            auraScore={auraScore}
+            streak={streak}
+            onTap={() => setShowMarketDetail(true)}
+            onShareAura={kernel ? () => setShowShareAura(true) : undefined}
+          />
+        </div>
 
         {/* Inner Circle (Group Chat + DMs) */}
-        <InnerCircleCard
-          groupChatMembers={holdersCount}
-          unreadDMs={totalUnreadDMs}
-          onGroupChatClick={() => setShowChat(true)}
-          onDMsClick={() => setShowDMs(true)}
-          onGlobeClick={() => setShowGlobe(true)}
-        />
+        <div data-tour="inner-circle">
+          <InnerCircleCard
+            groupChatMembers={holdersCount}
+            unreadDMs={totalUnreadDMs}
+            onGroupChatClick={() => setShowChat(true)}
+            onDMsClick={() => setShowDMs(true)}
+            onGlobeClick={() => setShowGlobe(true)}
+          />
+        </div>
 
         {/* Strava Integration */}
         <StravaCard />
 
         {/* Proof of Sweat Section */}
-        <div className="space-y-3">
+        <div className="space-y-3" data-tour="proof-of-sweat">
           <div className="flex items-center justify-between">
             <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
               Proof of Sweat

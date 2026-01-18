@@ -88,6 +88,7 @@ export function AthleteIdentityCard({ className, athleteId }: AthleteIdentityCar
                 `shadow-lg ${theme.glow}`,
                 className
             )}
+            data-tour="aura-score"
         >
             {/* Background gradient orb */}
             <div className={cn(

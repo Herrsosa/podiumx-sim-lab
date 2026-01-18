@@ -75,6 +75,7 @@ export function BottomTabBar() {
                 {showNotifications && (
                     <Link
                         to="/notifications"
+                        data-tour="notifications"
                         className={cn(
                             "flex flex-col items-center justify-center gap-1 min-w-[64px] h-full text-xs font-medium transition-colors relative",
                             isActive('/notifications') ? "text-primary" : "text-muted-foreground hover:text-foreground"
