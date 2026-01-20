@@ -37,9 +37,10 @@ export function useDmMessages(conversationId: string | undefined) {
       if (!user) return;
 
       // Update last_read_at for the current user in this conversation
-      // Note: using 'as any' because conversation_participants isn't in generated types
-      await supabase
-        .from('conversation_participants' as any)
+      // Note: conversation_participants isn't in generated types
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (supabase as any)
+        .from('conversation_participants')
         .update({ last_read_at: new Date().toISOString() })
         .eq('conversation_id', conversationId)
         .eq('user_id', user.id);
