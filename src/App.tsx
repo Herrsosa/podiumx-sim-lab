@@ -38,6 +38,12 @@ const LearnPage = lazy(() => import("./pages/Learn"));
 const WatchlistPage = lazy(() => import("./pages/Watchlist"));
 const Privacy = lazy(() => import("./pages/Privacy"));
 
+// Arena pages (no auth required)
+const ArenaWelcome = lazy(() => import("./features/arena/pages/ArenaWelcome"));
+const ArenaPlay = lazy(() => import("./features/arena/pages/ArenaPlay"));
+const ArenaLeaderboard = lazy(() => import("./features/arena/pages/ArenaLeaderboard"));
+const ArenaBroadcast = lazy(() => import("./features/arena/pages/ArenaBroadcast"));
+
 import { TourPromptModal } from "@/components/TourPromptModal";
 
 interface RouteGuardProps {
@@ -277,6 +283,43 @@ function AppContent() {
             </div>
           }>
             <Privacy />
+          </Suspense>
+        } />
+        {/* Arena routes - public, no auth required */}
+        <Route path="/arena" element={
+          <Suspense fallback={
+            <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#0a0a1a] to-[#1a0a2e]">
+              <LoadingSpinner size="lg" />
+            </div>
+          }>
+            <ArenaWelcome />
+          </Suspense>
+        } />
+        <Route path="/arena/play" element={
+          <Suspense fallback={
+            <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#0a0a1a] to-[#1a0a2e]">
+              <LoadingSpinner size="lg" />
+            </div>
+          }>
+            <ArenaPlay />
+          </Suspense>
+        } />
+        <Route path="/arena/broadcast" element={
+          <Suspense fallback={
+            <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#0a0a1a] to-[#1a0a2e]">
+              <LoadingSpinner size="lg" />
+            </div>
+          }>
+            <ArenaBroadcast />
+          </Suspense>
+        } />
+        <Route path="/arena/leaderboard" element={
+          <Suspense fallback={
+            <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#0a0a1a] to-[#1a0a2e]">
+              <LoadingSpinner size="lg" />
+            </div>
+          }>
+            <ArenaLeaderboard />
           </Suspense>
         } />
         <Route path="*" element={<NotFound />} />

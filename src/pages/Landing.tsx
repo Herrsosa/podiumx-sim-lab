@@ -1,6 +1,6 @@
 import { useMemo, lazy, Suspense } from "react";
 import { Link } from "react-router-dom";
-import { ArrowRight, Sparkles } from "lucide-react";
+import { ArrowRight, Sparkles, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { usePaginatedAthletes } from "@/hooks/usePaginatedAthletes";
@@ -180,6 +180,47 @@ export default function Landing() {
           </div>
         </div>
       </section >
+
+      {/* Arena CTA Section */}
+      <section className="py-16 relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-r from-[#00ff88]/5 via-[#00d4ff]/5 to-[#ff00ff]/5" />
+        <div className="absolute inset-0 bg-gradient-to-b from-background via-transparent to-background" />
+
+        <div className="container mx-auto px-4 relative z-10">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="text-center max-w-2xl mx-auto"
+          >
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#00ff88]/10 border border-[#00ff88]/20 mb-6">
+              <Zap className="w-4 h-4 text-[#00ff88]" />
+              <span className="text-xs font-medium tracking-wider uppercase text-[#00ff88]">New Mini-Game</span>
+            </div>
+
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">
+              <span className="bg-gradient-to-r from-[#00ff88] via-[#00d4ff] to-[#ff00ff] bg-clip-text text-transparent">
+                Crypto HYROX Arena
+              </span>
+            </h2>
+
+            <p className="text-muted-foreground mb-8 text-lg">
+              20 legendary crypto personalities battle it out in 8 brutal HYROX stations.
+              Pick your fighter. Place your bets. May the best token win.
+            </p>
+
+            <Button
+              size="lg"
+              className="h-14 px-8 text-lg rounded-full bg-gradient-to-r from-[#00ff88] to-[#00cc6a] text-black hover:from-[#00ff88]/90 hover:to-[#00cc6a]/90 shadow-lg shadow-[#00ff88]/20 hover:shadow-[#00ff88]/40 transition-all duration-300 font-bold"
+              asChild
+            >
+              <Link to="/arena">
+                Enter the Arena <Zap className="ml-2 h-5 w-5" />
+              </Link>
+            </Button>
+          </motion.div>
+        </div>
+      </section>
 
       {/* Global Proof-of-Sweat Feed */}
       < section className="py-24 bg-muted/30 relative overflow-hidden" >
