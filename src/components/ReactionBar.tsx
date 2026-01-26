@@ -30,21 +30,22 @@ export const ReactionBar = memo(function ReactionBar({
     const user = useUser();
     const { reactionCounts, toggleReaction, isToggling } = useReactions(postId);
 
-    // Only show emojis with reactions or all if user can interact
-    const visibleReactions = user
-        ? reactionCounts
-        : reactionCounts.filter((r) => r.count > 0);
+    // Only show emojis that have at least one reaction
+    const visibleReactions = reactionCounts.filter((r) => r.count > 0);
 
-    if (visibleReactions.length === 0 && !user) {
+    // Don't render anything if there are no reactions
+    if (visibleReactions.length === 0) {
         return null;
     }
 
+
     return (
         <div className={cn('flex items-center gap-1', className)}>
-            {(user ? REACTION_EMOJIS : visibleReactions.map((r) => r.emoji)).map((emoji) => {
-                const reaction = reactionCounts.find((r) => r.emoji === emoji);
-                const count = reaction?.count ?? 0;
-                const hasReacted = reaction?.hasReacted ?? false;
+            {visibleReactions.map((reaction) => {
+                const emoji = reaction.emoji;
+                const count = reaction.count;
+                const hasReacted = reaction.hasReacted;
+
 
                 return (
                     <Tooltip key={emoji}>
@@ -86,7 +87,6 @@ export const ReactionBar = memo(function ReactionBar({
                         </TooltipTrigger>
                         <TooltipContent side="top" className="text-xs">
                             {EMOJI_LABELS[emoji as ReactionEmoji]}
-                            {!user && ' • Sign in to react'}
                         </TooltipContent>
                     </Tooltip>
                 );
