@@ -11,3 +11,6 @@ verify_jwt = true
 
 [functions.credit-test-balance]
 verify_jwt = true
+
+[functions.notify-waitlist-signup]
+verify_jwt = false
