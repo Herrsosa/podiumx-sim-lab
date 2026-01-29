@@ -1,5 +1,83 @@
 import html2canvas from 'html2canvas';
 
+// ============================================================================
+// UTM TRACKING
+// ============================================================================
+
+export interface UTMParams {
+    utm_source?: string;
+    utm_medium?: string;
+    utm_campaign?: string;
+    utm_content?: string;
+    utm_term?: string;
+}
+
+/**
+ * Add UTM parameters to a URL
+ */
+export function addUTMParams(url: string, params: UTMParams): string {
+    const urlObj = new URL(url);
+
+    if (params.utm_source) urlObj.searchParams.set('utm_source', params.utm_source);
+    if (params.utm_medium) urlObj.searchParams.set('utm_medium', params.utm_medium);
+    if (params.utm_campaign) urlObj.searchParams.set('utm_campaign', params.utm_campaign);
+    if (params.utm_content) urlObj.searchParams.set('utm_content', params.utm_content);
+    if (params.utm_term) urlObj.searchParams.set('utm_term', params.utm_term);
+
+    return urlObj.toString();
+}
+
+/**
+ * Get default UTM params for different share platforms
+ */
+export function getShareUTMParams(platform: 'instagram' | 'twitter' | 'copy' | 'download'): UTMParams {
+    const baseParams: UTMParams = {
+        utm_source: platform,
+        utm_medium: 'social',
+        utm_campaign: 'proof_of_sweat',
+    };
+
+    switch (platform) {
+        case 'instagram':
+            return { ...baseParams, utm_content: 'story_share' };
+        case 'twitter':
+            return { ...baseParams, utm_content: 'tweet' };
+        case 'copy':
+            return { ...baseParams, utm_medium: 'referral', utm_content: 'link_copy' };
+        case 'download':
+            return { ...baseParams, utm_medium: 'referral', utm_content: 'image_download' };
+        default:
+            return baseParams;
+    }
+}
+
+/**
+ * Generate a trackable profile URL with UTM params
+ */
+export function getTrackableProfileUrl(
+    athleteHandle: string,
+    platform: 'instagram' | 'twitter' | 'copy' | 'download'
+): string {
+    const baseUrl = `https://athlyst.fun/athlete/${athleteHandle}`;
+    return addUTMParams(baseUrl, getShareUTMParams(platform));
+}
+
+/**
+ * Generate a trackable referral URL
+ */
+export function getReferralUrl(referralCode: string): string {
+    const baseUrl = 'https://athlyst.fun/auth';
+    return addUTMParams(`${baseUrl}?invite=${referralCode}`, {
+        utm_source: 'referral',
+        utm_medium: 'invite_link',
+        utm_campaign: 'user_referral',
+    });
+}
+
+// ============================================================================
+// IMAGE GENERATION
+// ============================================================================
+
 /**
  * Generate a shareable image from an HTML element
  * Returns a Blob that can be downloaded or shared

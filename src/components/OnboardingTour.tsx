@@ -5,7 +5,7 @@ import 'driver.js/dist/driver.css';
 import { useOnboardingTour } from '@/hooks/useOnboardingTour';
 import { useUser } from '@/store/auth';
 
-// Tour step definitions - 11 steps in order
+// Tour step definitions - 13 steps in order
 const TOUR_STEPS: DriveStep[] = [
     // 1. My Athlete Profile - General intro
     {
@@ -27,7 +27,17 @@ const TOUR_STEPS: DriveStep[] = [
             align: 'start',
         },
     },
-    // 3. Proof of Sweat - workouts
+    // 3. Market Cap - THE core metric
+    {
+        element: '[data-tour="market-cap"]',
+        popover: {
+            title: '💰 Your Market Cap',
+            description: 'Your Market Cap is your social signal of momentum! It rises when supporters buy your Card and shows how much your community believes in you.',
+            side: 'bottom',
+            align: 'center',
+        },
+    },
+    // 4. Proof of Sweat - workouts
     {
         element: '[data-tour="proof-of-sweat"]',
         popover: {
@@ -37,7 +47,7 @@ const TOUR_STEPS: DriveStep[] = [
             align: 'center',
         },
     },
-    // 4. Aura Score Card
+    // 5. Aura Score Card
     {
         element: '[data-tour="aura-score"]',
         popover: {
@@ -47,7 +57,7 @@ const TOUR_STEPS: DriveStep[] = [
             align: 'center',
         },
     },
-    // 5. Athlete Card Chart
+    // 6. Athlete Card Chart
     {
         element: '[data-tour="card-chart"]',
         popover: {
@@ -67,12 +77,12 @@ const TOUR_STEPS: DriveStep[] = [
             align: 'center',
         },
     },
-    // 7. Inner Circle
+    // 8. Inner Circle
     {
         element: '[data-tour="inner-circle"]',
         popover: {
             title: '🔐 Your Inner Circle',
-            description: 'Exclusive access for your card holders! Group chat, direct messages, and your Proof-of-Sweat Globe are all here.',
+            description: 'Only your Card holders can access this! Fans buy your Card to unlock group chat and DMs with you — your exclusive community space.',
             side: 'bottom',
             align: 'start',
         },
@@ -107,7 +117,17 @@ const TOUR_STEPS: DriveStep[] = [
             align: 'center',
         },
     },
-    // 11. Notifications
+    // 12. Rewards
+    {
+        element: '[data-tour="rewards"]',
+        popover: {
+            title: '🎁 Rewards',
+            description: 'Earn Sweat Points by posting workouts, referring friends, and engaging with the community. Climb the leaderboard and unlock rewards!',
+            side: 'bottom',
+            align: 'center',
+        },
+    },
+    // 13. Notifications
     {
         element: '[data-tour="notifications"]',
         popover: {
@@ -124,6 +144,7 @@ const NAVIGATION_MAP: Record<string, string> = {
     '[data-tour="marketplace"]': '/marketplace',
     '[data-tour="portfolio"]': '/portfolio',
     '[data-tour="feed"]': '/feed',
+    '[data-tour="rewards"]': '/rewards',
 };
 
 interface OnboardingTourProps {

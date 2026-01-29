@@ -1,8 +1,10 @@
 // Supabase Edge Function: notify-waitlist-signup
 // Sends email notification to admin when someone joins the waitlist
+// Also enrolls user in the waitlist email sequence
 // Uses Resend for email delivery
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 // CORS headers
 const corsHeaders = {
@@ -120,6 +122,40 @@ serve(async (req) => {
 
         const result = await emailResponse.json();
         console.log(`Notification email sent for waitlist signup: ${payload.email}`);
+
+        // Enroll user in waitlist email sequence
+        try {
+            const supabaseUrl = Deno.env.get("SUPABASE_URL");
+            const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+
+            console.log("Attempting to enroll user in email sequence:", payload.email);
+            console.log("SUPABASE_URL configured:", !!supabaseUrl);
+            console.log("SUPABASE_SERVICE_ROLE_KEY configured:", !!supabaseServiceKey);
+
+            if (supabaseUrl && supabaseServiceKey) {
+                const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+                // Call the enroll-email-sequence function
+                const enrollResult = await supabase.functions.invoke("enroll-email-sequence", {
+                    body: {
+                        email: payload.email,
+                        trigger_event: "waitlist_signup",
+                    },
+                });
+                console.log(`Email sequence enrollment result for ${payload.email}:`, JSON.stringify(enrollResult));
+
+                if (enrollResult.error) {
+                    console.error("Email sequence enrollment error:", enrollResult.error);
+                } else {
+                    console.log(`User ${payload.email} enrolled in waitlist email sequence successfully`);
+                }
+            } else {
+                console.error("Missing Supabase URL or service key for email sequence enrollment");
+            }
+        } catch (enrollError) {
+            // Don't fail the whole request if email sequence enrollment fails
+            console.error("Failed to enroll in email sequence:", enrollError);
+        }
 
         return new Response(
             JSON.stringify({

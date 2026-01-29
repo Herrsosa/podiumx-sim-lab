@@ -180,10 +180,10 @@ function createContext(req: Request): HandlerContext | { error: Response } {
   const scopedClient = createClient(cfg.supabaseUrl, scopedKey, {
     global: authHeader
       ? {
-          headers: {
-            Authorization: authHeader,
-          },
-        }
+        headers: {
+          Authorization: authHeader,
+        },
+      }
       : undefined,
   });
 
@@ -191,8 +191,8 @@ function createContext(req: Request): HandlerContext | { error: Response } {
     cfg.serviceKey && cfg.serviceKey !== scopedKey
       ? createClient(cfg.supabaseUrl, cfg.serviceKey)
       : authHeader && cfg.serviceKey
-      ? createClient(cfg.supabaseUrl, cfg.serviceKey)
-      : null;
+        ? createClient(cfg.supabaseUrl, cfg.serviceKey)
+        : null;
 
   return {
     cfg,
@@ -231,16 +231,27 @@ async function handleTokenExchange(
 ) {
   const { scopedClient, privilegedClient, cfg, authHeader } = context;
 
-  const stateRecord =
-    (await fetchStateRecord(scopedClient, state.stateId)) ??
-    (await fetchStateRecord(privilegedClient, state.stateId));
+  console.log("handleTokenExchange called with stateId:", state.stateId);
+  console.log("Has scopedClient:", !!scopedClient);
+  console.log("Has privilegedClient:", !!privilegedClient);
+  console.log("Has authHeader:", !!authHeader);
+
+  const stateRecordFromScoped = await fetchStateRecord(scopedClient, state.stateId);
+  console.log("State record from scoped client:", stateRecordFromScoped);
+
+  const stateRecordFromPrivileged = stateRecordFromScoped ? null : await fetchStateRecord(privilegedClient, state.stateId);
+  console.log("State record from privileged client:", stateRecordFromPrivileged);
+
+  const stateRecord = stateRecordFromScoped ?? stateRecordFromPrivileged;
 
   if (!stateRecord) {
-    return jsonResponse({ error: "Invalid or expired OAuth state" }, 400);
+    console.error("OAuth state not found for stateId:", state.stateId);
+    return jsonResponse({ error: "Invalid or expired OAuth state", stateId: state.stateId }, 400);
   }
 
   const createdAtMs = Date.parse(stateRecord.created_at);
   if (Number.isNaN(createdAtMs) || Date.now() - createdAtMs > STATE_MAX_AGE_MS) {
+    console.error("OAuth state expired, created_at:", stateRecord.created_at, "age_ms:", Date.now() - createdAtMs);
     await cleanupState(privilegedClient ?? scopedClient, state.stateId);
     return jsonResponse({ error: "OAuth state expired" }, 400);
   }
@@ -308,8 +319,8 @@ async function handleTokenExchange(
     typeof scopeValue === "string"
       ? scopeValue
       : Array.isArray(scopeValue)
-      ? scopeValue.join(",")
-      : null;
+        ? scopeValue.join(",")
+        : null;
 
   const dbClient = scopedClient ?? privilegedClient;
   if (!dbClient) {
@@ -415,9 +426,9 @@ Deno.serve(async (req: Request) => {
       const payload = await req
         .json()
         .catch(() => ({ code: null, state: null })) as {
-        code: string | null;
-        state: string | null;
-      };
+          code: string | null;
+          state: string | null;
+        };
 
       const { code, state } = payload;
       if (!code) {

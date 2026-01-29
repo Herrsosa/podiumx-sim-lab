@@ -1,0 +1,9 @@
+Initialising login role...
+Connecting to remote database...
+Do you want to push these migrations to the remote database?
+ ÔÇó 20260129192000_fix_workout_streaks.sql
+
+ [Y/n] Applying migration 20260129192000_fix_workout_streaks.sql...
+Finished supabase db push.
+A new version of Supabase CLI is available: v2.72.7 (currently installed v2.67.1)
+We recommend updating regularly for new features and bug fixes: https://supabase.com/docs/guides/cli/getting-started#updating-the-supabase-cli

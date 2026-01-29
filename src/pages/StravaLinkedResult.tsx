@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { logger } from "@/lib/logger";
@@ -6,6 +6,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useUser } from "@/store/auth";
 import { useQueryClient } from "@tanstack/react-query";
 import { stravaConnectionQueryKey } from "@/hooks/useStravaConnection";
+import { useAwardPoints } from "@/hooks/usePoints";
 
 type Status = "idle" | "loading" | "success" | "error" | "missing";
 
@@ -18,8 +19,17 @@ export default function StravaLinkedResult() {
   const { toast } = useToast();
   const user = useUser();
   const queryClient = useQueryClient();
+  const awardPoints = useAwardPoints();
+
+  // Prevent double execution from React StrictMode or re-renders
+  const exchangeAttempted = useRef(false);
+  // Use ref for mounted state to persist across StrictMode cycles
+  const isMountedRef = useRef(true);
 
   useEffect(() => {
+    // Reset mounted state on each effect run
+    isMountedRef.current = true;
+
     const code = params.get("code");
     const state = params.get("state");
 
@@ -29,7 +39,13 @@ export default function StravaLinkedResult() {
       return;
     }
 
-    let isMounted = true;
+    // Prevent double execution
+    if (exchangeAttempted.current) {
+      logger.info('[StravaLinkedResult] Exchange already attempted, skipping');
+      return;
+    }
+    exchangeAttempted.current = true;
+
     setStatus("loading");
     setMessage(null);
 
@@ -42,23 +58,28 @@ export default function StravaLinkedResult() {
       const { data, error } = response;
 
       // Log full response for debugging
-      logger.info('[StravaLinkedResult] Edge function response:', { data, error });
+      logger.info('[StravaLinkedResult] Edge function response:', { data, error: error ? { message: error.message, name: error.name } : null });
 
-      // Try to extract detailed error from response context if available
+      // Try to extract detailed error from response context if available  
       if (error) {
         try {
           // The error context may contain the actual JSON response
           const errorContext = (error as unknown as { context?: { json?: () => Promise<unknown> } })?.context;
           if (errorContext?.json) {
             const errorBody = await errorContext.json();
-            logger.error('[StravaLinkedResult] Error body:', errorBody);
+            logger.error('[StravaLinkedResult] Error body:', JSON.stringify(errorBody, null, 2));
+          } else {
+            logger.error('[StravaLinkedResult] Error details:', JSON.stringify(error, null, 2));
           }
         } catch (parseErr) {
           logger.warn('[StravaLinkedResult] Could not parse error body:', parseErr);
         }
       }
 
-      if (!isMounted) return;
+      if (!isMountedRef.current) {
+        logger.info('[StravaLinkedResult] Component unmounted, skipping state update');
+        return;
+      }
 
       if (error || (data && "error" in data)) {
         const reason =
@@ -87,6 +108,28 @@ export default function StravaLinkedResult() {
         description: "Your workouts will sync automatically.",
       });
 
+      // Award points for connecting Strava
+      awardPoints.mutate(
+        { action: 'strava_connect' },
+        {
+          onSuccess: (result) => {
+            logger.info('[StravaLinkedResult] Points award result:', result);
+            if (result.points_awarded > 0) {
+              toast({
+                title: `+${result.points_awarded} points!`,
+                description: "You earned points for connecting Strava.",
+              });
+            } else {
+              logger.info('[StravaLinkedResult] No points awarded: Already claimed or not eligible');
+            }
+          },
+          onError: (error) => {
+            logger.error('[StravaLinkedResult] Points award failed:', error);
+            // Don't show error to user, just log for debugging
+          },
+        }
+      );
+
       if (user?.id) {
         queryClient.invalidateQueries({ queryKey: stravaConnectionQueryKey(user.id) }).catch(
           (invalidateError) => {
@@ -103,7 +146,7 @@ export default function StravaLinkedResult() {
         navigate("/my-athlete/overview", { replace: true });
       }, 1500);
     })().catch((invokeError: unknown) => {
-      if (!isMounted) return;
+      if (!isMountedRef.current) return;
       const reason =
         invokeError instanceof Error ? invokeError.message : "Unexpected error occurred.";
       setStatus("error");
@@ -116,9 +159,9 @@ export default function StravaLinkedResult() {
     });
 
     return () => {
-      isMounted = false;
+      isMountedRef.current = false;
     };
-  }, [navigate, params, queryClient, toast, user?.id]);
+  }, [navigate, params, queryClient, toast, user?.id, awardPoints]);
 
   const renderBody = () => {
     switch (status) {

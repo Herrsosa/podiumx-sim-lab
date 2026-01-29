@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { TrendingUp, User, Moon, Sun, LogOut, Search, Activity, Star } from 'lucide-react';
+import { TrendingUp, User, Moon, Sun, LogOut, Search, Activity, Star, Gift } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useAppStore } from '@/store/useAppStore';
@@ -176,6 +176,24 @@ export default function Navigation() {
                   <Star className="h-3.5 w-3.5" />
                   Watchlist
                   {isActive('/watchlist') && (
+                    <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-full" />
+                  )}
+                </Button>
+              </Link>
+            )}
+            {user && (
+              <Link to="/rewards">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className={cn(
+                    "font-medium transition-all px-3 h-8 relative gap-1",
+                    isActive('/rewards') && "text-primary"
+                  )}
+                >
+                  <Gift className="h-3.5 w-3.5 text-yellow-500" />
+                  Rewards
+                  {isActive('/rewards') && (
                     <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-full" />
                   )}
                 </Button>

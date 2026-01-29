@@ -1,6 +1,6 @@
 import { CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Compass, RotateCcw, BookOpen, CheckCircle2 } from 'lucide-react';
+import { Compass, RotateCcw, BookOpen, CheckCircle2, MessageSquare } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useOnboardingTour } from '@/hooks/useOnboardingTour';
 import { startTour } from '@/components/OnboardingTour';
@@ -74,13 +74,25 @@ export function LockerSettings() {
             </div>
 
             <div className="border-t pt-6">
-                <h3 className="text-lg font-semibold mb-4">Help & Resources</h3>
-                <Link to="/learn">
-                    <Button variant="outline" className="gap-2">
-                        <BookOpen className="h-4 w-4" />
-                        Learn About Athlyst
-                    </Button>
-                </Link>
+                <h3 className="text-lg font-semibold mb-4">Help & Feedback</h3>
+                <div className="flex flex-wrap gap-3">
+                    <Link to="/learn">
+                        <Button variant="outline" className="gap-2">
+                            <BookOpen className="h-4 w-4" />
+                            Learn About Athlyst
+                        </Button>
+                    </Link>
+                    <a
+                        href="https://docs.google.com/forms/d/e/1FAIpQLSdH36iuEIlfB6ysZTGNhMl11VKWw5i6_v-UBibzclErHIoRxg/viewform?usp=publish-editor"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                    >
+                        <Button variant="outline" className="gap-2">
+                            <MessageSquare className="h-4 w-4 text-yellow-500" />
+                            Send Feedback
+                        </Button>
+                    </a>
+                </div>
             </div>
         </CardContent>
     );

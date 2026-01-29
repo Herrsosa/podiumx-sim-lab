@@ -1,0 +1,22 @@
+Initialising login role...
+Connecting to remote database...
+Do you want to push these migrations to the remote database?
+ ÔÇó 20260129191000_fix_workout_streaks.sql
+
+ [Y/n] Applying migration 20260129191000_fix_workout_streaks.sql...
+ERROR: column ps.user_id does not exist (SQLSTATE 42703)                     
+At statement: 1                                                              
+-- Update streaks for all users with posts                                   
+UPDATE points_totals pt                                                      
+SET                                                                          
+    current_streak = streak_calc.current_streak,                             
+    longest_streak = GREATEST(pt.longest_streak, streak_calc.longest_streak),
+    last_workout_date = streak_calc.last_workout_date                        
+FROM (                                                                       
+    SELECT                                                                   
+        p.id as user_id,                                                     
+        (calculate_user_streak(p.id)).*                                      
+    FROM profiles p                                                          
+    WHERE EXISTS (SELECT 1 FROM posts ps WHERE ps.user_id = p.id)            
+                                               ^                             
+Try rerunning the command with --debug to troubleshoot the error.

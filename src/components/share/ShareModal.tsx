@@ -14,7 +14,10 @@ import {
     shareImage,
     copyToClipboard,
     canShareFiles,
+    getTrackableProfileUrl,
 } from '@/utils/shareUtils';
+import { trackWorkoutShared } from '@/lib/analytics';
+import { useAwardPoints } from '@/hooks/usePoints';
 import { toast } from 'sonner';
 import type { Workout } from '@/types';
 
@@ -43,9 +46,38 @@ export function ShareModal({
     const [isGenerating, setIsGenerating] = useState(false);
     const [generatedBlob, setGeneratedBlob] = useState<Blob | null>(null);
     const cardRef = useRef<ShareableWorkoutCardRef>(null);
+    const awardPoints = useAwardPoints();
 
     const isMobile = typeof navigator !== 'undefined' && /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
     const supportsShare = canShareFiles();
+
+    // Award points for social share (called after successful share)
+    const awardSharePoints = useCallback(() => {
+        awardPoints.mutate(
+            { action: 'social_share' },
+            {
+                onSuccess: (result) => {
+                    console.log('[ShareModal] Points award result:', result);
+                    if (result.points_awarded > 0) {
+                        toast.success(`+${result.points_awarded} points for sharing!`);
+                    }
+                },
+                onError: (error) => {
+                    console.error('[ShareModal] Points award error:', error);
+                },
+            }
+        );
+    }, [awardPoints]);
+
+    // Generate caption text for sharing
+    const getShareCaption = useCallback(() => {
+        const parts = [`Just completed a ${workout.type} workout! 💪`];
+        if (workout.distance) parts.push(`📏 ${workout.distance}km`);
+        if (workout.duration) parts.push(`⏱️ ${workout.duration}min`);
+        parts.push('');
+        parts.push('#Athlyst #ProofOfSweat');
+        return parts.join('\n');
+    }, [workout]);
 
     // Reset blob when modal opens/closes or workout changes
     useEffect(() => {
@@ -73,22 +105,30 @@ export function ShareModal({
         }
     }, [generatedBlob]);
 
-    // Share to Instagram (uses native share on mobile)
+    // Share to Instagram (uses native share on mobile, download+copy on desktop)
     const handleShareInstagram = async () => {
         try {
             const blob = await ensureImageGenerated();
+            const trackableUrl = getTrackableProfileUrl(athleteHandle, 'instagram');
+            const caption = `${getShareCaption()}\n\n${trackableUrl}`;
+
             const success = await shareImage(
                 blob,
                 `${athleteName}'s Workout`,
-                `Check out this workout on Athlyst! ${athleteProfileUrl || ''}`
+                `Check out this workout on Athlyst! ${trackableUrl}`
             );
             if (success) {
                 toast.success('Opening share sheet...');
+                trackWorkoutShared('instagram');
+                awardSharePoints();
                 onOpenChange(false);
             } else {
-                // Fallback to download
-                toast.info('Open Instagram and share the downloaded image');
+                // Desktop fallback: download image + copy caption
                 downloadBlob(blob, `${athleteHandle}-workout.png`);
+                await copyToClipboard(caption);
+                toast.success('Image downloaded & caption copied! Share to Instagram manually.');
+                trackWorkoutShared('instagram');
+                awardSharePoints();
             }
         } catch (error) {
             console.error('Share failed:', error);
@@ -102,6 +142,7 @@ export function ShareModal({
             const blob = await ensureImageGenerated();
             downloadBlob(blob, `${athleteHandle}-workout.png`);
             toast.success('Image downloaded!');
+            trackWorkoutShared('download');
         } catch (error) {
             console.error('Download failed:', error);
             toast.error('Failed to generate image');
@@ -110,22 +151,47 @@ export function ShareModal({
 
     // Copy link
     const handleCopyLink = async () => {
-        const url = athleteProfileUrl || window.location.href;
-        const success = await copyToClipboard(url);
+        const trackableUrl = getTrackableProfileUrl(athleteHandle, 'copy');
+        const success = await copyToClipboard(trackableUrl);
         if (success) {
             toast.success('Link copied!');
+            trackWorkoutShared('copy');
         } else {
             toast.error('Failed to copy link');
         }
     };
 
-    // Share to X/Twitter
-    const handleShareX = () => {
-        const text = `Just completed a ${workout.type} workout! 💪\n\n${workout.distance ? `📏 ${workout.distance}km` : ''} ${workout.duration ? `⏱️ ${workout.duration}min` : ''}\n\n#Athlyst #ProofOfSweat`;
-        const url = `https://athlyst.fun/athlete/${athleteHandle}`;
-        const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`;
-        window.open(twitterUrl, '_blank', 'width=550,height=420');
-        toast.success('Opening X...');
+    // Share to X/Twitter - download image + copy caption + open Twitter
+    const handleShareX = async () => {
+        try {
+            // Generate and download image
+            const blob = await ensureImageGenerated();
+            downloadBlob(blob, `${athleteHandle}-workout.png`);
+
+            // Copy caption to clipboard
+            const caption = getShareCaption();
+            const trackableUrl = getTrackableProfileUrl(athleteHandle, 'twitter');
+            const fullCaption = `${caption}\n\n${trackableUrl}`;
+            await copyToClipboard(fullCaption);
+
+            // Open Twitter
+            const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(caption)}&url=${encodeURIComponent(trackableUrl)}`;
+            window.open(twitterUrl, '_blank', 'width=550,height=420');
+
+            toast.success('Image downloaded & caption copied! Paste in your tweet and attach the image.');
+            trackWorkoutShared('twitter');
+            awardSharePoints();
+        } catch (error) {
+            console.error('Share to X failed:', error);
+            // Fallback: just open Twitter without image
+            const caption = getShareCaption();
+            const trackableUrl = getTrackableProfileUrl(athleteHandle, 'twitter');
+            const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(caption)}&url=${encodeURIComponent(trackableUrl)}`;
+            window.open(twitterUrl, '_blank', 'width=550,height=420');
+            toast.success('Opening X...');
+            trackWorkoutShared('twitter');
+            awardSharePoints();
+        }
     };
 
     return (

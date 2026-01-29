@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(find:*)",
+      "Bash(for file in \"C:\\\\Users\\\\nilsh\\\\Desktop\\\\Athlyst\\\\supabase\\\\migrations\"/*.sql)",
+      "Bash(do grep -q \"CREATE TABLE.*waitlist\" \"$file\")",
+      "Bash(echo:*)",
+      "Bash(done)"
+    ]
+  }
+}

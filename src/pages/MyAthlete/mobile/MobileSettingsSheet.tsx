@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Settings, Compass, BookOpen, User, CheckCircle2, LogOut } from 'lucide-react';
+import { Settings, Compass, BookOpen, User, CheckCircle2, LogOut, MessageSquare } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { useOnboardingTour } from '@/hooks/useOnboardingTour';
@@ -108,20 +108,37 @@ export function MobileSettingsSheet({ onEditProfile, className }: MobileSettings
                         </button>
                     </div>
 
-                    {/* Help */}
+                    {/* Help & Feedback */}
                     <div>
-                        <h3 className="text-sm font-semibold mb-2 text-muted-foreground">Help</h3>
-                        <Link to="/learn" onClick={() => setOpen(false)}>
-                            <button className="flex items-center gap-3 w-full p-3 rounded-xl bg-muted/30 hover:bg-muted/50 transition-colors">
-                                <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-                                    <BookOpen className="h-5 w-5 text-primary" />
+                        <h3 className="text-sm font-semibold mb-2 text-muted-foreground">Help & Feedback</h3>
+                        <div className="space-y-2">
+                            <Link to="/learn" onClick={() => setOpen(false)}>
+                                <button className="flex items-center gap-3 w-full p-3 rounded-xl bg-muted/30 hover:bg-muted/50 transition-colors">
+                                    <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                                        <BookOpen className="h-5 w-5 text-primary" />
+                                    </div>
+                                    <div className="text-left">
+                                        <p className="font-medium text-sm">Learn About Athlyst</p>
+                                        <p className="text-xs text-muted-foreground">Guides and tutorials</p>
+                                    </div>
+                                </button>
+                            </Link>
+                            <a
+                                href="https://docs.google.com/forms/d/e/1FAIpQLSdH36iuEIlfB6ysZTGNhMl11VKWw5i6_v-UBibzclErHIoRxg/viewform"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                onClick={() => setOpen(false)}
+                                className="flex items-center gap-3 w-full p-3 rounded-xl bg-muted/30 hover:bg-muted/50 transition-colors"
+                            >
+                                <div className="h-10 w-10 rounded-full bg-yellow-500/10 flex items-center justify-center">
+                                    <MessageSquare className="h-5 w-5 text-yellow-500" />
                                 </div>
                                 <div className="text-left">
-                                    <p className="font-medium text-sm">Learn About Athlyst</p>
-                                    <p className="text-xs text-muted-foreground">Guides and tutorials</p>
+                                    <p className="font-medium text-sm">Send Feedback</p>
+                                    <p className="text-xs text-muted-foreground">Report bugs or suggest features</p>
                                 </div>
-                            </button>
-                        </Link>
+                            </a>
+                        </div>
                     </div>
 
                     {/* Logout */}

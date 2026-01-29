@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -14,6 +14,7 @@ import { mapPostRowToLockerWorkout, mapPostRowToPost } from '@/hooks/useWorkouts
 import { LocationInput } from './LocationInput';
 import type { LocationResult } from '@/hooks/useLocationSearch';
 import { WORKOUT_TYPES, DISTANCE_WORKOUT_TYPES } from '@/constants/workoutTypes';
+import { useAwardPoints } from '@/hooks/usePoints';
 
 interface AddWorkoutModalProps {
   open: boolean;
@@ -29,6 +30,8 @@ export default function AddWorkoutModal({ open, onOpenChange, athleteId, onSucce
   const [location, setLocation] = useState<LocationResult | null>(null);
   const [showCelebration, setShowCelebration] = useState(false);
   const [celebrationData, setCelebrationData] = useState<WorkoutCelebrationData | null>(null);
+  const awardPoints = useAwardPoints();
+  const hasAwardedFirstWorkout = useRef(false);
 
   const [formData, setFormData] = useState({
     date: new Date().toISOString().split('T')[0],
@@ -129,6 +132,67 @@ export default function AddWorkoutModal({ open, onOpenChange, athleteId, onSucce
         insertData as Parameters<typeof mapPostRowToLockerWorkout>[0],
       );
       const post = mapPostRowToPost(insertData as Parameters<typeof mapPostRowToPost>[0]);
+
+      // Award points for posting workout
+      // Try first_workout first, then daily_workout
+      if (!hasAwardedFirstWorkout.current) {
+        awardPoints.mutate(
+          { action: 'first_workout' },
+          {
+            onSuccess: (result) => {
+              console.log('[AddWorkoutModal] First workout points result:', result);
+              if (result.points_awarded > 0) {
+                hasAwardedFirstWorkout.current = true;
+                toast({
+                  title: `+${result.points_awarded} points!`,
+                  description: "You earned points for your first workout!",
+                });
+              } else {
+                // First workout already claimed, try daily_workout
+                awardPoints.mutate(
+                  { action: 'daily_workout' },
+                  {
+                    onSuccess: (dailyResult) => {
+                      console.log('[AddWorkoutModal] Daily workout points result:', dailyResult);
+                      if (dailyResult.points_awarded > 0) {
+                        toast({
+                          title: `+${dailyResult.points_awarded} points!`,
+                          description: "Daily workout points earned!",
+                        });
+                      }
+                    },
+                    onError: (error) => {
+                      console.error('[AddWorkoutModal] Daily workout points error:', error);
+                    },
+                  }
+                );
+              }
+            },
+            onError: (error) => {
+              console.error('[AddWorkoutModal] First workout points error:', error);
+            },
+          }
+        );
+      } else {
+        // Already claimed first workout, just try daily
+        awardPoints.mutate(
+          { action: 'daily_workout' },
+          {
+            onSuccess: (result) => {
+              console.log('[AddWorkoutModal] Daily workout points result:', result);
+              if (result.points_awarded > 0) {
+                toast({
+                  title: `+${result.points_awarded} points!`,
+                  description: "Daily workout points earned!",
+                });
+              }
+            },
+            onError: (error) => {
+              console.error('[AddWorkoutModal] Daily workout points error:', error);
+            },
+          }
+        );
+      }
 
       onSuccess({ workout, post });
       onOpenChange(false);

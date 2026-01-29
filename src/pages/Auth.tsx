@@ -7,8 +7,10 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Instagram, CheckCircle2, Eye, EyeOff } from "lucide-react";
+import { Loader2, Instagram, CheckCircle2, Eye, EyeOff, UserPlus } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { captureUTMParams, trackSignupStarted, trackSignupCompleted, trackWaitlistJoined } from "@/lib/analytics";
+import { validateReferralCode, applyReferral } from "@/hooks/useReferral";
 
 export default function Auth() {
   const navigate = useNavigate();
@@ -29,6 +31,10 @@ export default function Auth() {
   // Password visibility toggles
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  // Referral tracking
+  const [referralCode, setReferralCode] = useState<string | null>(null);
+  const [referrerName, setReferrerName] = useState<string | null>(null);
 
   // Email validation regex
   const isValidEmail = (email: string) => {
@@ -70,11 +76,27 @@ export default function Auth() {
   }, [location]);
 
   useEffect(() => {
-    // Check for invite code
+    // Capture UTM params on page load
+    captureUTMParams();
+
+    // Check for invite/referral code
     const params = new URLSearchParams(location.search);
     const inviteCode = params.get('invite');
-    if (inviteCode === 'ATHLYST2025') {
-      setIsWaitlistMode(false);
+
+    if (inviteCode) {
+      // Validate the referral code
+      validateReferralCode(inviteCode).then((result) => {
+        if (result.valid) {
+          setIsWaitlistMode(false);
+          setReferralCode(inviteCode);
+          if (result.referrer_name) {
+            setReferrerName(result.referrer_name);
+          }
+        } else if (inviteCode.toUpperCase() === 'ATHLYST2025') {
+          // Fallback for static early access code
+          setIsWaitlistMode(false);
+        }
+      });
     }
 
     let isMounted = true;
@@ -135,6 +157,7 @@ export default function Auth() {
 
       setWaitlistSuccess(true);
       setWaitlistEmail(""); // Clear email on success
+      trackWaitlistJoined(waitlistEmail);
     } catch (error: unknown) {
       console.error('Waitlist error:', error);
       setWaitlistError("Something went wrong – please try again in a moment to build that Athlete Identity.");
@@ -154,17 +177,28 @@ export default function Auth() {
       return;
     }
     setLoading(true);
+    trackSignupStarted('email');
 
     try {
-      const { error } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
           emailRedirectTo: `${window.location.origin}/auth`,
+          data: {
+            referral_code: referralCode, // Store referral code in user metadata
+          },
         },
       });
 
       if (error) throw error;
+
+      // If we have a referral code and a new user, apply the referral
+      if (referralCode && data.user?.id) {
+        await applyReferral(referralCode, data.user.id);
+      }
+
+      trackSignupCompleted();
 
       toast({
         title: "Check your email!",
@@ -361,6 +395,18 @@ export default function Auth() {
               </TabsContent>
 
               <TabsContent value="signup">
+                {/* Referral welcome message */}
+                {referrerName && !isWaitlistMode && (
+                  <div className="mb-4 p-3 bg-green-500/10 border border-green-500/20 rounded-lg">
+                    <div className="flex items-center gap-2 text-green-400">
+                      <UserPlus className="h-4 w-4" />
+                      <span className="text-sm">
+                        Invited by <strong>{referrerName}</strong>
+                      </span>
+                    </div>
+                  </div>
+                )}
+
                 {isWaitlistMode ? (
                   <div className="space-y-4">
                     <div className="text-center mb-6">
