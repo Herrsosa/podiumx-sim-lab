@@ -16,6 +16,8 @@ import TokengatedChat from '@/components/TokengatedChat';
 import { LockerMessages } from '@/components/myathlete/LockerMessages';
 import { LockerGlobe } from '@/components/myathlete/LockerGlobe';
 import { ChartSkeleton } from '@/components/ui/skeletons';
+import { FounderBadge } from '@/components/FounderBadge';
+import { useIsFounder } from '@/hooks/useUserBadges';
 import type { Athlete, Trade, Position } from '@/types';
 import type { PriceSeriesPoint } from '@/lib/charting/engine';
 import type { TimeRangeKey } from '@/utils/chartData';
@@ -85,6 +87,9 @@ export function MobileAthleteProfile({
 
     const priceChange = athlete.change24h ?? 0;
 
+    // Check if athlete is a founder
+    const { isFounder } = useIsFounder(athlete.id);
+
     // Recent trades for Stats tab
     const recentTrades = useMemo(() => trades.slice(0, 5), [trades]);
 
@@ -134,7 +139,10 @@ export function MobileAthleteProfile({
                             {athlete.name.slice(0, 2).toUpperCase()}
                         </AvatarFallback>
                     </Avatar>
-                    <h1 className="text-xl font-bold">{athlete.name}</h1>
+                    <h1 className="text-xl font-bold flex items-center justify-center gap-2">
+                        {athlete.name}
+                        {isFounder && <FounderBadge size="sm" showLabel={false} />}
+                    </h1>
                     <p className="text-sm text-muted-foreground">
                         @{athlete.slug} · {athlete.sport}
                         {athlete.location && ` · ${athlete.location}`}

@@ -7,6 +7,8 @@ import { formatMoney, formatNumber } from '@/lib/format';
 import { getAvatarAsset, resolveAvatarUrl } from '@/utils/avatar';
 import { OptimizedImage } from '@/components/OptimizedImage';
 import { cn } from '@/lib/utils';
+import { FounderBadge } from '@/components/FounderBadge';
+import { useIsFounder } from '@/hooks/useUserBadges';
 
 const SPORT_COLORS: Record<string, string> = {
     Running: 'bg-orange-500/10 text-orange-500 border-orange-500/20',
@@ -32,6 +34,7 @@ interface CompactAthleteCardProps {
 export const CompactAthleteCard = memo(({ athlete, onClick }: CompactAthleteCardProps) => {
     const isPositive = (athlete.change24h ?? 0) >= 0;
     const changeValue = athlete.change24h ?? 0;
+    const { isFounder } = useIsFounder(athlete.id);
 
     const hasAvatar = Boolean(athlete.avatar && athlete.avatar.trim().length > 0);
     const avatarUrl = resolveAvatarUrl(athlete.avatar, { size: 200 });
@@ -87,8 +90,9 @@ export const CompactAthleteCard = memo(({ athlete, onClick }: CompactAthleteCard
                 {/* Info */}
                 <div className="p-2.5 space-y-1.5">
                     {/* Name */}
-                    <h3 className="font-semibold text-sm truncate leading-tight">
+                    <h3 className="font-semibold text-sm truncate leading-tight flex items-center gap-1">
                         {displayName}
+                        {isFounder && <FounderBadge size="sm" showLabel={false} className="flex-shrink-0" />}
                     </h3>
 
                     {/* Sport Badge */}

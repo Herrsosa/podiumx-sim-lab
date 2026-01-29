@@ -14,6 +14,8 @@ import {
     Twitter,
     MessageCircle,
     Loader2,
+    Trophy,
+    Crown,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -64,6 +66,14 @@ interface ReferralStats {
     }>;
 }
 
+interface TopReferrer {
+    user_id: string;
+    username: string;
+    display_name: string;
+    avatar_url: string | null;
+    referral_count: number;
+}
+
 interface ReferralDashboardProps {
     className?: string;
 }
@@ -77,6 +87,7 @@ const REWARD_TIERS = [
 
 export function ReferralDashboard({ className }: ReferralDashboardProps) {
     const [data, setData] = useState<ReferralStats | null>(null);
+    const [topReferrers, setTopReferrers] = useState<TopReferrer[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [shareDialogOpen, setShareDialogOpen] = useState(false);
@@ -86,6 +97,7 @@ export function ReferralDashboard({ className }: ReferralDashboardProps) {
             try {
                 setLoading(true);
 
+                // Fetch user's referral stats
                 const response = await supabase.functions.invoke('process-referral', {
                     body: { action: 'get_stats' },
                 });
@@ -95,6 +107,54 @@ export function ReferralDashboard({ className }: ReferralDashboardProps) {
                 }
 
                 setData(response.data);
+
+                // Fetch top referrers leaderboard
+                const { data: leaderboardData, error: leaderboardError } = await supabase
+                    .from('referrals')
+                    .select(`
+                        referrer_id,
+                        profiles!referrals_referrer_id_fkey (
+                            id,
+                            username,
+                            display_name,
+                            avatar_url
+                        )
+                    `)
+                    .in('status', ['completed', 'rewarded']);
+
+                if (!leaderboardError && leaderboardData) {
+                    // Count referrals per user
+                    const referralCounts = new Map<string, { count: number; profile: TopReferrer }>();
+
+                    leaderboardData.forEach((ref) => {
+                        const profile = ref.profiles as { id: string; username: string; display_name: string; avatar_url: string | null } | null;
+                        if (!profile) return;
+
+                        const existing = referralCounts.get(ref.referrer_id);
+                        if (existing) {
+                            existing.count++;
+                        } else {
+                            referralCounts.set(ref.referrer_id, {
+                                count: 1,
+                                profile: {
+                                    user_id: profile.id,
+                                    username: profile.username,
+                                    display_name: profile.display_name,
+                                    avatar_url: profile.avatar_url,
+                                    referral_count: 1,
+                                },
+                            });
+                        }
+                    });
+
+                    // Convert to array and sort
+                    const topList = Array.from(referralCounts.values())
+                        .map(({ count, profile }) => ({ ...profile, referral_count: count }))
+                        .sort((a, b) => b.referral_count - a.referral_count)
+                        .slice(0, 10);
+
+                    setTopReferrers(topList);
+                }
             } catch (err) {
                 console.error('Error fetching referral stats:', err);
                 setError('Failed to load referral data');
@@ -349,6 +409,67 @@ export function ReferralDashboard({ className }: ReferralDashboardProps) {
                                     >
                                         {referral.status}
                                     </Badge>
+                                </div>
+                            ))}
+                        </div>
+                    </CardContent>
+                </Card>
+            )}
+
+            {/* Top Referrers Leaderboard */}
+            {topReferrers.length > 0 && (
+                <Card className="bg-gradient-to-br from-amber-500/10 to-orange-500/10 border-amber-500/20">
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                            <Trophy className="h-5 w-5 text-amber-500" />
+                            Top Referrers
+                        </CardTitle>
+                        <CardDescription>
+                            Community builders who are growing Athlyst
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="space-y-2">
+                            {topReferrers.map((referrer, index) => (
+                                <div
+                                    key={referrer.user_id}
+                                    className={cn(
+                                        "flex items-center gap-3 p-3 rounded-lg",
+                                        index === 0 && "bg-amber-500/20 border border-amber-500/30",
+                                        index === 1 && "bg-slate-400/10 border border-slate-400/20",
+                                        index === 2 && "bg-orange-700/10 border border-orange-700/20",
+                                        index > 2 && "bg-background/50"
+                                    )}
+                                >
+                                    <div className="w-8 h-8 flex items-center justify-center">
+                                        {index === 0 ? (
+                                            <Crown className="h-6 w-6 text-amber-500" />
+                                        ) : index === 1 ? (
+                                            <span className="text-lg font-bold text-slate-400">2</span>
+                                        ) : index === 2 ? (
+                                            <span className="text-lg font-bold text-orange-700">3</span>
+                                        ) : (
+                                            <span className="text-lg font-medium text-muted-foreground">{index + 1}</span>
+                                        )}
+                                    </div>
+                                    <Avatar className="h-10 w-10">
+                                        <AvatarImage src={referrer.avatar_url || undefined} />
+                                        <AvatarFallback>
+                                            {(referrer.display_name || referrer.username || '?')[0].toUpperCase()}
+                                        </AvatarFallback>
+                                    </Avatar>
+                                    <div className="flex-1 min-w-0">
+                                        <p className="font-medium truncate">
+                                            {referrer.display_name || referrer.username}
+                                        </p>
+                                        <p className="text-xs text-muted-foreground">
+                                            @{referrer.username}
+                                        </p>
+                                    </div>
+                                    <div className="text-right">
+                                        <p className="font-bold text-lg">{referrer.referral_count}</p>
+                                        <p className="text-xs text-muted-foreground">referrals</p>
+                                    </div>
                                 </div>
                             ))}
                         </div>

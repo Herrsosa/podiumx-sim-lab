@@ -13,6 +13,8 @@ import { cn } from '@/lib/utils';
 import { use3DTilt } from '@/hooks/use3DTilt';
 import { WatchlistButton } from '@/components/WatchlistButton';
 import { usePriceFlash } from '@/hooks/usePriceFlash';
+import { FounderBadge } from '@/components/FounderBadge';
+import { useIsFounder } from '@/hooks/useUserBadges';
 
 const SPORT_COLORS: Record<string, string> = {
   Running: 'bg-orange-500/10 text-orange-500 hover:bg-orange-500/20 border-orange-500/20',
@@ -46,6 +48,9 @@ export const AthleteCard = memo(({ athlete, chartData, holdersCount, onClick, on
 
   // Price flash animation
   const { flashClass } = usePriceFlash(athlete.price);
+
+  // Check if athlete is a founder
+  const { isFounder } = useIsFounder(athlete.id);
 
   const sortedChartData = useMemo(
     () => chartData.slice().sort((a, b) => a.timestamp - b.timestamp),
@@ -146,10 +151,12 @@ export const AthleteCard = memo(({ athlete, chartData, holdersCount, onClick, on
           </div>
 
           <div className="p-3">
-            {/* Name & Sport */}
             <div className="mb-2 flex items-start justify-between">
               <div className="flex-1 min-w-0">
-                <h3 className="font-bold truncate text-base mb-1">{athlete.name}</h3>
+                <h3 className="font-bold truncate text-base mb-1 flex items-center gap-1.5">
+                  {athlete.name}
+                  {isFounder && <FounderBadge size="sm" showLabel={false} />}
+                </h3>
                 <Badge
                   variant="secondary"
                   className={cn("text-[10px] px-1.5 py-0", SPORT_COLORS[athlete.sport] || "bg-secondary text-secondary-foreground")}

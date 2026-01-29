@@ -14,6 +14,7 @@ import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { trackLeaderboardViewed } from '@/lib/analytics';
+import { FounderBadge } from '@/components/FounderBadge';
 
 interface LeaderboardEntry {
     rank: number;
@@ -141,7 +142,9 @@ export function Leaderboard({ limit = 10, showTabs = true, className }: Leaderbo
                             </p>
                         </div>
                         <div className="flex items-center gap-2">
-                            {entry.badge_type && (
+                            {entry.badge_type === 'founder' ? (
+                                <FounderBadge size="sm" showLabel={true} />
+                            ) : entry.badge_type && (
                                 <Badge variant="secondary" className="text-xs capitalize">
                                     {entry.badge_type.replace(/_/g, ' ')}
                                 </Badge>

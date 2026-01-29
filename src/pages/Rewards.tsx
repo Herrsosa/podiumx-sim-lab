@@ -15,6 +15,7 @@ import { CountUp } from '@/components/ui/count-up';
 import { trackPageView } from '@/lib/analytics';
 import { useMyPoints } from '@/hooks/usePoints';
 import { cn } from '@/lib/utils';
+import { FounderBadge, hasFounderBadge } from '@/components/FounderBadge';
 
 export default function Rewards() {
     const { data: pointsData, isLoading, error } = useMyPoints();
@@ -89,13 +90,20 @@ export default function Rewards() {
                         {/* Badges */}
                         {pointsData?.badges && pointsData.badges.length > 0 && (
                             <div className="mt-4 pt-4 border-t border-white/10">
-                                <p className="text-xs text-muted-foreground mb-2">Badges</p>
+                                <p className="text-xs text-muted-foreground mb-2">Your Badges</p>
                                 <div className="flex flex-wrap gap-2">
-                                    {pointsData.badges.map((badge, idx) => (
-                                        <Badge key={idx} variant="secondary" className="capitalize">
-                                            {badge.badge_type.replace(/_/g, ' ')}
-                                        </Badge>
-                                    ))}
+                                    {/* Show Founder badge first and prominently */}
+                                    {hasFounderBadge(pointsData.badges) && (
+                                        <FounderBadge size="md" />
+                                    )}
+                                    {/* Show other badges */}
+                                    {pointsData.badges
+                                        .filter(badge => badge.badge_type !== 'founder')
+                                        .map((badge, idx) => (
+                                            <Badge key={idx} variant="secondary" className="capitalize">
+                                                {badge.badge_type.replace(/_/g, ' ')}
+                                            </Badge>
+                                        ))}
                                 </div>
                             </div>
                         )}
