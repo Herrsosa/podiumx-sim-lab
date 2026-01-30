@@ -15,7 +15,8 @@ import { CountUp } from '@/components/ui/count-up';
 import { trackPageView } from '@/lib/analytics';
 import { useMyPoints } from '@/hooks/usePoints';
 import { cn } from '@/lib/utils';
-import { FounderBadge, hasFounderBadge } from '@/components/FounderBadge';
+import { FounderBadge } from '@/components/FounderBadge';
+import { hasFounderBadge } from '@/lib/badge-utils';
 
 export default function Rewards() {
     const { data: pointsData, isLoading, error } = useMyPoints();
