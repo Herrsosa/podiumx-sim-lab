@@ -1,0 +1,2 @@
+[dotenv@17.2.3] injecting env (5) from .env -- tip: ­ƒùé´©Å backup and recover secrets: https://dotenvx.com/ops
+Compiled 2 Solidity files successfully (evm target: paris).

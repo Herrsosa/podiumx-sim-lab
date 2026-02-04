@@ -60,8 +60,35 @@ export function useTrade() {
       });
 
       if (error) {
-        logger.error('Trade error', error.message ?? error, variables);
-        throw new Error(error.message || 'Trade execution failed');
+        console.error('🔴 RAW EDGE FUNCTION ERROR:', error);
+
+        let message = error.message || 'Trade execution failed';
+        let detailedError = '';
+
+        try {
+          if ('context' in error && (error as any).context instanceof Response) {
+            const response = (error as any).context as Response;
+            const body = await response.clone().json();
+            console.error('🔴 PARSED BODY:', body);
+
+            if (body?.error) {
+              message = body.error;
+              detailedError = JSON.stringify(body);
+            }
+          }
+        } catch (e) {
+          console.error('Json parse error', e);
+        }
+
+        // Force visibility
+        toast({
+          title: 'Debug Error',
+          description: message + (detailedError ? ` | ${detailedError}` : ''),
+          variant: 'destructive',
+          duration: 10000,
+        });
+
+        throw new Error(message);
       }
 
       return data as TradeServerEnvelope;

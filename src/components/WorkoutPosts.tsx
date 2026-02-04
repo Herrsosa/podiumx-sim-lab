@@ -219,6 +219,15 @@ export default function WorkoutPosts({
                             Strava
                           </Badge>
                         )}
+                        {workout.is_agent && (
+                          <Badge
+                            variant="outline"
+                            className="gap-1 px-2 py-1 bg-blue-500/20 text-blue-300 border-blue-500/30 backdrop-blur-md"
+                          >
+                            <Zap className="h-3 w-3" />
+                            AI Agent
+                          </Badge>
+                        )}
                       </div>
                       {post.token_gated && (
                         <Badge
@@ -264,6 +273,15 @@ export default function WorkoutPosts({
                           >
                             <CheckCircle className="h-3 w-3" />
                             Strava
+                          </Badge>
+                        )}
+                        {workout.is_agent && (
+                          <Badge
+                            variant="outline"
+                            className="gap-1 px-2 py-1 bg-white/10 text-white border-white/20 backdrop-blur-sm"
+                          >
+                            <Zap className="h-3 w-3" />
+                            AI Agent
                           </Badge>
                         )}
                       </div>

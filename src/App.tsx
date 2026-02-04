@@ -16,6 +16,7 @@ import MarketplaceSkeleton from "@/components/skeletons/MarketplaceSkeleton";
 import AthleteDetailSkeleton from '@/components/skeletons/AthleteDetailSkeleton';
 import { PortfolioSkeleton } from '@/components/skeletons/PortfolioSkeleton';
 import { FeedSkeleton } from '@/components/skeletons/FeedSkeleton';
+import { MarketsSkeleton } from '@/components/skeletons/MarketsSkeleton';
 import { queryClient } from "@/lib/queryClient";
 import { useOnboardingStatus } from "@/hooks/useOnboardingStatus";
 import { AuthProvider } from "@/providers/AuthProvider";
@@ -38,6 +39,8 @@ const LearnPage = lazy(() => import("./pages/Learn"));
 const WatchlistPage = lazy(() => import("./pages/Watchlist"));
 const Privacy = lazy(() => import("./pages/Privacy"));
 const Rewards = lazy(() => import("./pages/Rewards"));
+const Markets = lazy(() => import("./pages/Markets"));
+const MarketDetail = lazy(() => import("./pages/MarketDetail"));
 
 import { TourPromptModal } from "@/components/TourPromptModal";
 
@@ -289,6 +292,26 @@ function AppContent() {
               </div>
             }>
               <Rewards />
+            </Suspense>
+          </RouteGuard>
+        } />
+        <Route path="/markets" element={
+          <RouteGuard>
+            <Navigation />
+            <Suspense fallback={<MarketsSkeleton />}>
+              <Markets />
+            </Suspense>
+          </RouteGuard>
+        } />
+        <Route path="/markets/:id" element={
+          <RouteGuard>
+            <Navigation />
+            <Suspense fallback={
+              <div className="min-h-screen flex items-center justify-center">
+                <LoadingSpinner size="lg" />
+              </div>
+            }>
+              <MarketDetail />
             </Suspense>
           </RouteGuard>
         } />
