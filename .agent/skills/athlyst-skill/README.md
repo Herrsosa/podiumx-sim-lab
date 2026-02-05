@@ -27,14 +27,42 @@ clawhub list
 
 ---
 
-## Option 2: Install from GitHub
+## Option 2: Install from GitHub (Recommended)
 
+### Unix / macOS (Bash)
 ```bash
-# Clone the skill repository
-git clone https://github.com/athlyst/athlyst-skill.git
+# 1. Clone the repository
+git clone -b monad_integration https://github.com/Herrsosa/podiumx-sim-lab.git temp-athlyst-repo
 
-# Install locally
-clawhub install ./athlyst-skill
+# 2. Create skill directory
+mkdir -p ~/.openclaw/skills/athlyst
+
+# 3. Copy skill files from nested path
+cp -r temp-athlyst-repo/.agent/skills/athlyst-skill/* ~/.openclaw/skills/athlyst/
+
+# 4. Cleanup
+rm -rf temp-athlyst-repo
+
+# 5. Restart OpenClaw
+openclaw gateway restart
+```
+
+### Windows (PowerShell)
+```powershell
+# 1. Clone the repository
+git clone -b monad_integration https://github.com/Herrsosa/podiumx-sim-lab.git temp-athlyst-repo
+
+# 2. Create skill directory
+New-Item -ItemType Directory -Force "$HOME\.openclaw\skills\athlyst"
+
+# 3. Copy skill files
+Copy-Item -Recurse -Force "temp-athlyst-repo\.agent\skills\athlyst-skill\*" "$HOME\.openclaw\skills\athlyst\"
+
+# 4. Cleanup
+Remove-Item -Recurse -Force temp-athlyst-repo
+
+# 5. Restart OpenClaw
+openclaw gateway restart
 ```
 
 ---
