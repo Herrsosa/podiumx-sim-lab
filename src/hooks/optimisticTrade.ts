@@ -161,7 +161,7 @@ export function applyOptimisticTrade(params: OptimisticTradeParams): OptimisticT
   const currentSupply = previousPrice.supply ?? 0;
 
   const nextWallet: Wallet = {
-    usdc: previousWallet.usdc,
+    mon: previousWallet.mon,
     positions: clonePositions(previousWallet.positions),
   };
   const nextPositions = clonePositions(previousPositions);
@@ -183,7 +183,7 @@ export function applyOptimisticTrade(params: OptimisticTradeParams): OptimisticT
     newSupply = currentSupply + quantity;
     newReserve += grossAmount;
     newAthleteRevenue += feeAmount * 0.5;
-    nextWallet.usdc = Math.max(0, nextWallet.usdc - netAmount);
+    nextWallet.mon = Math.max(0, nextWallet.mon - netAmount);
 
     const updatedQty = (currentPosition?.quantity ?? 0) + quantity;
     const updatedAvgCost =
@@ -209,7 +209,7 @@ export function applyOptimisticTrade(params: OptimisticTradeParams): OptimisticT
     newSupply = Math.max(0, currentSupply - quantity);
     newReserve = Math.max(0, newReserve - grossAmount);
     newAthleteRevenue += feeAmount * 0.5;
-    nextWallet.usdc += netAmount;
+    nextWallet.mon += netAmount;
 
     const startingQty = currentPosition?.quantity ?? 0;
     const updatedQty = Math.max(0, startingQty - quantity);

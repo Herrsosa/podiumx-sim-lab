@@ -1,6 +1,7 @@
 import { useRef, forwardRef, useImperativeHandle } from 'react';
 import { Zap, CheckCircle2 } from 'lucide-react';
 import { StaticWorldGlobe } from './StaticWorldGlobe';
+import { ActivityMap } from '@/components/ui/ActivityMap';
 import type { Workout } from '@/types';
 
 interface ShareableWorkoutCardProps {
@@ -10,6 +11,7 @@ interface ShareableWorkoutCardProps {
     athleteAvatar?: string;
     imageUrl?: string;
     location?: { lat: number; lng: number } | null;
+    polyline?: string | null;
 }
 
 export interface ShareableWorkoutCardRef {
@@ -23,7 +25,7 @@ export interface ShareableWorkoutCardRef {
  */
 export const ShareableWorkoutCard = forwardRef<ShareableWorkoutCardRef, ShareableWorkoutCardProps>(
     function ShareableWorkoutCard(
-        { workout, athleteName, athleteHandle, athleteAvatar, location },
+        { workout, athleteName, athleteHandle, athleteAvatar, location, polyline },
         ref
     ) {
         const cardRef = useRef<HTMLDivElement>(null);
@@ -275,16 +277,28 @@ export const ShareableWorkoutCard = forwardRef<ShareableWorkoutCardRef, Shareabl
                     }}
                 />
 
-                {/* Wireframe globe in lower half */}
+                {/* Wireframe globe or Map in lower half */}
+
                 <div
                     className="absolute inset-0 flex items-end justify-center pointer-events-none"
-                    style={{ opacity: 0.5, transform: 'translateY(15%)' }}
+                    style={{ opacity: polyline ? 0.8 : 0.5, transform: polyline ? 'none' : 'translateY(15%)' }}
                 >
-                    <StaticWorldGlobe
-                        size={500}
-                        location={location}
-                        accentColor="#10b981"
-                    />
+                    {polyline ? (
+                        <div className="absolute inset-0 z-0 grayscale contrast-125">
+                            <ActivityMap
+                                polyline={polyline}
+                                strokeColor="#ffffff"
+                                strokeWidth={3}
+                                className="w-full h-full"
+                            />
+                        </div>
+                    ) : (
+                        <StaticWorldGlobe
+                            size={500}
+                            location={location}
+                            accentColor="#10b981"
+                        />
+                    )}
                 </div>
 
                 {/* Main content */}
@@ -385,7 +399,9 @@ export const ShareableWorkoutCard = forwardRef<ShareableWorkoutCardRef, Shareabl
                         </div>
                     </div>
 
-                    {/* Verification confidence line */}
+                    {/* Spacer - pushes analytics and footer down */}
+                    <div className="flex-1" />
+
                     <div className="flex items-center justify-center gap-2 py-4">
                         <CheckCircle2 className="w-4 h-4 text-emerald-400" />
                         <span className="text-sm text-white/60">Verification confidence: <span className="text-white font-medium">98%</span></span>
@@ -485,8 +501,7 @@ export const ShareableWorkoutCard = forwardRef<ShareableWorkoutCardRef, Shareabl
                         </span>
                     </div>
 
-                    {/* Spacer */}
-                    <div className="flex-1" />
+
 
                     {/* Bottom profile card */}
                     <div

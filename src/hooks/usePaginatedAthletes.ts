@@ -67,7 +67,7 @@ export function usePaginatedAthletes() {
           slug: row.username,
           name: row.display_name || row.username,
           sport: (row.sport || 'Other') as Sport,
-          avatar: resolveAvatarUrl(avatarSource, { size: 160 }),
+          avatar: resolveAvatarUrl(avatarSource, { size: 160, seed: row.username ?? row.id }),
           bio: row.bio || '',
           location: '',
           socials: {

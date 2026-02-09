@@ -182,6 +182,7 @@ export default function MarketDetail() {
                       >
                         <UserAvatar
                           src={item.avatarUrl}
+                          seed={item.username ?? item.userId}
                           alt={item.username || 'User'}
                           size={32}
                         />

@@ -43,28 +43,54 @@ serve(async (req) => {
             });
         }
 
-        // Fetch watchlist with athlete info
-        const { data: watchlist, error } = await supabaseAdmin
+        // Fetch watchlist entries first
+        const { data: watchlistEntries, error: watchlistError } = await supabaseAdmin
             .from("watchlist")
-            .select(`
-        athlete_id,
-        created_at,
-        profiles:athlete_id (username, display_name, avatar_url),
-        athlete_tokens:athlete_id (supply, a, b, c)
-      `)
+            .select("athlete_id, created_at")
             .eq("user_id", agent.id)
             .order("created_at", { ascending: false });
 
-        if (error) throw error;
+        if (watchlistError) throw watchlistError;
 
-        const enriched = watchlist?.map((w: any) => {
-            const t = w.athlete_tokens;
+        if (!watchlistEntries || watchlistEntries.length === 0) {
+            return new Response(JSON.stringify({
+                count: 0,
+                watchlist: [],
+            }), {
+                headers: { ...corsHeaders, "Content-Type": "application/json" },
+            });
+        }
+
+        // Get athlete IDs
+        const athleteIds = watchlistEntries.map(w => w.athlete_id);
+
+        // Fetch profiles separately
+        const { data: profiles } = await supabaseAdmin
+            .from("profiles")
+            .select("id, username, display_name, avatar_url")
+            .in("id", athleteIds);
+
+        // Fetch athlete_tokens separately
+        const { data: tokens } = await supabaseAdmin
+            .from("athlete_tokens")
+            .select("athlete_id, supply, a, b, c")
+            .in("athlete_id", athleteIds);
+
+        // Build lookup maps
+        const profileMap = new Map(profiles?.map(p => [p.id, p]) || []);
+        const tokenMap = new Map(tokens?.map(t => [t.athlete_id, t]) || []);
+
+        // Enrich watchlist entries
+        const enriched = watchlistEntries.map((w) => {
+            const profile = profileMap.get(w.athlete_id);
+            const t = tokenMap.get(w.athlete_id);
             const price = t ? priceAt(t.supply, Number(t.a), Number(t.b), Number(t.c)) : 0;
+
             return {
                 athlete_id: w.athlete_id,
-                username: w.profiles?.username,
-                display_name: w.profiles?.display_name,
-                avatar_url: w.profiles?.avatar_url,
+                username: profile?.username || null,
+                display_name: profile?.display_name || null,
+                avatar_url: profile?.avatar_url || null,
                 current_price: price.toFixed(4),
                 market_cap: (price * (t?.supply || 0)).toFixed(2),
                 added_at: w.created_at,
@@ -72,8 +98,8 @@ serve(async (req) => {
         });
 
         return new Response(JSON.stringify({
-            count: enriched?.length || 0,
-            watchlist: enriched || [],
+            count: enriched.length,
+            watchlist: enriched,
         }), {
             headers: { ...corsHeaders, "Content-Type": "application/json" },
         });

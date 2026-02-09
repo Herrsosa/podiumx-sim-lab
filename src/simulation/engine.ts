@@ -235,7 +235,7 @@ export async function runDailySimulation(): Promise<SimulationResult> {
                     const side = Math.random() > 0.4 ? 'BUY' : 'SELL';
                     const qty = Math.floor(Math.random() * 5) + 1;
 
-                    // NOTE: Simulation currently bypasses balance limits (USDC/Tokens) 
+                    // NOTE: Simulation currently bypasses balance limits (MON/Tokens) 
                     // to ensure consistent market activity regardless of bot balances.
 
 
@@ -247,7 +247,7 @@ export async function runDailySimulation(): Promise<SimulationResult> {
                     const price = priceAt(currentSupply, curve);
                     const newPrice = priceAt(newSupply, curve);
 
-                    console.log(`[Simulation] Trade: ${side} ${qty} tokens. Supply: ${currentSupply} → ${newSupply}. Price: $${price.toFixed(4)} → $${newPrice.toFixed(4)}`);
+                    console.log(`[Simulation] Trade: ${side} ${qty} tokens. Supply: ${currentSupply} → ${newSupply}. Price: ${price.toFixed(4)} MON → ${newPrice.toFixed(4)} MON`);
 
                     const gross = price * qty;
                     const fee = gross * 0.03;

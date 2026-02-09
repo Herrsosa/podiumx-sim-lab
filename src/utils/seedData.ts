@@ -89,7 +89,7 @@ function generateWorkoutsForAthlete(athleteId: string, sport: string): Workout[]
   const now = Date.now();
   const dayMs = 24 * 60 * 60 * 1000;
   const workouts: Workout[] = [];
-  
+
   const workoutTypes: Record<string, string[]> = {
     'Running': ['Run', 'Run', 'Run', 'Strength'],
     'HYROX': ['HYROX', 'Strength', 'Run'],
@@ -102,10 +102,10 @@ function generateWorkoutsForAthlete(athleteId: string, sport: string): Workout[]
   };
 
   const types = workoutTypes[sport] || ['Other', 'Strength'];
-  
+
   // Generate 5-8 recent workouts
   const numWorkouts = Math.floor(Math.random() * 4) + 5;
-  
+
   for (let i = 0; i < numWorkouts; i++) {
     const type = types[Math.floor(Math.random() * types.length)] as Workout['type'];
     const daysAgo = i * (Math.random() * 2 + 1); // 1-3 days apart
@@ -149,7 +149,7 @@ export function generateSeedAthletes(): Athlete[] {
     const curve = { a: 0.0002, b: 0.02, c: 1 };
     const price = priceAt(initialSupply, curve);
     const marketCap = price * initialSupply;
-    
+
     // Generate some random 24h change
     const change24h = (Math.random() - 0.5) * 20; // +/- 10%
     const volume24h = Math.random() * 5000 + 1000; // 1k-6k
@@ -177,7 +177,7 @@ export function generateSeedTrades(athletes: Athlete[]): Trade[] {
   athletes.forEach((athlete) => {
     // Generate 15-25 trades per athlete
     const numTrades = Math.floor(Math.random() * 10) + 15;
-    
+
     for (let i = 0; i < numTrades; i++) {
       const type = Math.random() > 0.5 ? 'buy' : 'sell';
       const quantity = Math.floor(Math.random() * 5) + 1;
@@ -204,7 +204,7 @@ export function generateSeedTrades(athletes: Athlete[]): Trade[] {
 
 export function generateSeedWallet(athletes: Athlete[]): Wallet {
   const wallet: Wallet = {
-    usdc: 2000,
+    mon: 2000,
     positions: {},
   };
 

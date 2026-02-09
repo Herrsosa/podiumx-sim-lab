@@ -1,4 +1,5 @@
-import { useState } from 'react';
+```typescript
+import { useState, useEffect } from 'react';
 import { Check, AlertCircle, Loader2, TrendingUp, TrendingDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -28,13 +29,18 @@ export function MarketTradePanel({ market, onBetPlaced }: MarketTradePanelProps)
   const isOpen = market.status === 'open' && new Date(market.closesAt) > new Date();
   const isResolved = market.status === 'resolved';
 
+  // DEBUGGING: Log on mount
+  useEffect(() => {
+    console.log('[MarketTradePanel] Component Mounted/Rendered', { id: market.id, title: market.question });
+  }, [market.id, market.question]);
+
   const handlePlaceBet = async () => {
     if (!selectedOutcome || !credits) return;
 
     if (credits.balance < stake) {
       toast({
         title: 'Insufficient credits',
-        description: `You have ${credits.balance} credits but need ${stake}`,
+        description: `You have ${ credits.balance } credits but need ${ stake } `,
         variant: 'destructive',
       });
       return;
@@ -50,7 +56,7 @@ export function MarketTradePanel({ market, onBetPlaced }: MarketTradePanelProps)
       if (result.success) {
         toast({
           title: 'Bet placed!',
-          description: `You received ${result.shares_received?.toFixed(2)} shares`,
+          description: `You received ${ result.shares_received?.toFixed(2) } shares`,
         });
         setSelectedOutcome(null);
         onBetPlaced?.();
@@ -84,14 +90,23 @@ export function MarketTradePanel({ market, onBetPlaced }: MarketTradePanelProps)
     const days = Math.floor(diff / (1000 * 60 * 60 * 24));
     const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
 
-    if (days > 0) return `${days}d ${hours}h`;
-    if (hours > 0) return `${hours}h`;
+    if (days > 0) return `${ days }d ${ hours } h`;
+    if (hours > 0) return `${ hours } h`;
     const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-    return `${minutes}m`;
+    return `${ minutes } m`;
   };
 
   return (
-    <Card className="glass-card">
+    <Card className="glass-card relative z-[100]">
+      {/* DEBUG BUTTON */}
+      <button
+        onClick={() => console.log('[MarketTradePanel] TEST BUTTON CLICKED')}
+        className="bg-red-500 text-white p-2 m-2 rounded z-[200] relative pointer-events-auto w-full mb-4"
+        type="button"
+      >
+        TEST CLICK ME (CHECK CONSOLE)
+      </button>
+
       <CardHeader className="pb-4">
         <div className="flex items-start justify-between gap-4">
           <CardTitle className="text-xl font-bold leading-tight">{market.question}</CardTitle>
@@ -114,7 +129,7 @@ export function MarketTradePanel({ market, onBetPlaced }: MarketTradePanelProps)
               </Badge>
             )}
             <span className="text-xs text-muted-foreground">
-              {isOpen ? `Closes in ${getTimeRemaining()}` : isResolved ? 'Ended' : getTimeRemaining()}
+              {isOpen ? `Closes in ${ getTimeRemaining() } ` : isResolved ? 'Ended' : getTimeRemaining()}
             </span>
           </div>
         </div>
@@ -139,16 +154,21 @@ export function MarketTradePanel({ market, onBetPlaced }: MarketTradePanelProps)
             return (
               <button
                 key={outcome.id}
-                onClick={() => isOpen && setSelectedOutcome(isSelected ? null : outcome.id)}
-                disabled={!isOpen}
+                onClick={() => {
+                  console.log('[MarketTradePanel] Clicked outcome:', outcome.id);
+                  console.log('[MarketTradePanel] Market Open State:', { isOpen, status: market.status, closesAt: market.closesAt, now: new Date().toISOString() });
+                  if (isOpen) setSelectedOutcome(isSelected ? null : outcome.id);
+                }}
+                disabled={false} // Temporarily enable to capture clicks for debugging
                 className={cn(
-                  'w-full p-4 rounded-xl border-2 transition-all text-left',
-                  isOpen && 'cursor-pointer hover:border-primary/50',
-                  !isOpen && 'cursor-default',
+                  'w-full p-4 rounded-xl border-2 transition-all text-left relative z-50 pointer-events-auto active:scale-[0.99]',
+                  isOpen && 'cursor-pointer hover:border-primary/50 hover:bg-card/80',
+                  !isOpen && 'cursor-default opacity-80',
                   isSelected && 'border-primary bg-primary/5',
                   !isSelected && 'border-border/50 bg-card/50',
                   isWinner && 'border-success bg-success/10'
                 )}
+                type="button"
               >
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-2">
@@ -228,7 +248,7 @@ export function MarketTradePanel({ market, onBetPlaced }: MarketTradePanelProps)
                     Placing...
                   </>
                 ) : (
-                  `Bet ${stake} credits`
+                  `Bet ${ stake } credits`
                 )}
               </Button>
             </div>

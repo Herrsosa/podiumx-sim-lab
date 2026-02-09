@@ -31,6 +31,8 @@ import { LockerMessages } from '@/components/myathlete/LockerMessages';
 import { LockerGlobe } from '@/components/myathlete/LockerGlobe';
 import { ShareAuraModal } from '@/components/share/ShareAuraModal';
 import { useDmConversations } from '@/hooks/useDmConversations';
+import { DatePickerWithRange } from '@/components/DatePickerWithRange';
+import { DateRange } from 'react-day-picker';
 
 interface MobileMyAthletesProps {
   athlete?: Athlete;
@@ -89,6 +91,20 @@ export default function MobileMyAthletes({
   const [showProfileEdit, setShowProfileEdit] = useState(false);
   const [showGlobe, setShowGlobe] = useState(false);
   const [showShareAura, setShowShareAura] = useState(false);
+  const [dateRange, setDateRange] = useState<DateRange | undefined>();
+
+  // Filter workouts based on date range
+  const filteredWorkouts = useMemo(() => {
+    if (!dateRange?.from) return workouts;
+
+    const from = dateRange.from.getTime();
+    const to = dateRange.to ? dateRange.to.getTime() + 86400000 : from + 86400000; // Add 1 day to include end date
+
+    return workouts.filter(workout => {
+      const date = new Date(workout.date).getTime();
+      return date >= from && date < to;
+    });
+  }, [workouts, dateRange]);
 
   // Identity kernel for Aura score
   const { data: kernel } = useIdentityKernel();
@@ -209,10 +225,17 @@ export default function MobileMyAthletes({
             <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
               Proof of Sweat
             </h2>
-            <Button onClick={onAddWorkout} size="sm" variant="outline" className="gap-2">
-              <Plus className="h-4 w-4" />
-              Add
-            </Button>
+            <div className="flex items-center gap-2">
+              <DatePickerWithRange
+                date={dateRange}
+                setDate={setDateRange}
+                className="w-[180px]"
+              />
+              <Button onClick={onAddWorkout} size="sm" variant="outline" className="gap-2">
+                <Plus className="h-4 w-4" />
+                Add
+              </Button>
+            </div>
           </div>
 
           {isLoading ? (
@@ -236,7 +259,7 @@ export default function MobileMyAthletes({
                 athleteName={athlete.name}
                 athleteHandle={athlete.slug}
                 athleteAvatar={athlete.avatar}
-                workouts={workouts}
+                workouts={filteredWorkouts}
                 posts={posts}
                 viewerHoldings={Number.MAX_SAFE_INTEGER}
                 onWorkoutDeleted={() => { }}

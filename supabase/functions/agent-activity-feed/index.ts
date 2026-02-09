@@ -51,6 +51,7 @@ serve(async (req) => {
             const { data: trades } = await supabaseAdmin
                 .from("trades")
                 .select("id, user_id, athlete_id, side, qty, price_per_token, gross_amount, created_at")
+                .or("chain_id.is.null,chain_id.eq.143")
                 .order("created_at", { ascending: false })
                 .limit(limit);
 

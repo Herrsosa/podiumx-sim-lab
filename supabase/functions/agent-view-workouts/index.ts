@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
+import { buildExplorerTxUrl, getMonadExplorerUrl } from "../_shared/monad.ts";
 
 const corsHeaders = {
     "Access-Control-Allow-Origin": "*",
@@ -12,6 +13,8 @@ serve(async (req) => {
     }
 
     try {
+        const explorerUrl = getMonadExplorerUrl();
+
         const supabaseAdmin = createClient(
             Deno.env.get("SUPABASE_URL") ?? "",
             Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
@@ -80,7 +83,7 @@ serve(async (req) => {
                 is_agent: p.workout_json?.is_agent || false,
                 monad_tx_hash: p.monad_tx_hash,
                 explorer_url: p.monad_tx_hash
-                    ? `https://testnet.monadexplorer.com/tx/${p.monad_tx_hash}`
+                    ? buildExplorerTxUrl(explorerUrl, p.monad_tx_hash)
                     : null,
             })),
             count: posts?.length || 0,

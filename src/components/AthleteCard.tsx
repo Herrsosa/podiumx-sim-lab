@@ -170,7 +170,7 @@ export const AthleteCard = memo(({ athlete, chartData, holdersCount, onClick, on
             <div className="mb-2">
               <div className="flex items-center gap-2 flex-wrap">
                 <div className={cn("text-2xl font-bold tracking-tight rounded px-1 -mx-1 transition-colors", flashClass)}>
-                  $<CountUp value={athlete.price} decimalPlaces={2} duration={1.5} />
+                  <CountUp value={athlete.price} suffix=" MON" decimalPlaces={2} duration={1.5} />
                 </div>
                 <span className="text-muted-foreground text-sm">·</span>
                 <div

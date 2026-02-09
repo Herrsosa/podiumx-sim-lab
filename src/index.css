@@ -167,7 +167,7 @@
 
   /* Advanced Glassmorphism */
   .glass-card {
-    @apply bg-card/60 backdrop-blur-xl border border-white/10 shadow-lg transition-all duration-300;
+    @apply bg-card/60 backdrop-blur-xl border border-white/10 shadow-lg transition-all duration-300 pointer-events-auto;
   }
 
   .glass-card-hover {
@@ -258,6 +258,7 @@
     background-color: rgba(34, 197, 94, 0.4);
     color: rgb(34, 197, 94);
   }
+
   100% {
     background-color: transparent;
     color: inherit;
@@ -269,6 +270,7 @@
     background-color: rgba(239, 68, 68, 0.4);
     color: rgb(239, 68, 68);
   }
+
   100% {
     background-color: transparent;
     color: inherit;

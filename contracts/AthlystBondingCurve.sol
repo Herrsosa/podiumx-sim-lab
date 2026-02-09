@@ -14,7 +14,6 @@ contract AthlystBondingCurve {
     uint256 public constant ATHLETE_FEE_BPS = 150; // 1.5% to athlete
     uint256 public constant TREASURY_FEE_BPS = 150; // 1.5% to protocol
     uint256 public constant BPS_DENOMINATOR = 10000;
-    uint256 public constant PRECISION = 1e18;
 
     // ============ State ============
     address public owner;
@@ -24,11 +23,11 @@ contract AthlystBondingCurve {
 
     struct AthleteToken {
         uint256 supply;           // Current token supply
-        uint256 a;                // Curve param (scaled by PRECISION)
-        uint256 b;                // Curve param (scaled by PRECISION)
-        uint256 c;                // Base price (scaled by PRECISION)
-        uint256 treasury;         // Reserve balance in MON
-        uint256 athleteEarnings;  // Accumulated athlete fees in MON
+        uint256 a;                // Quadratic coefficient in wei (use parseUnits("0.0002", 18))
+        uint256 b;                // Linear coefficient in wei (use parseUnits("0.02", 18))
+        uint256 c;                // Base price in wei (use parseUnits("1", 18) for 1 MON)
+        uint256 treasury;         // Reserve balance in wei
+        uint256 athleteEarnings;  // Accumulated athlete fees in wei
         bool initialized;         // Whether token is active
     }
 
@@ -75,9 +74,9 @@ contract AthlystBondingCurve {
     /**
      * @notice Register a new athlete with bonding curve parameters
      * @param athlete The athlete's wallet address
-     * @param a Quadratic coefficient (scaled by 1e18, e.g., 0.0002 = 2e14)
-     * @param b Linear coefficient (scaled by 1e18, e.g., 0.02 = 2e16)
-     * @param c Base price in MON (scaled by 1e18, e.g., 0.001 MON = 1e15)
+     * @param a Quadratic coefficient in wei (e.g., parseUnits("0.0002", 18) = 2e14)
+     * @param b Linear coefficient in wei (e.g., parseUnits("0.02", 18) = 2e16)
+     * @param c Base price in wei (e.g., parseUnits("1", 18) = 1e18 for 1 MON)
      */
     function registerAthlete(
         address athlete,
@@ -232,13 +231,13 @@ contract AthlystBondingCurve {
 
     /**
      * @notice Calculate instantaneous price at current supply
-     * @dev price = a*s² + b*s + c (all scaled by 1e18)
+     * @dev price = a*s² + b*s + c (all values in wei)
      */
     function priceAt(address athlete) public view returns (uint256) {
         AthleteToken storage token = tokens[athlete];
         uint256 s = token.supply;
         
-        return (token.a * s * s / PRECISION) + (token.b * s / PRECISION) + token.c;
+        return (token.a * s * s) + (token.b * s) + token.c;
     }
 
     /**
@@ -251,7 +250,7 @@ contract AthlystBondingCurve {
         
         for (uint256 i = 0; i < qty; i++) {
             uint256 s = currentSupply + i;
-            cost += (token.a * s * s / PRECISION) + (token.b * s / PRECISION) + token.c;
+            cost += (token.a * s * s) + (token.b * s) + token.c;
         }
         
         return cost;
@@ -269,7 +268,7 @@ contract AthlystBondingCurve {
         
         for (uint256 i = 0; i < qty; i++) {
             uint256 s = currentSupply - i - 1;
-            payout += (token.a * s * s / PRECISION) + (token.b * s / PRECISION) + token.c;
+            payout += (token.a * s * s) + (token.b * s) + token.c;
         }
         
         return payout;

@@ -63,7 +63,7 @@ export function useAthletesBatch(ids: string[], options?: { enabled?: boolean })
           slug: row.username,
           name: row.display_name || row.username,
           sport: (row.sport || 'Other') as Sport,
-          avatar: resolveAvatarUrl(avatarSource, { size: 128 }),
+          avatar: resolveAvatarUrl(avatarSource, { size: 128, seed: row.username ?? row.id }),
           bio: row.bio || '',
           location: '',
           socials: {

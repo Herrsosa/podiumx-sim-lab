@@ -7,7 +7,6 @@ import { useState, useEffect } from 'react';
 import { Trophy, Medal, Zap, ChevronRight } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
@@ -15,6 +14,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { trackLeaderboardViewed } from '@/lib/analytics';
 import { FounderBadge } from '@/components/FounderBadge';
+import { UserAvatar } from '@/components/UserAvatar';
 
 interface LeaderboardEntry {
     rank: number;
@@ -127,12 +127,12 @@ export function Leaderboard({ limit = 10, showTabs = true, className }: Leaderbo
                         <div className="w-6 flex justify-center">
                             {getRankIcon(entry.rank)}
                         </div>
-                        <Avatar className="h-10 w-10">
-                            <AvatarImage src={entry.avatar_url || undefined} />
-                            <AvatarFallback>
-                                {(entry.display_name || entry.username || '?')[0].toUpperCase()}
-                            </AvatarFallback>
-                        </Avatar>
+                        <UserAvatar
+                            src={entry.avatar_url}
+                            seed={entry.username ?? entry.user_id}
+                            alt={entry.display_name || entry.username || 'User'}
+                            size={40}
+                        />
                         <div className="flex-1 min-w-0">
                             <p className="font-medium truncate">
                                 {entry.display_name || entry.username}

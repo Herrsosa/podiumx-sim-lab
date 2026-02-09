@@ -82,6 +82,7 @@ export function PredictionLeaderboard({ limit = 10, compact = false }: Predictio
               <div className="w-6 flex justify-center">{getRankBadge(entry.rank)}</div>
               <UserAvatar
                 src={entry.avatarUrl}
+                seed={entry.username ?? entry.userId}
                 alt={entry.displayName || entry.username}
                 size={28}
               />
@@ -123,6 +124,7 @@ export function PredictionLeaderboard({ limit = 10, compact = false }: Predictio
 
             <UserAvatar
               src={entry.avatarUrl}
+              seed={entry.username ?? entry.userId}
               alt={entry.displayName || entry.username}
               size={40}
               className={cn(entry.rank <= 3 && 'ring-2 ring-primary/30')}

@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
+import { getMonadLoggerAddress, getMonadRpcUrl } from "../_shared/monad.ts";
 
 const corsHeaders = {
     "Access-Control-Allow-Origin": "*",
@@ -74,14 +75,14 @@ serve(async (req) => {
 
         if (postError) throw postError;
 
-        // 4. Log to Monad Testnet
+        // 4. Log to Monad (optional)
         const monadPrivateKey = Deno.env.get("MONAD_PRIVATE_KEY");
-        const monadLoggerAddress = Deno.env.get("MONAD_LOGGER_ADDRESS");
-        const monadRpcUrl = "https://testnet-rpc.monad.xyz";
+        const monadLoggerAddress = getMonadLoggerAddress();
+        const monadRpcUrl = getMonadRpcUrl();
 
         let monadTxHash = null;
 
-        if (monadPrivateKey && monadLoggerAddress) {
+        if (monadPrivateKey && monadLoggerAddress && monadRpcUrl) {
             try {
                 const { ethers } = await import("https://esm.sh/ethers@6.13.2");
                 const provider = new ethers.JsonRpcProvider(monadRpcUrl);
@@ -116,6 +117,8 @@ serve(async (req) => {
                 console.error("Monad logging failed:", monadError);
                 // We don't fail the whole request because Monad might be intermittent
             }
+        } else if (monadPrivateKey && monadLoggerAddress && !monadRpcUrl) {
+            console.error("Monad logging skipped: MONAD_RPC_URL is missing");
         }
 
         return new Response(JSON.stringify({

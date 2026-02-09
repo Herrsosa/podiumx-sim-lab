@@ -55,7 +55,8 @@ serve(async (req) => {
         // Build query for trade aggregation
         let query = supabaseAdmin
             .from("trades")
-            .select("user_id, gross_amount, side, created_at");
+            .select("user_id, gross_amount, side, created_at")
+            .or("chain_id.is.null,chain_id.eq.143");
 
         if (dateFilter) {
             query = query.gte("created_at", dateFilter);

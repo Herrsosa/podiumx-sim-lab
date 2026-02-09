@@ -128,7 +128,7 @@ export function useTrade() {
       const errorMessage = error instanceof Error ? error.message : 'An error occurred while processing your trade';
 
       let title = 'Trade Failed';
-      if (errorMessage.includes('Insufficient USDC')) {
+      if (errorMessage.includes('Insufficient MON')) {
         title = 'Insufficient Balance';
       } else if (errorMessage.includes('Insufficient token')) {
         title = 'Insufficient Tokens';
@@ -194,7 +194,7 @@ export function useFaucet() {
       await refreshWallet(user?.id);
       toast({
         title: 'Funds Added',
-        description: `$${amount} test USDC added`,
+        description: `${amount} test MON added`,
       });
     },
   });

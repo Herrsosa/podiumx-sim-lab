@@ -12,6 +12,7 @@ interface ShareButtonProps {
     imageUrl?: string;
     athleteProfileUrl?: string;
     location?: { lat: number; lng: number } | null;
+    polyline?: string | null;
     className?: string;
     size?: 'sm' | 'md';
 }
@@ -26,7 +27,9 @@ export const ShareButton = memo(function ShareButton({
     athleteAvatar,
     imageUrl,
     athleteProfileUrl,
+
     location,
+    polyline,
     className,
     size = 'md',
 }: ShareButtonProps) {
@@ -66,7 +69,9 @@ export const ShareButton = memo(function ShareButton({
                 athleteAvatar={athleteAvatar}
                 imageUrl={imageUrl}
                 athleteProfileUrl={athleteProfileUrl}
+
                 location={location}
+                polyline={polyline}
             />
         </>
     );

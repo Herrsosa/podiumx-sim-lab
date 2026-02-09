@@ -12,7 +12,9 @@ Where:
 - `s` = current supply
 - `a` = 0.0002 (quadratic coefficient)
 - `b` = 0.02 (linear coefficient)  
-- `c` = 0.001 MON (base price)
+- `c` = 1 MON (base price)
+
+Note: On-chain, `a`, `b`, and `c` are stored in **wei** and prices/costs are returned in **wei**. When registering athletes, use `ethers.parseUnits("...", 18)` for each coefficient.
 
 ## Fees
 

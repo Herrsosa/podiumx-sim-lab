@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { Share2, Download, Link, Instagram, Loader2, Twitter } from 'lucide-react';
 import {
     Dialog,
@@ -31,6 +32,7 @@ interface ShareModalProps {
     imageUrl?: string;
     athleteProfileUrl?: string;
     location?: { lat: number; lng: number } | null;
+    polyline?: string | null;
 }
 
 export function ShareModal({
@@ -42,9 +44,11 @@ export function ShareModal({
     athleteAvatar,
     athleteProfileUrl,
     location,
+    polyline,
 }: ShareModalProps) {
     const [isGenerating, setIsGenerating] = useState(false);
     const [generatedBlob, setGeneratedBlob] = useState<Blob | null>(null);
+    const [generationKey, setGenerationKey] = useState(0); // Used to force remount of hidden card
     const cardRef = useRef<ShareableWorkoutCardRef>(null);
     const awardPoints = useAwardPoints();
 
@@ -97,6 +101,9 @@ export function ShareModal({
 
         setIsGenerating(true);
         try {
+            // Add a small delay to ensure any paints are final, though usually not needed for visible elements
+            await new Promise(resolve => setTimeout(resolve, 500));
+
             const blob = await generateShareImage(element);
             setGeneratedBlob(blob);
             return blob;
@@ -230,6 +237,7 @@ export function ShareModal({
                                 athleteHandle={athleteHandle}
                                 athleteAvatar={athleteAvatar}
                                 location={location}
+                                polyline={polyline}
                             />
                         </div>
                     </div>
@@ -289,18 +297,30 @@ export function ShareModal({
                     </Button>
                 </div>
 
-                {/* Hidden shareable card for image generation (full size) */}
-                <div className="fixed -left-[9999px] -top-[9999px]">
+
+            </DialogContent>
+
+            {/* 
+                Hidden shareable card for image generation (full size).
+                Rendered via Portal to 'document.body' to escape Dialog's layout constraints (max-w-md, transforms).
+                We use fixed positioning + opacity 0 + z-index -9999 to keep it "on screen" for Leaflet
+                but invisible to the user.
+            */}
+            {createPortal(
+                <div style={{ position: 'fixed', left: 0, top: 0, width: '540px', height: '960px', zIndex: -9999, opacity: 0, pointerEvents: 'none' }}>
                     <ShareableWorkoutCard
+                        key={`hidden-card-${generationKey}`} // Force remount on generation
                         ref={cardRef}
                         workout={workout}
                         athleteName={athleteName}
                         athleteHandle={athleteHandle}
                         athleteAvatar={athleteAvatar}
                         location={location}
+                        polyline={polyline}
                     />
-                </div>
-            </DialogContent>
+                </div>,
+                document.body
+            )}
         </Dialog>
     );
 }

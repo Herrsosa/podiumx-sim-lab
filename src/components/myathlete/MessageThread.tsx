@@ -87,22 +87,33 @@ export function MessageThread({ conversationId, onBack, title = 'Messages' }: Me
                 >
                   {!isOwn && (
                     <Avatar className="mt-2 h-8 w-8 flex-shrink-0">
-                      <AvatarImage src={resolveAvatarUrl(null, { size: 32 })} />
-                      <AvatarFallback>?</AvatarFallback>
+                      <AvatarImage
+                        src={resolveAvatarUrl(message.sender_avatar_url, {
+                          size: 32,
+                          seed: message.sender_username ?? message.sender_id,
+                        })}
+                      />
+                      <AvatarFallback>
+                        {(message.sender_display_name || message.sender_username || '?')[0]?.toUpperCase()}
+                      </AvatarFallback>
                     </Avatar>
                   )}
 
                   <div
-                    className={`flex max-w-[70%] flex-col ${
-                      isOwn ? 'items-end' : 'items-start'
-                    }`}
-                  >
-                    <div
-                      className={`rounded-lg px-4 py-2 ${
-                        isOwn
-                          ? 'bg-primary text-primary-foreground'
-                          : 'bg-muted text-foreground'
+                    className={`flex max-w-[70%] flex-col ${isOwn ? 'items-end' : 'items-start'
                       }`}
+                  >
+                    {/* Sender name label */}
+                    {!isOwn && (message.sender_display_name || message.sender_username) && (
+                      <p className="text-xs font-medium text-muted-foreground mb-1">
+                        {message.sender_display_name || message.sender_username}
+                      </p>
+                    )}
+                    <div
+                      className={`rounded-lg px-4 py-2 ${isOwn
+                        ? 'bg-primary text-primary-foreground'
+                        : 'bg-muted text-foreground'
+                        }`}
                     >
                       <p className="text-sm whitespace-pre-line break-words">
                         {message.body}

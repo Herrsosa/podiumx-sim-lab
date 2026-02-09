@@ -15,14 +15,18 @@ const BONDING_CURVE_ABI = [
     "function owner() external view returns (address)"
 ];
 
-// Monad Testnet config
-const MONAD_RPC = "https://testnet-rpc.monad.xyz";
-const BONDING_CURVE_ADDRESS = process.env.MONAD_BONDING_CURVE_ADDRESS || "0x9066E90d9d5DEBC9c75FFBA729feCC162Ea2601F";
+// Monad network config (set these in your environment)
+const MONAD_RPC = process.env.MONAD_RPC_URL || "https://rpc.monad.xyz";
+const BONDING_CURVE_ADDRESS = process.env.MONAD_BONDING_CURVE_ADDRESS;
 
-// Curve params (matching off-chain: a=0.0002, b=0.02, c=0.001 MON)
+if (!BONDING_CURVE_ADDRESS) {
+    throw new Error("MONAD_BONDING_CURVE_ADDRESS not set in environment");
+}
+
+// Curve params (matching off-chain: a=0.0002, b=0.02, c=1 MON)
 const CURVE_A = ethers.parseUnits("0.0002", 18); // 2e14
 const CURVE_B = ethers.parseUnits("0.02", 18);   // 2e16  
-const CURVE_C = ethers.parseUnits("0.001", 18);  // 1e15 (base price in MON)
+const CURVE_C = ethers.parseUnits("1", 18);      // 1e18 (base price in MON)
 
 async function main() {
     // Setup provider and wallet
@@ -57,27 +61,35 @@ async function main() {
 
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Get athletes to register - join with profiles to get name
-    // athlete_tokens uses athlete_id as PK, not id
+    // Get ALL profiles that have a wallet address
+    // This ensures any agent/athlete that has connected a wallet is tradeable
     const { data: athletes, error } = await supabase
-        .from("athlete_tokens")
-        .select("athlete_id, symbol, supply")
-        .order("supply", { ascending: false })
-        .limit(5);
+        .from("profiles")
+        .select(`
+            id, 
+            username, 
+            monad_wallet_address
+        `)
+        .not("monad_wallet_address", "is", null);
 
     if (error) {
-        throw new Error(`Failed to fetch athletes: ${error.message}`);
+        throw new Error(`Failed to fetch profiles: ${error.message}`);
     }
 
-    console.log(`\nFound ${athletes?.length || 0} athletes to register`);
+    console.log(`\nFound ${athletes?.length || 0} profiles with wallets to register`);
 
-    for (const athlete of athletes || []) {
-        console.log(`\n--- ${athlete.symbol} (${athlete.athlete_id}) ---`);
+    for (const profile of athletes || []) {
+        console.log(`\n--- ${profile.username} ---`);
 
-        // Generate deterministic wallet address from athlete ID
-        // This creates a unique address for each athlete
-        const athleteWallet = ethers.keccak256(ethers.toUtf8Bytes(athlete.athlete_id)).slice(0, 42);
-        console.log("Generated wallet:", athleteWallet);
+        const athleteWallet = profile.monad_wallet_address;
+
+
+        if (!athleteWallet) {
+            console.log("No wallet address in profile, skipping (connect wallet first)");
+            continue;
+        }
+
+        console.log("Wallet:", athleteWallet);
 
         // Check if already registered
         try {
@@ -103,18 +115,7 @@ async function main() {
 
             const receipt = await tx.wait();
             console.log("Confirmed in block:", receipt.blockNumber);
-
-            // Update Supabase with the wallet address
-            const { error: updateError } = await supabase
-                .from("athlete_tokens")
-                .update({ monad_wallet_address: athleteWallet })
-                .eq("athlete_id", athlete.athlete_id);
-
-            if (updateError) {
-                console.error("Failed to update Supabase:", updateError.message);
-            } else {
-                console.log("Updated Supabase with wallet address");
-            }
+            console.log("✅ Successfully registered on-chain");
 
         } catch (txError) {
             console.error("TX failed:", txError);

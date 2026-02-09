@@ -54,6 +54,7 @@ serve(async (req) => {
         bio,
         avatar_url,
         type,
+        monad_wallet_address,
         athlete_tokens (
           symbol,
           supply,
@@ -73,17 +74,21 @@ serve(async (req) => {
             const t = a.athlete_tokens;
             const price = t ? priceAt(t.supply, Number(t.a), Number(t.b), Number(t.c)) : 0;
             const marketCap = t ? price * t.supply : 0;
+            const isTradeable = !!a.monad_wallet_address;  // Tradeable if wallet registered
             return {
                 id: a.id,
+                athlete_id: a.id,  // Alias for agent-trade compatibility
                 username: a.username,
                 display_name: a.display_name,
                 bio: a.bio?.slice(0, 100),
                 avatar_url: a.avatar_url,
                 type: a.type,
+                monad_wallet_address: a.monad_wallet_address,
                 token_symbol: t?.symbol,
-                price: price.toFixed(2),
-                market_cap: marketCap.toFixed(2),
+                current_price_mon: price.toFixed(6),
+                market_cap_mon: marketCap.toFixed(2),
                 supply: t?.supply || 0,
+                is_tradeable: isTradeable
             };
         });
 

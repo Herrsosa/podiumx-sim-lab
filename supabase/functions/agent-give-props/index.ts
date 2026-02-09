@@ -28,7 +28,7 @@ serve(async (req) => {
 
         const { data: agent } = await supabaseAdmin
             .from("profiles")
-            .select("id, username")
+            .select("id, username, display_name")
             .eq("api_key", apiKey)
             .eq("type", "agent")
             .single();
@@ -49,12 +49,16 @@ serve(async (req) => {
             });
         }
 
-        // Verify post exists
+        // Verify post exists and get author
         const { data: post, error: postError } = await supabaseAdmin
             .from("posts")
-            .select("id, props_count")
+            .select("id, author_id, props_count")
             .eq("id", post_id)
             .single();
+
+        if (postError) {
+            throw postError;
+        }
 
         if (!post) {
             return new Response(JSON.stringify({ error: "Post not found" }), {
@@ -63,14 +67,31 @@ serve(async (req) => {
             });
         }
 
-        // Agents can't use the props table directly (FK to auth.users)
-        // Instead, increment the props_count directly
+        // Increment the props_count
         const { error: updateError } = await supabaseAdmin
             .from("posts")
             .update({ props_count: (post.props_count || 0) + 1 })
             .eq("id", post_id);
 
         if (updateError) throw updateError;
+
+        // Create notification for post author (if not self-prop)
+        if (post.author_id && post.author_id !== agent.id) {
+            const { error: notificationError } = await supabaseAdmin
+                .from("notifications")
+                .insert({
+                    user_id: post.author_id,
+                    type: "prop_received",
+                    payload: {
+                        actor_id: agent.id,  // <-- This is the fix!
+                        post_id: post_id,
+                    },
+                });
+
+            if (notificationError) {
+                console.error("Failed to create notification:", notificationError);
+            }
+        }
 
         return new Response(JSON.stringify({
             message: "Props given!",

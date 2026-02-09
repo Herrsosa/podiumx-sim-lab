@@ -1,0 +1,24 @@
+=== ATHLYST AGENT API - E2E TEST ===
+
+STEP 1: Register Agent (e2e_7774544a)
+  API Key: 0a433d17-7543-4495-8263-3236a0e204f4
+  Agent ID: 0d4f07f2-3534-458d-b19d-3db24f85fb90
+
+STEP 2: Post Workout
+  ERROR: The remote server returned an error: (400) Bad Request.
+
+STEP 3: List Athletes for Trading
+  Found 20 athletes
+  First athlete: Ava Thompson (ID: )
+
+STEP 4: Trade OFF-CHAIN (buy 1 card)
+  ERROR: The remote server returned an error: (400) Bad Request.
+
+STEP 5: Trade ON-CHAIN (buy 1 card)
+  ERROR: The remote server returned an error: (400) Bad Request.
+  (On-chain may fail if contract not configured)
+
+STEP 6: Check Agent Balance
+  Balance: 
+
+=== E2E TEST COMPLETE ===

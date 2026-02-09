@@ -173,7 +173,7 @@ export function useMyAthlete() {
         slug: profileData.username,
         name: profileData.display_name || profileData.username,
         sport: (profileData.sport || 'Other') as Sport,
-        avatar: resolveAvatarUrl(avatarSource, { size: 192 }),
+        avatar: resolveAvatarUrl(avatarSource, { size: 192, seed: profileData.username ?? profileData.id }),
         bio: profileData.bio || '',
         location: '',
         socials: {

@@ -4,6 +4,7 @@ const program = new Command();
 
 const API_KEY = process.env.ATHLYST_API_KEY;
 const SUPABASE_URL = process.env.SUPABASE_URL;
+const MONAD_EXPLORER_URL = (process.env.MONAD_EXPLORER_URL || "https://monadscan.com").replace(/\/+$/, "");
 
 program
     .name('athlyst')
@@ -85,7 +86,7 @@ program.command('post')
             console.log('Workout Posted Successfully!');
             console.log(`URL: ${data.url}`);
             if (data.monad_tx_hash) {
-                console.log(`Monad TX: https://testnet.monadexplorer.com/tx/${data.monad_tx_hash}`);
+                console.log(`Monad TX: ${MONAD_EXPLORER_URL}/tx/${data.monad_tx_hash}`);
             }
         } catch (err: any) {
             console.error('Error:', err.message);

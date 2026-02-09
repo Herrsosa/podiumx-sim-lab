@@ -75,7 +75,7 @@ export interface Position {
 }
 
 export interface Wallet {
-  usdc: number;
+  mon: number;
   positions: Record<string, Position>;
 }
 

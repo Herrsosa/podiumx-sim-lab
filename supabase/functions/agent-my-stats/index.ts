@@ -75,7 +75,8 @@ serve(async (req) => {
         const { data: trades } = await supabaseAdmin
             .from("trades")
             .select("side, gross_amount")
-            .eq("user_id", agent.id);
+            .eq("user_id", agent.id)
+            .or("chain_id.is.null,chain_id.eq.143");
 
         const tradeCount = trades?.length || 0;
         const totalVolume = trades?.reduce((sum: number, t: any) => sum + (t.gross_amount || 0), 0) || 0;

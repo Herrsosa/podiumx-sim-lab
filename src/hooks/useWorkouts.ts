@@ -23,6 +23,8 @@ export interface LockerWorkout {
   locationLng: number | null;
   // Strava map
   stravaMapPolyline: string | null;
+  stravaActivityId: number | null;
+  isPinned: boolean;
 }
 
 export type WorkoutViewerRole = 'owner' | 'backer' | 'supporter' | 'fan';
@@ -67,6 +69,9 @@ export const mapPostRowToLockerWorkout = (row: PostRow): LockerWorkout => {
     locationLng: row.location_lng ?? null,
     // Strava map
     stravaMapPolyline: row.strava_map_polyline ?? null,
+    stravaActivityId: row.strava_activity_id ?? null,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    isPinned: (row as any).is_pinned ?? false,
   };
 };
 
@@ -95,6 +100,8 @@ export const mapPostRowToPost = (row: PostRow): Post => ({
 interface UseWorkoutsOptions {
   pageSize?: number;
   viewerRole?: WorkoutViewerRole;
+  startDate?: Date;
+  endDate?: Date;
 }
 
 const DEFAULT_PAGE_SIZE = 15;
@@ -109,6 +116,8 @@ export const workoutsQueryKey = (params: {
   athleteId?: string;
   viewerRole: WorkoutViewerRole;
   pageSize: number;
+  startDate?: string;
+  endDate?: string;
 }) => ['workouts', params] as const;
 
 type WorkoutsQueryData = InfiniteData<WorkoutsPage>;
@@ -157,7 +166,7 @@ type WorkoutsUpdater = (current: LockerWorkout[]) => LockerWorkout[];
 
 export const updateWorkoutsCache = (
   queryClient: QueryClient,
-  params: { athleteId?: string; viewerRole: WorkoutViewerRole; pageSize: number },
+  params: { athleteId?: string; viewerRole: WorkoutViewerRole; pageSize: number; startDate?: string; endDate?: string },
   reducer: WorkoutsUpdater,
 ) => {
   const key = workoutsQueryKey(params);
@@ -186,7 +195,7 @@ export const updateWorkoutsCache = (
 
 export const addWorkoutToCache = (
   queryClient: QueryClient,
-  params: { athleteId?: string; viewerRole: WorkoutViewerRole; pageSize: number },
+  params: { athleteId?: string; viewerRole: WorkoutViewerRole; pageSize: number; startDate?: string; endDate?: string },
   workout: LockerWorkout,
 ) =>
   updateWorkoutsCache(queryClient, params, (current) => {
@@ -196,7 +205,7 @@ export const addWorkoutToCache = (
 
 export const replaceWorkoutInCache = (
   queryClient: QueryClient,
-  params: { athleteId?: string; viewerRole: WorkoutViewerRole; pageSize: number },
+  params: { athleteId?: string; viewerRole: WorkoutViewerRole; pageSize: number; startDate?: string; endDate?: string },
   workout: LockerWorkout,
 ) =>
   updateWorkoutsCache(queryClient, params, (current) => {
@@ -209,18 +218,20 @@ export const replaceWorkoutInCache = (
 
 export const removeWorkoutFromCache = (
   queryClient: QueryClient,
-  params: { athleteId?: string; viewerRole: WorkoutViewerRole; pageSize: number },
+  params: { athleteId?: string; viewerRole: WorkoutViewerRole; pageSize: number; startDate?: string; endDate?: string },
   workoutId: string,
 ) =>
   updateWorkoutsCache(queryClient, params, (current) => current.filter((item) => item.id !== workoutId));
 
 export function useWorkouts(
   athleteId: string | undefined,
-  { pageSize = DEFAULT_PAGE_SIZE, viewerRole = 'fan' }: UseWorkoutsOptions = {},
+  { pageSize = DEFAULT_PAGE_SIZE, viewerRole = 'fan', startDate, endDate }: UseWorkoutsOptions = {},
 ) {
   const queryClient = useQueryClient();
   const { toast } = useToast();
-  const queryKey = workoutsQueryKey({ athleteId, viewerRole, pageSize });
+  const startDateStr = startDate?.toISOString();
+  const endDateStr = endDate?.toISOString();
+  const queryKey = workoutsQueryKey({ athleteId, viewerRole, pageSize, startDate: startDateStr, endDate: endDateStr });
 
   const queryResult = useInfiniteQuery<WorkoutsPage>({
     queryKey,
@@ -242,7 +253,7 @@ export function useWorkouts(
       const from = offset;
       const to = offset + pageSize - 1;
 
-      const { data, error, count } = await supabase
+      let query = supabase
         .from('posts')
         .select(
           'id, created_at, author_id, workout_json, image_url, text, visibility, min_tokens_required, token_gated, strava_activity_id, is_pinned, location_city, location_country, location_country_code, location_lat, location_lng, strava_map_polyline',
@@ -251,6 +262,15 @@ export function useWorkouts(
         .eq('author_id', athleteId)
         .order('created_at', { ascending: false })
         .range(from, to);
+
+      if (startDate) {
+        query = query.gte('created_at', startDate.toISOString());
+      }
+      if (endDate) {
+        query = query.lte('created_at', endDate.toISOString());
+      }
+
+      const { data, error, count } = await query;
 
       if (error) throw error;
 

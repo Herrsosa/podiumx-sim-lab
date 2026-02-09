@@ -1,12 +1,11 @@
 const hre = require("hardhat");
 
 async function main() {
-    console.log("Deploying AthlystBondingCurve to Monad Testnet...");
+    console.log(`Deploying AthlystBondingCurve to ${hre.network.name}...`);
 
     // Treasury address - this receives protocol fees
-    // Using the deployer address as treasury for now (you can change this)
     const [deployer] = await hre.ethers.getSigners();
-    const treasuryAddress = deployer.address;
+    const treasuryAddress = process.env.MONAD_TREASURY_ADDRESS || deployer.address;
 
     console.log("Deployer:", deployer.address);
     console.log("Treasury:", treasuryAddress);

@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Search, TrendingUp, Clock, CheckCircle, Zap, Filter } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -13,15 +13,6 @@ import { usePredictionCredits } from '@/hooks/usePredictionCredits';
 import { useMarketCards, useTrendingMarkets, useResolvedMarkets } from '@/hooks/useMarkets';
 import { cn } from '@/lib/utils';
 import type { MarketType } from '@/types/markets';
-
-const EVENT_FILTERS = [
-  { id: 'all', label: 'All Events' },
-  { id: 'vienna', label: '🔥 Vienna' },
-  { id: 'london', label: 'London' },
-  { id: 'dallas', label: 'Dallas' },
-  { id: 'hamburg', label: 'Hamburg' },
-  { id: 'manchester', label: 'Manchester' },
-];
 
 const TYPE_FILTERS: { id: MarketType | 'all'; label: string }[] = [
   { id: 'all', label: 'All Types' },
@@ -40,6 +31,29 @@ export default function Markets() {
   const { data: allMarkets, isLoading: marketsLoading } = useMarketCards(['open', 'closed']);
   const { data: trendingMarkets, isLoading: trendingLoading } = useTrendingMarkets(4);
   const { data: resolvedMarkets, isLoading: resolvedLoading } = useResolvedMarkets(5);
+
+  const eventFilters = useMemo(() => {
+    const cities = Array.from(
+      new Set((allMarkets || []).map((market) => market.eventCity).filter(Boolean))
+    ) as string[];
+
+    cities.sort((a, b) => a.localeCompare(b));
+
+    return [
+      { id: 'all', label: 'All Events' },
+      ...cities.map((city) => ({
+        id: city.toLowerCase(),
+        label: city.toLowerCase() === 'vienna' ? '🔥 Vienna' : city,
+      })),
+    ];
+  }, [allMarkets]);
+
+  useEffect(() => {
+    if (eventFilter === 'all') return;
+    if (!eventFilters.some((filter) => filter.id === eventFilter)) {
+      setEventFilter('all');
+    }
+  }, [eventFilter, eventFilters]);
 
   const filteredMarkets = useMemo(() => {
     if (!allMarkets) return [];
@@ -196,7 +210,7 @@ export default function Markets() {
 
                 {/* Filters */}
                 <div className="flex flex-wrap gap-2 mb-6">
-                  {EVENT_FILTERS.map((filter) => (
+                  {eventFilters.map((filter) => (
                     <Button
                       key={filter.id}
                       variant={eventFilter === filter.id ? 'default' : 'outline'}

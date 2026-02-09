@@ -60,6 +60,7 @@ serve(async (req) => {
         profiles:athlete_id (username, display_name)
       `)
             .eq("user_id", agent.id)
+            .or("chain_id.is.null,chain_id.eq.143")
             .order("created_at", { ascending: false })
             .limit(limit);
 

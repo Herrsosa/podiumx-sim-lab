@@ -12,6 +12,8 @@
     "preview": "vite preview",
     "test:e2e": "cypress run",
     "test": "tsx --test",
+    "hyrox:fetch": "node scripts/fetch-hyrox-feed.cjs",
+    "hyrox:sync": "node scripts/sync-hyrox-markets.cjs",
     "deploy:function:strava": "supabase functions deploy strava-oauth-exchange --no-verify-jwt",
     "logs:function:strava": "supabase functions logs --name strava-oauth-exchange --follow"
   },

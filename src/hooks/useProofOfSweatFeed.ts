@@ -201,7 +201,10 @@ export function useProofOfSweatFeed(options: UseProofOfSweatFeedOptions = {}) {
             name,
             slug,
             sport: (profile?.sport as Sport) || 'Running',
-            avatar: resolveAvatarUrl(profile?.avatar_url ?? undefined, { size: 160 }),
+            avatar: resolveAvatarUrl(profile?.avatar_url ?? undefined, {
+              size: 160,
+              seed: profile?.username ?? row.author_id,
+            }),
             marketCap,
             holdersCount,
           },

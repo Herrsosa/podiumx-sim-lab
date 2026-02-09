@@ -114,7 +114,7 @@ export default function Overview() {
             <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Price</span>
-                <span className="font-medium">${formatNumber(athlete.price)}</span>
+                <span className="font-medium">{formatNumber(athlete.price)} MON</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">24h Change</span>
@@ -124,7 +124,7 @@ export default function Overview() {
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Market Cap</span>
-                <span className="font-medium">${formatNumber(athlete.marketCap)}</span>
+                <span className="font-medium">{formatNumber(athlete.marketCap)} MON</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Supply</span>
@@ -132,11 +132,11 @@ export default function Overview() {
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Reserve</span>
-                <span className="font-medium">${formatNumber(athlete.reserve)}</span>
+                <span className="font-medium">{formatNumber(athlete.reserve)} MON</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Earnings</span>
-                <span className="font-medium">${formatNumber(athlete.athleteRevenue)}</span>
+                <span className="font-medium">{formatNumber(athlete.athleteRevenue)} MON</span>
               </div>
             </div>
           </div>

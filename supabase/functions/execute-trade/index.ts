@@ -121,7 +121,7 @@ async function buildSnapshot(supabaseAdmin: any, userId: string, athleteId: stri
 
   return {
     wallet: {
-      usdc: walletBalance,
+      mon: walletBalance,
       positions,
     },
     positions,
@@ -309,7 +309,7 @@ serve(async (req) => {
         const deficit = netAmount - startingBalance;
         return new Response(
           JSON.stringify({
-            error: `Insufficient USDC balance. You have $${startingBalance.toFixed(2)}, need $${netAmount.toFixed(2)} (short $${deficit.toFixed(2)})`,
+            error: `Insufficient MON balance. You have ${startingBalance.toFixed(2)} MON, need ${netAmount.toFixed(2)} MON (short ${deficit.toFixed(2)} MON)`,
           }),
           {
             headers: { ...corsHeaders, "Content-Type": "application/json" },
