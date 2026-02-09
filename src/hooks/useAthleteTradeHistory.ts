@@ -141,6 +141,7 @@ export function useAthleteTradeHistory(
         .from('trades')
         .select('created_at, price_after, qty, gross_amount, net_amount')
         .eq('athlete_id', athleteId)
+        .eq('is_on_chain', true)
         .order('created_at', { ascending: true });
 
       if (error) {

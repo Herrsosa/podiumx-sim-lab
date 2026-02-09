@@ -14,6 +14,16 @@ function toFiniteNumber(value: unknown): number {
     return Number.isFinite(n) ? n : 0;
 }
 
+function parsePeriodToInterval(period: string): string | null {
+    const p = String(period || "").trim().toLowerCase();
+    if (p === "1h") return "1 hour";
+    if (p === "6h") return "6 hours";
+    if (p === "24h") return "24 hours";
+    if (p === "7d") return "7 days";
+    if (p === "30d") return "30 days";
+    return null;
+}
+
 serve(async (req) => {
     if (req.method === "OPTIONS") {
         return new Response(null, { headers: corsHeaders });
@@ -51,7 +61,115 @@ serve(async (req) => {
         const url = new URL(req.url);
         const rawLimit = parseInt(url.searchParams.get("limit") || "10");
         const limit = Number.isFinite(rawLimit) ? Math.max(1, Math.min(rawLimit, 50)) : 10;
-        const period = url.searchParams.get("period") || "24h"; // 24h, 7d, 30d
+        const period = url.searchParams.get("period") || "24h"; // 1h, 6h, 24h, 7d, 30d
+
+        const interval = parsePeriodToInterval(period);
+        if (!interval) {
+            return new Response(JSON.stringify({
+                error: `Unsupported period "${period}"`,
+                supported_periods: ["1h", "6h", "24h", "7d", "30d"],
+            }), {
+                headers: { ...corsHeaders, "Content-Type": "application/json" },
+                status: 400,
+            });
+        }
+
+        // Prefer the server-side RPC (works for 1h/6h/24h/7d/30d) so agents match UI behavior.
+        // Fall back to legacy paths if the RPC is missing.
+        try {
+            const { data: moversRows, error: moversError } = await supabaseAdmin.rpc("get_top_movers", {
+                p_window: interval,
+                p_limit: limit,
+            });
+            if (moversError) throw moversError;
+
+            const rows = (moversRows ?? []) as any[];
+            const gainersRows = rows
+                .filter((r) => toFiniteNumber(r.pct_change) > 0)
+                .sort((a, b) => toFiniteNumber(b.pct_change) - toFiniteNumber(a.pct_change))
+                .slice(0, limit);
+            const losersRows = rows
+                .filter((r) => toFiniteNumber(r.pct_change) < 0)
+                .sort((a, b) => toFiniteNumber(a.pct_change) - toFiniteNumber(b.pct_change))
+                .slice(0, limit);
+
+            const candidateIds = Array.from(new Set([
+                ...gainersRows.map((r) => String(r.athlete_id)),
+                ...losersRows.map((r) => String(r.athlete_id)),
+                ...rows.slice(0, limit).map((r) => String(r.athlete_id)),
+            ]));
+
+            const [profilesRes, tokensRes] = await Promise.all([
+                candidateIds.length > 0
+                    ? supabaseAdmin
+                        .from("profiles")
+                        .select("id, username, display_name")
+                        .in("id", candidateIds)
+                    : Promise.resolve({ data: [] as any[], error: null }),
+                candidateIds.length > 0
+                    ? supabaseAdmin
+                        .from("athlete_tokens")
+                        .select("athlete_id, supply")
+                        .in("athlete_id", candidateIds)
+                    : Promise.resolve({ data: [] as any[], error: null }),
+            ]);
+
+            if (profilesRes.error) throw profilesRes.error;
+            if (tokensRes.error) throw tokensRes.error;
+
+            const profileById = new Map<string, { username: string | null, display_name: string | null }>();
+            (profilesRes.data ?? []).forEach((p: any) => {
+                profileById.set(String(p.id), {
+                    username: p.username ?? null,
+                    display_name: p.display_name ?? null,
+                });
+            });
+
+            const supplyByAthleteId = new Map<string, number>();
+            (tokensRes.data ?? []).forEach((t: any) => {
+                supplyByAthleteId.set(String(t.athlete_id), toFiniteNumber(t.supply));
+            });
+
+            const format = (row: any) => {
+                const athleteId = String(row.athlete_id);
+                const profile = profileById.get(athleteId);
+                const supply = supplyByAthleteId.get(athleteId) ?? 0;
+
+                const currentPrice = toFiniteNumber(row.last_price);
+                const oldPrice = toFiniteNumber(row.base_price);
+                const changePct = toFiniteNumber(row.pct_change);
+                const marketCap = currentPrice * supply;
+
+                return {
+                    athlete_id: athleteId,
+                    username: profile?.username ?? null,
+                    display_name: profile?.display_name ?? null,
+                    current_price: currentPrice.toFixed(4),
+                    old_price: oldPrice.toFixed(4),
+                    change_pct: changePct.toFixed(2) + "%",
+                    supply,
+                    market_cap: marketCap.toFixed(2),
+                    notional: toFiniteNumber(row.notional).toFixed(2),
+                    qty: toFiniteNumber(row.qty).toFixed(2),
+                };
+            };
+
+            const mostVolatile = [...rows]
+                .sort((a, b) => Math.abs(toFiniteNumber(b.pct_change)) - Math.abs(toFiniteNumber(a.pct_change)))
+                .slice(0, limit)
+                .map(format);
+
+            return new Response(JSON.stringify({
+                period,
+                top_gainers: gainersRows.map(format),
+                top_losers: losersRows.map(format),
+                most_volatile: mostVolatile,
+            }), {
+                headers: { ...corsHeaders, "Content-Type": "application/json" },
+            });
+        } catch (rpcErr) {
+            console.warn("agent-top-movers: get_top_movers RPC not available, using legacy logic:", rpcErr);
+        }
 
         // For 24h movers we use the live view that powers the marketplace UI.
         // This avoids relying on `prices_daily_mv`, which may be stale if not refreshed.

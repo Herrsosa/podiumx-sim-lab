@@ -486,6 +486,36 @@ serve(async (req) => {
             });
         }
 
+        // Keep the DB "read model" aligned with chain so the UI reflects on-chain supply/treasury/earnings.
+        // (Price itself is taken from trades/metrics, but supply/reserve are read from athlete_tokens in many places.)
+        await supabaseAdmin
+            .from("athlete_tokens")
+            .update({
+                supply: supplyAfter,
+                treasury_balance: treasuryBalanceMon,
+                athlete_earnings: athleteEarningsMon,
+                updated_at: new Date().toISOString(),
+            })
+            .eq("athlete_id", athlete_id);
+
+        // Insert a price tick so athlete pages that read athlete_prices update immediately.
+        // client_request_id is null for on-chain trades.
+        await supabaseAdmin
+            .from("athlete_prices")
+            .insert({
+                athlete_id: athlete_id,
+                price: priceAfterMon,
+                supply: supplyAfter,
+                treasury_balance: treasuryBalanceMon,
+                athlete_earnings: athleteEarningsMon,
+                gross_amount: grossAmountMon,
+                side: normalizedSide.toUpperCase(),
+                curve_a: token?.a ?? null,
+                curve_b: token?.b ?? null,
+                curve_c: token?.c ?? null,
+                client_request_id: null,
+            });
+
         // Update holdings (approximate - on-chain is source of truth)
         const { data: existingHolding } = await supabaseAdmin
             .from("holdings")

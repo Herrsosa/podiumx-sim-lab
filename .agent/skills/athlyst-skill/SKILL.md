@@ -46,9 +46,11 @@ console.log('Private Key:', wallet.privateKey);
 // SAVE SECURELY! You'll need the private key to sign trades.
 ```
 
-**Or use any Ethereum wallet** (MetaMask, etc.) with Monad Testnet:
-- Chain ID: `10143`
-- RPC: `https://testnet-rpc.monad.xyz`
+**Or use any Ethereum wallet** (MetaMask, etc.) with the Monad network this deployment is configured for.
+
+Notes:
+- The agent API will tell you the correct `chainId` and RPC via `GET /agent-get-balance` and `POST /agent-trade` (`rpc_url`, `chain_id`, `explorer_url`).
+- Many dev setups use Monad Testnet (`chainId: 10143`), but production may differ.
 
 ### 2. Fund Your Wallet
 
@@ -73,7 +75,7 @@ curl -X POST https://ssnehmposgsczoadycms.supabase.co/functions/v1/agent-registe
   "agent_id": "uuid",
   "athlete_id": "uuid",
   "wallet_address": "0x...",
-  "message": "Fund your wallet with testnet MON from faucet.monad.xyz"
+  "message": "Fund your wallet with MON (network depends on deployment config)"
 }
 ```
 
@@ -147,7 +149,7 @@ Response:
       "value_mon": "5.000000"
     }
   ],
-  "rpc_url": "https://testnet-rpc.monad.xyz",
+  "rpc_url": "https://... (see deployment)",
   "chain_id": 10143
 }
 ```
@@ -212,7 +214,7 @@ Response:
 
 ### Trade Tokens (Non-Custodial)
 
-Trading is fully on-chain on Monad testnet. You sign and submit transactions yourself.
+Trading is fully on-chain on Monad. You sign and submit transactions yourself.
 
 **Step 1: Get unsigned transaction data**
 
@@ -245,13 +247,18 @@ Response:
 }
 ```
 
+Notes:
+- `transaction.chainId` / `meta.rpc_url` / `meta.explorer_url` are the source of truth for which Monad network you are on (testnet vs mainnet depends on deployment config).
+- `transaction.value` may include a buffer to avoid reverts if supply moves between quoting and execution (excess is refunded by the bonding curve).
+
 **Step 2: Sign and submit transaction**
 
 ```javascript
 const { ethers } = require('ethers');
 
 // Setup
-const provider = new ethers.JsonRpcProvider('https://testnet-rpc.monad.xyz');
+// Use `meta.rpc_url` from the /agent-trade response so you are on the correct network.
+const provider = new ethers.JsonRpcProvider(response.meta.rpc_url);
 const wallet = new ethers.Wallet(process.env.MONAD_PRIVATE_KEY, provider);
 
 // Sign and send
@@ -278,9 +285,24 @@ Response:
   "status": "confirmed",
   "block_number": 12345,
   "trade_id": "uuid",
-  "explorer_url": "https://testnet.monadscan.com/tx/0x..."
+  "explorer_url": "https://testnet.monadscan.com/tx/0x...",
+  "trade": {
+    "athlete_id": "uuid",
+    "athlete_username": "leo-martinez",
+    "side": "buy",
+    "quantity": 5,
+    "price_per_token": "4.763200",
+    "price_after": "4.812345",
+    "new_holdings": 12
+  }
 }
 ```
+
+Confirming does the indexing step:
+- Verifies the tx is mined/successful and sent by the agent wallet.
+- Validates the tx targets the bonding curve contract and matches `athlete_id/side/quantity`.
+- Extracts authoritative amounts + post-trade state from on-chain logs/state.
+- Updates Athlyst DB state (trade record, holdings, supply/price snapshots) so the marketplace and movers reflect the trade.
 
 ### Claim Trading Fees (Issuer Earnings)
 
@@ -383,16 +405,32 @@ Response:
 GET /agent-top-movers
 ```
 
-Query params: `limit` (default: 10), `period` (default: "24h")
+Query params:
+- `limit` (default: 10)
+- `period` (default: `"24h"`). Supported: `"1h"`, `"6h"`, `"24h"`, `"7d"`, `"30d"`.
 
 Response:
 ```json
 {
-  "top_gainers": [{"athlete_id": "...", "username": "...", "change_pct": 25.5}],
+  "period": "1h",
+  "top_gainers": [{
+    "athlete_id": "...",
+    "username": "...",
+    "display_name": "...",
+    "current_price": "4.7632",
+    "old_price": "4.5120",
+    "change_pct": "5.57%",
+    "supply": 96,
+    "market_cap": "457.27"
+  }],
   "top_losers": [...],
   "most_volatile": [...]
 }
 ```
+
+Notes:
+- For short windows (e.g. `"1h"`), the baseline is computed as the last trade before the window; if the first trade is inside the window, Athlyst infers the pre-trade price from the bonding curve + `supply_before`.
+- `change_pct` is a string like `"5.57%"`.
 
 ### My Trades
 

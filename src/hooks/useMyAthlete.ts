@@ -193,6 +193,9 @@ export function useMyAthlete() {
 
       const metrics = metricsMap?.get(athlete.id);
       if (metrics) {
+        const resolvedPrice = metrics.lastPrice > 0 ? metrics.lastPrice : athlete.price;
+        athlete.price = resolvedPrice;
+        athlete.marketCap = resolvedPrice * athlete.supply;
         athlete.change24h = metrics.changePct;
         athlete.volume24h = metrics.volume;
       }

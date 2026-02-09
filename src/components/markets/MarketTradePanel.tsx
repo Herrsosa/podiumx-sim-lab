@@ -1,6 +1,5 @@
-```typescript
-import { useState, useEffect } from 'react';
-import { Check, AlertCircle, Loader2, TrendingUp, TrendingDown } from 'lucide-react';
+import { useState } from 'react';
+import { Check, AlertCircle, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -8,7 +7,7 @@ import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
 import { usePredictionCredits, usePlaceBet, useUserMarketPositions } from '@/hooks/usePredictionCredits';
 import { cn } from '@/lib/utils';
-import type { MarketWithOutcomes, MarketOutcome } from '@/types/markets';
+import type { MarketWithOutcomes } from '@/types/markets';
 
 interface MarketTradePanelProps {
   market: MarketWithOutcomes;
@@ -28,11 +27,6 @@ export function MarketTradePanel({ market, onBetPlaced }: MarketTradePanelProps)
 
   const isOpen = market.status === 'open' && new Date(market.closesAt) > new Date();
   const isResolved = market.status === 'resolved';
-
-  // DEBUGGING: Log on mount
-  useEffect(() => {
-    console.log('[MarketTradePanel] Component Mounted/Rendered', { id: market.id, title: market.question });
-  }, [market.id, market.question]);
 
   const handlePlaceBet = async () => {
     if (!selectedOutcome || !credits) return;
@@ -98,15 +92,6 @@ export function MarketTradePanel({ market, onBetPlaced }: MarketTradePanelProps)
 
   return (
     <Card className="glass-card relative z-[100]">
-      {/* DEBUG BUTTON */}
-      <button
-        onClick={() => console.log('[MarketTradePanel] TEST BUTTON CLICKED')}
-        className="bg-red-500 text-white p-2 m-2 rounded z-[200] relative pointer-events-auto w-full mb-4"
-        type="button"
-      >
-        TEST CLICK ME (CHECK CONSOLE)
-      </button>
-
       <CardHeader className="pb-4">
         <div className="flex items-start justify-between gap-4">
           <CardTitle className="text-xl font-bold leading-tight">{market.question}</CardTitle>
@@ -155,11 +140,9 @@ export function MarketTradePanel({ market, onBetPlaced }: MarketTradePanelProps)
               <button
                 key={outcome.id}
                 onClick={() => {
-                  console.log('[MarketTradePanel] Clicked outcome:', outcome.id);
-                  console.log('[MarketTradePanel] Market Open State:', { isOpen, status: market.status, closesAt: market.closesAt, now: new Date().toISOString() });
                   if (isOpen) setSelectedOutcome(isSelected ? null : outcome.id);
                 }}
-                disabled={false} // Temporarily enable to capture clicks for debugging
+                disabled={!isOpen}
                 className={cn(
                   'w-full p-4 rounded-xl border-2 transition-all text-left relative z-50 pointer-events-auto active:scale-[0.99]',
                   isOpen && 'cursor-pointer hover:border-primary/50 hover:bg-card/80',

@@ -24,13 +24,15 @@ function requireEnv(name: string): string {
 }
 
 export function getMonadNetworkConfig(): MonadNetworkConfig {
-  const chainIdRaw = readEnv("MONAD_CHAIN_ID") || "143";
+  // Never silently default chain config for agent trading.
+  // If these are missing, callers should fail loudly rather than produce txs on the wrong network.
+  const chainIdRaw = requireEnv("MONAD_CHAIN_ID");
   const chainId = Number(chainIdRaw);
   if (!Number.isInteger(chainId) || chainId <= 0) {
     throw new Error(`Invalid MONAD_CHAIN_ID: ${chainIdRaw}`);
   }
 
-  const rpcUrl = readEnv("MONAD_RPC_URL") || "https://rpc.monad.xyz";
+  const rpcUrl = requireEnv("MONAD_RPC_URL");
   const explorerUrl = cleanBaseUrl(readEnv("MONAD_EXPLORER_URL") || "https://monadscan.com");
 
   return { chainId, rpcUrl, explorerUrl };
@@ -49,7 +51,7 @@ export function getMonadLoggerAddress(): string | null {
 }
 
 export function getMonadRpcUrl(): string | null {
-  return readEnv("MONAD_RPC_URL") || "https://rpc.monad.xyz";
+  return readEnv("MONAD_RPC_URL");
 }
 
 export function buildExplorerTxUrl(explorerBaseUrl: string, txHash: string): string {

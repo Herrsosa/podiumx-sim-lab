@@ -34,6 +34,7 @@ export function RecentTrades() {
                         avatar_url
                     )
                 `)
+                .eq('is_on_chain', true)
                 .order('created_at', { ascending: false })
                 .limit(10);
 

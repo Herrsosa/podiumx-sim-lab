@@ -32,6 +32,7 @@ export function useMarketplaceCharts(athleteIds: string[]) {
           .from('trades')
           .select('athlete_id, price_after, created_at')
           .in('athlete_id', dedupedIds)
+          .eq('is_on_chain', true)
           .gte('created_at', sevenDaysAgo.toISOString())
           .order('created_at', { ascending: true }),
         supabase

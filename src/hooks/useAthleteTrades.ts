@@ -29,7 +29,8 @@ export function useAthleteTrades(athleteId: string, sinceMs?: number) {
       let query = supabase
         .from('trades')
         .select('id, created_at, athlete_id, user_id, side, qty, gross_amount, net_amount, fee, price_after')
-        .eq('athlete_id', athleteId);
+        .eq('athlete_id', athleteId)
+        .eq('is_on_chain', true);
 
       // Filter by time window when provided
       if (sinceMs !== undefined) {

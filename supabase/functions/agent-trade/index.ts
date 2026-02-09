@@ -157,7 +157,8 @@ serve(async (req) => {
         let transactionData: string;
         let value: string;
 
-        // Prefer on-chain quote (source of truth) when available. Fallback to DB-based estimate.
+        // Prefer on-chain quote (source of truth). Fail closed if quoting fails to avoid
+        // agents signing transactions against the wrong chain/contract or with stale estimates.
         try {
             const provider = new ethers.JsonRpcProvider(monad.rpcUrl);
             const contract = new ethers.Contract(bondingCurveAddress, BONDING_CURVE_ABI, provider);
@@ -179,6 +180,33 @@ serve(async (req) => {
 
             const onchainSupply = Number((info as any)?.[0] ?? 0n);
             const onchainCurrentPriceWei = (info as any)?.[1] as bigint;
+            const onchainCurrentPriceMon = Number(ethers.formatEther(onchainCurrentPriceWei));
+
+            // Safety rail: if DB/UI curve price diverges massively from on-chain, don't return a tx.
+            // This is the most common footgun when MONAD_* env points at a different deployment.
+            const dbCurrentPrice = priceAt(supply, a, b, c);
+            if (
+                Number.isFinite(dbCurrentPrice) &&
+                dbCurrentPrice > 0 &&
+                Number.isFinite(onchainCurrentPriceMon) &&
+                onchainCurrentPriceMon > 0
+            ) {
+                const ratio = onchainCurrentPriceMon / dbCurrentPrice;
+                if (ratio >= 5 || ratio <= 0.2) {
+                    return new Response(JSON.stringify({
+                        error: "On-chain market does not match database/UI price estimate",
+                        hint:
+                            "This usually means MONAD_CHAIN_ID / MONAD_RPC_URL / MONAD_BONDING_CURVE_ADDRESS is pointing at a different network or contract than the market you are viewing in the app.",
+                        athlete_id,
+                        athlete_wallet: athlete.monad_wallet_address,
+                        db: { supply, a, b, c, estimated_current_price: dbCurrentPrice },
+                        onchain: { chain_id: monad.chainId, bonding_curve_address: bondingCurveAddress, current_supply: onchainSupply, current_price_mon: onchainCurrentPriceMon },
+                    }), {
+                        headers: { ...corsHeaders, "Content-Type": "application/json" },
+                        status: 409,
+                    });
+                }
+            }
 
             if (side === "buy") {
                 transactionData = iface.encodeFunctionData("buy", [
@@ -284,58 +312,21 @@ serve(async (req) => {
                 headers: { ...corsHeaders, "Content-Type": "application/json" },
             });
         } catch (quoteError) {
-            console.warn("agent-trade: on-chain quote failed, falling back to DB estimate:", quoteError);
-        }
-
-        if (side === "buy") {
-            // Encode buy function call
-            transactionData = iface.encodeFunctionData("buy", [
-                athlete.monad_wallet_address,
-                quantity
-            ]);
-
-            // Add 3% fee buffer for slippage
-            const valueWithFee = Math.ceil(estimatedTotalMon * 1.03 * 1e18);
-            value = valueWithFee.toString();
-        } else {
-            // Encode sell function call with 0 minPayout (agent should adjust for slippage)
-            transactionData = iface.encodeFunctionData("sell", [
-                athlete.monad_wallet_address,
-                quantity,
-                0  // minPayout - agent should set this for slippage protection
-            ]);
-            value = "0";  // No MON sent when selling
-        }
-
-        // Return unsigned transaction data
-        return new Response(JSON.stringify({
-            transaction: {
-                to: bondingCurveAddress,
-                data: transactionData,
-                value: value,
-                chainId: monad.chainId,
-                gasLimit: "300000"  // Conservative gas limit
-            },
-            meta: {
-                athlete_id: athlete.id,
-                athlete_username: athlete.username,
-                athlete_display_name: athlete.display_name,
-                athlete_wallet: athlete.monad_wallet_address,
-                side: side,
-                quantity: quantity,
-                estimated_price_per_token: estimatedPricePerToken.toFixed(6),
-                estimated_total_mon: estimatedTotalMon.toFixed(6),
-                estimated_total_wei: Math.ceil(estimatedTotalMon * 1e18).toString(),
-                token_symbol: token?.symbol,
-                current_supply: supply,
-                bonding_curve_address: bondingCurveAddress,
+            console.error("agent-trade: on-chain quote failed:", quoteError);
+            return new Response(JSON.stringify({
+                error: "On-chain quote failed",
+                hint:
+                    "Refusing to return a transaction because pricing could be stale or pointed at the wrong network/contract. " +
+                    "Verify MONAD_CHAIN_ID, MONAD_RPC_URL, and MONAD_BONDING_CURVE_ADDRESS are set for this function.",
+                details: quoteError instanceof Error ? quoteError.message : String(quoteError),
+                chain_id: monad.chainId,
                 rpc_url: monad.rpcUrl,
-                explorer_url: monad.explorerUrl
-            },
-            instructions: `Sign this transaction with your wallet and submit to Monad (chainId: ${monad.chainId}). After submission, call POST /agent-confirm-trade with the tx_hash to index your trade.`
-        }), {
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+                bonding_curve_address: bondingCurveAddress,
+            }), {
+                headers: { ...corsHeaders, "Content-Type": "application/json" },
+                status: 503,
+            });
+        }
 
     } catch (error) {
         console.error("agent-trade error:", error);

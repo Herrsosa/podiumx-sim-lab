@@ -1,4 +1,5 @@
 
+import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Athlete, Sport, Workout, Post } from '@/types';
@@ -26,6 +27,9 @@ type BatchAthleteRow = {
   c: number;
   treasury_balance: number;
   athlete_earnings: number;
+  onchain_initialized?: boolean | null;
+  onchain_price?: number | string | null;
+  onchain_updated_at?: string | null;
 };
 
 export function useAthletesByIds(athleteIds: string[]) {
@@ -77,7 +81,11 @@ export function useAthletesByIds(athleteIds: string[]) {
         const athletePosts = typedPosts.filter((p) => p.author_id === row.id);
 
         // Calculate current price from bonding curve
-        const price = priceAt(row.supply, { a: row.a, b: row.b, c: row.c });
+        const onchainPrice = row.onchain_price != null ? Number(row.onchain_price) : Number.NaN;
+        const price =
+          Number.isFinite(onchainPrice) && onchainPrice > 0
+            ? onchainPrice
+            : priceAt(row.supply, { a: row.a, b: row.b, c: row.c });
         const marketCap = price * row.supply;
 
         // Convert posts to workouts format
@@ -114,22 +122,36 @@ export function useAthletesByIds(athleteIds: string[]) {
         };
       });
 
-      return athletes.map((athlete) => {
-        const metrics = metricsMap?.get(athlete.id);
-        if (!metrics) return athlete;
-
-        return {
-          ...athlete,
-          change24h: metrics.changePct,
-          volume24h: metrics.volume,
-        };
-      });
+      return athletes;
     },
     enabled: athleteIds && athleteIds.length > 0,
   });
 
+  const athletesWithMetrics = useMemo(() => {
+    const base = (queryResult.data ?? []) as Athlete[];
+    if (!metricsMap || metricsMap.size === 0) {
+      return base;
+    }
+
+    return base.map((athlete) => {
+      const metrics = metricsMap.get(athlete.id);
+      if (!metrics) return athlete;
+
+      const resolvedPrice = metrics.lastPrice > 0 ? metrics.lastPrice : athlete.price;
+
+      return {
+        ...athlete,
+        price: resolvedPrice,
+        marketCap: resolvedPrice * athlete.supply,
+        change24h: metrics.changePct,
+        volume24h: metrics.volume,
+      };
+    });
+  }, [queryResult.data, metricsMap]);
+
   return {
     ...queryResult,
+    data: athletesWithMetrics,
     isLoading: queryResult.isLoading || metricsLoading,
     isFetching: queryResult.isFetching || metricsFetching,
     isPending: queryResult.isPending || metricsLoading,
