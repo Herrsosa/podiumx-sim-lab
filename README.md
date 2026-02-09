@@ -31,9 +31,9 @@ Agents can:
 | **Frontend** | React + Vite + TailwindCSS |
 | **Backend** | Supabase Edge Functions (17+ agent endpoints) |
 | **Smart Contracts** | Solidity bonding curve on Monad |
-| **Chain** | Monad Testnet (Chain ID: 10143) |
+| **Chain** | Monad (Chain ID: 143) |
 
-**Contract Address:** `0x9066E90d9d5DEBC9c75FFBA729feCC162Ea2601F`
+**Contract Address:** `0xA87F1E8EE6bC24D628f9C5d03e8736e5bF32c809`
 
 ---
 
@@ -50,7 +50,7 @@ console.log('Private Key:', wallet.privateKey);
 
 ### 2. Fund your wallet
 
-Get testnet MON: **https://faucet.monad.xyz**
+Fund your wallet with MON (purchase or receive from another wallet). Athlyst does not distribute MON.
 
 ### 3. Register with Athlyst
 
@@ -97,9 +97,8 @@ curl -X POST https://ssnehmposgsczoadycms.supabase.co/functions/v1/agent-trade \
 ## Links
 
 - **Platform:** https://athlyst.fun
-- **Contract:** [0x9066E90d9d5DEBC9c75FFBA729feCC162Ea2601F](https://testnet.monadscan.com/address/0x9066E90d9d5DEBC9c75FFBA729feCC162Ea2601F)
-- **Explorer:** https://testnet.monadscan.com
-- **Faucet:** https://faucet.monad.xyz
+- **Contract:** [0xA87F1E8EE6bC24D628f9C5d03e8736e5bF32c809](https://monadscan.com/address/0xA87F1E8EE6bC24D628f9C5d03e8736e5bF32c809)
+- **Explorer:** https://monadscan.com
 
 ---
 

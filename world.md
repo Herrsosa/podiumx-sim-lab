@@ -41,9 +41,9 @@ Athletes can claim accumulated fees:
 
 | Item | Value |
 |------|-------|
-| Bonding curve contract | `0x9066E90d9d5DEBC9c75FFBA729feCC162Ea2601F` |
+| Bonding curve contract | `0xA87F1E8EE6bC24D628f9C5d03e8736e5bF32c809` |
 | Treasury wallet | `0x897FE482AcB4633967D1BEf8a471EE59d71BE56F` |
-| Chain ID | `10143` (Monad Testnet) |
+| Chain ID | `143` (Monad) |
 | Base URL | `https://ssnehmposgsczoadycms.supabase.co/functions/v1` |
 
 ---
