@@ -28,3 +28,9 @@ dist-ssr
 /secrets/
 demo-athlete-wallets.json
 *.secret.json
+
+# Debug/test artifacts
+agent_key.json
+agent_trade.json
+athlete_list.json
+e2e_response.json
