@@ -12,7 +12,8 @@
       "Bash(ls:*)",
       "Bash(git add:*)",
       "Bash(git commit -m \"$\\(cat <<''EOF''\nClean up repo for Moltiverse Hackathon submission\n\n- Replace old Lovable README with hackathon-focused documentation\n- Add world.md: World model specification with bounty mapping\n- Add skill.md: Full Agent API reference for external agents\n- Archive old docs: Strava setup, mobile fixes, social media guide, etc.\n- Consistent contract address, base URL, and chain ID across all docs\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
-      "Bash(git commit -m \"$\\(cat <<''EOF''\nUpdate all docs to Monad mainnet \\(chain 143\\)\n\n- Contract: 0xA87F1E8EE6bC24D628f9C5d03e8736e5bF32c809\n- Chain ID: 143 \\(was 10143 testnet\\)\n- Explorer: monadscan.com \\(was testnet.monadscan.com\\)\n- Remove all faucet references\n- Update fund wallet instructions\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")"
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nUpdate all docs to Monad mainnet \\(chain 143\\)\n\n- Contract: 0xA87F1E8EE6bC24D628f9C5d03e8736e5bF32c809\n- Chain ID: 143 \\(was 10143 testnet\\)\n- Explorer: monadscan.com \\(was testnet.monadscan.com\\)\n- Remove all faucet references\n- Update fund wallet instructions\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(git commit:*)"
     ]
   }
 }
