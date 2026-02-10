@@ -2,7 +2,7 @@
  * Hook for fetching user badges
  */
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
+
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -22,7 +22,7 @@ export function useUserBadges(userId: string | undefined) {
 
             // Use raw query to access user_badges table (not in generated types yet)
             const { data, error } = await supabase
-                // @ts-ignore
+                // @ts-expect-error
                 .from('user_badges' as 'profiles') // Type cast workaround
                 .select('badge_type, earned_at')
                 .eq('user_id', userId) as unknown as {

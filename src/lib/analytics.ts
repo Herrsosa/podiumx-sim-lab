@@ -3,7 +3,7 @@
  * Tracks user events to Supabase for marketing insights
  */
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
+
 import { supabase } from '@/integrations/supabase/client';
 
 // ============================================================================
@@ -156,7 +156,7 @@ export async function trackEvent(
 
         // Insert into analytics_events table
         const { error } = await supabase
-            // @ts-ignore
+            // @ts-expect-error
             .from('analytics_events')
             .insert(eventPayload);
 
