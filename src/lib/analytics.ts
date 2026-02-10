@@ -156,7 +156,7 @@ export async function trackEvent(
 
         // Insert into analytics_events table
         const { error } = await supabase
-            // @ts-expect-error
+            // @ts-expect-error missing table type definition
             .from('analytics_events')
             .insert(eventPayload);
 

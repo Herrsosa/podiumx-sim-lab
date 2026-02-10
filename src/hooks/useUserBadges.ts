@@ -22,7 +22,7 @@ export function useUserBadges(userId: string | undefined) {
 
             // Use raw query to access user_badges table (not in generated types yet)
             const { data, error } = await supabase
-                // @ts-expect-error
+                // @ts-expect-error casting workaround for missing types
                 .from('user_badges' as 'profiles') // Type cast workaround
                 .select('badge_type, earned_at')
                 .eq('user_id', userId) as unknown as {
