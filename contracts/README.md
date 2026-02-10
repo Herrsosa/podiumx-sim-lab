@@ -1,6 +1,6 @@
-# Athlyst On-Chain Bonding Curve (Monad)
+# Athlyst On-Chain Bonding Curve
 
-Smart contract for athlete token trading using a quadratic bonding curve on **Monad**.
+Smart contract for athlete token trading using a quadratic bonding curve on **Monad Mainnet**.
 
 ## Formula
 
@@ -14,79 +14,42 @@ Where:
 - `b` = 0.02 (linear coefficient)  
 - `c` = 1 MON (base price)
 
-Note: On-chain, `a`, `b`, and `c` are stored in **wei** and prices/costs are returned in **wei**. When registering athletes, use `ethers.parseUnits("...", 18)` for each coefficient.
-
 ## Fees
 
 - **Total**: 3%
-- **Athlete**: 1.5%
-- **Treasury**: 1.5%
+- **Athlete (Issuer)**: 1.5% (claimable via `claimEarnings()`)
+- **Protocol Treasury**: 1.5%
 
 ## Reserve Currency
 
-Uses **native MON** (not USDC). This means:
-- No token approvals needed before trading
-- Users just send MON directly with the buy transaction
-- Simpler UX, but prices are volatile in USD terms
+Uses **native MON**. No token approvals are required. Users send MON directly with the `buy` transaction.
 
-## Setup
+## Contract Addresses
+
+| Layer | Network | Address |
+|-------|---------|---------|
+| **Bonding Curve** | Monad Mainnet | `0xA87F1E8EE6bC24D628f9C5d03e8736e5bF32c809` |
+| **Treasury** | Monad Mainnet | `0x897FE482AcB4633967D1BEf8a471EE59d71BE56F` |
+
+## Setup & Deployment
+
+### Build & Test
 
 ```bash
-# Install Foundry
-curl -L https://foundry.paradigm.xyz | bash
-foundryup
-
-# Install dependencies
 cd contracts
-forge install foundry-rs/forge-std
-forge install OpenZeppelin/openzeppelin-contracts
-
-# Copy environment file
-cp .env.example .env
-# Edit .env with your keys
-```
-
-## Build & Test
-
-```bash
 forge build
 forge test -vvv
 ```
 
-## Deploy
-
-### Monad Testnet
+### Deploy to Monad Mainnet
 
 ```bash
 source .env
 forge script script/Deploy.s.sol:DeployBondingCurve \
-  --rpc-url $MONAD_TESTNET_RPC_URL \
-  --broadcast
-```
-
-### Monad Mainnet (when available)
-
-```bash
-source .env
-forge script script/Deploy.s.sol:DeployBondingCurve \
-  --rpc-url $MONAD_MAINNET_RPC_URL \
+  --rpc-url https://rpc-mainnet.monadscan.com \
   --broadcast \
   --verify
 ```
-
-## Contract Addresses
-
-| Network | Address |
-|---------|---------|
-| Monad Testnet | TBD |
-| Monad Mainnet | TBD |
-
-## Related Contracts
-
-| Contract | Address | Network |
-|----------|---------|---------|
-| AthlystLogger | `0xa87f1e8ee6bc24d628f9c5d03e8736e5bf32c809` | Monad Testnet |
-| AthlystBondingCurve | `0x9066E90d9d5DEBC9c75FFBA729feCC162Ea2601F` | Monad Testnet |
 
 ## Architecture
 
@@ -103,8 +66,7 @@ AthlystBondingCurve
 
 ## Security
 
-- ReentrancyGuard on all state-changing functions
-- Pausable for emergency stops
-- Slippage protection (minPayout on sell)
-- Ownable for admin functions
-- Checks-effects-interactions pattern for MON transfers
+- ReentrancyGuard for all value transfers.
+- Slippage protection on `sell`.
+- Ownable for admin registration.
+- Checks-effects-interactions pattern.
