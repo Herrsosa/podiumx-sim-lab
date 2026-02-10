@@ -58,12 +58,13 @@ serve(async (req) => {
                 );
             }
 
+            const profile = (codeData as Record<string, unknown>).profiles as { display_name?: string; username?: string } | null;
             return new Response(
                 JSON.stringify({
                     valid: true,
                     type: "referral",
                     referrer_id: codeData.user_id,
-                    referrer_name: codeData.profiles?.display_name || codeData.profiles?.username || "An Athlyst user"
+                    referrer_name: profile?.display_name || profile?.username || "An Athlyst user"
                 }),
                 { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
             );
