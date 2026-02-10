@@ -9,6 +9,7 @@ import {
   formatTooltip as defaultFormatTooltip,
   getDailyTicks,
   getDomain,
+  getWindowUTC,
   getUniformTicks,
   type PoSSeriesPoint,
 } from '@/lib/charting/engine';
@@ -159,10 +160,15 @@ const AthletePriceChart = memo(({
   const memoizedPosCountByDay = useMemo(() => buildPosCountMap(posSeries), [posSeries]);
   const posCountByDay = memoEnabled ? memoizedPosCountByDay : buildPosCountMap(posSeries);
 
-  // Apply range filtering, stitching, and minimum point guards
-  const memoizedChartData = useMemo(
+      // Apply range filtering, stitching, and minimum point guards
+      const memoizedChartData = useMemo(
     () => {
       const baseData = buildChartData(chartPoints, posSeries, memoizedPosCountByDay, startOfDay);
+      const baseByT = new Map<number, ChartDataPoint>();
+      baseData.forEach((p) => {
+        const tMs = toMs(p.t);
+        baseByT.set(tMs, { ...p, t: tMs });
+      });
 
       // Convert to XY format for new helpers (normalize to ms) while carrying last known price across PoS-only rows
       const firstPriceEntry = baseData.find((entry) => typeof entry.price === 'number');
@@ -248,13 +254,18 @@ const AthletePriceChart = memo(({
       });
 
       // Convert back to ChartDataPoint format
-      return visible.map((p, idx) => ({
-        t: p.x,
-        price: p.y,
-        posCount: baseData[idx]?.posCount ?? 0,
-        carried: baseData[idx]?.carried,
-        lastTradeTime: baseData[idx]?.lastTradeTime,
-      }));
+      return visible.map((p) => {
+        const t = toMs(p.x);
+        const src = baseByT.get(t);
+        const dayStart = startOfDay(t);
+        return {
+          t,
+          price: p.y,
+          posCount: memoizedPosCountByDay.get(dayStart) ?? 0,
+          carried: src?.carried,
+          lastTradeTime: src?.lastTradeTime,
+        };
+      });
     },
     [chartPoints, memoizedPosCountByDay, posSeries, startOfDay, timeRange, posts, logDiag],
   );
@@ -263,6 +274,11 @@ const AthletePriceChart = memo(({
     ? memoizedChartData
     : (() => {
       const baseData = buildChartData(chartPoints, posSeries, posCountByDay, startOfDay);
+      const baseByT = new Map<number, ChartDataPoint>();
+      baseData.forEach((p) => {
+        const tMs = toMs(p.t);
+        baseByT.set(tMs, { ...p, t: tMs });
+      });
       const firstPriceEntry = baseData.find((entry) => typeof entry.price === 'number');
       let lastKnownPrice = typeof firstPriceEntry?.price === 'number' ? firstPriceEntry.price : 0;
       const xyPoints = baseData.map((p) => {
@@ -285,13 +301,18 @@ const AthletePriceChart = memo(({
       }
       visible = ensureMinimumPoints(visible, start, end);
 
-      return visible.map((p, idx) => ({
-        t: p.x,
-        price: p.y,
-        posCount: baseData[idx]?.posCount ?? 0,
-        carried: baseData[idx]?.carried,
-        lastTradeTime: baseData[idx]?.lastTradeTime,
-      }));
+      return visible.map((p) => {
+        const t = toMs(p.x);
+        const src = baseByT.get(t);
+        const dayStart = startOfDay(t);
+        return {
+          t,
+          price: p.y,
+          posCount: posCountByDay.get(dayStart) ?? 0,
+          carried: src?.carried,
+          lastTradeTime: src?.lastTradeTime,
+        };
+      });
     })();
 
   const posDomainMemo = useMemo(() => computePosDomain(posSeries), [posSeries]);
@@ -299,8 +320,33 @@ const AthletePriceChart = memo(({
 
   const glowFilterId = useId().replace(/:/g, '');
 
-  const xDomainMemo = useMemo(() => getDomain(timeRange, chartPoints), [chartPoints, timeRange]);
-  const xDomain = memoEnabled ? xDomainMemo : getDomain(timeRange, chartPoints);
+  const xDomainMemo = useMemo(() => {
+    // For windowed ranges, pin the domain to the full window so daily ticks always land
+    // within the domain (otherwise Recharts may render zero tick labels).
+    if (timeRange !== 'all') {
+      const { start, end } = getWindowUTC(timeRange);
+      return [start ?? Date.now() - 24 * 60 * 60 * 1000, end] as [number, number];
+    }
+
+    // For "all", derive from the actual rendered data so we include carried/synth points.
+    const ts = chartData.map((p) => toMs(p.t)).filter(Number.isFinite);
+    if (ts.length > 0) {
+      return [Math.min(...ts), Math.max(...ts)] as [number, number];
+    }
+
+    return getDomain(timeRange, chartPoints);
+  }, [chartData, chartPoints, timeRange]);
+  const xDomain = memoEnabled ? xDomainMemo : (() => {
+    if (timeRange !== 'all') {
+      const { start, end } = getWindowUTC(timeRange);
+      return [start ?? Date.now() - 24 * 60 * 60 * 1000, end] as [number, number];
+    }
+    const ts = chartData.map((p) => toMs(p.t)).filter(Number.isFinite);
+    if (ts.length > 0) {
+      return [Math.min(...ts), Math.max(...ts)] as [number, number];
+    }
+    return getDomain(timeRange, chartPoints);
+  })();
 
   const xTicksMemo = useMemo(() => computeXTicks(timeRange, xDomainMemo), [timeRange, xDomainMemo]);
   const xTicks = memoEnabled ? xTicksMemo : computeXTicks(timeRange, xDomain);
@@ -375,7 +421,7 @@ const AthletePriceChart = memo(({
     [glowFilterId],
   );
 
-  const formatPriceTick = useCallback((value: number) => `$${value.toFixed(2)}`, []);
+  const formatPriceTick = useCallback((value: number) => `${value.toFixed(2)} MON`, []);
 
   const renderTooltip = useCallback(({ active, label, payload }: TooltipProps<number, string>) => {
     if (!active || !payload || payload.length === 0 || typeof label !== 'number') {
@@ -396,7 +442,7 @@ const AthletePriceChart = memo(({
       <div className="rounded-lg border border-border/60 bg-card/95 backdrop-blur-sm px-3 py-2 shadow-xl">
         <div className="text-xs font-medium text-muted-foreground mb-1">{dateLabel}</div>
         {typeof price === 'number' && (
-          <div className="text-base font-bold text-foreground mb-1">${price.toFixed(4)}</div>
+          <div className="text-base font-bold text-foreground mb-1">{price.toFixed(4)} MON</div>
         )}
         {dataPoint?.carried && dataPoint.lastTradeTime && (
           <div className="text-xs text-muted-foreground italic mb-1">

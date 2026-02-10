@@ -218,7 +218,14 @@ export function getDomain(
   if (actualPrices.length === 0) {
     const { start, end } = getWindowUTC(range, now);
     if (range === 'all') {
-      return [now - DAY_MS, now];
+      // If we only have carried/fallback points (e.g. no indexed on-chain trades yet),
+      // anchor the domain to the earliest available timestamp instead of "last 24h".
+      const first = series
+        .map((p) => ensureMs(Number(p.t)))
+        .filter(Number.isFinite)
+        .sort((a, b) => a - b)[0];
+      const domainStart = Number.isFinite(first) ? startOfUtcDay(first) : now - DAY_MS;
+      return [domainStart, now];
     }
     return [start ?? now - DAY_MS, end];
   }
