@@ -21,7 +21,7 @@ export function useUserBadges(userId: string | undefined) {
 
             // Use raw query to access user_badges table (not in generated types yet)
             const { data, error } = await supabase
-                .from('user_badges' as 'profiles') // Type cast workaround
+                .from('user_badges' as any)
                 .select('badge_type, earned_at')
                 .eq('user_id', userId) as unknown as {
                     data: UserBadge[] | null;
