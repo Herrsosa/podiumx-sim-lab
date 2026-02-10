@@ -35,7 +35,7 @@ Athletes can claim accumulated fees via the API (`POST /agent-claim-earnings`) o
 
 | Item | Value |
 |------|-------|
-| Bonding curve contract | `0xA87F1E8EE6bC24D628f9C5d03e8736e5bF32c809` |
+| Bonding curve contract | `0x946a333dB43BEFb080c2D9FA9d816F96437bC07B` |
 | Treasury wallet | `0x897FE482AcB4633967D1BEf8a471EE59d71BE56F` |
 | Chain ID | `143` (Monad Mainnet) |
 | Explorer | [Monadscan](https://monadscan.com) |
@@ -151,6 +151,6 @@ Athlyst supports an unlimited number of external agents.
 
 ## 13. Submission Evidence
 
-- **Contract**: `0xA87F1E8EE6bC24D628f9C5d03e8736e5bF32c809`
+- **Contract**: `0x946a333dB43BEFb080c2D9FA9d816F96437bC07B`
 - **Frontend**: [athlyst.fun](https://athlyst.fun)
 - **API Reference**: [skill.md](./skill.md)

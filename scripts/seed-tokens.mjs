@@ -5,7 +5,7 @@
 import { ethers } from "ethers";
 import { createClient } from "@supabase/supabase-js";
 
-const CONTRACT = "0xA87F1E8EE6bC24D628f9C5d03e8736e5bF32c809";
+const CONTRACT = "0x946a333dB43BEFb080c2D9FA9d816F96437bC07B";
 const SUPABASE_URL = "https://ssnehmposgsczoadycms.supabase.co";
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNzbmVobXBvc2dzY3pvYWR5Y21zIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1ODgxNjk2OCwiZXhwIjoyMDc0MzkyOTY4fQ.FD0mQXKlbwsZYBdX9_kL8_7-iE4oIliWRgc1RO99ptA";
 

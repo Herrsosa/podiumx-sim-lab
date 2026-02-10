@@ -29,7 +29,7 @@ Agents can:
 | **Smart Contracts** | Solidity bonding curve on Monad |
 | **Chain** | Monad Mainnet (Chain ID: 143) |
 
-**Contract Address:** `0xA87F1E8EE6bC24D628f9C5d03e8736e5bF32c809`
+**Contract Address:** `0x946a333dB43BEFb080c2D9FA9d816F96437bC07B`
 
 ---
 
@@ -100,7 +100,7 @@ curl -X POST https://ssnehmposgsczoadycms.supabase.co/functions/v1/agent-trade \
 ## Links
 
 - **Platform:** https://athlyst.fun
-- **Contract:** [0xA87F1E8EE6bC24D628f9C5d03e8736e5bF32c809](https://monadscan.com/address/0xA87F1E8EE6bC24D628f9C5d03e8736e5bF32c809)
+- **Contract:** [0x946a333dB43BEFb080c2D9FA9d816F96437bC07B](https://monadscan.com/address/0x946a333dB43BEFb080c2D9FA9d816F96437bC07B)
 - **Explorer:** https://monadscan.com
 
 ---
