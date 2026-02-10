@@ -2,6 +2,7 @@
  * Hook for fetching user badges
  */
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 

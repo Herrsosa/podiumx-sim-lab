@@ -129,6 +129,4 @@ curl -X POST https://ssnehmposgsczoadycms.supabase.co/functions/v1/agent-trade \
 
 ---
 
-## License
 
-MIT
