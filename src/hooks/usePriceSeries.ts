@@ -56,6 +56,7 @@ export function usePriceSeries(
         .from('trades')
         .select('price_after, created_at')
         .eq('athlete_id', athleteId)
+        .eq('is_on_chain', true)
         .order('created_at', { ascending: true });
 
       logger.info(`[usePriceSeries] athleteId=${athleteId}, range=${range}, tradesCount=${data?.length ?? 0}`, { data, error });

@@ -9,7 +9,6 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useUser } from '@/store/auth';
 import { useChat } from '@/hooks/useChat';
 import type { ChatMessage } from '@/hooks/useChat';
-import { resolveAvatarUrl } from '@/utils/avatar';
 import { UserAvatar } from '@/components/UserAvatar';
 
 interface TokengatedChatProps {
@@ -176,14 +175,14 @@ function ChatMessageBubble({
 
   const displayName =
     message.sender?.display_name || message.sender?.id || 'Anonymous';
-  const avatarUrl = resolveAvatarUrl(message.sender?.avatar_url, { size: 48 });
 
   return (
     <div
       className={`flex items-start gap-3 ${isOwn ? 'flex-row-reverse text-right' : ''}`}
     >
       <UserAvatar
-        src={avatarUrl}
+        src={message.sender?.avatar_url}
+        seed={message.sender?.username ?? message.senderId}
         alt={displayName}
         size={36}
         className="ring-2 ring-primary/20"

@@ -6,6 +6,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import { useNotifications, type Notification } from '@/hooks/useNotifications';
 import { featureFlags } from '@/lib/config/featureFlags';
+import { UserAvatar } from '@/components/UserAvatar';
 
 /**
  * Full-page notifications view for mobile
@@ -179,17 +180,19 @@ function NotificationRow({ notification, onClick }: NotificationRowProps) {
             )}
         >
             {/* Actor avatar or icon */}
-            <div className="flex-shrink-0 h-12 w-12 rounded-full bg-muted flex items-center justify-center overflow-hidden">
-                {actor?.avatar_url ? (
-                    <img
-                        src={actor.avatar_url}
-                        alt={actorName}
-                        className="h-full w-full object-cover"
-                    />
-                ) : (
-                    getIcon()
-                )}
-            </div>
+            {actor ? (
+                <UserAvatar
+                    src={actor.avatar_url}
+                    seed={actor.username ?? actor.id}
+                    alt={actorName}
+                    size={48}
+                    className="flex-shrink-0 bg-muted"
+                />
+            ) : (
+                <div className="flex-shrink-0 h-12 w-12 rounded-full bg-muted flex items-center justify-center overflow-hidden">
+                    {getIcon()}
+                </div>
+            )}
             <div className="flex-1 min-w-0 pt-1">
                 <p className="text-sm text-foreground">
                     <span className="font-semibold">{actorName}</span>{' '}

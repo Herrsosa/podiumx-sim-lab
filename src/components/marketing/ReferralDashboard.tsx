@@ -20,7 +20,6 @@ import {
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
@@ -36,6 +35,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { getReferralUrl } from '@/utils/shareUtils';
 import { trackReferralLinkCopied, trackReferralLinkShared } from '@/lib/analytics';
 import { toast } from 'sonner';
+import { UserAvatar } from '@/components/UserAvatar';
 
 interface ReferralStats {
     referral_code: string;
@@ -82,7 +82,7 @@ const REWARD_TIERS = [
     { count: 1, type: 'early_access', value: 'skip_waitlist', label: 'Skip Waitlist', icon: '🚀' },
     { count: 3, type: 'points', value: '500', label: '500 Sweat Points', icon: '⚡' },
     { count: 5, type: 'badge', value: 'founding', label: 'Founding Badge', icon: '🏅' },
-    { count: 10, type: 'usdc', value: '5', label: '$5 USDC Airdrop', icon: '💰' },
+    { count: 10, type: 'usdc', value: '5', label: '5 MON Airdrop', icon: '💰' },
 ];
 
 export function ReferralDashboard({ className }: ReferralDashboardProps) {
@@ -388,12 +388,12 @@ export function ReferralDashboard({ className }: ReferralDashboardProps) {
                                     key={referral.id}
                                     className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/50"
                                 >
-                                    <Avatar className="h-8 w-8">
-                                        <AvatarImage src={referral.referred?.avatar_url || undefined} />
-                                        <AvatarFallback>
-                                            {(referral.referred?.display_name || referral.referred?.username || '?')[0].toUpperCase()}
-                                        </AvatarFallback>
-                                    </Avatar>
+                                    <UserAvatar
+                                        src={referral.referred?.avatar_url}
+                                        seed={referral.referred?.username}
+                                        alt={referral.referred?.display_name || referral.referred?.username || 'User'}
+                                        size={32}
+                                    />
                                     <div className="flex-1 min-w-0">
                                         <p className="font-medium truncate">
                                             {referral.referred?.display_name || referral.referred?.username}
@@ -451,12 +451,12 @@ export function ReferralDashboard({ className }: ReferralDashboardProps) {
                                             <span className="text-lg font-medium text-muted-foreground">{index + 1}</span>
                                         )}
                                     </div>
-                                    <Avatar className="h-10 w-10">
-                                        <AvatarImage src={referrer.avatar_url || undefined} />
-                                        <AvatarFallback>
-                                            {(referrer.display_name || referrer.username || '?')[0].toUpperCase()}
-                                        </AvatarFallback>
-                                    </Avatar>
+                                    <UserAvatar
+                                        src={referrer.avatar_url}
+                                        seed={referrer.username ?? referrer.user_id}
+                                        alt={referrer.display_name || referrer.username || 'User'}
+                                        size={40}
+                                    />
                                     <div className="flex-1 min-w-0">
                                         <p className="font-medium truncate">
                                             {referrer.display_name || referrer.username}

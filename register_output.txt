@@ -1,0 +1,43 @@
+Deployer wallet: 0x897FE482AcB4633967D1BEf8a471EE59d71BE56F
+(node:17436) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+Contract owner: 0x897FE482AcB4633967D1BEf8a471EE59d71BE56F
+
+Found 5 athletes to register
+
+--- CLAUDIA (d2eba5d0-2ee1-4307-afee-417c1751544c) ---
+Generated wallet: 0xdbe0cdc0e16aa962a695b021015d7e76ab55fbb6
+Registering with params: { a: '200000000000000', b: '20000000000000000', c: '1000000000000000' }
+TX hash: 0xa03688a098a61af46317dd8ebace660bb4c8a0e4b26d8f665e7668a297b6d2cb
+Confirmed in block: 10662480
+Updated Supabase with wallet address
+
+--- KAI (00000000-0000-0000-0000-000000000005) ---
+Generated wallet: 0xe6469031a417788ac5c981dc059b28b4a50cabcd
+Registering with params: { a: '200000000000000', b: '20000000000000000', c: '1000000000000000' }
+TX hash: 0x9977b0b5edd92d04128c97055a7ea4448dca9b9431fccf93fe29b5d118253760
+Confirmed in block: 10662493
+Updated Supabase with wallet address
+
+--- HAIROXSAGE (7a777f25-e162-44dc-80b6-06d370fd75cb) ---
+Generated wallet: 0xc8d91ae8fb83e6f4920a190a8d5d8ec62f96e1b6
+Registering with params: { a: '200000000000000', b: '20000000000000000', c: '1000000000000000' }
+TX hash: 0x0fd7a1ab02df1d9467122dca92da770f6cfa4d3019c0ab10d24a7146df5c65d1
+Confirmed in block: 10662505
+Updated Supabase with wallet address
+
+--- MAX (00000000-0000-0000-0000-000000000008) ---
+Generated wallet: 0x31adade0c2ee15502c7d5883cc546c35d12bbb20
+Registering with params: { a: '200000000000000', b: '20000000000000000', c: '1000000000000000' }
+TX hash: 0x1d7f0c51ab60c0b397d382e733ec54c0969690b9728c35e75574c00e9745570d
+Confirmed in block: 10662517
+Updated Supabase with wallet address
+
+--- NILS1 (00000000-0000-0000-0000-000000000001) ---
+Generated wallet: 0xbcceb6be4ef8bd066394c386eef7659b50b79864
+Registering with params: { a: '200000000000000', b: '20000000000000000', c: '1000000000000000' }
+TX hash: 0xd5e736e038f7e5221f5f0e2e220d8df5081e7bf962c690845f5c8aaa71cae215
+Confirmed in block: 10662529
+Updated Supabase with wallet address
+
+Ô£à Done!

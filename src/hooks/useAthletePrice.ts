@@ -76,7 +76,12 @@ export function useAthletePrice(athleteId: string | undefined) {
         c: latestPriceRow?.curve_c ?? token.c ?? 1,
       };
 
-      const price = latestPriceRow?.price ?? (token.supply != null ? priceAt(token.supply, curve) : 0);
+      const onchainPrice = (token as any)?.onchain_price != null ? Number((token as any)?.onchain_price) : Number.NaN;
+      const fallbackPrice = Number.isFinite(onchainPrice) && onchainPrice > 0
+        ? onchainPrice
+        : (token.supply != null ? priceAt(token.supply, curve) : 0);
+
+      const price = latestPriceRow?.price ?? fallbackPrice;
       const supply = latestPriceRow?.supply ?? token.supply ?? 0;
       const reserve = latestPriceRow?.treasury_balance ?? token.treasury_balance ?? 0;
       const athleteRevenue = latestPriceRow?.athlete_earnings ?? token.athlete_earnings ?? 0;

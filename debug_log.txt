@@ -1,0 +1,9 @@
+--- DEBUGGING TRADE REVERT ---
+DB Profile: molt_bot
+DB Wallet:  0x0bbc4874a1675bc0c0d6d42c4717aa1bf5d332fc
+Checking contract: 0x9066E90d9d5DEBC9c75FFBA729feCC162Ea2601F
+On-Chain Info: supply=0 initialized=true
+✅ Athlete IS registered.
+Simulating Buy transaction...
+Cost to buy 1: 0.00103 MON
+✅ Simulation SUCCESS (No revert)

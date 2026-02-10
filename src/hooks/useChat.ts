@@ -17,6 +17,7 @@ export interface ChatMessage {
     id: string | null;
     display_name: string | null;
     avatar_url: string | null;
+    username: string | null;
   } | null;
 }
 
@@ -48,7 +49,7 @@ export function useChat(athleteId: string | undefined) {
       if (senderIds.length > 0) {
         const { data, error: profileError } = await supabase
           .from('profiles')
-          .select('id, display_name, avatar_url')
+          .select('id, display_name, avatar_url, username')
           .in('id', senderIds);
 
         if (profileError) throw profileError;

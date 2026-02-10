@@ -83,12 +83,23 @@ export function getReferralUrl(referralCode: string): string {
  * Returns a Blob that can be downloaded or shared
  */
 export async function generateShareImage(element: HTMLElement): Promise<Blob> {
+    // Wait for map tiles to load
+    await new Promise(resolve => setTimeout(resolve, 1000));
+
     const canvas = await html2canvas(element, {
         scale: 2, // Higher quality
         useCORS: true, // Allow cross-origin images
         allowTaint: true,
         backgroundColor: '#0f172a', // slate-900
         logging: false,
+        // Wait for map tiles to load
+        onclone: (document) => {
+            const maps = document.querySelectorAll('.leaflet-container');
+            maps.forEach(map => {
+                // Force map tiles to be visible if they were somehow hidden
+                (map as HTMLElement).style.visibility = 'visible';
+            });
+        }
     });
 
     return new Promise((resolve, reject) => {

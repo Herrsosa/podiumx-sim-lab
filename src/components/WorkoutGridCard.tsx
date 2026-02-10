@@ -90,7 +90,7 @@ function WorkoutGridCardComponent({ workout, post, canView, onClick, variant = '
   const aspectClass = variant === 'feed' ? 'aspect-square max-w-xs sm:max-w-sm' : 'aspect-square';
   const padding = variant === 'feed' ? 'p-4 sm:p-5' : 'p-4';
   const metricsClass = variant === 'feed' ? 'text-lg font-bold tracking-tight text-foreground' : 'text-base md:text-lg text-foreground font-semibold';
-  const captionClass = variant === 'feed' ? 'text-sm text-muted-foreground line-clamp-2 leading-relaxed mt-1' : 'text-sm text-muted-foreground line-clamp-2 leading-tight';
+  const captionClass = variant === 'feed' ? 'text-sm text-muted-foreground leading-relaxed mt-1' : 'text-sm text-muted-foreground line-clamp-2 leading-tight';
   const typeBadgeClass = 'text-xs font-semibold px-2 py-0.5';
   const calendarClass = 'text-xs font-medium';
 
@@ -206,6 +206,7 @@ function WorkoutGridCardComponent({ workout, post, canView, onClick, variant = '
                             location={post.location_lat != null && post.location_lng != null
                               ? { lat: post.location_lat, lng: post.location_lng }
                               : null}
+                            polyline={post.strava_map_polyline}
                             size="sm"
                           />
                         )}

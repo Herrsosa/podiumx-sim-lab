@@ -28,6 +28,9 @@ import type { PriceSeriesPoint } from '@/lib/charting/engine';
 import { getWindowUTC } from '@/lib/charting/engine';
 import { useChartPosts } from '@/hooks/useChartPosts';
 import { ShareChartModal } from '@/components/share/ShareChartModal';
+import { DatePickerWithRange } from '@/components/DatePickerWithRange';
+import { DateRange } from 'react-day-picker';
+import { useWorkouts } from '@/hooks/useWorkouts';
 
 interface PersonalConsoleProps {
   athlete?: Athlete;
@@ -145,6 +148,48 @@ export function PersonalConsole({
       minute: '2-digit',
     });
   }, []);
+
+  const [dateRange, setDateRange] = useState<DateRange | undefined>();
+
+  // Fetch workouts with date range filter
+  // Fetch workouts with date range filter
+  const {
+    workouts: lockerWorkouts,
+    isLoading: isWorkoutsLoading,
+    hasNextPage: localHasNextPage,
+    fetchNextPage: localFetchNextPage,
+    isFetchingNextPage: localIsFetchingNextPage
+  } = useWorkouts(athlete?.id, {
+    startDate: dateRange?.from,
+    endDate: dateRange?.to ? new Date(dateRange.to.getTime() + 86400000) : (dateRange?.from ? new Date(dateRange.from.getTime() + 86400000) : undefined),
+  });
+
+  const filteredWorkouts = useMemo(() => {
+    return lockerWorkouts?.map(w => w.workout).filter((w): w is Workout => w !== null) || [];
+  }, [lockerWorkouts]);
+
+  const filteredPosts = useMemo(() => {
+    return lockerWorkouts?.map(w => ({
+      id: w.id,
+      created_at: w.createdAt,
+      author_id: athlete?.id || '',
+      workout_json: w.workout,
+      image_url: w.imageUrl,
+      text: w.notes,
+      token_gated: w.visibility !== 'public',
+      strava_activity_id: w.stravaActivityId,
+      visibility: w.visibility,
+      min_tokens_required: w.minTokensRequired,
+      is_pinned: w.isPinned,
+      strava_map_polyline: w.stravaMapPolyline,
+      // Location fields
+      location_city: w.locationCity,
+      location_country: w.locationCountry,
+      location_country_code: w.locationCountryCode,
+      location_lat: w.locationLat,
+      location_lng: w.locationLng,
+    } as Post)) || [];
+  }, [lockerWorkouts, athlete?.id]);
 
   return (
     <>
@@ -393,32 +438,36 @@ export function PersonalConsole({
                     Add Workout
                   </Button>
                 </div>
+                <div className="mt-4 flex justify-end">
+                  <DatePickerWithRange date={dateRange} setDate={setDateRange} />
+                </div>
               </CardHeader>
               <CardContent>
-                {!workouts || workouts.length === 0 ? (
-                  <div className="py-16 text-center text-muted-foreground">
-                    No workouts yet. Add your first workout to get started!
+                {!filteredWorkouts || (filteredWorkouts.length === 0 && !isWorkoutsLoading) ? (
+                  <div className="py-8 text-center text-muted-foreground">
+                    No workouts found
                   </div>
                 ) : (
-                  <>
+                  <div className="space-y-6">
                     <ProofOfSweat
                       athleteId={athlete?.id || ''}
                       athleteName={athlete?.name || ''}
                       athleteHandle={athlete?.slug}
                       athleteAvatar={athlete?.avatar}
-                      workouts={workouts}
-                      posts={posts}
+                      workouts={filteredWorkouts}
+                      posts={filteredPosts}
+                      isLoading={isWorkoutsLoading}
                       viewerHoldings={Number.MAX_SAFE_INTEGER}
                       onWorkoutDeleted={onWorkoutDelete}
                     />
-                    {hasNextPage && (
+                    {localHasNextPage && (
                       <div className="flex justify-center py-6">
-                        <Button onClick={fetchNextPage} disabled={isFetchingNextPage} variant="outline">
-                          {isFetchingNextPage ? 'Loading...' : 'Load More'}
+                        <Button onClick={() => localFetchNextPage()} disabled={localIsFetchingNextPage} variant="outline">
+                          {localIsFetchingNextPage ? 'Loading...' : 'Load More'}
                         </Button>
                       </div>
                     )}
-                  </>
+                  </div>
                 )}
               </CardContent>
             </Card>

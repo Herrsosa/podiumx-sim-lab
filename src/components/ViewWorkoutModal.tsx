@@ -215,12 +215,12 @@ export default function ViewWorkoutModal({ open, onOpenChange, workoutPost, athl
                             </div>
                         </div>
 
-                        {/* Notes */}
-                        {workout.notes && (
+                        {/* Notes / Text */}
+                        {(workout.notes || workoutPost.text) && (
                             <div className="space-y-2">
                                 <h3 className="font-semibold text-sm uppercase tracking-wider text-muted-foreground">Notes</h3>
                                 <div className="p-4 rounded-lg bg-muted/50 border border-border/50">
-                                    <p className="text-base leading-relaxed whitespace-pre-wrap">{workout.notes}</p>
+                                    <p className="text-base leading-relaxed whitespace-pre-wrap">{workout.notes || workoutPost.text}</p>
                                 </div>
                             </div>
                         )}

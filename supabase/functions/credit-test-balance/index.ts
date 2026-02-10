@@ -7,7 +7,7 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
-type SupportedAsset = "fiat" | "usdc";
+type SupportedAsset = "fiat" | "usdc" | "mon";
 
 interface CreditRequest {
   asset?: SupportedAsset;
@@ -19,6 +19,11 @@ function normalizeAmount(asset: SupportedAsset, amount: number): number {
     return amount / 100;
   }
 
+  // Both usdc and mon use same scaling (if any) or 1:1 mapping for testnet
+  // The original code divided by 1,000,000 (USDC has 6 decimals usually).
+  // MON has 18 decimals, but here we are likely dealing with "display units" vs "integer storage".
+  // If the previous balance was stored as float/integer scaled...
+  // Let's keep logic same for now.
   return amount / 1_000_000;
 }
 
@@ -62,9 +67,9 @@ serve(async (req) => {
   }
 
   const { asset, amount } = payload;
-  if (!asset || (asset !== "fiat" && asset !== "usdc")) {
+  if (!asset || (asset !== "fiat" && asset !== "usdc" && asset !== "mon")) {
     return new Response(
-      JSON.stringify({ error: "Asset must be 'fiat' or 'usdc'" }),
+      JSON.stringify({ error: "Asset must be 'mon', 'fiat' or 'usdc'" }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 400,

@@ -63,9 +63,9 @@ async function buildSnapshot(supabaseAdmin: any, userId: string, athleteId: stri
   const tokenIds = Array.from(athleteIds);
   const { data: tokenRows } = tokenIds.length
     ? await supabaseAdmin
-        .from("athlete_tokens")
-        .select("athlete_id, supply, a, b, c, treasury_balance, athlete_earnings, updated_at")
-        .in("athlete_id", tokenIds)
+      .from("athlete_tokens")
+      .select("athlete_id, supply, a, b, c, treasury_balance, athlete_earnings, updated_at")
+      .in("athlete_id", tokenIds)
     : { data: null };
 
   const tokenMap = new Map(
@@ -121,7 +121,7 @@ async function buildSnapshot(supabaseAdmin: any, userId: string, athleteId: stri
 
   return {
     wallet: {
-      usdc: walletBalance,
+      mon: walletBalance,
       positions,
     },
     positions,
@@ -242,16 +242,16 @@ serve(async (req) => {
           access: snapshot.access,
           priceTick: priceTick
             ? {
-                athleteId,
-                price: Number(priceTick.price ?? 0),
-                supply: Number(priceTick.supply ?? 0),
-                reserve: Number(priceTick.treasury_balance ?? 0),
-                athleteRevenue: Number(priceTick.athlete_earnings ?? 0),
-                grossAmount: Number(priceTick.gross_amount ?? 0),
-                side: priceTick.side,
-                createdAt: priceTick.created_at,
-                curve: snapshot.athletePrice.curve,
-              }
+              athleteId,
+              price: Number(priceTick.price ?? 0),
+              supply: Number(priceTick.supply ?? 0),
+              reserve: Number(priceTick.treasury_balance ?? 0),
+              athleteRevenue: Number(priceTick.athlete_earnings ?? 0),
+              grossAmount: Number(priceTick.gross_amount ?? 0),
+              side: priceTick.side,
+              createdAt: priceTick.created_at,
+              curve: snapshot.athletePrice.curve,
+            }
             : null,
         }),
         {
@@ -309,7 +309,7 @@ serve(async (req) => {
         const deficit = netAmount - startingBalance;
         return new Response(
           JSON.stringify({
-            error: `Insufficient USDC balance. You have $${startingBalance.toFixed(2)}, need $${netAmount.toFixed(2)} (short $${deficit.toFixed(2)})`,
+            error: `Insufficient MON balance. You have ${startingBalance.toFixed(2)} MON, need ${netAmount.toFixed(2)} MON (short ${deficit.toFixed(2)} MON)`,
           }),
           {
             headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -409,16 +409,16 @@ serve(async (req) => {
             access: snapshot.access,
             priceTick: priceTick
               ? {
-                  athleteId,
-                  price: Number(priceTick.price ?? 0),
-                  supply: Number(priceTick.supply ?? 0),
-                  reserve: Number(priceTick.treasury_balance ?? 0),
-                  athleteRevenue: Number(priceTick.athlete_earnings ?? 0),
-                  grossAmount: Number(priceTick.gross_amount ?? 0),
-                  side: priceTick.side,
-                  createdAt: priceTick.created_at,
-                  curve,
-                }
+                athleteId,
+                price: Number(priceTick.price ?? 0),
+                supply: Number(priceTick.supply ?? 0),
+                reserve: Number(priceTick.treasury_balance ?? 0),
+                athleteRevenue: Number(priceTick.athlete_earnings ?? 0),
+                grossAmount: Number(priceTick.gross_amount ?? 0),
+                side: priceTick.side,
+                createdAt: priceTick.created_at,
+                curve,
+              }
               : null,
           }),
           {
@@ -458,16 +458,16 @@ serve(async (req) => {
         access: snapshot.access,
         priceTick: priceTick
           ? {
-              athleteId,
-              price: Number(priceTick.price ?? 0),
-              supply: Number(priceTick.supply ?? 0),
-              reserve: Number(priceTick.treasury_balance ?? 0),
-              athleteRevenue: Number(priceTick.athlete_earnings ?? 0),
-              grossAmount: Number(priceTick.gross_amount ?? 0),
-              side: priceTick.side,
-              createdAt: priceTick.created_at,
-              curve,
-            }
+            athleteId,
+            price: Number(priceTick.price ?? 0),
+            supply: Number(priceTick.supply ?? 0),
+            reserve: Number(priceTick.treasury_balance ?? 0),
+            athleteRevenue: Number(priceTick.athlete_earnings ?? 0),
+            grossAmount: Number(priceTick.gross_amount ?? 0),
+            side: priceTick.side,
+            createdAt: priceTick.created_at,
+            curve,
+          }
           : null,
       }),
       {
@@ -477,7 +477,7 @@ serve(async (req) => {
     );
   } catch (error) {
     console.error("Trade error", error);
-    const message = error instanceof Error ? error.message : "Unknown error";
+    const message = error instanceof Error ? error.message : `Unknown error: ${JSON.stringify(error)}`;
     return new Response(JSON.stringify({ error: message }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 400,

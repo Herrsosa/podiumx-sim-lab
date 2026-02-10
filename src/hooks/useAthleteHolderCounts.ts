@@ -19,7 +19,8 @@ export function useAthleteHolderCounts(athleteIds: string[]) {
             const { data: trades, error } = await supabase
                 .from('trades')
                 .select('athlete_id, user_id, side, qty')
-                .in('athlete_id', athleteIds);
+                .in('athlete_id', athleteIds)
+                .eq('is_on_chain', true);
 
             if (error) throw error;
 

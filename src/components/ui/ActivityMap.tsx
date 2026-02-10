@@ -55,11 +55,23 @@ function FitBounds({ points }: { points: [number, number][] }) {
 
     useEffect(() => {
         if (points.length > 0) {
+            // Force a resize check in case container dimensions just settled
+            map.invalidateSize();
+
             const bounds = L.latLngBounds(points);
             map.fitBounds(bounds, {
                 padding: [20, 20],
                 animate: false
             });
+
+            // Double check after a small tick to ensure layout is final
+            setTimeout(() => {
+                map.invalidateSize();
+                map.fitBounds(bounds, {
+                    padding: [20, 20],
+                    animate: false
+                });
+            }, 100);
         }
     }, [map, points]);
 

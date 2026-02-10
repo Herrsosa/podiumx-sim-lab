@@ -92,6 +92,7 @@ export const CommentSection = memo(function CommentSection({
                             <div key={comment.id} className="flex gap-2 group">
                                 <UserAvatar
                                     src={comment.author?.avatar_url}
+                                    seed={comment.author?.username ?? comment.author_id}
                                     alt={comment.author?.display_name ?? comment.author?.username ?? 'User'}
                                     size={32}
                                     className="shrink-0"
@@ -148,6 +149,7 @@ export const CommentSection = memo(function CommentSection({
                 <form onSubmit={handleSubmit} className="flex gap-2">
                     <UserAvatar
                         src={user.user_metadata?.avatar_url}
+                        seed={user.id}
                         alt="You"
                         size={32}
                         className="shrink-0"

@@ -12,7 +12,8 @@ export function useAthleteEarnings(athleteId: string | undefined, range: TimeRan
       let query = supabase
         .from('trades')
         .select('fee, side, created_at')
-        .eq('athlete_id', athleteId);
+        .eq('athlete_id', athleteId)
+        .eq('is_on_chain', true);
 
       // Apply time filter
       if (range !== 'all') {

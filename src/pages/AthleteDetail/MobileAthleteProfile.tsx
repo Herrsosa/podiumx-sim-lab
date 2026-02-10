@@ -21,6 +21,8 @@ import { useIsFounder } from '@/hooks/useUserBadges';
 import type { Athlete, Trade, Position } from '@/types';
 import type { PriceSeriesPoint } from '@/lib/charting/engine';
 import type { TimeRangeKey } from '@/utils/chartData';
+import { DatePickerWithRange } from '@/components/DatePickerWithRange';
+import { DateRange } from 'react-day-picker';
 
 const AthletePriceChart = lazy(() => import('@/components/charts/AthletePriceChart'));
 
@@ -48,8 +50,7 @@ interface MobileAthleteProfileProps {
 }
 
 const currencyFormatter = new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
+    minimumFractionDigits: 2,
     maximumFractionDigits: 2,
 });
 
@@ -80,6 +81,20 @@ export function MobileAthleteProfile({
     const [tradeMode, setTradeMode] = useState<'buy' | 'sell'>('buy');
     const [showChat, setShowChat] = useState(false);
     const [showDM, setShowDM] = useState(false);
+    const [dateRange, setDateRange] = useState<DateRange | undefined>();
+
+    // Filter posts based on date range
+    const filteredPosts = useMemo(() => {
+        if (!dateRange?.from) return athlete.posts || [];
+
+        const from = dateRange.from.getTime();
+        const to = dateRange.to ? dateRange.to.getTime() + 86400000 : from + 86400000;
+
+        return (athlete.posts || []).filter(post => {
+            const date = new Date(post.created_at).getTime();
+            return date >= from && date < to;
+        });
+    }, [athlete.posts, dateRange]);
 
     const isHolder = (position?.quantity ?? 0) > 0;
     const userHoldings = position?.quantity ?? 0;
@@ -183,10 +198,17 @@ export function MobileAthleteProfile({
 
                     {/* Proof of Sweat Tab */}
                     <TabsContent value="pos" className="mt-4 space-y-4">
+                        <div className="flex justify-end">
+                            <DatePickerWithRange
+                                date={dateRange}
+                                setDate={setDateRange}
+                                className="w-[240px]"
+                            />
+                        </div>
                         <WorkoutPosts
                             athleteId={athlete.id}
                             userHoldings={userHoldings}
-                            posts={athlete.posts || []}
+                            posts={filteredPosts}
                             isLoading={isLoading}
                             onUnlockClick={handleBuyClick}
                             onConnectStrava={() => { }} // Not applicable for other athletes
@@ -321,7 +343,7 @@ export function MobileAthleteProfile({
                                                     )}
                                                 >
                                                     {isBuy ? '+' : '-'}
-                                                    {currencyFormatter.format(amount)}
+                                                    {currencyFormatter.format(amount)} MON
                                                 </span>
                                             </div>
                                         );

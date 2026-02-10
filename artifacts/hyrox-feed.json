@@ -1,0 +1,2450 @@
+{
+  "fetchedAt": "2026-02-09T09:45:21.959Z",
+  "source": "https://results.hyrox.com/season-8/",
+  "upcoming": [],
+  "completed": [
+    {
+      "label": "2026 Bilbao",
+      "year": 2026,
+      "city": "Bilbao",
+      "eventSlug": "bilbao-2026",
+      "eventMainGroup": "2026 Bilbao",
+      "proEventCode": "HPRO_LR3MS4JI12C3",
+      "proEventLabel": "HYROX PRO",
+      "startListUrl": "https://results.hyrox.com/season-8/?pid=startlist_list&pidp=ranking_nav&event_main_group=2026+Bilbao&event=HPRO_LR3MS4JI12C3",
+      "menProTop3": [
+        {
+          "athleteName": "Harry Thompson",
+          "place": 1,
+          "totalTime": "00:54:55"
+        },
+        {
+          "athleteName": "Graham Halliday",
+          "place": 2,
+          "totalTime": "00:56:22"
+        },
+        {
+          "athleteName": "Pablo Sánchez santos",
+          "place": 3,
+          "totalTime": "00:56:37"
+        }
+      ],
+      "womenProTop3": [
+        {
+          "athleteName": "Melanie Maurer",
+          "place": 1,
+          "totalTime": "01:01:03"
+        },
+        {
+          "athleteName": "Charlotte Haglund",
+          "place": 2,
+          "totalTime": "01:02:17"
+        },
+        {
+          "athleteName": "Shaunie Gibson",
+          "place": 3,
+          "totalTime": "01:07:12"
+        }
+      ],
+      "resultsUrl": "https://results.hyrox.com/season-8/?pid=list&pidp=ranking_nav&event_main_group=2026+Bilbao&event=HPRO_LR3MS4JI12C3&ranking=time_finish_netto",
+      "status": "promoted-from-upcoming"
+    },
+    {
+      "label": "2026 Guadalajara",
+      "year": 2026,
+      "city": "Guadalajara",
+      "eventSlug": "guadalajara-2026",
+      "eventMainGroup": "2026 Guadalajara",
+      "proEventCode": "HPRO_LR3MS4JI12D7",
+      "proEventLabel": "HYROX PRO",
+      "startListUrl": "https://results.hyrox.com/season-8/?pid=startlist_list&pidp=ranking_nav&event_main_group=2026+Guadalajara&event=HPRO_LR3MS4JI12D7",
+      "menProTop3": [
+        {
+          "athleteName": "Pelayo Menéndez Fernández",
+          "place": 1,
+          "totalTime": "01:00:30"
+        },
+        {
+          "athleteName": "Ryan Callahan",
+          "place": 2,
+          "totalTime": "01:01:29"
+        },
+        {
+          "athleteName": "Alan Carrillo Avila",
+          "place": 3,
+          "totalTime": "01:01:40"
+        }
+      ],
+      "womenProTop3": [
+        {
+          "athleteName": "Barbara Carolina Reyes Perez",
+          "place": 1,
+          "totalTime": "01:12:28"
+        },
+        {
+          "athleteName": "Elena Rouco Chas",
+          "place": 2,
+          "totalTime": "01:13:35"
+        },
+        {
+          "athleteName": "Mariana Caballero",
+          "place": 3,
+          "totalTime": "01:13:54"
+        }
+      ],
+      "resultsUrl": "https://results.hyrox.com/season-8/?pid=list&pidp=ranking_nav&event_main_group=2026+Guadalajara&event=HPRO_LR3MS4JI12D7&ranking=time_finish_netto",
+      "status": "promoted-from-upcoming"
+    },
+    {
+      "label": "2026 Vienna",
+      "year": 2026,
+      "city": "Vienna",
+      "eventSlug": "vienna-2026",
+      "eventMainGroup": "2026 Vienna",
+      "proEventCode": "HPRO_LR3MS4JI12DA",
+      "proEventLabel": "HYROX PRO",
+      "startListUrl": "https://results.hyrox.com/season-8/?pid=startlist_list&pidp=ranking_nav&event_main_group=2026+Vienna&event=HPRO_LR3MS4JI12DA",
+      "menProTop3": [
+        {
+          "athleteName": "Tomas Tvrdik",
+          "place": 1,
+          "totalTime": "00:55:43"
+        },
+        {
+          "athleteName": "Ronan Lindsay",
+          "place": 2,
+          "totalTime": "00:56:19"
+        },
+        {
+          "athleteName": "Richard Hynek",
+          "place": 3,
+          "totalTime": "00:57:35"
+        }
+      ],
+      "womenProTop3": [
+        {
+          "athleteName": "Lena Putters",
+          "place": 1,
+          "totalTime": "00:59:08"
+        },
+        {
+          "athleteName": "Lea Sophie Pommerening",
+          "place": 2,
+          "totalTime": "01:00:38"
+        },
+        {
+          "athleteName": "Tanja Stroschneider",
+          "place": 3,
+          "totalTime": "01:03:10"
+        }
+      ],
+      "resultsUrl": "https://results.hyrox.com/season-8/?pid=list&pidp=ranking_nav&event_main_group=2026+Vienna&event=HPRO_LR3MS4JI12DA&ranking=time_finish_netto",
+      "status": "promoted-from-upcoming"
+    },
+    {
+      "label": "2026 Phoenix",
+      "year": 2026,
+      "city": "Phoenix",
+      "eventSlug": "phoenix-2026",
+      "eventMainGroup": "2026 Phoenix",
+      "proEventCode": "HPRO_LR3MS4JI124E",
+      "proEventLabel": "HYROX PRO - Saturday",
+      "menProTop3": [
+        {
+          "athleteName": "Dylan Scott",
+          "place": 1,
+          "totalTime": "00:53:37"
+        },
+        {
+          "athleteName": "Hunter McIntyre",
+          "place": 2,
+          "totalTime": "00:54:28"
+        },
+        {
+          "athleteName": "Marc Dean",
+          "place": 3,
+          "totalTime": "00:55:46"
+        }
+      ],
+      "womenProTop3": [
+        {
+          "athleteName": "Emilie Dahmen",
+          "place": 1,
+          "totalTime": "01:00:18"
+        },
+        {
+          "athleteName": "Katherine Fahsbender",
+          "place": 2,
+          "totalTime": "01:02:00"
+        },
+        {
+          "athleteName": "Vicky MacIntosh",
+          "place": 3,
+          "totalTime": "01:02:06"
+        }
+      ],
+      "resultsUrl": "https://results.hyrox.com/season-8/?pid=list&pidp=ranking_nav&event_main_group=2026+Phoenix&event=HPRO_LR3MS4JI124E&ranking=time_finish_netto",
+      "status": "ok"
+    },
+    {
+      "label": "2026 Auckland",
+      "year": 2026,
+      "city": "Auckland",
+      "eventSlug": "auckland-2026",
+      "eventMainGroup": "2026 Auckland",
+      "proEventCode": "HPRO_LR3MS4JI129C",
+      "proEventLabel": "HYROX PRO - Saturday",
+      "menProTop3": [
+        {
+          "athleteName": "Matt Slee",
+          "place": 1,
+          "totalTime": "01:01:13"
+        },
+        {
+          "athleteName": "Kane Baigent",
+          "place": 2,
+          "totalTime": "01:01:45"
+        },
+        {
+          "athleteName": "Jared Van Vianen",
+          "place": 3,
+          "totalTime": "01:02:31"
+        }
+      ],
+      "womenProTop3": [
+        {
+          "athleteName": "Anna Bramley",
+          "place": 1,
+          "totalTime": "01:07:16"
+        },
+        {
+          "athleteName": "Coco Holland-Waterson",
+          "place": 2,
+          "totalTime": "01:11:37"
+        },
+        {
+          "athleteName": "Michelle Rennie",
+          "place": 3,
+          "totalTime": "01:12:30"
+        }
+      ],
+      "resultsUrl": "https://results.hyrox.com/season-8/?pid=list&pidp=ranking_nav&event_main_group=2026+Auckland&event=HPRO_LR3MS4JI129C&ranking=time_finish_netto",
+      "status": "ok"
+    },
+    {
+      "label": "2026 Osaka",
+      "year": 2026,
+      "city": "Osaka",
+      "eventSlug": "osaka-2026",
+      "eventMainGroup": "2026 Osaka",
+      "proEventCode": "HPRO_LR3MS4JI1274",
+      "proEventLabel": "HYROX PRO - Sunday",
+      "menProTop3": [
+        {
+          "athleteName": "Levi Moger",
+          "place": 1,
+          "totalTime": "01:02:51"
+        },
+        {
+          "athleteName": "Bong Bong",
+          "place": 2,
+          "totalTime": "01:03:18"
+        },
+        {
+          "athleteName": "ラルフ海 バフォ",
+          "place": 3,
+          "totalTime": "01:03:21"
+        }
+      ],
+      "womenProTop3": [
+        {
+          "athleteName": "Sara Gandola",
+          "place": 1,
+          "totalTime": "01:06:09"
+        },
+        {
+          "athleteName": "早紀 前川",
+          "place": 2,
+          "totalTime": "01:06:24"
+        },
+        {
+          "athleteName": "Joanna Lang",
+          "place": 3,
+          "totalTime": "01:06:42"
+        }
+      ],
+      "resultsUrl": "https://results.hyrox.com/season-8/?pid=list&pidp=ranking_nav&event_main_group=2026+Osaka&event=HPRO_LR3MS4JI1274&ranking=time_finish_netto",
+      "status": "ok"
+    },
+    {
+      "label": "2026 Turin",
+      "year": 2026,
+      "city": "Turin",
+      "eventSlug": "turin-2026",
+      "eventMainGroup": "2026 Turin",
+      "proEventCode": "HPRO_TRN26_OVERALL",
+      "proEventLabel": "HYROX PRO - Overall",
+      "menProTop3": [
+        {
+          "athleteName": "Hugo Hugemark",
+          "place": 1,
+          "totalTime": "00:57:55"
+        },
+        {
+          "athleteName": "Quentin Garel",
+          "place": 2,
+          "totalTime": "00:58:20"
+        },
+        {
+          "athleteName": "Oli Fricker",
+          "place": 3,
+          "totalTime": "00:58:50"
+        }
+      ],
+      "womenProTop3": [
+        {
+          "athleteName": "Caroline Whittingham",
+          "place": 1,
+          "totalTime": "01:07:51"
+        },
+        {
+          "athleteName": "Camilla Tavecchio",
+          "place": 2,
+          "totalTime": "01:09:14"
+        },
+        {
+          "athleteName": "Meriam Loughzal",
+          "place": 3,
+          "totalTime": "01:09:44"
+        }
+      ],
+      "resultsUrl": "https://results.hyrox.com/season-8/?pid=list&pidp=ranking_nav&event_main_group=2026+Turin&event=HPRO_TRN26_OVERALL&ranking=time_finish_netto",
+      "status": "ok"
+    },
+    {
+      "label": "2026 Amsterdam",
+      "year": 2026,
+      "city": "Amsterdam",
+      "eventSlug": "amsterdam-2026",
+      "eventMainGroup": "2026 Amsterdam",
+      "proEventCode": "HPRO_AMS26_OVERALL",
+      "proEventLabel": "HYROX PRO - Overall",
+      "menProTop3": [
+        {
+          "athleteName": "Hidde Weersma",
+          "place": 1,
+          "totalTime": "00:54:15"
+        },
+        {
+          "athleteName": "Maarten Enthoven",
+          "place": 2,
+          "totalTime": "00:56:04"
+        },
+        {
+          "athleteName": "Julien Coquillaud-Salomon",
+          "place": 3,
+          "totalTime": "00:56:20"
+        }
+      ],
+      "womenProTop3": [
+        {
+          "athleteName": "Svenja Sommer",
+          "place": 1,
+          "totalTime": "01:02:52"
+        },
+        {
+          "athleteName": "Michaela Disseldorp",
+          "place": 2,
+          "totalTime": "01:03:29"
+        },
+        {
+          "athleteName": "Charlotte Vandenlindenloof",
+          "place": 3,
+          "totalTime": "01:04:29"
+        }
+      ],
+      "resultsUrl": "https://results.hyrox.com/season-8/?pid=list&pidp=ranking_nav&event_main_group=2026+Amsterdam&event=HPRO_AMS26_OVERALL&ranking=time_finish_netto",
+      "status": "ok"
+    },
+    {
+      "label": "2026 Amsterdam - Youngstars",
+      "year": 2026,
+      "city": "Amsterdam - Youngstars",
+      "eventSlug": "amsterdam-youngstars-2026",
+      "eventMainGroup": "2026 Amsterdam - Youngstars",
+      "status": "no-pro-event-found"
+    },
+    {
+      "label": "2026 Manchester",
+      "year": 2026,
+      "city": "Manchester",
+      "eventSlug": "manchester-2026",
+      "eventMainGroup": "2026 Manchester",
+      "proEventCode": "HPRO_MAN26_OVERALL",
+      "proEventLabel": "HYROX PRO - Overall",
+      "menProTop3": [
+        {
+          "athleteName": "Charlie Botterill",
+          "place": 1,
+          "totalTime": "00:55:16"
+        },
+        {
+          "athleteName": "Harry Thompson",
+          "place": 2,
+          "totalTime": "00:56:14"
+        },
+        {
+          "athleteName": "Marc Dean",
+          "place": 3,
+          "totalTime": "00:56:23"
+        }
+      ],
+      "womenProTop3": [
+        {
+          "athleteName": "Poppy Jones",
+          "place": 1,
+          "totalTime": "01:01:18"
+        },
+        {
+          "athleteName": "Amy Middlemast",
+          "place": 2,
+          "totalTime": "01:05:39"
+        },
+        {
+          "athleteName": "Yolanda King",
+          "place": 3,
+          "totalTime": "01:06:07"
+        }
+      ],
+      "resultsUrl": "https://results.hyrox.com/season-8/?pid=list&pidp=ranking_nav&event_main_group=2026+Manchester&event=HPRO_MAN26_OVERALL&ranking=time_finish_netto",
+      "status": "ok"
+    },
+    {
+      "label": "2026 St. Gallen",
+      "year": 2026,
+      "city": "St. Gallen",
+      "eventSlug": "st-gallen-2026",
+      "eventMainGroup": "2026 St. Gallen",
+      "proEventCode": "HPRO_LR3MS4JI1261",
+      "proEventLabel": "HYROX PRO",
+      "menProTop3": [
+        {
+          "athleteName": "Beau Wills",
+          "place": 1,
+          "totalTime": "00:58:43"
+        },
+        {
+          "athleteName": "Tiziano Pedrocchi",
+          "place": 2,
+          "totalTime": "00:59:57"
+        },
+        {
+          "athleteName": "Luke Ennis",
+          "place": 3,
+          "totalTime": "01:01:08"
+        }
+      ],
+      "womenProTop3": [
+        {
+          "athleteName": "Jana Lebenstedt",
+          "place": 1,
+          "totalTime": "01:01:33"
+        },
+        {
+          "athleteName": "Elli Stenfors",
+          "place": 2,
+          "totalTime": "01:01:36"
+        },
+        {
+          "athleteName": "Seka Arning",
+          "place": 3,
+          "totalTime": "01:02:27"
+        }
+      ],
+      "resultsUrl": "https://results.hyrox.com/season-8/?pid=list&pidp=ranking_nav&event_main_group=2026+St.+Gallen&event=HPRO_LR3MS4JI1261&ranking=time_finish_netto",
+      "status": "ok"
+    },
+    {
+      "label": "2025 Stockholm",
+      "year": 2025,
+      "city": "Stockholm",
+      "eventSlug": "stockholm-2025",
+      "eventMainGroup": "2025 Stockholm",
+      "proEventCode": "HPRO_ARN25_OVERALL",
+      "proEventLabel": "HYROX PRO - Overall",
+      "menProTop3": [
+        {
+          "athleteName": "Paul Weindl",
+          "place": 1,
+          "totalTime": "00:55:03"
+        },
+        {
+          "athleteName": "Tomas Tvrdik",
+          "place": 2,
+          "totalTime": "00:55:04"
+        },
+        {
+          "athleteName": "Alen Ploj",
+          "place": 3,
+          "totalTime": "00:55:21"
+        }
+      ],
+      "womenProTop3": [
+        {
+          "athleteName": "Emilie Dahmen",
+          "place": 1,
+          "totalTime": "00:59:46"
+        },
+        {
+          "athleteName": "Annie Emilsson",
+          "place": 2,
+          "totalTime": "01:01:10"
+        },
+        {
+          "athleteName": "Laura Valgreen",
+          "place": 3,
+          "totalTime": "01:01:25"
+        }
+      ],
+      "resultsUrl": "https://results.hyrox.com/season-8/?pid=list&pidp=ranking_nav&event_main_group=2025+Stockholm&event=HPRO_ARN25_OVERALL&ranking=time_finish_netto",
+      "status": "ok"
+    },
+    {
+      "label": "2025 Shenzhen",
+      "year": 2025,
+      "city": "Shenzhen",
+      "eventSlug": "shenzhen-2025",
+      "eventMainGroup": "2025 Shenzhen",
+      "proEventCode": "HPRO_LR3MS4JI1223",
+      "proEventLabel": "HYROX PRO",
+      "menProTop3": [
+        {
+          "athleteName": "Gabriel Heck",
+          "place": 1,
+          "totalTime": "00:57:49"
+        },
+        {
+          "athleteName": "Wonjoon Jung",
+          "place": 2,
+          "totalTime": "01:01:55"
+        },
+        {
+          "athleteName": "忍 王",
+          "place": 3,
+          "totalTime": "01:02:17"
+        }
+      ],
+      "womenProTop3": [
+        {
+          "athleteName": "芳 朱",
+          "place": 1,
+          "totalTime": "01:04:36"
+        },
+        {
+          "athleteName": "Sara Gandola",
+          "place": 2,
+          "totalTime": "01:06:23"
+        },
+        {
+          "athleteName": "Clare Cheung",
+          "place": 3,
+          "totalTime": "01:07:05"
+        }
+      ],
+      "resultsUrl": "https://results.hyrox.com/season-8/?pid=list&pidp=ranking_nav&event_main_group=2025+Shenzhen&event=HPRO_LR3MS4JI1223&ranking=time_finish_netto",
+      "status": "ok"
+    },
+    {
+      "label": "2025 Vancouver",
+      "year": 2025,
+      "city": "Vancouver",
+      "eventSlug": "vancouver-2025",
+      "eventMainGroup": "2025 Vancouver",
+      "proEventCode": "HPRO_LR3MS4JI120E",
+      "proEventLabel": "HYROX PRO",
+      "menProTop3": [
+        {
+          "athleteName": "Jack Driscoll",
+          "place": 1,
+          "totalTime": "00:55:23"
+        },
+        {
+          "athleteName": "Ryan Douglas",
+          "place": 2,
+          "totalTime": "00:56:17"
+        },
+        {
+          "athleteName": "Dawson Miller",
+          "place": 3,
+          "totalTime": "00:56:27"
+        }
+      ],
+      "womenProTop3": [
+        {
+          "athleteName": "Camilla Massa",
+          "place": 1,
+          "totalTime": "01:02:48"
+        },
+        {
+          "athleteName": "Madelyn Eybergen",
+          "place": 2,
+          "totalTime": "01:04:02"
+        },
+        {
+          "athleteName": "Lianne Girard",
+          "place": 3,
+          "totalTime": "01:04:58"
+        }
+      ],
+      "resultsUrl": "https://results.hyrox.com/season-8/?pid=list&pidp=ranking_nav&event_main_group=2025+Vancouver&event=HPRO_LR3MS4JI120E&ranking=time_finish_netto",
+      "status": "ok"
+    },
+    {
+      "label": "2025 Anaheim",
+      "year": 2025,
+      "city": "Anaheim",
+      "eventSlug": "anaheim-2025",
+      "eventMainGroup": "2025 Anaheim",
+      "proEventCode": "HPRO_LR3MS4JI11AC",
+      "proEventLabel": "HYROX PRO",
+      "menProTop3": [
+        {
+          "athleteName": "Jack Driscoll",
+          "place": 1,
+          "totalTime": "00:57:31"
+        },
+        {
+          "athleteName": "Ryan Kent",
+          "place": 2,
+          "totalTime": "00:58:53"
+        },
+        {
+          "athleteName": "Chase Smith",
+          "place": 3,
+          "totalTime": "00:59:23"
+        }
+      ],
+      "womenProTop3": [
+        {
+          "athleteName": "Camilla Massa",
+          "place": 1,
+          "totalTime": "01:04:40"
+        },
+        {
+          "athleteName": "Kris Rugloski",
+          "place": 2,
+          "totalTime": "01:07:02"
+        },
+        {
+          "athleteName": "Kelsey Hochleitner",
+          "place": 3,
+          "totalTime": "01:07:28"
+        }
+      ],
+      "resultsUrl": "https://results.hyrox.com/season-8/?pid=list&pidp=ranking_nav&event_main_group=2025+Anaheim&event=HPRO_LR3MS4JI11AC&ranking=time_finish_netto",
+      "status": "ok"
+    },
+    {
+      "label": "2025 Frankfurt",
+      "year": 2025,
+      "city": "Frankfurt",
+      "eventSlug": "frankfurt-2025",
+      "eventMainGroup": "2025 Frankfurt",
+      "proEventCode": "HPRO_LR3MS4JIE8B",
+      "proEventLabel": "HYROX PRO",
+      "menProTop3": [
+        {
+          "athleteName": "Ronan Lindsay",
+          "place": 1,
+          "totalTime": "00:56:52"
+        },
+        {
+          "athleteName": "Michael Stephens",
+          "place": 2,
+          "totalTime": "00:57:26"
+        },
+        {
+          "athleteName": "Paul Weindl",
+          "place": 3,
+          "totalTime": "00:57:41"
+        }
+      ],
+      "womenProTop3": [
+        {
+          "athleteName": "Jana Lebenstedt",
+          "place": 1,
+          "totalTime": "01:02:27"
+        },
+        {
+          "athleteName": "Viola Oberländer",
+          "place": 2,
+          "totalTime": "01:02:52"
+        },
+        {
+          "athleteName": "Lauren Armstrong",
+          "place": 3,
+          "totalTime": "01:04:09"
+        }
+      ],
+      "resultsUrl": "https://results.hyrox.com/season-8/?pid=list&pidp=ranking_nav&event_main_group=2025+Frankfurt&event=HPRO_LR3MS4JIE8B&ranking=time_finish_netto",
+      "status": "ok"
+    },
+    {
+      "label": "2025 Melbourne",
+      "year": 2025,
+      "city": "Melbourne",
+      "eventSlug": "melbourne-2025",
+      "eventMainGroup": "2025 Melbourne",
+      "proEventCode": "HPRO_LR3MS4JI1185",
+      "proEventLabel": "HYROX PRO - Saturday",
+      "menProTop3": [
+        {
+          "athleteName": "Liam McCroary",
+          "place": 1,
+          "totalTime": "00:54:58"
+        },
+        {
+          "athleteName": "Dexter Buchanan",
+          "place": 2,
+          "totalTime": "00:56:50"
+        },
+        {
+          "athleteName": "Jonathon Wynn",
+          "place": 3,
+          "totalTime": "00:56:52"
+        }
+      ],
+      "womenProTop3": [
+        {
+          "athleteName": "Calypso Sheridan",
+          "place": 1,
+          "totalTime": "01:02:40"
+        },
+        {
+          "athleteName": "Anna Bramley",
+          "place": 2,
+          "totalTime": "01:03:47"
+        },
+        {
+          "athleteName": "Nadezda Dorsoski",
+          "place": 3,
+          "totalTime": "01:03:50"
+        }
+      ],
+      "resultsUrl": "https://results.hyrox.com/season-8/?pid=list&pidp=ranking_nav&event_main_group=2025+Melbourne&event=HPRO_LR3MS4JI1185&ranking=time_finish_netto",
+      "status": "ok"
+    },
+    {
+      "label": "2025 Gent",
+      "year": 2025,
+      "city": "Gent",
+      "eventSlug": "gent-2025",
+      "eventMainGroup": "2025 Gent",
+      "proEventCode": "HPRO_LR3MS4JI1198",
+      "proEventLabel": "HYROX PRO - Sunday",
+      "menProTop3": [
+        {
+          "athleteName": "Louis Osselaer",
+          "place": 1,
+          "totalTime": "00:55:30"
+        },
+        {
+          "athleteName": "Julien Coquillaud-Salomon",
+          "place": 2,
+          "totalTime": "00:56:54"
+        },
+        {
+          "athleteName": "Sam Schoeman",
+          "place": 3,
+          "totalTime": "00:57:16"
+        }
+      ],
+      "womenProTop3": [
+        {
+          "athleteName": "Roisin Egan",
+          "place": 1,
+          "totalTime": "01:01:52"
+        },
+        {
+          "athleteName": "Emilie Dahmen",
+          "place": 2,
+          "totalTime": "01:02:00"
+        },
+        {
+          "athleteName": "Emilie Dahmen",
+          "place": 2,
+          "totalTime": "01:02:00"
+        }
+      ],
+      "resultsUrl": "https://results.hyrox.com/season-8/?pid=list&pidp=ranking_nav&event_main_group=2025+Gent&event=HPRO_LR3MS4JI1198&ranking=time_finish_netto",
+      "status": "ok"
+    },
+    {
+      "label": "2025 Poznan",
+      "year": 2025,
+      "city": "Poznan",
+      "eventSlug": "poznan-2025",
+      "eventMainGroup": "2025 Poznan",
+      "proEventCode": "HPRO_LR3MS4JI11E7",
+      "proEventLabel": "HYROX PRO",
+      "menProTop3": [
+        {
+          "athleteName": "Domen Dornik",
+          "place": 1,
+          "totalTime": "00:58:07"
+        },
+        {
+          "athleteName": "Turker Alici",
+          "place": 2,
+          "totalTime": "00:58:17"
+        },
+        {
+          "athleteName": "Quentin Garel",
+          "place": 3,
+          "totalTime": "00:58:22"
+        }
+      ],
+      "womenProTop3": [
+        {
+          "athleteName": "Lea Pommerening",
+          "place": 1,
+          "totalTime": "01:03:23"
+        },
+        {
+          "athleteName": "Nikki Brammeier",
+          "place": 2,
+          "totalTime": "01:04:15"
+        },
+        {
+          "athleteName": "Michaela Disseldorp",
+          "place": 3,
+          "totalTime": "01:05:42"
+        }
+      ],
+      "resultsUrl": "https://results.hyrox.com/season-8/?pid=list&pidp=ranking_nav&event_main_group=2025+Poznan&event=HPRO_LR3MS4JI11E7&ranking=time_finish_netto",
+      "status": "ok"
+    },
+    {
+      "label": "2025 London Excel",
+      "year": 2025,
+      "city": "London Excel",
+      "eventSlug": "london-excel-2025",
+      "eventMainGroup": "2025 London Excel",
+      "proEventCode": "HPRO_Excel25_OVERALL",
+      "proEventLabel": "HYROX PRO - Overall",
+      "menProTop3": [
+        {
+          "athleteName": "Luke Greer",
+          "place": 1,
+          "totalTime": "00:54:38"
+        },
+        {
+          "athleteName": "Graham Halliday",
+          "place": 2,
+          "totalTime": "00:54:42"
+        },
+        {
+          "athleteName": "Louis Osselaer",
+          "place": 3,
+          "totalTime": "00:54:58"
+        }
+      ],
+      "womenProTop3": [
+        {
+          "athleteName": "Lauren Stockley",
+          "place": 1,
+          "totalTime": "01:01:09"
+        },
+        {
+          "athleteName": "Gabriella Moriarty",
+          "place": 2,
+          "totalTime": "01:01:14"
+        },
+        {
+          "athleteName": "Charlie Searle",
+          "place": 3,
+          "totalTime": "01:01:21"
+        }
+      ],
+      "resultsUrl": "https://results.hyrox.com/season-8/?pid=list&pidp=ranking_nav&event_main_group=2025+London+Excel&event=HPRO_Excel25_OVERALL&ranking=time_finish_netto",
+      "status": "ok"
+    },
+    {
+      "label": "2025 Verona",
+      "year": 2025,
+      "city": "Verona",
+      "eventSlug": "verona-2025",
+      "eventMainGroup": "2025 Verona",
+      "proEventCode": "HPRO_LR3MS4JI116E",
+      "proEventLabel": "HYROX PRO - Sunday",
+      "menProTop3": [
+        {
+          "athleteName": "Eugenio Bianchi",
+          "place": 2,
+          "totalTime": "01:00:07"
+        },
+        {
+          "athleteName": "Samuele Abrami",
+          "place": 3,
+          "totalTime": "01:00:15"
+        },
+        {
+          "athleteName": "Mark Caruana",
+          "place": 4,
+          "totalTime": "01:00:16"
+        }
+      ],
+      "womenProTop3": [
+        {
+          "athleteName": "Gloria Corbetta",
+          "place": 1,
+          "totalTime": "01:02:55"
+        },
+        {
+          "athleteName": "Monica Ferrer Pastor",
+          "place": 2,
+          "totalTime": "01:04:03"
+        },
+        {
+          "athleteName": "Nathalie Stewart",
+          "place": 3,
+          "totalTime": "01:05:16"
+        }
+      ],
+      "resultsUrl": "https://results.hyrox.com/season-8/?pid=list&pidp=ranking_nav&event_main_group=2025+Verona&event=HPRO_LR3MS4JI116E&ranking=time_finish_netto",
+      "status": "ok"
+    },
+    {
+      "label": "2025 Johannesburg",
+      "year": 2025,
+      "city": "Johannesburg",
+      "eventSlug": "johannesburg-2025",
+      "eventMainGroup": "2025 Johannesburg",
+      "proEventCode": "HPRO_LR3MS4JI10BA",
+      "proEventLabel": "HYROX PRO",
+      "menProTop3": [
+        {
+          "athleteName": "Jake Dearden",
+          "place": 1,
+          "totalTime": "01:02:17"
+        },
+        {
+          "athleteName": "Dylan Pienaar",
+          "place": 2,
+          "totalTime": "01:04:49"
+        },
+        {
+          "athleteName": "Kyle Schoonbee",
+          "place": 3,
+          "totalTime": "01:05:02"
+        }
+      ],
+      "womenProTop3": [
+        {
+          "athleteName": "DanÃ©l Louw",
+          "place": 1,
+          "totalTime": "01:09:43"
+        },
+        {
+          "athleteName": "Juan-Marie Herbst",
+          "place": 2,
+          "totalTime": "01:11:25"
+        },
+        {
+          "athleteName": "Thea Botha",
+          "place": 3,
+          "totalTime": "01:17:57"
+        }
+      ],
+      "resultsUrl": "https://results.hyrox.com/season-8/?pid=list&pidp=ranking_nav&event_main_group=2025+Johannesburg&event=HPRO_LR3MS4JI10BA&ranking=time_finish_netto",
+      "status": "ok"
+    },
+    {
+      "label": "2025 Utrecht",
+      "year": 2025,
+      "city": "Utrecht",
+      "eventSlug": "utrecht-2025",
+      "eventMainGroup": "2025 Utrecht",
+      "proEventCode": "HPRO_Utrecht2025_OVERALL",
+      "proEventLabel": "HYROX PRO - Overall",
+      "menProTop3": [
+        {
+          "athleteName": "Hidde Weersma",
+          "place": 1,
+          "totalTime": "01:00:41"
+        },
+        {
+          "athleteName": "Niels Kinget",
+          "place": 2,
+          "totalTime": "01:01:03"
+        },
+        {
+          "athleteName": "Sam Schoeman",
+          "place": 3,
+          "totalTime": "01:01:12"
+        }
+      ],
+      "womenProTop3": [
+        {
+          "athleteName": "Michaela Disseldorp",
+          "place": 1,
+          "totalTime": "01:07:34"
+        },
+        {
+          "athleteName": "Karlijn Lakerveld",
+          "place": 2,
+          "totalTime": "01:08:25"
+        },
+        {
+          "athleteName": "Dagmar Van Eijk",
+          "place": 3,
+          "totalTime": "01:08:29"
+        }
+      ],
+      "resultsUrl": "https://results.hyrox.com/season-8/?pid=list&pidp=ranking_nav&event_main_group=2025+Utrecht&event=HPRO_Utrecht2025_OVERALL&ranking=time_finish_netto",
+      "status": "ok"
+    },
+    {
+      "label": "2025 Madrid",
+      "year": 2025,
+      "city": "Madrid",
+      "eventSlug": "madrid-2025",
+      "eventMainGroup": "2025 Madrid",
+      "proEventCode": "HPRO_Madrid25_OVERALL",
+      "proEventLabel": "HYROX PRO - Overall",
+      "menProTop3": [
+        {
+          "athleteName": "Alan Cao",
+          "place": 1,
+          "totalTime": "00:57:56"
+        },
+        {
+          "athleteName": "Ollie Russell",
+          "place": 2,
+          "totalTime": "00:58:49"
+        },
+        {
+          "athleteName": "Charlie Botterill",
+          "place": 3,
+          "totalTime": "00:59:48"
+        }
+      ],
+      "womenProTop3": [
+        {
+          "athleteName": "Megan Jacoby",
+          "place": 1,
+          "totalTime": "00:58:40"
+        },
+        {
+          "athleteName": "Laura Valgreen",
+          "place": 2,
+          "totalTime": "01:04:01"
+        },
+        {
+          "athleteName": "Leonor Neto Camilo",
+          "place": 3,
+          "totalTime": "01:06:29"
+        }
+      ],
+      "resultsUrl": "https://results.hyrox.com/season-8/?pid=list&pidp=ranking_nav&event_main_group=2025+Madrid&event=HPRO_Madrid25_OVERALL&ranking=time_finish_netto",
+      "status": "ok"
+    },
+    {
+      "label": "2025 Rio de Janeiro",
+      "year": 2025,
+      "city": "Rio de Janeiro",
+      "eventSlug": "rio-de-janeiro-2025",
+      "eventMainGroup": "2025 Rio de Janeiro",
+      "proEventCode": "HPRO_LR3MS4JI10CE",
+      "proEventLabel": "HYROX PRO",
+      "menProTop3": [
+        {
+          "athleteName": "Aldo Lozano Márquez",
+          "place": 1,
+          "totalTime": "01:01:25"
+        },
+        {
+          "athleteName": "Derik Afornali",
+          "place": 2,
+          "totalTime": "01:03:35"
+        },
+        {
+          "athleteName": "Luiz Guida",
+          "place": 3,
+          "totalTime": "01:04:14"
+        }
+      ],
+      "womenProTop3": [
+        {
+          "athleteName": "Tânia Cruz",
+          "place": 1,
+          "totalTime": "01:09:49"
+        },
+        {
+          "athleteName": "Inês Moreira",
+          "place": 2,
+          "totalTime": "01:11:13"
+        },
+        {
+          "athleteName": "Joanna Boaventura",
+          "place": 3,
+          "totalTime": "01:11:38"
+        }
+      ],
+      "resultsUrl": "https://results.hyrox.com/season-8/?pid=list&pidp=ranking_nav&event_main_group=2025+Rio+de+Janeiro&event=HPRO_LR3MS4JI10CE&ranking=time_finish_netto",
+      "status": "ok"
+    },
+    {
+      "label": "2025 Singapore Expo",
+      "year": 2025,
+      "city": "Singapore Expo",
+      "eventSlug": "singapore-expo-2025",
+      "eventMainGroup": "2025 Singapore Expo",
+      "proEventCode": "HPRO_LR3MS4JI1056",
+      "proEventLabel": "HYROX PRO",
+      "menProTop3": [
+        {
+          "athleteName": "Corey Dietrich",
+          "place": 1,
+          "totalTime": "00:59:46"
+        },
+        {
+          "athleteName": "Bay Tucek",
+          "place": 2,
+          "totalTime": "01:00:09"
+        },
+        {
+          "athleteName": "James Maher",
+          "place": 3,
+          "totalTime": "01:00:22"
+        }
+      ],
+      "womenProTop3": [
+        {
+          "athleteName": "Mollie Fkiaras",
+          "place": 1,
+          "totalTime": "01:01:19"
+        },
+        {
+          "athleteName": "Megan Walsh",
+          "place": 2,
+          "totalTime": "01:07:16"
+        },
+        {
+          "athleteName": "Aki Yoshida",
+          "place": 3,
+          "totalTime": "01:07:16"
+        }
+      ],
+      "resultsUrl": "https://results.hyrox.com/season-8/?pid=list&pidp=ranking_nav&event_main_group=2025+Singapore+Expo&event=HPRO_LR3MS4JI1056&ranking=time_finish_netto",
+      "status": "ok"
+    },
+    {
+      "label": "2025 Bordeaux",
+      "year": 2025,
+      "city": "Bordeaux",
+      "eventSlug": "bordeaux-2025",
+      "eventMainGroup": "2025 Bordeaux",
+      "proEventCode": "HPRO_Bordeaux25_OVERALL",
+      "proEventLabel": "HYROX PRO - Overall",
+      "menProTop3": [
+        {
+          "athleteName": "Aitor Lizarazu Hormilla",
+          "place": 1,
+          "totalTime": "00:57:17"
+        },
+        {
+          "athleteName": "Quentin Garel",
+          "place": 2,
+          "totalTime": "00:58:14"
+        },
+        {
+          "athleteName": "Joffrey Voisin",
+          "place": 3,
+          "totalTime": "00:58:55"
+        }
+      ],
+      "womenProTop3": [
+        {
+          "athleteName": "sophia parvizi wayne",
+          "place": 1,
+          "totalTime": "01:02:16"
+        },
+        {
+          "athleteName": "Monica Ferrer Pastor",
+          "place": 2,
+          "totalTime": "01:04:44"
+        },
+        {
+          "athleteName": "Elisa Da Silva",
+          "place": 3,
+          "totalTime": "01:06:43"
+        }
+      ],
+      "resultsUrl": "https://results.hyrox.com/season-8/?pid=list&pidp=ranking_nav&event_main_group=2025+Bordeaux&event=HPRO_Bordeaux25_OVERALL&ranking=time_finish_netto",
+      "status": "ok"
+    },
+    {
+      "label": "2025 Dallas",
+      "year": 2025,
+      "city": "Dallas",
+      "eventSlug": "dallas-2025",
+      "eventMainGroup": "2025 Dallas",
+      "proEventCode": "HPRO_LR3MS4JIF52",
+      "proEventLabel": "HYROX PRO",
+      "menProTop3": [
+        {
+          "athleteName": "Jack Driscoll",
+          "place": 1,
+          "totalTime": "00:56:21"
+        },
+        {
+          "athleteName": "Ryan Kent",
+          "place": 2,
+          "totalTime": "00:57:22"
+        },
+        {
+          "athleteName": "Frédéric Dubé",
+          "place": 3,
+          "totalTime": "00:57:37"
+        }
+      ],
+      "womenProTop3": [
+        {
+          "athleteName": "Camilla Massa",
+          "place": 1,
+          "totalTime": "01:02:19"
+        },
+        {
+          "athleteName": "Lauren Barnett",
+          "place": 2,
+          "totalTime": "01:03:12"
+        },
+        {
+          "athleteName": "Kris Rugloski",
+          "place": 3,
+          "totalTime": "01:04:15"
+        }
+      ],
+      "resultsUrl": "https://results.hyrox.com/season-8/?pid=list&pidp=ranking_nav&event_main_group=2025+Dallas&event=HPRO_LR3MS4JIF52&ranking=time_finish_netto",
+      "status": "ok"
+    },
+    {
+      "label": "2025 Shanghai",
+      "year": 2025,
+      "city": "Shanghai",
+      "eventSlug": "shanghai-2025",
+      "eventMainGroup": "2025 Shanghai",
+      "proEventCode": "HPRO_LR3MS4JIFA2",
+      "proEventLabel": "HYROX PRO",
+      "menProTop3": [
+        {
+          "athleteName": "Gabriel Heck",
+          "place": 1,
+          "totalTime": "00:57:16"
+        },
+        {
+          "athleteName": "忍 王",
+          "place": 2,
+          "totalTime": "01:01:48"
+        },
+        {
+          "athleteName": "Jack Elliott",
+          "place": 3,
+          "totalTime": "01:02:59"
+        }
+      ],
+      "womenProTop3": [
+        {
+          "athleteName": "芳 朱",
+          "place": 1,
+          "totalTime": "01:06:40"
+        },
+        {
+          "athleteName": "Biddy Sefton",
+          "place": 2,
+          "totalTime": "01:09:47"
+        },
+        {
+          "athleteName": "Nat Elder",
+          "place": 3,
+          "totalTime": "01:10:04"
+        }
+      ],
+      "resultsUrl": "https://results.hyrox.com/season-8/?pid=list&pidp=ranking_nav&event_main_group=2025+Shanghai&event=HPRO_LR3MS4JIFA2&ranking=time_finish_netto",
+      "status": "ok"
+    },
+    {
+      "label": "2025 Chicago",
+      "year": 2025,
+      "city": "Chicago",
+      "eventSlug": "chicago-2025",
+      "eventMainGroup": "2025 Chicago",
+      "proEventCode": "HPRO_LR3MS4JIF16",
+      "proEventLabel": "HYROX PRO - Sunday",
+      "menProTop3": [
+        {
+          "athleteName": "Cole Learn",
+          "place": 1,
+          "totalTime": "00:54:36"
+        },
+        {
+          "athleteName": "Greyson Kilgore",
+          "place": 2,
+          "totalTime": "00:55:33"
+        },
+        {
+          "athleteName": "Jack Driscoll",
+          "place": 3,
+          "totalTime": "00:56:23"
+        }
+      ],
+      "womenProTop3": [
+        {
+          "athleteName": "Lauren Weeks",
+          "place": 1,
+          "totalTime": "00:58:12"
+        },
+        {
+          "athleteName": "Gabrielle Nikora-Baker",
+          "place": 2,
+          "totalTime": "01:00:54"
+        },
+        {
+          "athleteName": "Brooklyn Nichols",
+          "place": 3,
+          "totalTime": "01:01:05"
+        }
+      ],
+      "resultsUrl": "https://results.hyrox.com/season-8/?pid=list&pidp=ranking_nav&event_main_group=2025+Chicago&event=HPRO_LR3MS4JIF16&ranking=time_finish_netto",
+      "status": "ok"
+    },
+    {
+      "label": "2025 Dublin",
+      "year": 2025,
+      "city": "Dublin",
+      "eventSlug": "dublin-2025",
+      "eventMainGroup": "2025 Dublin",
+      "proEventCode": "HPRO_Dublin25_OVERALL",
+      "proEventLabel": "HYROX PRO - Overall",
+      "menProTop3": [
+        {
+          "athleteName": "Maarten Enthoven",
+          "place": 1,
+          "totalTime": "00:54:58"
+        },
+        {
+          "athleteName": "Alen Ploj",
+          "place": 2,
+          "totalTime": "00:55:19"
+        },
+        {
+          "athleteName": "Sean Noble",
+          "place": 3,
+          "totalTime": "00:55:57"
+        }
+      ],
+      "womenProTop3": [
+        {
+          "athleteName": "Melanie Maurer",
+          "place": 1,
+          "totalTime": "01:00:38"
+        },
+        {
+          "athleteName": "Kat Parnell",
+          "place": 2,
+          "totalTime": "01:00:54"
+        },
+        {
+          "athleteName": "Manuela García Caparrós",
+          "place": 3,
+          "totalTime": "01:01:10"
+        }
+      ],
+      "resultsUrl": "https://results.hyrox.com/season-8/?pid=list&pidp=ranking_nav&event_main_group=2025+Dublin&event=HPRO_Dublin25_OVERALL&ranking=time_finish_netto",
+      "status": "ok"
+    },
+    {
+      "label": "2025 Mexico City",
+      "year": 2025,
+      "city": "Mexico City",
+      "eventSlug": "mexico-city-2025",
+      "eventMainGroup": "2025 Mexico City",
+      "proEventCode": "HPRO_MEX25_OVERALL",
+      "proEventLabel": "HYROX PRO - Overall",
+      "menProTop3": [],
+      "womenProTop3": [],
+      "resultsUrl": "https://results.hyrox.com/season-8/?pid=list&pidp=ranking_nav&event_main_group=2025+Mexico+City&event=HPRO_MEX25_OVERALL&ranking=time_finish_netto",
+      "status": "no-results-yet"
+    },
+    {
+      "label": "2025 Seoul",
+      "year": 2025,
+      "city": "Seoul",
+      "eventSlug": "seoul-2025",
+      "eventMainGroup": "2025 Seoul",
+      "proEventCode": "HPRO_LR3MS4JIE3B",
+      "proEventLabel": "HYROX PRO",
+      "menProTop3": [
+        {
+          "athleteName": "Josh Van Zeeland",
+          "place": 1,
+          "totalTime": "00:54:57"
+        },
+        {
+          "athleteName": "James Kelly",
+          "place": 2,
+          "totalTime": "00:55:25"
+        },
+        {
+          "athleteName": "Wataru Nakamura",
+          "place": 3,
+          "totalTime": "01:04:05"
+        }
+      ],
+      "womenProTop3": [
+        {
+          "athleteName": "Claire Nesbitt",
+          "place": 1,
+          "totalTime": "01:05:41"
+        },
+        {
+          "athleteName": "Aki Yoshida",
+          "place": 2,
+          "totalTime": "01:06:44"
+        },
+        {
+          "athleteName": "Aisling Ryle",
+          "place": 3,
+          "totalTime": "01:08:37"
+        }
+      ],
+      "resultsUrl": "https://results.hyrox.com/season-8/?pid=list&pidp=ranking_nav&event_main_group=2025+Seoul&event=HPRO_LR3MS4JIE3B&ranking=time_finish_netto",
+      "status": "ok"
+    },
+    {
+      "label": "2025 Atlanta",
+      "year": 2025,
+      "city": "Atlanta",
+      "eventSlug": "atlanta-2025",
+      "eventMainGroup": "2025 Atlanta",
+      "proEventCode": "HPRO_LR3MS4JIEC6",
+      "proEventLabel": "HYROX PRO - Sunday",
+      "menProTop3": [
+        {
+          "athleteName": "Dylan Scott",
+          "place": 1,
+          "totalTime": "00:55:19"
+        },
+        {
+          "athleteName": "Cole Learn",
+          "place": 2,
+          "totalTime": "00:56:53"
+        },
+        {
+          "athleteName": "Stephen Pelkofer",
+          "place": 3,
+          "totalTime": "00:57:43"
+        }
+      ],
+      "womenProTop3": [
+        {
+          "athleteName": "Katherine Fahsbender",
+          "place": 1,
+          "totalTime": "01:02:55"
+        },
+        {
+          "athleteName": "Terra Jackson",
+          "place": 2,
+          "totalTime": "01:03:31"
+        },
+        {
+          "athleteName": "Rachael Wade",
+          "place": 3,
+          "totalTime": "01:05:49"
+        }
+      ],
+      "resultsUrl": "https://results.hyrox.com/season-8/?pid=list&pidp=ranking_nav&event_main_group=2025+Atlanta&event=HPRO_LR3MS4JIEC6&ranking=time_finish_netto",
+      "status": "ok"
+    },
+    {
+      "label": "2025 Stuttgart",
+      "year": 2025,
+      "city": "Stuttgart",
+      "eventSlug": "stuttgart-2025",
+      "eventMainGroup": "2025 Stuttgart",
+      "proEventCode": "HPRO_LR3MS4JIE9E",
+      "proEventLabel": "HYROX PRO - Friday",
+      "menProTop3": [
+        {
+          "athleteName": "Tim Wenisch",
+          "place": 1,
+          "totalTime": "00:54:21"
+        },
+        {
+          "athleteName": "Sean Noble",
+          "place": 2,
+          "totalTime": "00:54:45"
+        },
+        {
+          "athleteName": "Liam Mccroary",
+          "place": 3,
+          "totalTime": "00:55:49"
+        }
+      ],
+      "womenProTop3": [
+        {
+          "athleteName": "Megan Jacoby",
+          "place": 1,
+          "totalTime": "00:58:09"
+        },
+        {
+          "athleteName": "Lena Putters",
+          "place": 2,
+          "totalTime": "01:01:04"
+        },
+        {
+          "athleteName": "Elli Stenfors",
+          "place": 3,
+          "totalTime": "01:01:05"
+        }
+      ],
+      "resultsUrl": "https://results.hyrox.com/season-8/?pid=list&pidp=ranking_nav&event_main_group=2025+Stuttgart&event=HPRO_LR3MS4JIE9E&ranking=time_finish_netto",
+      "status": "ok"
+    },
+    {
+      "label": "2025 Paris",
+      "year": 2025,
+      "city": "Paris",
+      "eventSlug": "paris-2025",
+      "eventMainGroup": "2025 Paris",
+      "proEventCode": "HPRO_PARIS25_OVERALL_2",
+      "proEventLabel": "HYROX PRO - Overall",
+      "menProTop3": [
+        {
+          "athleteName": "Guillaume Levoy",
+          "place": 1,
+          "totalTime": "01:00:52"
+        },
+        {
+          "athleteName": "Tommy Valentin",
+          "place": 2,
+          "totalTime": "01:01:10"
+        },
+        {
+          "athleteName": "Théo Lainé",
+          "place": 3,
+          "totalTime": "01:01:15"
+        }
+      ],
+      "womenProTop3": [
+        {
+          "athleteName": "Lucy Procter",
+          "place": 1,
+          "totalTime": "01:03:52"
+        },
+        {
+          "athleteName": "Margot Vandenlindenloof",
+          "place": 2,
+          "totalTime": "01:06:05"
+        },
+        {
+          "athleteName": "Eva Rodrigues",
+          "place": 3,
+          "totalTime": "01:06:10"
+        }
+      ],
+      "resultsUrl": "https://results.hyrox.com/season-8/?pid=list&pidp=ranking_nav&event_main_group=2025+Paris&event=HPRO_PARIS25_OVERALL_2&ranking=time_finish_netto",
+      "status": "ok"
+    },
+    {
+      "label": "2025 Birmingham",
+      "year": 2025,
+      "city": "Birmingham",
+      "eventSlug": "birmingham-2025",
+      "eventMainGroup": "2025 Birmingham",
+      "proEventCode": "HPRO_Birmingham_1025_OVERALL",
+      "proEventLabel": "HYROX PRO - Overall",
+      "menProTop3": [
+        {
+          "athleteName": "Sean Noble",
+          "place": 1,
+          "totalTime": "00:55:04"
+        },
+        {
+          "athleteName": "Jake Dearden",
+          "place": 2,
+          "totalTime": "00:55:16"
+        },
+        {
+          "athleteName": "Charlie Botterill",
+          "place": 3,
+          "totalTime": "00:55:31"
+        }
+      ],
+      "womenProTop3": [
+        {
+          "athleteName": "Kat Parnell",
+          "place": 1,
+          "totalTime": "01:01:31"
+        },
+        {
+          "athleteName": "Charlie Searle",
+          "place": 2,
+          "totalTime": "01:01:50"
+        },
+        {
+          "athleteName": "Gabriella Moriarty",
+          "place": 3,
+          "totalTime": "01:01:58"
+        }
+      ],
+      "resultsUrl": "https://results.hyrox.com/season-8/?pid=list&pidp=ranking_nav&event_main_group=2025+Birmingham&event=HPRO_Birmingham_1025_OVERALL&ranking=time_finish_netto",
+      "status": "ok"
+    },
+    {
+      "label": "2025 Valencia",
+      "year": 2025,
+      "city": "Valencia",
+      "eventSlug": "valencia-2025",
+      "eventMainGroup": "2025 Valencia",
+      "proEventCode": "HPRO_VLC25_OVERALL",
+      "proEventLabel": "HYROX PRO - Overall",
+      "menProTop3": [
+        {
+          "athleteName": "Charlie Botterill",
+          "place": 1,
+          "totalTime": "00:56:24"
+        },
+        {
+          "athleteName": "Tomas Tvrdik",
+          "place": 2,
+          "totalTime": "00:57:54"
+        },
+        {
+          "athleteName": "Jonathon Wynn",
+          "place": 3,
+          "totalTime": "00:58:14"
+        }
+      ],
+      "womenProTop3": [
+        {
+          "athleteName": "Manuela Garcia Caparrós",
+          "place": 1,
+          "totalTime": "01:04:52"
+        },
+        {
+          "athleteName": "Tanja Stroschneider",
+          "place": 2,
+          "totalTime": "01:06:06"
+        },
+        {
+          "athleteName": "Leonor Neto Camilo",
+          "place": 3,
+          "totalTime": "01:07:18"
+        }
+      ],
+      "resultsUrl": "https://results.hyrox.com/season-8/?pid=list&pidp=ranking_nav&event_main_group=2025+Valencia&event=HPRO_VLC25_OVERALL&ranking=time_finish_netto",
+      "status": "ok"
+    },
+    {
+      "label": "2025 Geneva",
+      "year": 2025,
+      "city": "Geneva",
+      "eventSlug": "geneva-2025",
+      "eventMainGroup": "2025 Geneva",
+      "proEventCode": "HPRO_LR3MS4JIDD6",
+      "proEventLabel": "HYROX PRO - Saturday",
+      "menProTop3": [
+        {
+          "athleteName": "Alexis Bernier",
+          "place": 1,
+          "totalTime": "00:57:49"
+        },
+        {
+          "athleteName": "Tiziano Pedrocchi",
+          "place": 2,
+          "totalTime": "00:58:25"
+        },
+        {
+          "athleteName": "Turker Alici",
+          "place": 3,
+          "totalTime": "01:00:05"
+        }
+      ],
+      "womenProTop3": [
+        {
+          "athleteName": "Elli Stenfors",
+          "place": 1,
+          "totalTime": "01:01:39"
+        },
+        {
+          "athleteName": "Vicky MacIntosh",
+          "place": 2,
+          "totalTime": "01:02:51"
+        },
+        {
+          "athleteName": "Jezabel Kremer",
+          "place": 3,
+          "totalTime": "01:06:41"
+        }
+      ],
+      "resultsUrl": "https://results.hyrox.com/season-8/?pid=list&pidp=ranking_nav&event_main_group=2025+Geneva&event=HPRO_LR3MS4JIDD6&ranking=time_finish_netto",
+      "status": "ok"
+    },
+    {
+      "label": "2025 Gdansk",
+      "year": 2025,
+      "city": "Gdansk",
+      "eventSlug": "gdansk-2025",
+      "eventMainGroup": "2025 Gdansk",
+      "proEventCode": "HPRO_LR3MS4JID4A",
+      "proEventLabel": "HYROX PRO",
+      "menProTop3": [
+        {
+          "athleteName": "Charlie Botterill",
+          "place": 1,
+          "totalTime": "00:54:49"
+        },
+        {
+          "athleteName": "Krystian Patryk Poremba",
+          "place": 2,
+          "totalTime": "00:55:59"
+        },
+        {
+          "athleteName": "Lee Tynan",
+          "place": 3,
+          "totalTime": "00:59:32"
+        }
+      ],
+      "womenProTop3": [
+        {
+          "athleteName": "Tereza Schejbalová",
+          "place": 1,
+          "totalTime": "01:06:38"
+        },
+        {
+          "athleteName": "Linda Pilerud",
+          "place": 2,
+          "totalTime": "01:09:44"
+        },
+        {
+          "athleteName": "Martyna krysiak",
+          "place": 3,
+          "totalTime": "01:09:47"
+        }
+      ],
+      "resultsUrl": "https://results.hyrox.com/season-8/?pid=list&pidp=ranking_nav&event_main_group=2025+Gdansk&event=HPRO_LR3MS4JID4A&ranking=time_finish_netto",
+      "status": "ok"
+    },
+    {
+      "label": "2025 Hamburg",
+      "year": 2025,
+      "city": "Hamburg",
+      "eventSlug": "hamburg-2025",
+      "eventMainGroup": "2025 Hamburg",
+      "proEventCode": "HPRO_Hamburg25_OVERALL",
+      "proEventLabel": "HYROX PRO - Overall",
+      "menProTop3": [
+        {
+          "athleteName": "Fabian Eisenlauer",
+          "place": 1,
+          "totalTime": "00:55:43"
+        },
+        {
+          "athleteName": "Kyle Schoonbee",
+          "place": 2,
+          "totalTime": "00:56:33"
+        },
+        {
+          "athleteName": "Marc Dean",
+          "place": 3,
+          "totalTime": "00:56:38"
+        }
+      ],
+      "womenProTop3": [
+        {
+          "athleteName": "Manuela García Caparrós",
+          "place": 1,
+          "totalTime": "01:01:11"
+        },
+        {
+          "athleteName": "Vicky MacIntosh",
+          "place": 2,
+          "totalTime": "01:01:28"
+        },
+        {
+          "athleteName": "sophia parvizi wayne",
+          "place": 3,
+          "totalTime": "01:01:40"
+        }
+      ],
+      "resultsUrl": "https://results.hyrox.com/season-8/?pid=list&pidp=ranking_nav&event_main_group=2025+Hamburg&event=HPRO_Hamburg25_OVERALL&ranking=time_finish_netto",
+      "status": "ok"
+    },
+    {
+      "label": "2025 Toronto",
+      "year": 2025,
+      "city": "Toronto",
+      "eventSlug": "toronto-2025",
+      "eventMainGroup": "2025 Toronto",
+      "proEventCode": "HPRO_TORONTO25_OVERALL",
+      "proEventLabel": "HYROX PRO - Overall",
+      "menProTop3": [
+        {
+          "athleteName": "Frédéric Dubé",
+          "place": 1,
+          "totalTime": "00:57:47"
+        },
+        {
+          "athleteName": "Samuel Hebert",
+          "place": 2,
+          "totalTime": "00:58:41"
+        },
+        {
+          "athleteName": "Jack Driscoll",
+          "place": 3,
+          "totalTime": "00:59:33"
+        }
+      ],
+      "womenProTop3": [
+        {
+          "athleteName": "Belle Macfarlane",
+          "place": 1,
+          "totalTime": "01:03:21"
+        },
+        {
+          "athleteName": "Terra Jackson",
+          "place": 2,
+          "totalTime": "01:04:44"
+        },
+        {
+          "athleteName": "Samantha Faddis",
+          "place": 3,
+          "totalTime": "01:06:23"
+        }
+      ],
+      "resultsUrl": "https://results.hyrox.com/season-8/?pid=list&pidp=ranking_nav&event_main_group=2025+Toronto&event=HPRO_TORONTO25_OVERALL&ranking=time_finish_netto",
+      "status": "ok"
+    },
+    {
+      "label": "2025 Boston",
+      "year": 2025,
+      "city": "Boston",
+      "eventSlug": "boston-2025",
+      "eventMainGroup": "2025 Boston",
+      "proEventCode": "HPRO_BOSTON25_OVERALL",
+      "proEventLabel": "HYROX PRO - Overall",
+      "menProTop3": [],
+      "womenProTop3": [],
+      "resultsUrl": "https://results.hyrox.com/season-8/?pid=list&pidp=ranking_nav&event_main_group=2025+Boston&event=HPRO_BOSTON25_OVERALL&ranking=time_finish_netto",
+      "status": "no-results-yet"
+    },
+    {
+      "label": "2025 Oslo",
+      "year": 2025,
+      "city": "Oslo",
+      "eventSlug": "oslo-2025",
+      "eventMainGroup": "2025 Oslo",
+      "proEventCode": "HPRO_OSLO25_OVERALL",
+      "proEventLabel": "HYROX PRO - Overall",
+      "menProTop3": [
+        {
+          "athleteName": "Sebastian Ifversen",
+          "place": 1,
+          "totalTime": "00:58:17"
+        },
+        {
+          "athleteName": "Gustav Cordua",
+          "place": 2,
+          "totalTime": "00:58:51"
+        },
+        {
+          "athleteName": "Kenny Steger",
+          "place": 3,
+          "totalTime": "00:59:42"
+        }
+      ],
+      "womenProTop3": [
+        {
+          "athleteName": "Malrne Pedersen",
+          "place": 1,
+          "totalTime": "01:05:04"
+        },
+        {
+          "athleteName": "Anne Stellaard",
+          "place": 2,
+          "totalTime": "01:05:51"
+        },
+        {
+          "athleteName": "Yolanda King",
+          "place": 3,
+          "totalTime": "01:06:57"
+        }
+      ],
+      "resultsUrl": "https://results.hyrox.com/season-8/?pid=list&pidp=ranking_nav&event_main_group=2025+Oslo&event=HPRO_OSLO25_OVERALL&ranking=time_finish_netto",
+      "status": "ok"
+    },
+    {
+      "label": "2025 Rome",
+      "year": 2025,
+      "city": "Rome",
+      "eventSlug": "rome-2025",
+      "eventMainGroup": "2025 Rome",
+      "proEventCode": "HPRO_ROME25_OVERALL",
+      "proEventLabel": "HYROX PRO - Overall",
+      "menProTop3": [
+        {
+          "athleteName": "Roberto Viciedo Gimeno",
+          "place": 1,
+          "totalTime": "00:57:22"
+        },
+        {
+          "athleteName": "Pedro Antonio Toral Leiva",
+          "place": 2,
+          "totalTime": "00:58:45"
+        },
+        {
+          "athleteName": "Evan Galloway",
+          "place": 3,
+          "totalTime": "00:58:48"
+        }
+      ],
+      "womenProTop3": [
+        {
+          "athleteName": "Gloria Corbetta",
+          "place": 1,
+          "totalTime": "01:02:18"
+        },
+        {
+          "athleteName": "Viola Oberländer",
+          "place": 2,
+          "totalTime": "01:02:53"
+        },
+        {
+          "athleteName": "Gabriella Moriarty",
+          "place": 3,
+          "totalTime": "01:03:59"
+        }
+      ],
+      "resultsUrl": "https://results.hyrox.com/season-8/?pid=list&pidp=ranking_nav&event_main_group=2025+Rome&event=HPRO_ROME25_OVERALL&ranking=time_finish_netto",
+      "status": "ok"
+    },
+    {
+      "label": "2025 Maastricht",
+      "year": 2025,
+      "city": "Maastricht",
+      "eventSlug": "maastricht-2025",
+      "eventMainGroup": "2025 Maastricht",
+      "proEventCode": "HPRO_MAASTRICHT25_OVERALL",
+      "proEventLabel": "HYROX PRO - Overall",
+      "menProTop3": [
+        {
+          "athleteName": "Liam Mccroary",
+          "place": 1,
+          "totalTime": "00:56:33"
+        },
+        {
+          "athleteName": "Louis Osselaer",
+          "place": 2,
+          "totalTime": "00:57:18"
+        },
+        {
+          "athleteName": "Maarten Enthoven",
+          "place": 3,
+          "totalTime": "00:57:47"
+        }
+      ],
+      "womenProTop3": [
+        {
+          "athleteName": "Stefanie Oswald",
+          "place": 1,
+          "totalTime": "01:01:56"
+        },
+        {
+          "athleteName": "Manuela García Caparrós",
+          "place": 2,
+          "totalTime": "01:03:17"
+        },
+        {
+          "athleteName": "Danél Louw",
+          "place": 3,
+          "totalTime": "01:03:23"
+        }
+      ],
+      "resultsUrl": "https://results.hyrox.com/season-8/?pid=list&pidp=ranking_nav&event_main_group=2025+Maastricht&event=HPRO_MAASTRICHT25_OVERALL&ranking=time_finish_netto",
+      "status": "ok"
+    },
+    {
+      "label": "2025 Sao Paulo",
+      "year": 2025,
+      "city": "Sao Paulo",
+      "eventSlug": "sao-paulo-2025",
+      "eventMainGroup": "2025 Sao Paulo",
+      "proEventCode": "HPRO_LR3MS4JIDAD",
+      "proEventLabel": "HYROX PRO",
+      "menProTop3": [
+        {
+          "athleteName": "Benjamin Amsallem",
+          "place": 1,
+          "totalTime": "01:02:57"
+        },
+        {
+          "athleteName": "Andre Sanches",
+          "place": 2,
+          "totalTime": "01:04:57"
+        },
+        {
+          "athleteName": "Bruno Henrique Silva Carvalho",
+          "place": 3,
+          "totalTime": "01:07:36"
+        }
+      ],
+      "womenProTop3": [
+        {
+          "athleteName": "Aline Cabral",
+          "place": 1,
+          "totalTime": "01:16:00"
+        },
+        {
+          "athleteName": "Bruna Berbel",
+          "place": 2,
+          "totalTime": "01:16:29"
+        },
+        {
+          "athleteName": "Maëlle Soto",
+          "place": 3,
+          "totalTime": "01:17:13"
+        }
+      ],
+      "resultsUrl": "https://results.hyrox.com/season-8/?pid=list&pidp=ranking_nav&event_main_group=2025+Sao+Paulo&event=HPRO_LR3MS4JIDAD&ranking=time_finish_netto",
+      "status": "ok"
+    },
+    {
+      "label": "2025 Acapulco",
+      "year": 2025,
+      "city": "Acapulco",
+      "eventSlug": "acapulco-2025",
+      "eventMainGroup": "2025 Acapulco",
+      "proEventCode": "HPRO_LR3MS4JICFB",
+      "proEventLabel": "HYROX PRO",
+      "menProTop3": [
+        {
+          "athleteName": "Aldo Lozano Márquez",
+          "place": 1,
+          "totalTime": "01:00:03"
+        },
+        {
+          "athleteName": "Miguel Gonzalez",
+          "place": 2,
+          "totalTime": "01:03:29"
+        },
+        {
+          "athleteName": "Alexis Trujillo Ortega",
+          "place": 3,
+          "totalTime": "01:03:51"
+        }
+      ],
+      "womenProTop3": [
+        {
+          "athleteName": "Karen Vanessa Lara Castro",
+          "place": 1,
+          "totalTime": "01:08:53"
+        },
+        {
+          "athleteName": "Elena Rouco Chas",
+          "place": 2,
+          "totalTime": "01:12:15"
+        },
+        {
+          "athleteName": "Mariana Caballero",
+          "place": 3,
+          "totalTime": "01:12:44"
+        }
+      ],
+      "resultsUrl": "https://results.hyrox.com/season-8/?pid=list&pidp=ranking_nav&event_main_group=2025+Acapulco&event=HPRO_LR3MS4JICFB&ranking=time_finish_netto",
+      "status": "ok"
+    },
+    {
+      "label": "2025 Mumbai",
+      "year": 2025,
+      "city": "Mumbai",
+      "eventSlug": "mumbai-2025",
+      "eventMainGroup": "2025 Mumbai",
+      "proEventCode": "HPRO_LR3MS4JICE5",
+      "proEventLabel": "HYROX PRO",
+      "menProTop3": [
+        {
+          "athleteName": "Adam Corlett",
+          "place": 1,
+          "totalTime": "01:00:30"
+        },
+        {
+          "athleteName": "George Crewe",
+          "place": 2,
+          "totalTime": "01:07:00"
+        },
+        {
+          "athleteName": "Oumar Ba",
+          "place": 3,
+          "totalTime": "01:07:41"
+        }
+      ],
+      "womenProTop3": [
+        {
+          "athleteName": "Natalia Gunnlaugsdottir",
+          "place": 1,
+          "totalTime": "01:19:26"
+        },
+        {
+          "athleteName": "Xian T",
+          "place": 2,
+          "totalTime": "01:25:46"
+        },
+        {
+          "athleteName": "Greta Treeby",
+          "place": 3,
+          "totalTime": "01:26:09"
+        }
+      ],
+      "resultsUrl": "https://results.hyrox.com/season-8/?pid=list&pidp=ranking_nav&event_main_group=2025+Mumbai&event=HPRO_LR3MS4JICE5&ranking=time_finish_netto",
+      "status": "ok"
+    },
+    {
+      "label": "2025 Perth",
+      "year": 2025,
+      "city": "Perth",
+      "eventSlug": "perth-2025",
+      "eventMainGroup": "2025 Perth",
+      "proEventCode": "HPRO_PERTH25_OVERALL",
+      "proEventLabel": "HYROX PRO - Overall",
+      "menProTop3": [
+        {
+          "athleteName": "Tom Rodgers",
+          "place": 1,
+          "totalTime": "00:57:16"
+        },
+        {
+          "athleteName": "Josh Van Zeeland",
+          "place": 2,
+          "totalTime": "00:57:17"
+        },
+        {
+          "athleteName": "Tanguy Cruz",
+          "place": 3,
+          "totalTime": "00:57:37"
+        }
+      ],
+      "womenProTop3": [
+        {
+          "athleteName": "Calypso Sheridan",
+          "place": 1,
+          "totalTime": "01:02:02"
+        },
+        {
+          "athleteName": "Gabrielle Nikora-Baker",
+          "place": 2,
+          "totalTime": "01:02:24"
+        },
+        {
+          "athleteName": "Carlie Reid",
+          "place": 3,
+          "totalTime": "01:04:09"
+        }
+      ],
+      "resultsUrl": "https://results.hyrox.com/season-8/?pid=list&pidp=ranking_nav&event_main_group=2025+Perth&event=HPRO_PERTH25_OVERALL&ranking=time_finish_netto",
+      "status": "ok"
+    },
+    {
+      "label": "2025 Beijing",
+      "year": 2025,
+      "city": "Beijing",
+      "eventSlug": "beijing-2025",
+      "eventMainGroup": "2025 Beijing",
+      "proEventCode": "HPRO_LR3MS4JICA9",
+      "proEventLabel": "HYROX PRO",
+      "menProTop3": [
+        {
+          "athleteName": "Rylan Schadegg",
+          "place": 1,
+          "totalTime": "00:56:50"
+        },
+        {
+          "athleteName": "Gabe Heck",
+          "place": 2,
+          "totalTime": "00:59:46"
+        },
+        {
+          "athleteName": "Pierre Algret",
+          "place": 3,
+          "totalTime": "01:00:16"
+        }
+      ],
+      "womenProTop3": [
+        {
+          "athleteName": "Sarà Gandola",
+          "place": 1,
+          "totalTime": "01:05:20"
+        },
+        {
+          "athleteName": "芳 朱",
+          "place": 2,
+          "totalTime": "01:05:22"
+        },
+        {
+          "athleteName": "Clare Cheung",
+          "place": 3,
+          "totalTime": "01:07:55"
+        }
+      ],
+      "resultsUrl": "https://results.hyrox.com/season-8/?pid=list&pidp=ranking_nav&event_main_group=2025+Beijing&event=HPRO_LR3MS4JICA9&ranking=time_finish_netto",
+      "status": "ok"
+    },
+    {
+      "label": "2025 Yokohama",
+      "year": 2025,
+      "city": "Yokohama",
+      "eventSlug": "yokohama-2025",
+      "eventMainGroup": "2025 Yokohama",
+      "proEventCode": "HPRO_LR3MS4JICBD",
+      "proEventLabel": "HYROX PRO",
+      "menProTop3": [
+        {
+          "athleteName": "Rylan Schadegg",
+          "place": 1,
+          "totalTime": "01:03:26"
+        },
+        {
+          "athleteName": "Ben Smith",
+          "place": 2,
+          "totalTime": "01:03:27"
+        },
+        {
+          "athleteName": "Abbas Nazari",
+          "place": 3,
+          "totalTime": "01:03:34"
+        }
+      ],
+      "womenProTop3": [
+        {
+          "athleteName": "Sally Thompson",
+          "place": 1,
+          "totalTime": "01:10:44"
+        },
+        {
+          "athleteName": "早紀 前川",
+          "place": 2,
+          "totalTime": "01:11:41"
+        },
+        {
+          "athleteName": "Yoshida Aki",
+          "place": 3,
+          "totalTime": "01:12:13"
+        }
+      ],
+      "resultsUrl": "https://results.hyrox.com/season-8/?pid=list&pidp=ranking_nav&event_main_group=2025+Yokohama&event=HPRO_LR3MS4JICBD&ranking=time_finish_netto",
+      "status": "ok"
+    },
+    {
+      "label": "2025 Hong Kong",
+      "year": 2025,
+      "city": "Hong Kong",
+      "eventSlug": "hong-kong-2025",
+      "eventMainGroup": "2025 Hong Kong",
+      "proEventCode": "HPRO_LR3MS4JIC95",
+      "proEventLabel": "HYROX PRO - Saturday",
+      "menProTop3": [
+        {
+          "athleteName": "Dexter Buchanan",
+          "place": 1,
+          "totalTime": "00:58:34"
+        },
+        {
+          "athleteName": "Rylan Schadegg",
+          "place": 2,
+          "totalTime": "00:59:18"
+        },
+        {
+          "athleteName": "Alex Smith",
+          "place": 3,
+          "totalTime": "01:05:10"
+        }
+      ],
+      "womenProTop3": [
+        {
+          "athleteName": "Mollie Fkiaras",
+          "place": 1,
+          "totalTime": "01:03:10"
+        },
+        {
+          "athleteName": "Clare Cheung",
+          "place": 2,
+          "totalTime": "01:08:19"
+        },
+        {
+          "athleteName": "Sara Gandola",
+          "place": 3,
+          "totalTime": "01:09:25"
+        }
+      ],
+      "resultsUrl": "https://results.hyrox.com/season-8/?pid=list&pidp=ranking_nav&event_main_group=2025+Hong+Kong&event=HPRO_LR3MS4JIC95&ranking=time_finish_netto",
+      "status": "ok"
+    },
+    {
+      "label": "2025 Abu Dhabi",
+      "year": 2025,
+      "city": "Abu Dhabi",
+      "eventSlug": "abu-dhabi-2025",
+      "eventMainGroup": "2025 Abu Dhabi",
+      "proEventCode": "HPRO_LR3MS4JIC45",
+      "proEventLabel": "HYROX PRO",
+      "menProTop3": [],
+      "womenProTop3": [],
+      "resultsUrl": "https://results.hyrox.com/season-8/?pid=list&pidp=ranking_nav&event_main_group=2025+Abu+Dhabi&event=HPRO_LR3MS4JIC45&ranking=time_finish_netto",
+      "status": "no-results-yet"
+    },
+    {
+      "label": "2025 Cape Town",
+      "year": 2025,
+      "city": "Cape Town",
+      "eventSlug": "cape-town-2025",
+      "eventMainGroup": "2025 Cape Town",
+      "proEventCode": "HPRO_LR3MS4JIC31",
+      "proEventLabel": "HYROX PRO",
+      "menProTop3": [
+        {
+          "athleteName": "Kyle Schoonbee",
+          "place": 1,
+          "totalTime": "00:57:50"
+        },
+        {
+          "athleteName": "Andre Sanches",
+          "place": 2,
+          "totalTime": "01:02:17"
+        },
+        {
+          "athleteName": "Wesley Henning",
+          "place": 3,
+          "totalTime": "01:02:36"
+        }
+      ],
+      "womenProTop3": [
+        {
+          "athleteName": "Danél Louw",
+          "place": 1,
+          "totalTime": "01:01:53"
+        },
+        {
+          "athleteName": "Vicky MacIntosh",
+          "place": 2,
+          "totalTime": "01:03:49"
+        },
+        {
+          "athleteName": "Charlotte Haglund",
+          "place": 3,
+          "totalTime": "01:04:58"
+        }
+      ],
+      "resultsUrl": "https://results.hyrox.com/season-8/?pid=list&pidp=ranking_nav&event_main_group=2025+Cape+Town&event=HPRO_LR3MS4JIC31&ranking=time_finish_netto",
+      "status": "ok"
+    },
+    {
+      "label": "2025 Delhi",
+      "year": 2025,
+      "city": "Delhi",
+      "eventSlug": "delhi-2025",
+      "eventMainGroup": "2025 Delhi",
+      "proEventCode": "HPRO_LR3MS4JIC59",
+      "proEventLabel": "HYROX PRO",
+      "menProTop3": [
+        {
+          "athleteName": "Rylan Schadegg",
+          "place": 1,
+          "totalTime": "00:57:34"
+        },
+        {
+          "athleteName": "Levi Moger",
+          "place": 2,
+          "totalTime": "01:08:24"
+        },
+        {
+          "athleteName": "Clemens Reinhardt",
+          "place": 3,
+          "totalTime": "01:10:08"
+        }
+      ],
+      "womenProTop3": [
+        {
+          "athleteName": "Chloe Charles",
+          "place": 1,
+          "totalTime": "01:19:58"
+        },
+        {
+          "athleteName": "Sarah Francis",
+          "place": 2,
+          "totalTime": "01:26:53"
+        },
+        {
+          "athleteName": "Annabelle Lumbis",
+          "place": 3,
+          "totalTime": "01:26:56"
+        }
+      ],
+      "resultsUrl": "https://results.hyrox.com/season-8/?pid=list&pidp=ranking_nav&event_main_group=2025+Delhi&event=HPRO_LR3MS4JIC59&ranking=time_finish_netto",
+      "status": "ok"
+    },
+    {
+      "label": "2025 Sydney",
+      "year": 2025,
+      "city": "Sydney",
+      "eventSlug": "sydney-2025",
+      "eventMainGroup": "2025 Sydney",
+      "proEventCode": "HPRO_LR3MS4JIBE2",
+      "proEventLabel": "HYROX PRO - Saturday",
+      "menProTop3": [
+        {
+          "athleteName": "Josh Van Zeeland",
+          "place": 1,
+          "totalTime": "00:55:20"
+        },
+        {
+          "athleteName": "Dexter Buchanan",
+          "place": 2,
+          "totalTime": "00:57:12"
+        },
+        {
+          "athleteName": "Guiseppe Romeo",
+          "place": 3,
+          "totalTime": "00:58:20"
+        }
+      ],
+      "womenProTop3": [
+        {
+          "athleteName": "Calypso Sheridan",
+          "place": 1,
+          "totalTime": "01:02:48"
+        },
+        {
+          "athleteName": "Gabrielle Nikora-Baker",
+          "place": 2,
+          "totalTime": "01:03:22"
+        },
+        {
+          "athleteName": "Jenna Barrett",
+          "place": 3,
+          "totalTime": "01:03:57"
+        }
+      ],
+      "resultsUrl": "https://results.hyrox.com/season-8/?pid=list&pidp=ranking_nav&event_main_group=2025+Sydney&event=HPRO_LR3MS4JIBE2&ranking=time_finish_netto",
+      "status": "ok"
+    },
+    {
+      "label": "2025 Singapore",
+      "year": 2025,
+      "city": "Singapore",
+      "eventSlug": "singapore-2025",
+      "eventMainGroup": "2025 Singapore",
+      "status": "no-pro-event-found"
+    }
+  ]
+}

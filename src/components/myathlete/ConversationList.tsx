@@ -42,7 +42,10 @@ export function ConversationList({
       >
         <Avatar className="h-10 w-10 flex-shrink-0">
           <AvatarImage
-            src={resolveAvatarUrl(conversation.other_avatar_url, { size: 40 })}
+            src={resolveAvatarUrl(conversation.other_avatar_url, {
+              size: 40,
+              seed: conversation.other_username ?? conversation.other_user_id,
+            })}
             alt={conversation.other_username || undefined}
           />
           <AvatarFallback>

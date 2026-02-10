@@ -31,7 +31,7 @@ import { MobileActionBar } from '@/components/MobileActionBar';
 import { OptimizedImage } from '@/components/OptimizedImage';
 import { SelfMobileProfile } from '@/pages/AthleteDetailSelfMobile';
 import { getWindowUTC } from '@/lib/charting/engine';
-import type { Athlete } from '@/types';
+import type { Athlete, Workout } from '@/types';
 import type { WorkoutMutationResult } from '@/hooks/useWorkouts';
 import { useChartPosts } from '@/hooks/useChartPosts';
 import { usePriceSeries } from '@/hooks/usePriceSeries';
@@ -41,6 +41,9 @@ import { AthleteIdentityCard } from '@/components/identity';
 import { MobileAthleteProfile } from '@/pages/AthleteDetail/MobileAthleteProfile';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { useIdentityKernel } from '@/hooks/useIdentityKernel';
+import { DatePickerWithRange } from '@/components/DatePickerWithRange';
+import { DateRange } from 'react-day-picker';
+import { useWorkouts } from '@/hooks/useWorkouts';
 
 const AthletePriceChart = lazy(() => import('@/components/charts/AthletePriceChart'));
 
@@ -74,6 +77,48 @@ export default function AthleteDetail() {
   const { data: trades, isLoading: tradesLoading } = useTrades(athlete?.id, {
     enabled: Boolean(athlete?.id),
   });
+
+  const [dateRange, setDateRange] = useState<DateRange | undefined>();
+
+  // Filter workouts based on date range
+  // Fetch workouts with date range filter
+  const {
+    workouts: lockerWorkouts,
+    isLoading: isWorkoutsLoading,
+    hasNextPage,
+    fetchNextPage,
+    isFetchingNextPage
+  } = useWorkouts(athlete?.id, {
+    startDate: dateRange?.from,
+    endDate: dateRange?.to ? new Date(dateRange.to.getTime() + 86400000) : (dateRange?.from ? new Date(dateRange.from.getTime() + 86400000) : undefined),
+  });
+
+  const filteredWorkouts = useMemo(() => {
+    return lockerWorkouts?.map(w => w.workout).filter((w): w is Workout => w !== null) || [];
+  }, [lockerWorkouts]);
+
+  const filteredPosts = useMemo(() => {
+    return lockerWorkouts?.map(w => ({
+      id: w.id,
+      created_at: w.createdAt,
+      author_id: athlete?.id || '',
+      workout_json: w.workout,
+      image_url: w.imageUrl,
+      text: w.notes,
+      token_gated: w.visibility !== 'public',
+      strava_activity_id: w.stravaActivityId,
+      visibility: w.visibility,
+      min_tokens_required: w.minTokensRequired,
+      is_pinned: w.isPinned,
+      strava_map_polyline: w.stravaMapPolyline,
+      // Location fields
+      location_city: w.locationCity,
+      location_country: w.locationCountry,
+      location_country_code: w.locationCountryCode,
+      location_lat: w.locationLat,
+      location_lng: w.locationLng,
+    } as Post)) || [];
+  }, [lockerWorkouts, athlete?.id]);
   const tradeMutation = useTrade();
   const isMobile = !useMediaQuery('(min-width: 480px)', true);
   const { data: identityKernel } = useIdentityKernel(athlete?.id);
@@ -202,6 +247,7 @@ export default function AthleteDetail() {
   }, [tradeType, quantity, athlete]);
 
   const isSelfBuy = user?.id === athlete?.id && tradeType === 'buy';
+  const walletMonBalance = Number.isFinite(wallet?.mon) ? wallet.mon : 0;
 
   const canTrade =
     !isSelfBuy &&
@@ -210,7 +256,7 @@ export default function AthleteDetail() {
     impact &&
     wallet &&
     athlete &&
-    (tradeType === 'buy' ? wallet.usdc >= impact.total : position && position.quantity >= quantity);
+    (tradeType === 'buy' ? walletMonBalance >= impact.total : position && position.quantity >= quantity);
 
   const userHoldings = position?.quantity || 0;
 
@@ -552,7 +598,7 @@ export default function AthleteDetail() {
                         ) : impact && wallet && (
                           <p className="mb-2 text-xs text-muted-foreground">
                             {tradeType === 'buy'
-                              ? `You can buy up to ${Math.floor(wallet.usdc / impact.avgPrice)} Cards with your balance`
+                              ? `You can buy up to ${Math.floor(walletMonBalance / impact.avgPrice)} Cards with your balance`
                               : position
                                 ? `You have ${position.quantity} Card${position.quantity !== 1 ? 's' : ''}`
                                 : "You don't own any Cards"}
@@ -584,15 +630,15 @@ export default function AthleteDetail() {
                           <div className="space-y-2">
                             <div className="flex justify-between">
                               <span className="text-muted-foreground">Current Price</span>
-                              <span className="font-medium">${impact.oldPrice.toFixed(4)}</span>
+                              <span className="font-medium">{impact.oldPrice.toFixed(4)} MON</span>
                             </div>
                             <div className="flex justify-between">
                               <span className="text-muted-foreground">New Price</span>
-                              <span className="font-medium">${impact.newPrice.toFixed(4)}</span>
+                              <span className="font-medium">{impact.newPrice.toFixed(4)} MON</span>
                             </div>
                             <div className="flex justify-between">
                               <span className="text-muted-foreground">Avg Fill Price</span>
-                              <span className="font-medium">${impact.avgPrice.toFixed(4)}</span>
+                              <span className="font-medium">{impact.avgPrice.toFixed(4)} MON</span>
                             </div>
                             <div className="flex items-center justify-between">
                               <span className="text-muted-foreground">Price Impact</span>
@@ -610,7 +656,7 @@ export default function AthleteDetail() {
                             <div className="flex justify-between">
                               <span className="text-muted-foreground">New Market Cap</span>
                               <span className="font-medium">
-                                ${((impact.newPrice * impact.newSupply) / 1000).toFixed(2)}k
+                                {((impact.newPrice * impact.newSupply) / 1000).toFixed(2)}k MON
                               </span>
                             </div>
                           </div>
@@ -618,19 +664,19 @@ export default function AthleteDetail() {
                           <div className="border-t border-border pt-2 space-y-2">
                             <div className="flex justify-between">
                               <span>Subtotal</span>
-                              <span className="font-medium">${impact.subtotal.toFixed(2)}</span>
+                              <span className="font-medium">{impact.subtotal.toFixed(2)} MON</span>
                             </div>
                             <div className="flex justify-between text-xs">
                               <span className="text-muted-foreground">Fee (1.5% → Athlete)</span>
-                              <span className="text-muted-foreground">${(impact.fee / 2).toFixed(2)}</span>
+                              <span className="text-muted-foreground">{(impact.fee / 2).toFixed(2)} MON</span>
                             </div>
                             <div className="flex justify-between text-xs">
                               <span className="text-muted-foreground">Fee (1.5% → Treasury)</span>
-                              <span className="text-muted-foreground">${(impact.fee / 2).toFixed(2)}</span>
+                              <span className="text-muted-foreground">{(impact.fee / 2).toFixed(2)} MON</span>
                             </div>
                             <div className="flex justify-between border-t border-border pt-2 font-bold">
                               <span>Total {tradeType === 'buy' ? 'Cost' : 'Proceeds'}</span>
-                              <span>${impact.total.toFixed(2)}</span>
+                              <span>{impact.total.toFixed(2)} MON</span>
                             </div>
                           </div>
                         </div>
@@ -639,8 +685,8 @@ export default function AthleteDetail() {
                       {/* Wallet Info */}
                       <div className="space-y-2 text-sm">
                         <div className="flex justify-between">
-                          <span className="text-muted-foreground">Your USDC</span>
-                          <span className="font-medium">${wallet?.usdc.toFixed(2) || '0.00'}</span>
+                          <span className="text-muted-foreground">Your MON</span>
+                          <span className="font-medium">{walletMonBalance.toFixed(2)} MON</span>
                         </div>
                         {position && (
                           <>
@@ -650,12 +696,12 @@ export default function AthleteDetail() {
                             </div>
                             <div className="flex justify-between">
                               <span className="text-muted-foreground">Avg Cost</span>
-                              <span className="font-medium">${position.avgCost.toFixed(2)}</span>
+                              <span className="font-medium">{position.avgCost.toFixed(2)} MON</span>
                             </div>
                             <div className="flex justify-between">
                               <span className="text-muted-foreground">Unrealized P&L</span>
                               <span className={`font-medium ${position.pnl >= 0 ? 'text-success' : 'text-destructive'}`}>
-                                ${position.pnl.toFixed(2)} ({position.pnl >= 0 ? '+' : ''}{position.pnlPercent.toFixed(2)}%)
+                                {position.pnl.toFixed(2)} MON ({position.pnl >= 0 ? '+' : ''}{position.pnlPercent.toFixed(2)}%)
                               </span>
                             </div>
                           </>
@@ -678,12 +724,12 @@ export default function AthleteDetail() {
                                 : isSelfBuy
                                   ? 'Self-purchase not allowed'
                                   : tradeType === 'buy'
-                                    ? wallet.usdc < impact.total
-                                      ? `Need $${(impact.total - wallet.usdc).toFixed(2)} more USDC`
-                                      : `Buy for $${impact.total.toFixed(2)}`
+                                    ? walletMonBalance < impact.total
+                                      ? `Need ${(impact.total - walletMonBalance).toFixed(2)} more MON`
+                                      : `Buy for ${impact.total.toFixed(2)} MON`
                                     : !position || position.quantity < quantity
                                       ? `Need ${quantity - (position?.quantity || 0)} more Card${quantity - (position?.quantity || 0) !== 1 ? 's' : ''}`
-                                      : `Sell for $${impact.total.toFixed(2)}`
+                                      : `Sell for ${impact.total.toFixed(2)} MON`
                         }
                       </Button>
 
@@ -711,14 +757,18 @@ export default function AthleteDetail() {
 
               {/* Proof of Sweat & Training */}
               <div className="lg:col-span-2 space-y-6">
+                <div className="flex justify-end mb-2">
+                  <DatePickerWithRange date={dateRange} setDate={setDateRange} />
+                </div>
                 <ProofOfSweat
-                  workouts={athlete.workouts}
-                  posts={athlete.posts || []}
+                  workouts={filteredWorkouts}
+                  posts={filteredPosts}
                   athleteId={athlete.id}
                   athleteName={athlete.name}
                   athleteHandle={athlete.slug}
                   athleteAvatar={athlete.avatar}
                   viewerHoldings={userHoldings}
+                  isLoading={isWorkoutsLoading}
                   onUnlock={async () => {
                     await tradeMutation.mutateAsync({
                       athleteId: athlete.id,
@@ -731,6 +781,14 @@ export default function AthleteDetail() {
                   onWorkoutUpdated={handleWorkoutUpdated}
                   onConnectStrava={isOwnProfile ? () => navigate('/my-athlete') : undefined}
                 />
+
+                {hasNextPage && (
+                  <div className="flex justify-center py-6">
+                    <Button onClick={() => fetchNextPage()} disabled={isFetchingNextPage} variant="outline">
+                      {isFetchingNextPage ? 'Loading...' : 'Load More'}
+                    </Button>
+                  </div>
+                )}
 
                 {isOwnProfile && (
                   <>
@@ -953,7 +1011,7 @@ export default function AthleteDetail() {
         priceSeries={priceSeries}
         trades={athleteTrades}
         position={position}
-        userBalance={wallet?.usdc ?? 0}
+        userBalance={walletMonBalance}
         timeRange={timeRange}
         onTimeRangeChange={setTimeRange}
         onBack={() => navigate(-1)}

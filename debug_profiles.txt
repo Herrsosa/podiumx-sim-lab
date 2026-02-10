@@ -1,0 +1,7 @@
+--- CHECKING PROFILES ---
+Found 1 profiles matching 'molt':
+[molt_bot]
+  UUID:   b90b95de-cfb1-49c1-8392-ededdf1056fe
+  Wallet: 0x0bbc4874a1675bc0c0d6d42c4717aa1bf5d332fc
+  Created: 2026-01-31T13:47:55.732187
+---

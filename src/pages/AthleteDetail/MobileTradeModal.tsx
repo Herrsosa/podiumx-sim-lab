@@ -24,8 +24,7 @@ interface MobileTradeModalProps {
 }
 
 const currencyFormatter = new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
+    minimumFractionDigits: 2,
     maximumFractionDigits: 2,
 });
 
@@ -175,17 +174,17 @@ export function MobileTradeModal({
                     <div>
                         <Label className="text-sm text-muted-foreground">Amount</Label>
                         <div className="relative mt-1.5">
-                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
+                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm font-medium">MON</span>
                             <Input
                                 type="number"
                                 inputMode="decimal"
                                 placeholder="0.00"
                                 value={amountUSD}
                                 onChange={(e) => setAmountUSD(e.target.value)}
-                                className="pl-7 pr-14 h-12 text-lg"
+                                className="pl-12 pr-14 h-12 text-lg"
                             />
                             <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">
-                                USD
+                                MON
                             </span>
                         </div>
                         <p className="text-xs text-muted-foreground mt-1.5">
@@ -208,7 +207,7 @@ export function MobileTradeModal({
                             <div className="flex justify-between text-sm">
                                 <span className="text-muted-foreground">Price per Card</span>
                                 <span className="font-medium">
-                                    {currencyFormatter.format(impact.pricePerToken)}
+                                    {currencyFormatter.format(impact.pricePerToken)} MON
                                 </span>
                             </div>
                         </div>
@@ -245,15 +244,15 @@ export function MobileTradeModal({
                                 </div>
                                 <div className="flex justify-between">
                                     <span className="text-muted-foreground">Platform fee (1.5%)</span>
-                                    <span>{currencyFormatter.format(impact.platformFee)}</span>
+                                    <span>{currencyFormatter.format(impact.platformFee)} MON</span>
                                 </div>
                                 <div className="flex justify-between">
                                     <span className="text-muted-foreground">Athlete fee (1.5%)</span>
-                                    <span>{currencyFormatter.format(impact.athleteFee)}</span>
+                                    <span>{currencyFormatter.format(impact.athleteFee)} MON</span>
                                 </div>
                                 <div className="flex justify-between pt-2 border-t border-border/50 font-medium">
                                     <span>Total {isBuy ? 'cost' : 'proceeds'}</span>
-                                    <span>{currencyFormatter.format(impact.total)}</span>
+                                    <span>{currencyFormatter.format(impact.total)} MON</span>
                                 </div>
                             </div>
                         )}

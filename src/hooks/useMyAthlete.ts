@@ -173,7 +173,7 @@ export function useMyAthlete() {
         slug: profileData.username,
         name: profileData.display_name || profileData.username,
         sport: (profileData.sport || 'Other') as Sport,
-        avatar: resolveAvatarUrl(avatarSource, { size: 192 }),
+        avatar: resolveAvatarUrl(avatarSource, { size: 192, seed: profileData.username ?? profileData.id }),
         bio: profileData.bio || '',
         location: '',
         socials: {
@@ -193,6 +193,9 @@ export function useMyAthlete() {
 
       const metrics = metricsMap?.get(athlete.id);
       if (metrics) {
+        const resolvedPrice = metrics.lastPrice > 0 ? metrics.lastPrice : athlete.price;
+        athlete.price = resolvedPrice;
+        athlete.marketCap = resolvedPrice * athlete.supply;
         athlete.change24h = metrics.changePct;
         athlete.volume24h = metrics.volume;
       }

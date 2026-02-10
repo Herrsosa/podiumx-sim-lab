@@ -1,6 +1,6 @@
 import React, { useEffect, useCallback, useRef, useState } from 'react';
 import confetti from 'canvas-confetti';
-import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { TrendingUp, TrendingDown, Sparkles, Volume2, VolumeX, PartyPopper } from 'lucide-react';
@@ -168,10 +168,21 @@ export function TradeCelebration({ open, onOpenChange, data }: TradeCelebrationP
     if (!data) return null;
 
     const isBuy = data.side === 'BUY';
+    const fillPrice = Number.isFinite(data.fillPrice) ? data.fillPrice : 0;
+    const totalCost = Number.isFinite(data.totalCost) ? data.totalCost : 0;
+    const newPosition = Number.isFinite(data.newPosition) ? data.newPosition : undefined;
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="max-w-md p-0 overflow-hidden border-0 bg-gradient-to-br from-background via-background to-muted">
+                <DialogTitle className="sr-only">
+                    {isBuy ? 'Trade executed' : 'Tokens sold'}
+                </DialogTitle>
+                <DialogDescription className="sr-only">
+                    {isBuy
+                        ? `Successfully bought ${data.quantity} token${data.quantity === 1 ? '' : 's'} of ${data.athleteName}.`
+                        : `Successfully sold ${data.quantity} token${data.quantity === 1 ? '' : 's'} of ${data.athleteName}.`}
+                </DialogDescription>
                 {/* Animated background glow */}
                 <div
                     className={cn(
@@ -243,7 +254,7 @@ export function TradeCelebration({ open, onOpenChange, data }: TradeCelebrationP
                             <div className="text-left">
                                 <p className="font-bold text-lg">{data.athleteName}</p>
                                 <p className="text-muted-foreground">
-                                    @ ${data.fillPrice.toFixed(4)} per token
+                                    @ ${fillPrice.toFixed(4)} per token
                                 </p>
                             </div>
                         </div>
@@ -253,12 +264,12 @@ export function TradeCelebration({ open, onOpenChange, data }: TradeCelebrationP
                     <div className="grid grid-cols-2 gap-4 animate-in fade-in slide-in-from-bottom-6 duration-500 delay-300">
                         <div className="p-4 rounded-xl bg-muted/50 border">
                             <p className="text-xs text-muted-foreground uppercase tracking-wider">Total {isBuy ? 'Cost' : 'Proceeds'}</p>
-                            <p className="text-2xl font-bold">${data.totalCost.toFixed(2)}</p>
+                            <p className="text-2xl font-bold">${totalCost.toFixed(2)}</p>
                         </div>
-                        {data.newPosition !== undefined && (
+                        {newPosition !== undefined && (
                             <div className="p-4 rounded-xl bg-muted/50 border">
                                 <p className="text-xs text-muted-foreground uppercase tracking-wider">Your Position</p>
-                                <p className="text-2xl font-bold">{data.newPosition.toFixed(0)}</p>
+                                <p className="text-2xl font-bold">{newPosition.toFixed(0)}</p>
                             </div>
                         )}
                     </div>

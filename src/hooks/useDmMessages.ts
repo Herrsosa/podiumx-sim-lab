@@ -8,6 +8,9 @@ export interface DmMessage {
   body: string;
   media_url: string | null;
   created_at: string;
+  sender_username: string | null;
+  sender_display_name: string | null;
+  sender_avatar_url: string | null;
 }
 
 export function useDmMessages(conversationId: string | undefined) {

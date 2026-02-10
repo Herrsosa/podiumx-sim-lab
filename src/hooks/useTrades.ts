@@ -25,6 +25,7 @@ export function useTrades(athleteId?: string, options?: { enabled?: boolean }) {
         .select(
           `${TRADE_SELECT}, profiles!trades_athlete_id_profiles_id_fk(display_name, username)`
         )
+        .eq('is_on_chain', true)
         .order('created_at', { ascending: false });
 
       if (athleteId) {
@@ -73,6 +74,7 @@ export function useUserTrades() {
           `${TRADE_SELECT}, profiles!trades_athlete_id_profiles_id_fk(display_name, username)`
         )
         .eq('user_id', user.id)
+        .eq('is_on_chain', true)
         .order('created_at', { ascending: false });
 
       if (error) throw error;

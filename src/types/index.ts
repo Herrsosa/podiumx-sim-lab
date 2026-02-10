@@ -75,7 +75,7 @@ export interface Position {
 }
 
 export interface Wallet {
-  usdc: number;
+  mon: number;
   positions: Record<string, Position>;
 }
 
@@ -93,6 +93,7 @@ export interface Workout {
   mediaType?: 'image' | 'video';
   visibility: 'public' | 'supporters' | 'backers';
   minTokensRequired: number;
+  is_agent?: boolean;
 }
 
 export interface UserProfile {

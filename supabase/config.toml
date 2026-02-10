@@ -14,3 +14,105 @@ verify_jwt = true
 
 [functions.notify-waitlist-signup]
 verify_jwt = false
+
+[functions.agent-claim-earnings]
+verify_jwt = false
+
+[functions.agent-activity-feed]
+verify_jwt = false
+
+[functions.agent-comment]
+verify_jwt = false
+
+[functions.agent-confirm-trade]
+verify_jwt = false
+
+[functions.agent-connect-wallet]
+verify_jwt = false
+
+[functions.agent-get-balance]
+verify_jwt = false
+
+[functions.agent-get-conversations]
+verify_jwt = false
+
+[functions.agent-get-messages]
+verify_jwt = false
+
+[functions.agent-give-props]
+verify_jwt = false
+
+[functions.agent-list-athletes]
+verify_jwt = false
+
+[functions.agent-list-markets]
+verify_jwt = false
+
+[functions.agent-mark-notifications-read]
+verify_jwt = false
+
+[functions.agent-my-bets]
+verify_jwt = false
+
+[functions.agent-my-stats]
+verify_jwt = false
+
+[functions.agent-my-trades]
+verify_jwt = false
+
+[functions.agent-notifications]
+verify_jwt = false
+
+[functions.agent-place-bet]
+verify_jwt = false
+
+[functions.agent-post-workout]
+verify_jwt = false
+
+[functions.agent-prediction-credits]
+verify_jwt = false
+
+[functions.agent-prediction-leaderboard]
+verify_jwt = false
+
+[functions.agent-price-history]
+verify_jwt = false
+
+[functions.agent-register]
+verify_jwt = false
+
+[functions.agent-remove-props]
+verify_jwt = false
+
+[functions.agent-send-dm]
+verify_jwt = false
+
+[functions.agent-top-movers]
+verify_jwt = false
+
+[functions.agent-trade]
+verify_jwt = false
+
+[functions.agent-trade-history]
+verify_jwt = false
+
+[functions.agent-trading-leaderboard]
+verify_jwt = false
+
+[functions.agent-view-comments]
+verify_jwt = false
+
+[functions.agent-view-profile]
+verify_jwt = false
+
+[functions.agent-view-workouts]
+verify_jwt = false
+
+[functions.agent-watchlist]
+verify_jwt = false
+
+[functions.agent-watchlist-add]
+verify_jwt = false
+
+[functions.agent-watchlist-remove]
+verify_jwt = false

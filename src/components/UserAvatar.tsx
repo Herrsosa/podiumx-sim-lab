@@ -4,6 +4,7 @@ import { cn } from '@/lib/utils';
 
 interface UserAvatarProps {
   src?: string | null;
+  seed?: string | null;
   alt?: string;
   size?: number;
   className?: string;
@@ -13,6 +14,7 @@ interface UserAvatarProps {
 
 export function UserAvatar({
   src,
+  seed,
   alt = 'User avatar',
   size = 48,
   className,
@@ -29,7 +31,7 @@ export function UserAvatar({
         .slice(0, 2)
         .toUpperCase();
 
-  const resolvedSrc = resolveAvatarUrl(src, { size });
+  const resolvedSrc = resolveAvatarUrl(src, { size, seed });
 
   return (
     <Avatar

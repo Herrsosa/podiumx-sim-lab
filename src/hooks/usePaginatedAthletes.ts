@@ -24,6 +24,9 @@ type BatchAthleteRow = {
   c: number;
   treasury_balance: number;
   athlete_earnings: number;
+  onchain_initialized?: boolean | null;
+  onchain_price?: number | string | null;
+  onchain_updated_at?: string | null;
 };
 
 const PAGE_SIZE = 12;
@@ -58,7 +61,10 @@ export function usePaginatedAthletes() {
 
       // Combine profile + token data (posts are intentionally omitted for marketplace views)
       const athletes: Athlete[] = athleteRows.map((row) => {
-        const price = priceAt(row.supply, { a: row.a, b: row.b, c: row.c });
+        const onchainPrice = row.onchain_price != null ? Number(row.onchain_price) : Number.NaN;
+        const price = Number.isFinite(onchainPrice) && onchainPrice > 0
+          ? onchainPrice
+          : priceAt(row.supply, { a: row.a, b: row.b, c: row.c });
         const marketCap = price * row.supply;
         const avatarSource = athleteAvatars[row.username] ?? row.avatar_url;
 
@@ -67,7 +73,7 @@ export function usePaginatedAthletes() {
           slug: row.username,
           name: row.display_name || row.username,
           sport: (row.sport || 'Other') as Sport,
-          avatar: resolveAvatarUrl(avatarSource, { size: 160 }),
+          avatar: resolveAvatarUrl(avatarSource, { size: 160, seed: row.username ?? row.id }),
           bio: row.bio || '',
           location: '',
           socials: {
@@ -122,8 +128,14 @@ export function usePaginatedAthletes() {
       const metrics = metricsMap.get(athlete.id);
       if (!metrics) return athlete;
 
+      // Use lastPrice from DB metrics (which comes from latest indexed trade) so UI can match on-chain.
+      const lastPrice = metrics.lastPrice;
+      const resolvedPrice = lastPrice > 0 ? lastPrice : athlete.price;
+
       return {
         ...athlete,
+        price: resolvedPrice,
+        marketCap: resolvedPrice * athlete.supply,
         change24h: metrics.changePct,
         volume24h: metrics.volume,
       };

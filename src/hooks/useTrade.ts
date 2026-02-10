@@ -60,8 +60,35 @@ export function useTrade() {
       });
 
       if (error) {
-        logger.error('Trade error', error.message ?? error, variables);
-        throw new Error(error.message || 'Trade execution failed');
+        console.error('🔴 RAW EDGE FUNCTION ERROR:', error);
+
+        let message = error.message || 'Trade execution failed';
+        let detailedError = '';
+
+        try {
+          if ('context' in error && (error as any).context instanceof Response) {
+            const response = (error as any).context as Response;
+            const body = await response.clone().json();
+            console.error('🔴 PARSED BODY:', body);
+
+            if (body?.error) {
+              message = body.error;
+              detailedError = JSON.stringify(body);
+            }
+          }
+        } catch (e) {
+          console.error('Json parse error', e);
+        }
+
+        // Force visibility
+        toast({
+          title: 'Debug Error',
+          description: message + (detailedError ? ` | ${detailedError}` : ''),
+          variant: 'destructive',
+          duration: 10000,
+        });
+
+        throw new Error(message);
       }
 
       return data as TradeServerEnvelope;
@@ -101,7 +128,7 @@ export function useTrade() {
       const errorMessage = error instanceof Error ? error.message : 'An error occurred while processing your trade';
 
       let title = 'Trade Failed';
-      if (errorMessage.includes('Insufficient USDC')) {
+      if (errorMessage.includes('Insufficient MON')) {
         title = 'Insufficient Balance';
       } else if (errorMessage.includes('Insufficient token')) {
         title = 'Insufficient Tokens';
@@ -167,7 +194,7 @@ export function useFaucet() {
       await refreshWallet(user?.id);
       toast({
         title: 'Funds Added',
-        description: `$${amount} test USDC added`,
+        description: `${amount} test MON added`,
       });
     },
   });

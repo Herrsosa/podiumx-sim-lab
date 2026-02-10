@@ -18,7 +18,10 @@ RETURNS TABLE (
   b numeric,
   c numeric,
   treasury_balance numeric,
-  athlete_earnings numeric
+  athlete_earnings numeric,
+  onchain_initialized boolean,
+  onchain_price numeric,
+  onchain_updated_at timestamptz
 )
 LANGUAGE sql
 STABLE
@@ -41,7 +44,10 @@ AS $$
     COALESCE(t.b, 0.02) as b,
     COALESCE(t.c, 1) as c,
     COALESCE(t.treasury_balance, 0) as treasury_balance,
-    COALESCE(t.athlete_earnings, 0) as athlete_earnings
+    COALESCE(t.athlete_earnings, 0) as athlete_earnings,
+    t.onchain_initialized,
+    t.onchain_price,
+    t.onchain_updated_at
   FROM public.profiles p
   LEFT JOIN public.athlete_tokens t ON t.athlete_id = p.id
   WHERE p.id = ANY(_ids)

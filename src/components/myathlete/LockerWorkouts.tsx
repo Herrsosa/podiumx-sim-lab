@@ -18,6 +18,8 @@ import {
 } from '@/hooks/useWorkouts';
 import AddWorkoutModal from '@/components/AddWorkoutModal';
 import type { Athlete } from '@/types';
+import { DatePickerWithRange } from '@/components/DatePickerWithRange';
+import { DateRange } from 'react-day-picker';
 
 const PAGE_SIZE = 30;
 
@@ -51,7 +53,13 @@ export function LockerWorkouts({
     return 'fan';
   }, [canEdit, viewerHoldings]);
 
-  const workoutsQuery = useWorkouts(effectiveAthleteId, { pageSize: PAGE_SIZE, viewerRole });
+  const [dateRange, setDateRange] = useState<DateRange | undefined>();
+  const workoutsQuery = useWorkouts(effectiveAthleteId, {
+    pageSize: PAGE_SIZE,
+    viewerRole,
+    startDate: dateRange?.from,
+    endDate: dateRange?.to,
+  });
   const { fetchNextPage, hasNextPage = false, isFetchingNextPage } = workoutsQuery;
   const isLoading = (!lockerAthleteId && athleteLoading) || workoutsQuery.isLoading;
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
@@ -93,8 +101,14 @@ export function LockerWorkouts({
   );
 
   const workoutsKeyParams = useMemo(
-    () => ({ athleteId: effectiveAthleteId, viewerRole, pageSize: PAGE_SIZE }),
-    [effectiveAthleteId, viewerRole],
+    () => ({
+      athleteId: effectiveAthleteId,
+      viewerRole,
+      pageSize: PAGE_SIZE,
+      startDate: dateRange?.from?.toISOString(),
+      endDate: dateRange?.to?.toISOString(),
+    }),
+    [effectiveAthleteId, viewerRole, dateRange],
   );
 
   const updateMyAthleteCache = useCallback(
@@ -312,6 +326,10 @@ export function LockerWorkouts({
             Add Workout
           </Button>
         )}
+      </div>
+
+      <div className="flex justify-end">
+        <DatePickerWithRange date={dateRange} setDate={setDateRange} />
       </div>
 
       {workouts.length === 0 ? (

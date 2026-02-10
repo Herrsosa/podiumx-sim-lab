@@ -101,7 +101,11 @@ serve(async (req) => {
   }
 
   try {
-    // Check if full sync is requested via query param
+    // Check for custom sync parameters
+    const reqBody = await req.json().catch(() => ({}));
+    const { after_timestamp: customAfterTimestamp } = reqBody;
+
+    // Check if full sync is requested via query param (legacy)
     const url = new URL(req.url);
     const forceFullSync = url.searchParams.get('full') === 'true';
 
@@ -155,20 +159,29 @@ serve(async (req) => {
       stravaConnection = await refreshStravaToken(stravaConnection, supabaseClient);
     }
 
-    // Incremental sync: use 'after' parameter if we have a last activity timestamp
+    // Incremental sync: use 'after' parameter
     const lastActivityAt = stravaConnection.last_activity_at;
-    const afterTimestamp = (!forceFullSync && lastActivityAt)
-      ? Math.floor(new Date(lastActivityAt).getTime() / 1000)
+
+    // Priority: 1. Custom timestamp (Deep Sync), 2. Last activity time (Incremental), 3. Null (Full/First sync)
+    let afterTimestamp = customAfterTimestamp
+      ? Math.floor(new Date(customAfterTimestamp).getTime() / 1000)
       : null;
 
-    if (afterTimestamp) {
+    if (!afterTimestamp && !forceFullSync && lastActivityAt) {
+      afterTimestamp = Math.floor(new Date(lastActivityAt).getTime() / 1000);
+    }
+
+    if (customAfterTimestamp) {
+      console.log(`Deep sync: fetching activities after ${customAfterTimestamp}`);
+    } else if (afterTimestamp) {
       console.log(`Incremental sync: fetching activities after ${lastActivityAt}`);
     } else {
       console.log('Full sync: fetching all activities');
     }
 
     // Fetch activities with pagination
-    const MAX_PAGES = forceFullSync ? 4 : 2; // Fewer pages needed for incremental
+    // deep sync might need more pages
+    const MAX_PAGES = customAfterTimestamp ? 10 : (forceFullSync ? 4 : 2);
     const PER_PAGE = 50;
 
     const fetchActivitiesPage = async (connectionToUse: OAuthConnection, page: number) => {

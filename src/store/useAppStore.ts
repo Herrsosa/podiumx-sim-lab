@@ -10,7 +10,7 @@ export const useAppStore = create<AppState>()(
   persist(
     (set, get) => ({
       athletes: [],
-      wallet: { usdc: 0, positions: {} },
+      wallet: { mon: 0, positions: {} },
       trades: [],
       userProfile: generateSeedProfile(),
       userAthleteId: undefined,
@@ -22,7 +22,7 @@ export const useAppStore = create<AppState>()(
           const athletes = generateSeedAthletes();
           const trades = generateSeedTrades(athletes);
           const wallet = generateSeedWallet(athletes);
-          
+
           set({
             athletes,
             trades,
@@ -45,24 +45,24 @@ export const useAppStore = create<AppState>()(
         const newPrice = priceAt(newSupply, curve);
         const avgPrice = grossCost / quantity;
         const newReserve = athlete.reserve + grossCost;
-        
-        // Check if user has enough USDC
-        if (state.wallet.usdc < total) {
-          throw new Error('Insufficient USDC balance');
+
+        // Check if user has enough MON
+        if (state.wallet.mon < total) {
+          throw new Error('Insufficient MON balance');
         }
 
         // Update athlete
         const updatedAthletes = state.athletes.map((a) =>
           a.id === athleteId
             ? {
-                ...a,
-                supply: newSupply,
-                reserve: newReserve,
-                price: newPrice,
-                marketCap: newPrice * newSupply,
-                athleteRevenue: a.athleteRevenue + fee * 0.5,
-                volume24h: a.volume24h + total,
-              }
+              ...a,
+              supply: newSupply,
+              reserve: newReserve,
+              price: newPrice,
+              marketCap: newPrice * newSupply,
+              athleteRevenue: a.athleteRevenue + fee * 0.5,
+              volume24h: a.volume24h + total,
+            }
             : a
         );
 
@@ -70,31 +70,31 @@ export const useAppStore = create<AppState>()(
         const currentPosition = state.wallet.positions[athleteId];
         const newPosition: Position = currentPosition
           ? {
-              ...currentPosition,
-              quantity: currentPosition.quantity + quantity,
-              avgCost:
-                (currentPosition.avgCost * currentPosition.quantity + grossCost) /
-                (currentPosition.quantity + quantity),
-              currentPrice: newPrice,
-              pnl: 0,
-              pnlPercent: 0,
-            }
+            ...currentPosition,
+            quantity: currentPosition.quantity + quantity,
+            avgCost:
+              (currentPosition.avgCost * currentPosition.quantity + grossCost) /
+              (currentPosition.quantity + quantity),
+            currentPrice: newPrice,
+            pnl: 0,
+            pnlPercent: 0,
+          }
           : {
-              athleteId,
-              athleteName: athlete.name,
-              quantity,
-              avgCost: avgPrice,
-              currentPrice: newPrice,
-              pnl: 0,
-              pnlPercent: 0,
-            };
+            athleteId,
+            athleteName: athlete.name,
+            quantity,
+            avgCost: avgPrice,
+            currentPrice: newPrice,
+            pnl: 0,
+            pnlPercent: 0,
+          };
 
         // Recalculate PnL
         newPosition.pnl = (newPosition.currentPrice - newPosition.avgCost) * newPosition.quantity;
         newPosition.pnlPercent = ((newPosition.currentPrice - newPosition.avgCost) / newPosition.avgCost) * 100;
 
         const updatedWallet = {
-          usdc: state.wallet.usdc - total,
+          mon: state.wallet.mon - total,
           positions: {
             ...state.wallet.positions,
             [athleteId]: newPosition,
@@ -144,14 +144,14 @@ export const useAppStore = create<AppState>()(
         const updatedAthletes = state.athletes.map((a) =>
           a.id === athleteId
             ? {
-                ...a,
-                supply: newSupply,
-                reserve: newReserve,
-                price: newPrice,
-                marketCap: newPrice * newSupply,
-                athleteRevenue: a.athleteRevenue + fee * 0.5,
-                volume24h: a.volume24h + grossPayout,
-              }
+              ...a,
+              supply: newSupply,
+              reserve: newReserve,
+              price: newPrice,
+              marketCap: newPrice * newSupply,
+              athleteRevenue: a.athleteRevenue + fee * 0.5,
+              volume24h: a.volume24h + grossPayout,
+            }
             : a
         );
 
@@ -173,7 +173,7 @@ export const useAppStore = create<AppState>()(
         }
 
         const updatedWallet = {
-          usdc: state.wallet.usdc + total,
+          mon: state.wallet.mon + total,
           positions: updatedPositions,
         };
 
@@ -205,8 +205,8 @@ export const useAppStore = create<AppState>()(
         const state = get();
         const athleteId = `user-athlete-${Date.now()}`;
         const slug = state.userProfile.displayName.toLowerCase().replace(/\s+/g, '-');
-        
-        // Calculate initial reserve (0.1 USDC per token)
+
+        // Calculate initial reserve (0.1 MON per token)
         const initialPrice = 0.1;
         const initialReserve = initialPrice * initialSupply;
 
@@ -308,7 +308,7 @@ export const useAppStore = create<AppState>()(
         set({
           wallet: {
             ...state.wallet,
-            usdc: state.wallet.usdc + amount,
+            mon: state.wallet.mon + amount,
           },
         });
       },
