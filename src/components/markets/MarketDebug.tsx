@@ -1,6 +1,7 @@
 // Debug component to verify markets data
 // Remove this after debugging
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useMarketCards, useMarket } from '@/hooks/useMarkets';
 import { usePredictionCredits, usePlaceBet } from '@/hooks/usePredictionCredits';
 import { useUser } from '@/store/auth';
