@@ -110,31 +110,30 @@ export function ReferralDashboard({ className }: ReferralDashboardProps) {
 
                 // Fetch top referrers leaderboard
                 const { data: leaderboardData, error: leaderboardError } = await supabase
-                    .from('referrals')
+                    .from('referral_codes' as any)
                     .select(`
-                        referrer_id,
-                        profiles!referrals_referrer_id_fkey (
+                        user_id,
+                        profiles:user_id (
                             id,
                             username,
                             display_name,
                             avatar_url
                         )
-                    `)
-                    .in('status', ['completed', 'rewarded']);
+                    `) as unknown as { data: Array<{ user_id: string; profiles: { id: string; username: string; display_name: string; avatar_url: string | null } | null }> | null; error: any };
 
                 if (!leaderboardError && leaderboardData) {
                     // Count referrals per user
                     const referralCounts = new Map<string, { count: number; profile: TopReferrer }>();
 
                     leaderboardData.forEach((ref) => {
-                        const profile = ref.profiles as { id: string; username: string; display_name: string; avatar_url: string | null } | null;
+                        const profile = ref.profiles;
                         if (!profile) return;
 
-                        const existing = referralCounts.get(ref.referrer_id);
+                        const existing = referralCounts.get(ref.user_id);
                         if (existing) {
                             existing.count++;
                         } else {
-                            referralCounts.set(ref.referrer_id, {
+                            referralCounts.set(ref.user_id, {
                                 count: 1,
                                 profile: {
                                     user_id: profile.id,

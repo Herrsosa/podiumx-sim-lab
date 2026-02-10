@@ -154,9 +154,9 @@ export async function trackEvent(
         };
 
         // Insert into analytics_events table
-        const { error } = await supabase
-            .from('analytics_events')
-            .insert(eventPayload);
+        const { error } = await (supabase
+            .from('analytics_events' as any)
+            .insert(eventPayload) as any);
 
         if (error) {
             console.error('Analytics tracking error:', error);

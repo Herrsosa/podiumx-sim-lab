@@ -85,6 +85,72 @@ export type Database = {
           },
         ]
       }
+      analytics_events: {
+        Row: {
+          anonymous_id: string | null
+          created_at: string | null
+          event_name: string
+          id: string
+          ip_address: unknown
+          properties: Json | null
+          referrer: string | null
+          user_agent: string | null
+          user_id: string | null
+          utm_campaign: string | null
+          utm_content: string | null
+          utm_medium: string | null
+          utm_source: string | null
+          utm_term: string | null
+        }
+        Insert: {
+          anonymous_id?: string | null
+          created_at?: string | null
+          event_name: string
+          id?: string
+          ip_address?: unknown
+          properties?: Json | null
+          referrer?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+          utm_campaign?: string | null
+          utm_content?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+          utm_term?: string | null
+        }
+        Update: {
+          anonymous_id?: string | null
+          created_at?: string | null
+          event_name?: string
+          id?: string
+          ip_address?: unknown
+          properties?: Json | null
+          referrer?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+          utm_campaign?: string | null
+          utm_content?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+          utm_term?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "analytics_events_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "prediction_leaderboard"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "analytics_events_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       athlete_chat_messages: {
         Row: {
           athlete_id: string
@@ -112,8 +178,22 @@ export type Database = {
             foreignKeyName: "athlete_chat_messages_athlete_id_fkey"
             columns: ["athlete_id"]
             isOneToOne: false
+            referencedRelation: "prediction_leaderboard"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "athlete_chat_messages_athlete_id_fkey"
+            columns: ["athlete_id"]
+            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "athlete_chat_messages_sender_id_fkey"
+            columns: ["sender_id"]
+            isOneToOne: false
+            referencedRelation: "prediction_leaderboard"
+            referencedColumns: ["user_id"]
           },
           {
             foreignKeyName: "athlete_chat_messages_sender_id_fkey"
@@ -156,6 +236,13 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "athlete_integrations_athlete_id_fkey"
+            columns: ["athlete_id"]
+            isOneToOne: false
+            referencedRelation: "prediction_leaderboard"
+            referencedColumns: ["user_id"]
+          },
           {
             foreignKeyName: "athlete_integrations_athlete_id_fkey"
             columns: ["athlete_id"]
@@ -243,6 +330,10 @@ export type Database = {
           b: number
           c: number
           created_at: string
+          monad_wallet_address: string | null
+          onchain_initialized: boolean | null
+          onchain_price: number | null
+          onchain_updated_at: string | null
           supply: number
           symbol: string
           treasury_balance: number
@@ -255,6 +346,10 @@ export type Database = {
           b?: number
           c?: number
           created_at?: string
+          monad_wallet_address?: string | null
+          onchain_initialized?: boolean | null
+          onchain_price?: number | null
+          onchain_updated_at?: string | null
           supply?: number
           symbol: string
           treasury_balance?: number
@@ -267,12 +362,23 @@ export type Database = {
           b?: number
           c?: number
           created_at?: string
+          monad_wallet_address?: string | null
+          onchain_initialized?: boolean | null
+          onchain_price?: number | null
+          onchain_updated_at?: string | null
           supply?: number
           symbol?: string
           treasury_balance?: number
           updated_at?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "athlete_tokens_athlete_id_profiles_id_fk"
+            columns: ["athlete_id"]
+            isOneToOne: true
+            referencedRelation: "prediction_leaderboard"
+            referencedColumns: ["user_id"]
+          },
           {
             foreignKeyName: "athlete_tokens_athlete_id_profiles_id_fk"
             columns: ["athlete_id"]
@@ -332,6 +438,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "comments_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "prediction_leaderboard"
+            referencedColumns: ["user_id"]
+          },
           {
             foreignKeyName: "comments_author_id_fkey"
             columns: ["author_id"]
@@ -433,6 +546,13 @@ export type Database = {
             foreignKeyName: "dm_messages_sender_id_fkey"
             columns: ["sender_id"]
             isOneToOne: false
+            referencedRelation: "prediction_leaderboard"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "dm_messages_sender_id_fkey"
+            columns: ["sender_id"]
+            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -466,7 +586,136 @@ export type Database = {
             foreignKeyName: "dm_participants_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
+            referencedRelation: "prediction_leaderboard"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "dm_participants_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      email_send_log: {
+        Row: {
+          email: string
+          id: string
+          metadata: Json | null
+          resend_id: string | null
+          sent_at: string | null
+          status: string | null
+          subject: string
+          template_id: string | null
+          user_email_status_id: string | null
+        }
+        Insert: {
+          email: string
+          id?: string
+          metadata?: Json | null
+          resend_id?: string | null
+          sent_at?: string | null
+          status?: string | null
+          subject: string
+          template_id?: string | null
+          user_email_status_id?: string | null
+        }
+        Update: {
+          email?: string
+          id?: string
+          metadata?: Json | null
+          resend_id?: string | null
+          sent_at?: string | null
+          status?: string | null
+          subject?: string
+          template_id?: string | null
+          user_email_status_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_send_log_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "email_templates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "email_send_log_user_email_status_id_fkey"
+            columns: ["user_email_status_id"]
+            isOneToOne: false
+            referencedRelation: "user_email_status"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      email_sequences: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          trigger_event: string
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          trigger_event: string
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          trigger_event?: string
+        }
+        Relationships: []
+      }
+      email_templates: {
+        Row: {
+          created_at: string | null
+          delay_hours: number | null
+          html_template: string
+          id: string
+          is_active: boolean | null
+          sequence_id: string
+          step_number: number
+          subject: string
+          text_template: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          delay_hours?: number | null
+          html_template: string
+          id?: string
+          is_active?: boolean | null
+          sequence_id: string
+          step_number: number
+          subject: string
+          text_template?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          delay_hours?: number | null
+          html_template?: string
+          id?: string
+          is_active?: boolean | null
+          sequence_id?: string
+          step_number?: number
+          subject?: string
+          text_template?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_templates_sequence_id_fkey"
+            columns: ["sequence_id"]
+            isOneToOne: false
+            referencedRelation: "email_sequences"
             referencedColumns: ["id"]
           },
         ]
@@ -498,6 +747,13 @@ export type Database = {
             foreignKeyName: "holdings_athlete_id_profiles_id_fk"
             columns: ["athlete_id"]
             isOneToOne: false
+            referencedRelation: "prediction_leaderboard"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "holdings_athlete_id_profiles_id_fk"
+            columns: ["athlete_id"]
+            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -505,7 +761,179 @@ export type Database = {
             foreignKeyName: "holdings_user_id_profiles_id_fk"
             columns: ["user_id"]
             isOneToOne: false
+            referencedRelation: "prediction_leaderboard"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "holdings_user_id_profiles_id_fk"
+            columns: ["user_id"]
+            isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      market_activity: {
+        Row: {
+          action: string
+          created_at: string | null
+          id: string
+          market_id: string
+          outcome_id: string
+          shares: number
+          stake: number
+          user_id: string
+        }
+        Insert: {
+          action?: string
+          created_at?: string | null
+          id?: string
+          market_id: string
+          outcome_id: string
+          shares: number
+          stake: number
+          user_id: string
+        }
+        Update: {
+          action?: string
+          created_at?: string | null
+          id?: string
+          market_id?: string
+          outcome_id?: string
+          shares?: number
+          stake?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "market_activity_market_id_fkey"
+            columns: ["market_id"]
+            isOneToOne: false
+            referencedRelation: "prediction_markets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "market_activity_outcome_id_fkey"
+            columns: ["outcome_id"]
+            isOneToOne: false
+            referencedRelation: "market_outcomes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "market_activity_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "prediction_leaderboard"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "market_activity_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      market_bets: {
+        Row: {
+          created_at: string | null
+          id: string
+          market_id: string
+          outcome_id: string
+          price_at_purchase: number
+          shares_received: number
+          stake: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          market_id: string
+          outcome_id: string
+          price_at_purchase: number
+          shares_received: number
+          stake: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          market_id?: string
+          outcome_id?: string
+          price_at_purchase?: number
+          shares_received?: number
+          stake?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "market_bets_market_id_fkey"
+            columns: ["market_id"]
+            isOneToOne: false
+            referencedRelation: "prediction_markets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "market_bets_outcome_id_fkey"
+            columns: ["outcome_id"]
+            isOneToOne: false
+            referencedRelation: "market_outcomes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "market_bets_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "prediction_leaderboard"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "market_bets_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      market_outcomes: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: string
+          label: string
+          market_id: string
+          metadata: Json | null
+          probability: number | null
+          shares: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          label: string
+          market_id: string
+          metadata?: Json | null
+          probability?: number | null
+          shares?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          label?: string
+          market_id?: string
+          metadata?: Json | null
+          probability?: number | null
+          shares?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "market_outcomes_market_id_fkey"
+            columns: ["market_id"]
+            isOneToOne: false
+            referencedRelation: "prediction_markets"
             referencedColumns: ["id"]
           },
         ]
@@ -609,6 +1037,117 @@ export type Database = {
         }
         Relationships: []
       }
+      points_config: {
+        Row: {
+          action: Database["public"]["Enums"]["point_action"]
+          daily_cap: number | null
+          description: string | null
+          points: number
+          updated_at: string | null
+        }
+        Insert: {
+          action: Database["public"]["Enums"]["point_action"]
+          daily_cap?: number | null
+          description?: string | null
+          points: number
+          updated_at?: string | null
+        }
+        Update: {
+          action?: Database["public"]["Enums"]["point_action"]
+          daily_cap?: number | null
+          description?: string | null
+          points?: number
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      points_ledger: {
+        Row: {
+          action: Database["public"]["Enums"]["point_action"]
+          created_at: string | null
+          id: string
+          metadata: Json | null
+          points: number
+          user_id: string
+        }
+        Insert: {
+          action: Database["public"]["Enums"]["point_action"]
+          created_at?: string | null
+          id?: string
+          metadata?: Json | null
+          points: number
+          user_id: string
+        }
+        Update: {
+          action?: Database["public"]["Enums"]["point_action"]
+          created_at?: string | null
+          id?: string
+          metadata?: Json | null
+          points?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "points_ledger_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "prediction_leaderboard"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "points_ledger_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      points_totals: {
+        Row: {
+          current_streak: number | null
+          last_workout_date: string | null
+          longest_streak: number | null
+          total_points: number | null
+          updated_at: string | null
+          user_id: string
+          weekly_points: number | null
+        }
+        Insert: {
+          current_streak?: number | null
+          last_workout_date?: string | null
+          longest_streak?: number | null
+          total_points?: number | null
+          updated_at?: string | null
+          user_id: string
+          weekly_points?: number | null
+        }
+        Update: {
+          current_streak?: number | null
+          last_workout_date?: string | null
+          longest_streak?: number | null
+          total_points?: number | null
+          updated_at?: string | null
+          user_id?: string
+          weekly_points?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "points_totals_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "prediction_leaderboard"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "points_totals_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       post_reactions: {
         Row: {
           created_at: string | null
@@ -657,6 +1196,7 @@ export type Database = {
           location_lat: number | null
           location_lng: number | null
           min_tokens_required: number
+          monad_tx_hash: string | null
           props_count: number
           strava_activity_id: number | null
           strava_map_polyline: string | null
@@ -680,6 +1220,7 @@ export type Database = {
           location_lat?: number | null
           location_lng?: number | null
           min_tokens_required?: number
+          monad_tx_hash?: string | null
           props_count?: number
           strava_activity_id?: number | null
           strava_map_polyline?: string | null
@@ -703,6 +1244,7 @@ export type Database = {
           location_lat?: number | null
           location_lng?: number | null
           min_tokens_required?: number
+          monad_tx_hash?: string | null
           props_count?: number
           strava_activity_id?: number | null
           strava_map_polyline?: string | null
@@ -716,6 +1258,180 @@ export type Database = {
             foreignKeyName: "posts_author_id_profiles_id_fk"
             columns: ["author_id"]
             isOneToOne: false
+            referencedRelation: "prediction_leaderboard"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "posts_author_id_profiles_id_fk"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      prediction_credits: {
+        Row: {
+          balance: number | null
+          created_at: string | null
+          total_earned: number | null
+          total_wagered: number | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          balance?: number | null
+          created_at?: string | null
+          total_earned?: number | null
+          total_wagered?: number | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          balance?: number | null
+          created_at?: string | null
+          total_earned?: number | null
+          total_wagered?: number | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "prediction_credits_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "prediction_leaderboard"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "prediction_credits_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      prediction_markets: {
+        Row: {
+          closes_at: string
+          created_at: string | null
+          division: string | null
+          event_city: string | null
+          event_date: string | null
+          event_id: string
+          event_name: string
+          id: string
+          metadata: Json | null
+          question: string
+          resolved_at: string | null
+          status: Database["public"]["Enums"]["market_status"]
+          total_pool: number | null
+          total_trades: number | null
+          type: Database["public"]["Enums"]["market_type"]
+          updated_at: string | null
+          winning_outcome_id: string | null
+        }
+        Insert: {
+          closes_at: string
+          created_at?: string | null
+          division?: string | null
+          event_city?: string | null
+          event_date?: string | null
+          event_id: string
+          event_name: string
+          id?: string
+          metadata?: Json | null
+          question: string
+          resolved_at?: string | null
+          status?: Database["public"]["Enums"]["market_status"]
+          total_pool?: number | null
+          total_trades?: number | null
+          type: Database["public"]["Enums"]["market_type"]
+          updated_at?: string | null
+          winning_outcome_id?: string | null
+        }
+        Update: {
+          closes_at?: string
+          created_at?: string | null
+          division?: string | null
+          event_city?: string | null
+          event_date?: string | null
+          event_id?: string
+          event_name?: string
+          id?: string
+          metadata?: Json | null
+          question?: string
+          resolved_at?: string | null
+          status?: Database["public"]["Enums"]["market_status"]
+          total_pool?: number | null
+          total_trades?: number | null
+          type?: Database["public"]["Enums"]["market_type"]
+          updated_at?: string | null
+          winning_outcome_id?: string | null
+        }
+        Relationships: []
+      }
+      prediction_results: {
+        Row: {
+          created_at: string | null
+          id: string
+          market_id: string
+          outcome_id: string
+          payout: number | null
+          resolved_at: string | null
+          total_stake: number | null
+          user_id: string
+          was_correct: boolean | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          market_id: string
+          outcome_id: string
+          payout?: number | null
+          resolved_at?: string | null
+          total_stake?: number | null
+          user_id: string
+          was_correct?: boolean | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          market_id?: string
+          outcome_id?: string
+          payout?: number | null
+          resolved_at?: string | null
+          total_stake?: number | null
+          user_id?: string
+          was_correct?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "prediction_results_market_id_fkey"
+            columns: ["market_id"]
+            isOneToOne: false
+            referencedRelation: "prediction_markets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "prediction_results_outcome_id_fkey"
+            columns: ["outcome_id"]
+            isOneToOne: false
+            referencedRelation: "market_outcomes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "prediction_results_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "prediction_leaderboard"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "prediction_results_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -723,47 +1439,59 @@ export type Database = {
       }
       profiles: {
         Row: {
+          api_key: string | null
           avatar_url: string | null
           bio: string | null
           created_at: string
           display_name: string | null
           id: string
           instagram_url: string | null
+          is_agent: boolean | null
+          monad_wallet_address: string | null
           onboarding_completed: boolean
           role: string | null
           sport: string | null
           strava_url: string | null
           tour_version_completed: string | null
+          type: Database["public"]["Enums"]["athlete_type"] | null
           updated_at: string
           username: string
         }
         Insert: {
+          api_key?: string | null
           avatar_url?: string | null
           bio?: string | null
           created_at?: string
           display_name?: string | null
           id: string
           instagram_url?: string | null
+          is_agent?: boolean | null
+          monad_wallet_address?: string | null
           onboarding_completed?: boolean
           role?: string | null
           sport?: string | null
           strava_url?: string | null
           tour_version_completed?: string | null
+          type?: Database["public"]["Enums"]["athlete_type"] | null
           updated_at?: string
           username: string
         }
         Update: {
+          api_key?: string | null
           avatar_url?: string | null
           bio?: string | null
           created_at?: string
           display_name?: string | null
           id?: string
           instagram_url?: string | null
+          is_agent?: boolean | null
+          monad_wallet_address?: string | null
           onboarding_completed?: boolean
           role?: string | null
           sport?: string | null
           strava_url?: string | null
           tour_version_completed?: string | null
+          type?: Database["public"]["Enums"]["athlete_type"] | null
           updated_at?: string
           username?: string
         }
@@ -823,50 +1551,237 @@ export type Database = {
         }
         Relationships: []
       }
+      referral_codes: {
+        Row: {
+          code: string
+          created_at: string | null
+          id: string
+          user_id: string
+        }
+        Insert: {
+          code: string
+          created_at?: string | null
+          id?: string
+          user_id: string
+        }
+        Update: {
+          code?: string
+          created_at?: string | null
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "referral_codes_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "prediction_leaderboard"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "referral_codes_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      referral_reward_tiers: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: string
+          referral_count: number
+          reward_type: string
+          reward_value: string
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          referral_count: number
+          reward_type: string
+          reward_value: string
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          referral_count?: number
+          reward_type?: string
+          reward_value?: string
+        }
+        Relationships: []
+      }
+      referral_rewards_claimed: {
+        Row: {
+          claimed_at: string | null
+          id: string
+          tier_id: string
+          user_id: string
+        }
+        Insert: {
+          claimed_at?: string | null
+          id?: string
+          tier_id: string
+          user_id: string
+        }
+        Update: {
+          claimed_at?: string | null
+          id?: string
+          tier_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "referral_rewards_claimed_tier_id_fkey"
+            columns: ["tier_id"]
+            isOneToOne: false
+            referencedRelation: "referral_reward_tiers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "referral_rewards_claimed_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "prediction_leaderboard"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "referral_rewards_claimed_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      referrals: {
+        Row: {
+          converted_at: string | null
+          created_at: string | null
+          id: string
+          referral_code: string
+          referred_id: string
+          referrer_id: string
+          rewarded_at: string | null
+          status: string | null
+        }
+        Insert: {
+          converted_at?: string | null
+          created_at?: string | null
+          id?: string
+          referral_code: string
+          referred_id: string
+          referrer_id: string
+          rewarded_at?: string | null
+          status?: string | null
+        }
+        Update: {
+          converted_at?: string | null
+          created_at?: string | null
+          id?: string
+          referral_code?: string
+          referred_id?: string
+          referrer_id?: string
+          rewarded_at?: string | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "referrals_referred_id_fkey"
+            columns: ["referred_id"]
+            isOneToOne: true
+            referencedRelation: "prediction_leaderboard"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "referrals_referred_id_fkey"
+            columns: ["referred_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "referrals_referrer_id_fkey"
+            columns: ["referrer_id"]
+            isOneToOne: false
+            referencedRelation: "prediction_leaderboard"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "referrals_referrer_id_fkey"
+            columns: ["referrer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       trades: {
         Row: {
           athlete_id: string
+          block_number: number | null
+          chain_id: number | null
           client_request_id: string | null
           created_at: string
           fee: number
           gross_amount: number
           id: string
+          is_on_chain: boolean | null
           net_amount: number
           price_after: number
           qty: number
           side: Database["public"]["Enums"]["trade_side"]
           supply_after: number
+          tx_hash: string | null
           user_id: string
         }
         Insert: {
           athlete_id: string
+          block_number?: number | null
+          chain_id?: number | null
           client_request_id?: string | null
           created_at?: string
           fee: number
           gross_amount: number
           id?: string
+          is_on_chain?: boolean | null
           net_amount: number
           price_after: number
           qty: number
           side: Database["public"]["Enums"]["trade_side"]
           supply_after: number
+          tx_hash?: string | null
           user_id: string
         }
         Update: {
           athlete_id?: string
+          block_number?: number | null
+          chain_id?: number | null
           client_request_id?: string | null
           created_at?: string
           fee?: number
           gross_amount?: number
           id?: string
+          is_on_chain?: boolean | null
           net_amount?: number
           price_after?: number
           qty?: number
           side?: Database["public"]["Enums"]["trade_side"]
           supply_after?: number
+          tx_hash?: string | null
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "trades_athlete_id_profiles_id_fk"
+            columns: ["athlete_id"]
+            isOneToOne: false
+            referencedRelation: "prediction_leaderboard"
+            referencedColumns: ["user_id"]
+          },
           {
             foreignKeyName: "trades_athlete_id_profiles_id_fk"
             columns: ["athlete_id"]
@@ -876,6 +1791,110 @@ export type Database = {
           },
           {
             foreignKeyName: "trades_user_id_profiles_id_fk"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "prediction_leaderboard"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "trades_user_id_profiles_id_fk"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_badges: {
+        Row: {
+          badge_type: string
+          earned_at: string | null
+          id: string
+          user_id: string
+        }
+        Insert: {
+          badge_type: string
+          earned_at?: string | null
+          id?: string
+          user_id: string
+        }
+        Update: {
+          badge_type?: string
+          earned_at?: string | null
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_badges_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "prediction_leaderboard"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "user_badges_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_email_status: {
+        Row: {
+          completed: boolean | null
+          created_at: string | null
+          current_step: number | null
+          email: string
+          id: string
+          last_email_sent_at: string | null
+          next_email_at: string | null
+          sequence_id: string
+          unsubscribed: boolean | null
+          user_id: string | null
+        }
+        Insert: {
+          completed?: boolean | null
+          created_at?: string | null
+          current_step?: number | null
+          email: string
+          id?: string
+          last_email_sent_at?: string | null
+          next_email_at?: string | null
+          sequence_id: string
+          unsubscribed?: boolean | null
+          user_id?: string | null
+        }
+        Update: {
+          completed?: boolean | null
+          created_at?: string | null
+          current_step?: number | null
+          email?: string
+          id?: string
+          last_email_sent_at?: string | null
+          next_email_at?: string | null
+          sequence_id?: string
+          unsubscribed?: boolean | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_email_status_sequence_id_fkey"
+            columns: ["sequence_id"]
+            isOneToOne: false
+            referencedRelation: "email_sequences"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_email_status_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "prediction_leaderboard"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "user_email_status_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
@@ -922,6 +1941,13 @@ export type Database = {
             foreignKeyName: "wallets_user_id_profiles_id_fk"
             columns: ["user_id"]
             isOneToOne: true
+            referencedRelation: "prediction_leaderboard"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "wallets_user_id_profiles_id_fk"
+            columns: ["user_id"]
+            isOneToOne: true
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -948,8 +1974,22 @@ export type Database = {
             foreignKeyName: "watchlist_athlete_id_fkey"
             columns: ["athlete_id"]
             isOneToOne: false
+            referencedRelation: "prediction_leaderboard"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "watchlist_athlete_id_fkey"
+            columns: ["athlete_id"]
+            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "watchlist_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "prediction_leaderboard"
+            referencedColumns: ["user_id"]
           },
           {
             foreignKeyName: "watchlist_user_id_fkey"
@@ -976,10 +2016,58 @@ export type Database = {
             foreignKeyName: "athlete_tokens_athlete_id_profiles_id_fk"
             columns: ["athlete_id"]
             isOneToOne: true
+            referencedRelation: "prediction_leaderboard"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "athlete_tokens_athlete_id_profiles_id_fk"
+            columns: ["athlete_id"]
+            isOneToOne: true
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
+      }
+      founder_users: {
+        Row: {
+          display_name: string | null
+          founder_since: string | null
+          user_id: string | null
+          username: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_badges_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "prediction_leaderboard"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "user_badges_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      prediction_leaderboard: {
+        Row: {
+          accuracy: number | null
+          avatar_url: string | null
+          correct_predictions: number | null
+          current_balance: number | null
+          display_name: string | null
+          net_profit: number | null
+          rank: number | null
+          total_earned: number | null
+          total_markets: number | null
+          total_wagered: number | null
+          user_id: string | null
+          username: string | null
+        }
+        Relationships: []
       }
       prices_daily_mv: {
         Row: {
@@ -1033,6 +2121,13 @@ export type Database = {
             foreignKeyName: "trades_athlete_id_profiles_id_fk"
             columns: ["athlete_id"]
             isOneToOne: false
+            referencedRelation: "prediction_leaderboard"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "trades_athlete_id_profiles_id_fk"
+            columns: ["athlete_id"]
+            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -1059,8 +2154,22 @@ export type Database = {
             foreignKeyName: "holdings_athlete_id_profiles_id_fk"
             columns: ["athlete_id"]
             isOneToOne: false
+            referencedRelation: "prediction_leaderboard"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "holdings_athlete_id_profiles_id_fk"
+            columns: ["athlete_id"]
+            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "holdings_user_id_profiles_id_fk"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "prediction_leaderboard"
+            referencedColumns: ["user_id"]
           },
           {
             foreignKeyName: "holdings_user_id_profiles_id_fk"
@@ -1073,6 +2182,22 @@ export type Database = {
       }
     }
     Functions: {
+      award_points: {
+        Args: {
+          p_action: Database["public"]["Enums"]["point_action"]
+          p_metadata?: Json
+          p_user_id: string
+        }
+        Returns: number
+      }
+      calculate_user_streak: {
+        Args: { p_user_id: string }
+        Returns: {
+          current_streak: number
+          last_workout_date: string
+          longest_streak: number
+        }[]
+      }
       cleanup_expired_oauth_states: { Args: never; Returns: undefined }
       execute_trade_transaction: {
         Args: {
@@ -1094,6 +2219,8 @@ export type Database = {
         }
         Returns: undefined
       }
+      generate_referral_code: { Args: never; Returns: string }
+      get_athlete_count: { Args: never; Returns: number }
       get_athletes_batch: {
         Args: { _ids: string[] }
         Returns: {
@@ -1114,18 +2241,32 @@ export type Database = {
           username: string
         }[]
       }
-      get_dm_conversations: {
-        Args: never
-        Returns: {
-          conversation_id: string
-          last_message: string
-          last_message_at: string
-          other_avatar_url: string
-          other_user_id: string
-          other_username: string
-          unread_count: number
-        }[]
-      }
+      get_dm_conversations:
+        | {
+            Args: never
+            Returns: {
+              conversation_id: string
+              last_message: string
+              last_message_at: string
+              other_avatar_url: string
+              other_user_id: string
+              other_username: string
+              unread_count: number
+            }[]
+          }
+        | {
+            Args: { p_limit?: number; p_offset?: number; p_user?: string }
+            Returns: {
+              conversation_id: string
+              last_message: string
+              last_message_at: string
+              other_avatar_url: string
+              other_display_name: string
+              other_user_id: string
+              unread_count: number
+              updated_at: string
+            }[]
+          }
       get_dm_messages: {
         Args: { p_conversation_id: string }
         Returns: {
@@ -1133,7 +2274,10 @@ export type Database = {
           created_at: string
           id: string
           media_url: string
+          sender_avatar_url: string
+          sender_display_name: string
           sender_id: string
+          sender_username: string
         }[]
       }
       get_market_overview: {
@@ -1147,8 +2291,55 @@ export type Database = {
           spark7d: number[]
         }[]
       }
+      get_points_leaderboard: {
+        Args: { p_limit?: number; p_timeframe?: string }
+        Returns: {
+          avatar_url: string
+          badge_type: string
+          display_name: string
+          points: number
+          rank: number
+          user_id: string
+          username: string
+        }[]
+      }
+      get_referral_stats: {
+        Args: { p_user_id: string }
+        Returns: {
+          completed_referrals: number
+          next_reward_at: number
+          next_reward_type: string
+          next_reward_value: string
+          referral_code: string
+          total_referrals: number
+        }[]
+      }
+      get_top_movers: {
+        Args: { p_limit?: number; p_window?: unknown }
+        Returns: {
+          athlete_id: string
+          base_price: number
+          last_price: number
+          notional: number
+          pct_change: number
+          qty: number
+        }[]
+      }
       get_user_balance: { Args: { p_athlete_id: string }; Returns: number }
+      place_prediction_bet: {
+        Args: {
+          p_market_id: string
+          p_outcome_id: string
+          p_stake: number
+          p_user_id: string
+        }
+        Returns: Json
+      }
       refresh_prices_daily_mv: { Args: never; Returns: undefined }
+      resolve_prediction_market: {
+        Args: { p_market_id: string; p_winning_outcome_id: string }
+        Returns: Json
+      }
       send_dm: {
         Args: {
           p_body: string
@@ -1160,6 +2351,26 @@ export type Database = {
       start_dm: { Args: { p_other_user_id: string }; Returns: string }
     }
     Enums: {
+      athlete_type: "human" | "agent"
+      market_status: "open" | "closed" | "resolved" | "cancelled"
+      market_type:
+        | "winner"
+        | "threshold"
+        | "head_to_head"
+        | "podium"
+        | "station"
+      point_action:
+        | "profile_complete"
+        | "strava_connect"
+        | "first_workout"
+        | "daily_workout"
+        | "social_share"
+        | "referral_signup"
+        | "referral_workout"
+        | "token_purchase"
+        | "weekly_streak"
+        | "badge_earned"
+        | "manual_adjustment"
       trade_side: "BUY" | "SELL"
     }
     CompositeTypes: {
@@ -1288,6 +2499,22 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      athlete_type: ["human", "agent"],
+      market_status: ["open", "closed", "resolved", "cancelled"],
+      market_type: ["winner", "threshold", "head_to_head", "podium", "station"],
+      point_action: [
+        "profile_complete",
+        "strava_connect",
+        "first_workout",
+        "daily_workout",
+        "social_share",
+        "referral_signup",
+        "referral_workout",
+        "token_purchase",
+        "weekly_streak",
+        "badge_earned",
+        "manual_adjustment",
+      ],
       trade_side: ["BUY", "SELL"],
     },
   },
