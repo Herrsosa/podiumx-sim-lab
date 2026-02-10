@@ -126,10 +126,25 @@ serve(async (req) => {
             });
         }
 
+        // Ethers v6 rejects mixed-case addresses that are not valid EIP-55 checksums.
+        // Our DB may store non-checksummed mixed-case strings; normalize to lowercase.
+        const athleteWallet = String(athlete.monad_wallet_address).trim().toLowerCase();
+        if (!ethers.isAddress(athleteWallet)) {
+            return new Response(JSON.stringify({
+                error: "Invalid athlete wallet address",
+                athlete_id,
+                athlete_wallet: athlete.monad_wallet_address,
+                hint: "Athlete's monad_wallet_address is not a valid EVM address"
+            }), {
+                headers: { ...corsHeaders, "Content-Type": "application/json" },
+                status: 400,
+            });
+        }
+
         // Get token info for price calculation
         const { data: token } = await supabaseAdmin
             .from("athlete_tokens")
-            .select("supply, a, b, c, symbol")
+            .select("supply, a, b, c, symbol, onchain_price")
             .eq("athlete_id", athlete_id)
             .single();
 
@@ -137,6 +152,7 @@ serve(async (req) => {
         const a = Number(token?.a || 0.0002);
         const b = Number(token?.b || 0.02);
         const c = Number(token?.c || 1);
+        const dbOnchainPrice = token?.onchain_price != null ? Number(token.onchain_price) : Number.NaN;
 
         // Calculate estimated price using bonding curve formula
         let estimatedTotalMon = 0;
@@ -163,14 +179,14 @@ serve(async (req) => {
             const provider = new ethers.JsonRpcProvider(monad.rpcUrl);
             const contract = new ethers.Contract(bondingCurveAddress, BONDING_CURVE_ABI, provider);
 
-            const info = await contract.getAthleteInfo(athlete.monad_wallet_address);
+            const info = await contract.getAthleteInfo(athleteWallet);
             const initialized = Boolean((info as any)?.[4]);
 
             if (!initialized) {
                 return new Response(JSON.stringify({
                     error: "Athlete not registered on-chain",
                     athlete_id: athlete_id,
-                    athlete_wallet: athlete.monad_wallet_address,
+                    athlete_wallet: athleteWallet,
                     hint: "Run the on-chain registration script (registerAthlete) for this wallet, then retry."
                 }), {
                     headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -184,7 +200,10 @@ serve(async (req) => {
 
             // Safety rail: if DB/UI curve price diverges massively from on-chain, don't return a tx.
             // This is the most common footgun when MONAD_* env points at a different deployment.
-            const dbCurrentPrice = priceAt(supply, a, b, c);
+            const dbCurrentPrice =
+                Number.isFinite(dbOnchainPrice) && dbOnchainPrice > 0
+                    ? dbOnchainPrice
+                    : priceAt(supply, a, b, c);
             if (
                 Number.isFinite(dbCurrentPrice) &&
                 dbCurrentPrice > 0 &&
@@ -210,11 +229,11 @@ serve(async (req) => {
 
             if (side === "buy") {
                 transactionData = iface.encodeFunctionData("buy", [
-                    athlete.monad_wallet_address,
+                    athleteWallet,
                     quantity,
                 ]);
 
-                const grossCostWei = (await contract.costToBuy(athlete.monad_wallet_address, quantity)) as bigint;
+                const grossCostWei = (await contract.costToBuy(athleteWallet, quantity)) as bigint;
                 const feeWei = (grossCostWei * FEE_BPS) / BPS_DENOMINATOR;
                 const totalCostWei = grossCostWei + feeWei;
 
@@ -238,7 +257,7 @@ serve(async (req) => {
                         athlete_id: athlete.id,
                         athlete_username: athlete.username,
                         athlete_display_name: athlete.display_name,
-                        athlete_wallet: athlete.monad_wallet_address,
+                        athlete_wallet: athleteWallet,
                         side,
                         quantity,
                         // Gross (excluding fees), expressed in MON.
@@ -265,13 +284,13 @@ serve(async (req) => {
             }
 
             // SELL
-            const grossPayoutWei = (await contract.payoutToSell(athlete.monad_wallet_address, quantity)) as bigint;
+            const grossPayoutWei = (await contract.payoutToSell(athleteWallet, quantity)) as bigint;
             const feeWei = (grossPayoutWei * FEE_BPS) / BPS_DENOMINATOR;
             const netPayoutWei = grossPayoutWei - feeWei;
             const minPayoutWei = (netPayoutWei * 95n) / 100n; // 5% slippage tolerance
 
             transactionData = iface.encodeFunctionData("sell", [
-                athlete.monad_wallet_address,
+                athleteWallet,
                 quantity,
                 minPayoutWei,
             ]);
@@ -291,7 +310,7 @@ serve(async (req) => {
                     athlete_id: athlete.id,
                     athlete_username: athlete.username,
                     athlete_display_name: athlete.display_name,
-                    athlete_wallet: athlete.monad_wallet_address,
+                    athlete_wallet: athleteWallet,
                     side,
                     quantity,
                     estimated_price_per_token: (grossMon / quantity).toFixed(6),

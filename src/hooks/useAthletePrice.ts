@@ -43,18 +43,20 @@ export function useAthletePrice(athleteId: string | undefined) {
     queryFn: async () => {
       if (!athleteId) return null;
 
-      const [{ data: token, error: tokenError }, { data: latestPriceRows, error: priceError }] = await Promise.all([
+      const [{ data: token, error: tokenError }, { data: marketRow, error: marketError }] = await Promise.all([
         supabase
           .from('athlete_tokens')
-          .select('athlete_id, supply, a, b, c, treasury_balance, athlete_earnings, created_at')
+          // Prefer on-chain snapshot + token fields. Older off-chain athlete_prices rows can be stale/misaligned.
+          .select('athlete_id, supply, a, b, c, treasury_balance, athlete_earnings, created_at, onchain_initialized, onchain_price, onchain_updated_at')
           .eq('athlete_id', athleteId)
           .maybeSingle(),
+        // Market overview table contains last_price used across the marketplace UI.
+        // This is the most reliable "current price" when on-chain trades are not yet indexed.
         supabase
-          .from('athlete_prices')
-          .select('price, supply, treasury_balance, athlete_earnings, curve_a, curve_b, curve_c, created_at')
+          .from('athlete_metrics_24h')
+          .select('last_price')
           .eq('athlete_id', athleteId)
-          .order('created_at', { ascending: false })
-          .limit(1),
+          .maybeSingle(),
       ]);
 
       if (tokenError) {
@@ -62,32 +64,37 @@ export function useAthletePrice(athleteId: string | undefined) {
         throw tokenError;
       }
 
-      if (priceError) {
-        logger.error('Failed to fetch latest athlete price', priceError);
-        throw priceError;
+      if (marketError) {
+        logger.error('Failed to fetch athlete market snapshot', marketError);
+        throw marketError;
       }
 
       if (!token) return null;
 
-      const latestPriceRow = latestPriceRows?.[0] ?? null;
-
       const curve = {
-        a: latestPriceRow?.curve_a ?? token.a ?? 0.0002,
-        b: latestPriceRow?.curve_b ?? token.b ?? 0.02,
-        c: latestPriceRow?.curve_c ?? token.c ?? 1,
+        a: Number((token as any)?.a ?? 0.0002),
+        b: Number((token as any)?.b ?? 0.02),
+        c: Number((token as any)?.c ?? 1),
       };
 
+      const isOnchain = Boolean((token as any)?.onchain_initialized);
+      const marketLastPrice = marketRow?.last_price != null ? Number(marketRow.last_price) : Number.NaN;
       const onchainPrice = (token as any)?.onchain_price != null ? Number((token as any)?.onchain_price) : Number.NaN;
-      const fallbackPrice = Number.isFinite(onchainPrice) && onchainPrice > 0
-        ? onchainPrice
-        : (token.supply != null ? priceAt(token.supply, curve) : 0);
+      const curvePrice = token.supply != null ? priceAt(Number(token.supply), curve) : 0;
 
-      const price = latestPriceRow?.price ?? fallbackPrice;
-      const supply = latestPriceRow?.supply ?? token.supply ?? 0;
-      const reserve = latestPriceRow?.treasury_balance ?? token.treasury_balance ?? 0;
-      const athleteRevenue = latestPriceRow?.athlete_earnings ?? token.athlete_earnings ?? 0;
-      const updatedAt = latestPriceRow?.created_at ?? token.created_at ?? null;
-      const tokenCreatedAt = token.created_at ?? null;
+      const resolvedPrice =
+        Number.isFinite(marketLastPrice) && marketLastPrice > 0
+          ? marketLastPrice
+          : Number.isFinite(onchainPrice) && onchainPrice > 0
+            ? onchainPrice
+            : curvePrice;
+
+      // When the token is on-chain, prefer the token table for supply/reserve/revenue to avoid stale off-chain rows.
+      const supply = Number((token as any)?.supply ?? 0);
+      const reserve = Number((token as any)?.treasury_balance ?? 0);
+      const athleteRevenue = Number((token as any)?.athlete_earnings ?? 0);
+      const updatedAt = (isOnchain ? ((token as any)?.onchain_updated_at ?? null) : (token as any)?.created_at ?? null) as string | null;
+      const tokenCreatedAt = (token as any)?.created_at ?? null;
 
       // Normalize UTC timestamps to ms
       const updatedAtMs = updatedAt ? new Date(updatedAt).getTime() : null;
@@ -95,7 +102,7 @@ export function useAthletePrice(athleteId: string | undefined) {
 
       const snapshot: AthletePriceSnapshot = {
         athleteId: token.athlete_id,
-        price,
+        price: resolvedPrice,
         supply,
         reserve,
         athleteRevenue,

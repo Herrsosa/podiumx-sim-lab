@@ -3,7 +3,6 @@
  * Shows user's referral code, stats, and rewards
  */
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useEffect } from 'react';
 import {
     Users,

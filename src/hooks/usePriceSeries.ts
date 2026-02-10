@@ -46,7 +46,7 @@ export function usePriceSeries(
     refetchOnReconnect: true,
     queryFn: async () => {
       if (!athleteId) {
-        if (typeof options.fallbackPrice === 'number') {
+        if (typeof options.fallbackPrice === 'number' && Number.isFinite(options.fallbackPrice)) {
           return [toFallbackPoint(options.fallbackPrice, options.fallbackTimestamp ?? null)];
         }
         return [];
@@ -92,7 +92,7 @@ export function usePriceSeries(
 
       logger.info(`[usePriceSeries] normalized points count=${normalized.length}, points=${JSON.stringify(normalized.slice(0, 3))}`);
 
-      if (normalized.length === 0 && typeof options.fallbackPrice === 'number') {
+      if (normalized.length === 0 && typeof options.fallbackPrice === 'number' && Number.isFinite(options.fallbackPrice)) {
         logger.info(`[usePriceSeries] Using fallback price=${options.fallbackPrice}`);
         return [toFallbackPoint(options.fallbackPrice, options.fallbackTimestamp ?? null)];
       }

@@ -3,7 +3,6 @@
  * Tracks user events to Supabase for marketing insights
  */
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { supabase } from '@/integrations/supabase/client';
 
 // ============================================================================
