@@ -8,6 +8,11 @@ if (!appId) {
 }
 
 export function PrivyAuth({ children }: { children: React.ReactNode }) {
+    // Skip Privy entirely if no valid app ID — lets the app boot without crashing
+    if (!appId) {
+        return <>{children}</>;
+    }
+
     return (
         <PrivyProvider
             appId={appId || ''}
