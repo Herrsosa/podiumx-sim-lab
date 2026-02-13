@@ -3,10 +3,6 @@ import { supportedChains } from '@/lib/chains';
 
 const appId = import.meta.env.VITE_PRIVY_APP_ID;
 
-if (!appId) {
-    console.error("Missing VITE_PRIVY_APP_ID in environment variables");
-}
-
 export function PrivyAuth({ children }: { children: React.ReactNode }) {
     if (!appId) {
         return (
@@ -36,7 +32,6 @@ export function PrivyAuth({ children }: { children: React.ReactNode }) {
                 embeddedWallets: {
                     ethereum: {
                         createOnLogin: 'users-without-wallets',
-                        requireUserPasswordOnCreate: false, // Optional: simplifies UX
                     },
                 },
                 fundingMethodConfig: {
