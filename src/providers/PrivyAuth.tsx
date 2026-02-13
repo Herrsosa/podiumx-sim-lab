@@ -21,8 +21,15 @@ export function PrivyAuth({ children }: { children: React.ReactNode }) {
                 embeddedWallets: {
                     ethereum: {
                         createOnLogin: 'users-without-wallets',
+                        requireUserPasswordOnCreate: false, // Optional: simplifies UX
                     },
                 },
+                fundingMethodConfig: {
+                    moonpay: {
+                        useSandbox: true,
+                    },
+                },
+
                 supportedChains: supportedChains,
             }}
         >

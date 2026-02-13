@@ -1,4 +1,5 @@
 const monadRpc = import.meta.env.VITE_MONAD_RPC_URL || 'https://rpc.monad.xyz';
+const monadTestnetRpc = import.meta.env.VITE_MONAD_TESTNET_RPC_URL || 'https://testnet-rpc.monad.xyz';
 const baseRpc = import.meta.env.VITE_BASE_RPC_URL || 'https://mainnet.base.org';
 
 export const monad = {
@@ -19,6 +20,26 @@ export const monad = {
         },
     },
     testnet: false,
+} as const;
+
+export const monadTestnet = {
+    id: 20143, // Common Devnet ID, adjust if needed
+    name: 'Monad Testnet',
+    network: 'monad-testnet',
+    nativeCurrency: {
+        name: 'Monad',
+        symbol: 'DMON',
+        decimals: 18,
+    },
+    rpcUrls: {
+        default: {
+            http: [monadTestnetRpc],
+        },
+        public: {
+            http: [monadTestnetRpc],
+        },
+    },
+    testnet: true,
 } as const;
 
 export const base = {
@@ -61,5 +82,6 @@ export const baseSepolia = {
     testnet: true,
 } as const;
 
-// Currently using Monad, easy switch to Base later
-export const supportedChains = [monad, base, baseSepolia];
+// Currently using Monad Mainnet, with Testnet, Base, and Base Sepolia available
+import { mainnet } from 'viem/chains';
+export const supportedChains = [monad, monadTestnet, base, baseSepolia, mainnet];

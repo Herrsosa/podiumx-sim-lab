@@ -3,12 +3,13 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Loader2, Wallet, Copy } from 'lucide-react';
-import { usePrivy } from '@privy-io/react-auth';
+import { usePrivy, useFundWallet } from '@privy-io/react-auth';
 import { toast } from 'sonner';
+import { monad } from '@/lib/chains';
 
 export function WalletDebug() {
     const { ready, authenticated, address, connect, disconnect, user } = useSmartWallet();
-    const { fundWallet } = usePrivy();
+    const { fundWallet } = useFundWallet();
 
     const copyAddress = () => {
         if (address) {
@@ -71,7 +72,18 @@ export function WalletDebug() {
                             <Button
                                 variant="outline"
                                 size="sm"
-                                onClick={() => fundWallet(address || '', { chainId: 143 })} // Monad Chain ID
+                                onClick={async () => {
+                                    try {
+                                        // Try to request funding on Monad specifically
+                                        await fundWallet({ address: address || '', config: { chain: monad } as any } as any);
+                                    } catch (e: any) {
+                                        if (e?.message?.includes('not enabled')) {
+                                            toast.error('Funding disabled in Dashboard. Please use manual transfer.');
+                                        } else {
+                                            toast.error(e?.message || 'Funding failed');
+                                        }
+                                    }
+                                }}
                                 className="w-full"
                             >
                                 Add Funds

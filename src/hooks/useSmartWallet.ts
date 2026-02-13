@@ -2,10 +2,12 @@ import { usePrivy, useWallets } from '@privy-io/react-auth';
 import { useCallback, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { useUser } from '@/store/auth';
 
 export function useSmartWallet() {
-    const { login, authenticated, ready, user, logout } = usePrivy();
+    const { login, authenticated, ready, user: privyUser, logout } = usePrivy();
     const { wallets } = useWallets();
+    const supabaseUser = useUser();
 
     // Find the embedded wallet if it exists
     const embeddedWallet = wallets.find((wallet) => wallet.walletClientType === 'privy');
@@ -16,12 +18,12 @@ export function useSmartWallet() {
     // future 'base_wallet_address' as well since EVM addresses are compatible.
     useEffect(() => {
         async function syncWallet() {
-            if (authenticated && user?.id && address) {
+            if (authenticated && supabaseUser?.id && address) {
                 // 1. Check if we need to update
                 const { data: profile } = await supabase
                     .from('profiles')
                     .select('monad_wallet_address')
-                    .eq('id', user.id)
+                    .eq('id', supabaseUser.id)
                     .single();
 
                 if (profile && profile.monad_wallet_address !== address) {
@@ -30,7 +32,7 @@ export function useSmartWallet() {
                     const { error } = await supabase
                         .from('profiles')
                         .update({ monad_wallet_address: address })
-                        .eq('id', user.id);
+                        .eq('id', supabaseUser.id);
 
                     if (error) {
                         console.error('Failed to sync wallet address:', error);
@@ -41,10 +43,10 @@ export function useSmartWallet() {
             }
         }
 
-        if (ready && authenticated && address) {
+        if (ready && authenticated && address && supabaseUser?.id) {
             syncWallet();
         }
-    }, [ready, authenticated, user?.id, address]);
+    }, [ready, authenticated, supabaseUser?.id, address]);
 
     const connect = useCallback(() => {
         if (!authenticated) {
@@ -55,7 +57,7 @@ export function useSmartWallet() {
     return {
         ready,
         authenticated,
-        user,
+        user: privyUser,
         address,
         connect,
         disconnect: logout,
