@@ -339,23 +339,27 @@ function TradeCelebrationWrapper() {
   );
 }
 
+import { PrivyAuth } from "@/providers/PrivyAuth";
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <AuthProvider>
-        <ErrorBoundary>
-          <Toaster />
-          <Sonner />
-          <TradeCelebrationWrapper />
-          <LazyMotion features={domAnimation}>
-            <BrowserRouter>
-              <AppContent />
-              <BottomTabBar />
-            </BrowserRouter>
-          </LazyMotion>
-        </ErrorBoundary>
-      </AuthProvider>
-    </TooltipProvider>
+    <PrivyAuth>
+      <TooltipProvider>
+        <AuthProvider>
+          <ErrorBoundary>
+            <Toaster />
+            <Sonner />
+            <TradeCelebrationWrapper />
+            <LazyMotion features={domAnimation}>
+              <BrowserRouter>
+                <AppContent />
+                <BottomTabBar />
+              </BrowserRouter>
+            </LazyMotion>
+          </ErrorBoundary>
+        </AuthProvider>
+      </TooltipProvider>
+    </PrivyAuth>
   </QueryClientProvider>
 );
 

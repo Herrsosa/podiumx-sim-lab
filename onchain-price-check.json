@@ -1,0 +1,12 @@
+[
+  {
+    "athlete_id": "00000000-0000-0000-0000-000000000002",
+    "supply": 1,
+    "onchain_price": 0.001
+  },
+  {
+    "athlete_id": "d2eba5d0-2ee1-4307-afee-417c1751544c",
+    "supply": 1,
+    "onchain_price": 0.001
+  }
+]

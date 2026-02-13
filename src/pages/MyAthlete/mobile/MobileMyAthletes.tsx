@@ -58,6 +58,7 @@ interface MobileMyAthletesProps {
   onTimeRangeChange?: (range: TimeRangeKey) => void;
   onRefetchWorkouts?: () => void;
   hasToken?: boolean;
+  initialPostId?: string;
 }
 
 export default function MobileMyAthletes({
@@ -84,6 +85,7 @@ export default function MobileMyAthletes({
   onTimeRangeChange,
   onRefetchWorkouts,
   hasToken = true,
+  initialPostId,
 }: MobileMyAthletesProps) {
   const [showMarketDetail, setShowMarketDetail] = useState(false);
   const [showChat, setShowChat] = useState(false);
@@ -268,6 +270,7 @@ export default function MobileMyAthletes({
                     onRefetchWorkouts();
                   }
                 }}
+                initialPostId={initialPostId}
               />
               {hasNextPage && (
                 <Button onClick={fetchNextPage} disabled={isFetchingNextPage} variant="outline" className="w-full">

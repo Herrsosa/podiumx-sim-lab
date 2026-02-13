@@ -10,6 +10,7 @@ import { useUser } from '@/store/auth';
 import { useChat } from '@/hooks/useChat';
 import type { ChatMessage } from '@/hooks/useChat';
 import { UserAvatar } from '@/components/UserAvatar';
+import { athleteAvatars } from '@/utils/athleteAvatars';
 
 interface TokengatedChatProps {
   athleteId: string;
@@ -181,7 +182,7 @@ function ChatMessageBubble({
       className={`flex items-start gap-3 ${isOwn ? 'flex-row-reverse text-right' : ''}`}
     >
       <UserAvatar
-        src={message.sender?.avatar_url}
+        src={(message.sender?.username && athleteAvatars[message.sender.username]) ?? message.sender?.avatar_url}
         seed={message.sender?.username ?? message.senderId}
         alt={displayName}
         size={36}

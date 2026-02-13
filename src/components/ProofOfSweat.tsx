@@ -40,6 +40,7 @@ interface ProofOfSweatProps {
   onConnectStrava?: () => void;
   groupByMonth?: boolean;
   initialExpandedMonths?: number;
+  initialPostId?: string;
 }
 
 export default function ProofOfSweat({
@@ -54,6 +55,7 @@ export default function ProofOfSweat({
   onWorkoutDeleted,
   onWorkoutUpdated,
   onConnectStrava,
+  initialPostId,
 }: ProofOfSweatProps) {
   const user = useUser();
   const { toast } = useToast();
@@ -109,12 +111,74 @@ export default function ProofOfSweat({
     setEditModalOpen(true);
   }, [workoutPostMap]);
 
+
   const handleViewClick = useCallback((workout: Workout) => {
     // Direct lookup by workout.id
     const post = workoutPostMap.get(workout.id);
     setWorkoutToView(post || null);
     setViewModalOpen(true);
   }, [workoutPostMap]);
+
+  // Handle initial post highlighting/scrolling
+  useEffect(() => {
+    if (initialPostId && optimisticWorkouts.length > 0) {
+      // Find the workout associated with this post ID
+      // It could be a direct match (post.id === initialPostId) or via workout_json.id
+      let targetWorkoutId: string | undefined;
+
+      // First check if initialPostId is directly a workout ID in our list
+      if (optimisticWorkouts.some(w => w.id === initialPostId)) {
+        targetWorkoutId = initialPostId;
+      } else {
+        // Otherwise look it up in the map
+        const post = workoutPostMap.get(initialPostId);
+        if (post) {
+          // Extract workout ID from post
+          targetWorkoutId = extractWorkoutId(post.workout_json) || post.id;
+        }
+      }
+
+      if (targetWorkoutId) {
+        // Scroll to element
+        setTimeout(() => {
+          const element = document.getElementById(`workout-${targetWorkoutId}`);
+          if (element) {
+            element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            // Add a temporary highlight effect class
+            element.classList.add('ring-2', 'ring-primary', 'ring-offset-2');
+            setTimeout(() => {
+              element.classList.remove('ring-2', 'ring-primary', 'ring-offset-2');
+            }, 3000);
+          }
+        }, 500); // Small delay to ensure rendering
+
+        // Also open the view modal if we found the workout
+        const workout = optimisticWorkouts.find(w => w.id === targetWorkoutId);
+        if (workout) {
+          /* 
+             Only auto-open if it's viewable. 
+             If it's editable (my own profile), maybe just scroll to it?
+             The user request says "leads to the liked proof of sweat".
+             Usually clicking a notification opens the content details.
+          */
+          // Check if can view
+          const visibility = workout.visibility;
+          const minTokens = workout.minTokensRequired || 0;
+          const requiredTokens =
+            visibility === 'supporters'
+              ? Math.max(1, minTokens)
+              : visibility === 'backers'
+                ? Math.max(10, minTokens)
+                : 0;
+          const canView = visibility === 'public' || canDelete || viewerHoldings >= requiredTokens;
+
+          if (canView) {
+            handleViewClick(workout);
+          }
+        }
+      }
+    }
+  }, [initialPostId, optimisticWorkouts, workoutPostMap, handleViewClick, canDelete, viewerHoldings]);
 
   const handleConnectStrava = () => {
     if (onConnectStrava) {
@@ -171,6 +235,7 @@ export default function ProofOfSweat({
               athleteName={athleteName}
               athleteHandle={athleteHandle}
               athleteAvatar={athleteAvatar}
+              id={`workout-${workout.id}`}
               onClick={() => {
                 if (canView && canDelete) {
                   handleEditClick(workout);

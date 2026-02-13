@@ -20,6 +20,7 @@ interface WorkoutGridCardProps {
   athleteName?: string;
   athleteHandle?: string;
   athleteAvatar?: string;
+  id?: string;
 }
 
 const getTypeColor = (type: Workout['type']) => {
@@ -65,7 +66,7 @@ const formatDate = (dateString: string | undefined) => {
   return date.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' });
 };
 
-function WorkoutGridCardComponent({ workout, post, canView, onClick, variant = 'grid', athleteName, athleteHandle, athleteAvatar }: WorkoutGridCardProps) {
+function WorkoutGridCardComponent({ workout, post, canView, onClick, variant = 'grid', athleteName, athleteHandle, athleteAvatar, id }: WorkoutGridCardProps) {
   const hasPhoto = post?.image_url || workout.mediaUrl;
   const hasMap = post?.strava_map_polyline;
   const photoUrl = post?.image_url || workout.mediaUrl;
@@ -96,6 +97,7 @@ function WorkoutGridCardComponent({ workout, post, canView, onClick, variant = '
 
   return (
     <Card
+      id={id}
       className={cn(
         'group relative overflow-hidden transition-all duration-300 cursor-pointer',
         'hover:shadow-lg hover:border-primary/20',
@@ -263,7 +265,8 @@ function arePropsEqual(prev: WorkoutGridCardProps, next: WorkoutGridCardProps): 
     prev.canView === next.canView &&
     prev.variant === next.variant &&
     prev.workout.mediaUrl === next.workout.mediaUrl &&
-    prev.post?.image_url === next.post?.image_url
+    prev.post?.image_url === next.post?.image_url &&
+    prev.id === next.id
   );
 }
 

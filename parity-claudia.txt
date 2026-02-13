@@ -1,0 +1,53 @@
+Athlyst market parity debug
+----------------------------------------
+Supabase: https://ssnehmposgsczoadycms.supabase.co
+Athlete username: claudia
+
+DB profile
+{
+  "id": "d2eba5d0-2ee1-4307-afee-417c1751544c",
+  "username": "claudia",
+  "display_name": "Claudia",
+  "type": "human",
+  "monad_wallet_address": "0x4947e12321c85af0d3b80d8d5e3240e3956982d7"
+}
+
+DB token
+{
+  "athlete_id": "d2eba5d0-2ee1-4307-afee-417c1751544c",
+  "symbol": "CLAUDIA",
+  "supply": 1,
+  "a": 0.0002,
+  "b": 0.02,
+  "c": 1,
+  "curve_price_at_supply": "1.020200",
+  "updated_at": "2026-02-10T13:12:21.568+00:00"
+}
+
+DB last trade
+{
+  "created_at": "2026-02-10T13:12:21.311906",
+  "side": "BUY",
+  "qty": 1,
+  "price_after": 0.001,
+  "supply_after": 4
+}
+
+On-chain config (env)
+{
+  "MONAD_CHAIN_ID": "(unset)",
+  "MONAD_RPC_URL": "https://rpc.monad.xyz",
+  "MONAD_BONDING_CURVE_ADDRESS": "0x946a333dB43BEFb080c2D9FA9d816F96437bC07B"
+}
+
+On-chain getAthleteInfo
+{
+  "athlete_wallet": "0x4947e12321c85af0d3b80d8d5e3240e3956982d7",
+  "initialized": true,
+  "supply": 1,
+  "current_price_mon": "1.020200",
+  "treasury_mon": "1.000000",
+  "athlete_earnings_mon": "0.015000"
+}
+
+Price ratio (onchain/db): 1.0000

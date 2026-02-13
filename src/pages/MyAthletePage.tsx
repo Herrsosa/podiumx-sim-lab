@@ -105,6 +105,8 @@ export default function MyAthletePage() {
   };
   const messagesSectionRef = useRef<HTMLDivElement | null>(null);
 
+  const highlightPostId = searchParams.get('highlight') || undefined;
+
   const [editedProfile, setEditedProfile] = useState<EditableProfile>({
     displayName: '',
     sport: 'Running' as Sport,
@@ -430,6 +432,7 @@ export default function MyAthletePage() {
             }
           }}
           hasToken={myAthletePage?.hasToken ?? true}
+          initialPostId={highlightPostId}
         />
         {modalStack}
       </>
@@ -486,6 +489,7 @@ export default function MyAthletePage() {
             timeRange={chartTimeRange}
             onTimeRangeChange={setChartTimeRange}
             auraCard={<AthleteIdentityCard />}
+            initialPostId={highlightPostId}
           />
         ) : (
           /* Mobile: Keep tabs for Personal vs Inner Circle */
@@ -521,6 +525,7 @@ export default function MyAthletePage() {
                 onTimeRangeChange={setChartTimeRange}
                 auraCard={<AthleteIdentityCard />}
                 onNavigateToInnerCircle={() => setTab('locker')}
+                initialPostId={highlightPostId}
               />
             </TabsContent>
 

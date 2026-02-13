@@ -31,6 +31,7 @@ import { ShareChartModal } from '@/components/share/ShareChartModal';
 import { DatePickerWithRange } from '@/components/DatePickerWithRange';
 import { DateRange } from 'react-day-picker';
 import { useWorkouts } from '@/hooks/useWorkouts';
+import { WalletDebug } from '@/components/SmartWallet/WalletDebug';
 
 interface PersonalConsoleProps {
   athlete?: Athlete;
@@ -59,6 +60,7 @@ interface PersonalConsoleProps {
   auraCard?: React.ReactNode;
   /** Callback to navigate to the Inner Circle tab (for Group Chat/DMs buttons) */
   onNavigateToInnerCircle?: () => void;
+  initialPostId?: string;
 }
 
 export function PersonalConsole({
@@ -86,6 +88,7 @@ export function PersonalConsole({
   onTimeRangeChange,
   auraCard,
   onNavigateToInnerCircle,
+  initialPostId,
 }: PersonalConsoleProps) {
   const user = useUser();
   const queryClient = useQueryClient();
@@ -209,41 +212,45 @@ export function PersonalConsole({
           />
 
           {/* Market Cap Card - center on desktop (enhanced design) */}
-          <Card className="glass-card hidden md:flex flex-col relative overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-transparent pointer-events-none" />
-            <CardContent className="p-6 flex flex-col justify-between h-full relative">
-              <div>
-                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1">Your Market Cap</p>
-                <div className="text-4xl font-bold tracking-tight tabular-nums bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text">
-                  ${formatNumber(athlete?.marketCap || 0)}
+          <div className="hidden md:flex flex-col gap-4">
+            <Card className="glass-card flex flex-col relative overflow-hidden">
+              <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-transparent pointer-events-none" />
+              <CardContent className="p-6 flex flex-col justify-between h-full relative">
+                <div>
+                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1">Your Market Cap</p>
+                  <div className="text-4xl font-bold tracking-tight tabular-nums bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text">
+                    ${formatNumber(athlete?.marketCap || 0)}
+                  </div>
+                  <div className="flex items-center gap-2 mt-2">
+                    <span className={`text-sm font-semibold px-2 py-0.5 rounded ${(athlete?.change24h || 0) > 0 ? 'bg-success/10 text-success' : (athlete?.change24h || 0) < 0 ? 'bg-destructive/10 text-destructive' : 'bg-muted text-muted-foreground'}`}>
+                      {(athlete?.change24h || 0) !== 0 && (
+                        <TrendingUp className={`inline h-3.5 w-3.5 mr-0.5 ${(athlete?.change24h || 0) < 0 ? 'rotate-180' : ''}`} />
+                      )}
+                      {(athlete?.change24h || 0) > 0 ? '+' : ''}{(athlete?.change24h || 0).toFixed(2)}%
+                    </span>
+                    <span className="text-sm text-muted-foreground">24h</span>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2 mt-2">
-                  <span className={`text-sm font-semibold px-2 py-0.5 rounded ${(athlete?.change24h || 0) > 0 ? 'bg-success/10 text-success' : (athlete?.change24h || 0) < 0 ? 'bg-destructive/10 text-destructive' : 'bg-muted text-muted-foreground'}`}>
-                    {(athlete?.change24h || 0) !== 0 && (
-                      <TrendingUp className={`inline h-3.5 w-3.5 mr-0.5 ${(athlete?.change24h || 0) < 0 ? 'rotate-180' : ''}`} />
-                    )}
-                    {(athlete?.change24h || 0) > 0 ? '+' : ''}{(athlete?.change24h || 0).toFixed(2)}%
-                  </span>
-                  <span className="text-sm text-muted-foreground">24h</span>
-                </div>
-              </div>
 
-              <div className="grid grid-cols-3 gap-3 mt-4 pt-4 border-t border-border/50">
-                <div>
-                  <p className="text-xs text-muted-foreground uppercase tracking-wider">Price</p>
-                  <p className="text-lg font-semibold">${formatNumber(athlete?.price || 0)}</p>
+                <div className="grid grid-cols-3 gap-3 mt-4 pt-4 border-t border-border/50">
+                  <div>
+                    <p className="text-xs text-muted-foreground uppercase tracking-wider">Price</p>
+                    <p className="text-lg font-semibold">${formatNumber(athlete?.price || 0)}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground uppercase tracking-wider">Cards</p>
+                    <p className="text-lg font-semibold">{formatNumber(athlete?.supply || 0)}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground uppercase tracking-wider">Earnings</p>
+                    <p className="text-lg font-semibold">${formatNumber(athlete?.athleteRevenue || 0)}</p>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-xs text-muted-foreground uppercase tracking-wider">Cards</p>
-                  <p className="text-lg font-semibold">{formatNumber(athlete?.supply || 0)}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground uppercase tracking-wider">Earnings</p>
-                  <p className="text-lg font-semibold">${formatNumber(athlete?.athleteRevenue || 0)}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+
+            <WalletDebug />
+          </div>
 
           {/* Aura Card - right side on desktop */}
           {auraCard && (
@@ -456,9 +463,9 @@ export function PersonalConsole({
                       athleteAvatar={athlete?.avatar}
                       workouts={filteredWorkouts}
                       posts={filteredPosts}
-                      isLoading={isWorkoutsLoading}
                       viewerHoldings={Number.MAX_SAFE_INTEGER}
                       onWorkoutDeleted={onWorkoutDelete}
+                      initialPostId={initialPostId}
                     />
                     {localHasNextPage && (
                       <div className="flex justify-center py-6">

@@ -4,6 +4,7 @@ import type { Database } from '@/integrations/supabase/types';
 import type { Post, Sport, Workout } from '@/types';
 import { resolveAvatarUrl } from '@/utils/avatar';
 import { mapPostRowToLockerWorkout, mapPostRowToPost } from '@/hooks/useWorkouts';
+import { athleteAvatars } from '@/utils/athleteAvatars';
 import { priceAt } from '@/utils/pricing';
 
 type PostRow = Database['public']['Tables']['posts']['Row'];
@@ -201,10 +202,13 @@ export function useProofOfSweatFeed(options: UseProofOfSweatFeedOptions = {}) {
             name,
             slug,
             sport: (profile?.sport as Sport) || 'Running',
-            avatar: resolveAvatarUrl(profile?.avatar_url ?? undefined, {
-              size: 160,
-              seed: profile?.username ?? row.author_id,
-            }),
+            avatar: resolveAvatarUrl(
+              (profile?.username && athleteAvatars[profile.username]) ?? profile?.avatar_url ?? undefined,
+              {
+                size: 160,
+                seed: profile?.username ?? row.author_id,
+              }
+            ),
             marketCap,
             holdersCount,
           },

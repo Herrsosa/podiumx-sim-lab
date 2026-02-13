@@ -1,0 +1,53 @@
+Athlyst market parity debug
+----------------------------------------
+Supabase: https://ssnehmposgsczoadycms.supabase.co
+Athlete username: mara-chen
+
+DB profile
+{
+  "id": "00000000-0000-0000-0000-000000000002",
+  "username": "mara-chen",
+  "display_name": "Mara Chen",
+  "type": "human",
+  "monad_wallet_address": "0x01a17dc86fb833ce93bf57963381139be856175e"
+}
+
+DB token
+{
+  "athlete_id": "00000000-0000-0000-0000-000000000002",
+  "symbol": "MARA",
+  "supply": 1,
+  "a": 0.0002,
+  "b": 0.02,
+  "c": 1,
+  "curve_price_at_supply": "1.020200",
+  "updated_at": "2026-02-10T13:11:17.156+00:00"
+}
+
+DB last trade
+{
+  "created_at": "2026-02-10T13:11:16.974258",
+  "side": "BUY",
+  "qty": 1,
+  "price_after": 0.001,
+  "supply_after": 3
+}
+
+On-chain config (env)
+{
+  "MONAD_CHAIN_ID": "(unset)",
+  "MONAD_RPC_URL": "https://rpc.monad.xyz",
+  "MONAD_BONDING_CURVE_ADDRESS": "0x946a333dB43BEFb080c2D9FA9d816F96437bC07B"
+}
+
+On-chain getAthleteInfo
+{
+  "athlete_wallet": "0x01a17dc86fb833ce93bf57963381139be856175e",
+  "initialized": true,
+  "supply": 1,
+  "current_price_mon": "1.020200",
+  "treasury_mon": "1.000000",
+  "athlete_earnings_mon": "0.015000"
+}
+
+Price ratio (onchain/db): 1.0000
