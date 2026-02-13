@@ -1,11 +1,7 @@
 import { PrivyProvider } from '@privy-io/react-auth';
 import { supportedChains } from '@/lib/chains';
 
-const appId = import.meta.env.VITE_PRIVY_APP_ID;
-
-if (!appId) {
-    console.error("Missing VITE_PRIVY_APP_ID in environment variables");
-}
+const appId = 'cmlkrbvm001ar0bl59tofq53x';
 
 export function PrivyAuth({ children }: { children: React.ReactNode }) {
     // Skip Privy entirely if no valid app ID — lets the app boot without crashing
@@ -26,7 +22,6 @@ export function PrivyAuth({ children }: { children: React.ReactNode }) {
                 embeddedWallets: {
                     ethereum: {
                         createOnLogin: 'users-without-wallets',
-                        requireUserPasswordOnCreate: false, // Optional: simplifies UX
                     },
                 },
                 fundingMethodConfig: {
