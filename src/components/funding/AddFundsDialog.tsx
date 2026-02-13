@@ -84,7 +84,7 @@ export function AddFundsDialog() {
                     onClick={async () => {
                       try {
                         // Try to request funding on Monad, or fallback to default
-                        await fundWallet({ address: address || '', config: { chain: monad } as any } as any);
+                        await fundWallet(address || '', { config: { chain: monad } } as any);
                       } catch (e: any) {
                         if (e?.message?.includes('not enabled')) {
                           toast.error('Funding disabled. Please transfer manually.');

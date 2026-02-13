@@ -122,7 +122,7 @@ export function useTrade() {
       if (error) {
         // ... (existing error handling)
         console.error('🔴 RAW EDGE FUNCTION ERROR:', error);
-        let message = error.message || 'Trade execution failed';
+        const message = error.message || 'Trade execution failed';
         // ...
         throw new Error(message);
       }

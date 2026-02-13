@@ -74,8 +74,9 @@ export function WalletDebug() {
                                 size="sm"
                                 onClick={async () => {
                                     try {
-                                        // Try to request funding on Monad specifically
-                                        await fundWallet({ address: address || '', config: { chain: monad } as any } as any);
+                                        // Try to request funding on Monad explicitly
+                                        // Use 'as any' to bypass strict type checking until types are updated
+                                        await fundWallet(address || '', { config: { chain: monad } } as any);
                                     } catch (e: any) {
                                         if (e?.message?.includes('not enabled')) {
                                             toast.error('Funding disabled in Dashboard. Please use manual transfer.');

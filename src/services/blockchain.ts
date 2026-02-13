@@ -1,4 +1,4 @@
-import { createPublicClient, http } from 'viem';
+import { createPublicClient, http, WalletClient } from 'viem';
 import { monad } from '@/lib/chains';
 import { ATHLYST_BONDING_CURVE_ABI } from '@/lib/abi/AthlystBondingCurve';
 
@@ -29,7 +29,7 @@ export class BlockchainService {
         }
     }
 
-    async buy(walletClient: any, athleteAddress: string, quantity: number, maxCost: bigint) {
+    async buy(walletClient: WalletClient, athleteAddress: string, quantity: number, maxCost: bigint) {
         const hash = await walletClient.writeContract({
             address: CONTRACT_ADDRESS,
             abi: ATHLYST_BONDING_CURVE_ABI,
@@ -42,7 +42,7 @@ export class BlockchainService {
         return hash;
     }
 
-    async sell(walletClient: any, athleteAddress: string, quantity: number, minPayout: bigint) {
+    async sell(walletClient: WalletClient, athleteAddress: string, quantity: number, minPayout: bigint) {
         const hash = await walletClient.writeContract({
             address: CONTRACT_ADDRESS,
             abi: ATHLYST_BONDING_CURVE_ABI,

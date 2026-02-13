@@ -56,7 +56,7 @@ export function useWallet() {
           if (onChainAthletes && onChainAthletes.length > 0) {
             // This could be heavy if many athletes. In production, use The Graph or an Indexer.
             // For MVP (few athletes), parallel reads are okay.
-            const balancePromises = (onChainAthletes as any[]).map(async (athlete) => {
+            const balancePromises = (onChainAthletes as unknown as { athlete_id: string; monad_address: string; profiles: any }[]).map(async (athlete) => {
               if (!athlete.monad_address) return null;
 
               // We need to read 'balanceOf(athlete, holder)' from the bonding curve
@@ -70,7 +70,7 @@ export function useWallet() {
                   abi: ATHLYST_BONDING_CURVE_ABI,
                   functionName: 'balanceOf',
                   args: [athlete.monad_address, address]
-                }) as bigint;
+                } as any) as unknown as bigint;
 
                 if (balance > 0n) {
                   // We also need current price to calculate value/pnl
@@ -101,6 +101,7 @@ export function useWallet() {
             const results = await Promise.all(balancePromises);
             results.forEach(pos => {
               if (pos) {
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 const p = pos as any;
                 onChainPositions[p.athleteId] = p;
               }
