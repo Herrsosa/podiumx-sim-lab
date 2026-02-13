@@ -84,13 +84,13 @@ export function AddFundsDialog() {
                     onClick={async () => {
                       try {
                         // Try to request funding on Monad, or fallback to default
-                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
                         await fundWallet({ address: address || '' });
-                      } catch (e: any) { // eslint-disable-line @typescript-eslint/no-explicit-any
-                        if (e?.message?.includes('not enabled')) {
+                      } catch (e: unknown) {
+                        const errorMessage = e instanceof Error ? e.message : String(e);
+                        if (errorMessage.includes('not enabled')) {
                           toast.error('Funding disabled. Please transfer manually.');
                         } else {
-                          toast.error(e?.message || 'Funding failed');
+                          toast.error(errorMessage || 'Funding failed');
                         }
                       }
                     }}
