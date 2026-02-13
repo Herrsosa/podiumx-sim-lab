@@ -75,9 +75,9 @@ export function WalletDebug() {
                                 onClick={async () => {
                                     try {
                                         // Try to request funding on Monad explicitly
-                                        // Use 'as any' to bypass strict type checking until types are updated
+                                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
                                         await fundWallet(address || '', { config: { chain: monad } } as any);
-                                    } catch (e: any) {
+                                    } catch (e: any) { // eslint-disable-line @typescript-eslint/no-explicit-any
                                         if (e?.message?.includes('not enabled')) {
                                             toast.error('Funding disabled in Dashboard. Please use manual transfer.');
                                         } else {

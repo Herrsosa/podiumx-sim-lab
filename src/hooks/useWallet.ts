@@ -56,6 +56,7 @@ export function useWallet() {
           if (onChainAthletes && onChainAthletes.length > 0) {
             // This could be heavy if many athletes. In production, use The Graph or an Indexer.
             // For MVP (few athletes), parallel reads are okay.
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const balancePromises = (onChainAthletes as unknown as { athlete_id: string; monad_address: string; profiles: any }[]).map(async (athlete) => {
               if (!athlete.monad_address) return null;
 
@@ -70,6 +71,7 @@ export function useWallet() {
                   abi: ATHLYST_BONDING_CURVE_ABI,
                   functionName: 'balanceOf',
                   args: [athlete.monad_address, address]
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 } as any) as unknown as bigint;
 
                 if (balance > 0n) {
