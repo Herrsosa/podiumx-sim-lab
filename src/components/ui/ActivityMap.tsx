@@ -1,7 +1,6 @@
 import React, { useEffect, useMemo } from 'react';
 import { MapContainer, TileLayer, Polyline, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
-import L from 'leaflet';
 
 // Fix for Leaflet icon issues in React (though we aren't using markers yet)
 // delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -58,8 +57,7 @@ function FitBounds({ points }: { points: [number, number][] }) {
             // Force a resize check in case container dimensions just settled
             map.invalidateSize();
 
-            const bounds = L.latLngBounds(points);
-            map.fitBounds(bounds, {
+            map.fitBounds(points, {
                 padding: [20, 20],
                 animate: false
             });
@@ -67,7 +65,7 @@ function FitBounds({ points }: { points: [number, number][] }) {
             // Double check after a small tick to ensure layout is final
             setTimeout(() => {
                 map.invalidateSize();
-                map.fitBounds(bounds, {
+                map.fitBounds(points, {
                     padding: [20, 20],
                     animate: false
                 });
