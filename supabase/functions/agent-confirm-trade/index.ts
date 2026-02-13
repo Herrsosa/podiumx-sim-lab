@@ -378,6 +378,7 @@ serve(async (req) => {
             if (lower(log?.address) !== lower(bondingCurveAddress)) continue;
             try {
                 const parsed = iface.parseLog({ topics: log.topics, data: log.data });
+                if (!parsed) continue;
                 if (parsed.name === "TokensBought" && normalizedSide === "buy") {
                     const buyer = String((parsed.args as any)?.[0]);
                     const athleteWallet = String((parsed.args as any)?.[1]);
