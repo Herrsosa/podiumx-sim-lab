@@ -18,7 +18,7 @@ export const monad = {
             http: [monadRpc],
         },
     },
-    testnet: true,
+    testnet: false,
 } as const;
 
 export const base = {
