@@ -26,7 +26,6 @@ export default defineConfig(({ mode }) => ({
       output: {
         manualChunks(id) {
           if (id.includes("node_modules")) {
-            if (id.includes("recharts")) return "recharts";
             if (id.includes("@supabase") || id.includes("cross-fetch")) return "supabase";
             return "vendor";
           }
