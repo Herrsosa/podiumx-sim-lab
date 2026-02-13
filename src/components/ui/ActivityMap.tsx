@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo } from 'react';
 import { MapContainer, TileLayer, Polyline, useMap } from 'react-leaflet';
-import 'leaflet/dist/leaflet.css';
+import '../../node_modules/leaflet/dist/leaflet.css';
 import L from 'leaflet';
 
 // Fix for Leaflet icon issues in React (though we aren't using markers yet)
