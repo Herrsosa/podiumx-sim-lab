@@ -110,7 +110,7 @@ serve(async (req) => {
             status: 201,
         });
 
-    } catch (error) {
+    } catch (error: any) {
         // Handle specific notification FK error gracefully
         if (error.message?.includes("notifications_user_id_fkey")) {
             return new Response(JSON.stringify({

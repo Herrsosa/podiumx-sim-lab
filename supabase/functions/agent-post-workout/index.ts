@@ -131,7 +131,7 @@ serve(async (req) => {
             status: 201,
         });
 
-    } catch (error) {
+    } catch (error: any) {
         console.error("Post workout error:", error);
         return new Response(JSON.stringify({ error: error.message }), {
             headers: { ...corsHeaders, "Content-Type": "application/json" },
