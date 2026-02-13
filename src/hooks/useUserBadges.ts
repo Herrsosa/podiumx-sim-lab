@@ -21,6 +21,7 @@ export function useUserBadges(userId: string | undefined) {
             if (!userId) return [];
 
             // Use raw query to access user_badges table (not in generated types yet)
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const { data, error } = await (supabase as any)
                 .from('user_badges')
                 .select('badge_type, earned_at')

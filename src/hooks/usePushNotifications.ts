@@ -46,6 +46,7 @@ export function usePushNotifications(): UsePushNotificationsResult {
         // Check if already subscribed
         navigator.serviceWorker.ready.then(async (registration) => {
             try {
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 const subscription = await (registration as any).pushManager.getSubscription();
                 setIsSubscribed(!!subscription);
             } catch (error) {
@@ -116,12 +117,11 @@ export function usePushNotifications(): UsePushNotificationsResult {
             // TS DOM typings expect ArrayBuffer-backed views (not ArrayBufferLike).
             const applicationServerKey =
                 urlBase64ToUint8Array(VAPID_PUBLIC_KEY) as unknown as Uint8Array<ArrayBuffer>;
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const subscription = await (registration as any).pushManager.subscribe({
                 userVisibleOnly: true,
                 applicationServerKey,
             });
-
-
 
             console.log('[Push] Subscription created:', subscription.endpoint);
 
@@ -132,8 +132,10 @@ export function usePushNotifications(): UsePushNotificationsResult {
                 .upsert({
                     user_id: user.id,
                     endpoint: subscription.endpoint,
-                    p256dh: subscriptionJson.keys?.p256dh || '',
-                    auth: subscriptionJson.keys?.auth || '',
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    p256dh: (subscriptionJson.keys as any)?.p256dh || '',
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    auth: (subscriptionJson.keys as any)?.auth || '',
                     created_at: new Date().toISOString(),
                 }, {
                     onConflict: 'user_id,endpoint',
@@ -162,6 +164,7 @@ export function usePushNotifications(): UsePushNotificationsResult {
             setIsLoading(true);
 
             const registration = await navigator.serviceWorker.ready;
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const subscription = await (registration as any).pushManager.getSubscription();
 
             if (subscription) {

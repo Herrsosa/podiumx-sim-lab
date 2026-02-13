@@ -51,6 +51,7 @@ export function useTrade() {
         .eq('athlete_id', variables.athleteId)
         .single();
 
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const tokenData = token as any;
       const isOnChainAthlete = tokenData?.onchain_initialized && tokenData?.monad_wallet_address;
 
