@@ -12,6 +12,7 @@ import { useWallet } from '@/hooks/useWallet';
 import { useTrades } from '@/hooks/useTrades';
 import { useTrade } from '@/hooks/useTrade';
 import { priceAt, costToBuy, payoutToSell, FEE, type Curve } from '@/utils/pricing';
+import type { Post } from '@/types';
 import ProofOfSweat from '@/components/ProofOfSweat';
 import TokengatedChat from '@/components/TokengatedChat';
 import WorkoutPosts from '@/components/WorkoutPosts';
@@ -768,7 +769,7 @@ export default function AthleteDetail() {
                   athleteHandle={athlete.slug}
                   athleteAvatar={athlete.avatar}
                   viewerHoldings={userHoldings}
-                  isLoading={isWorkoutsLoading}
+                  
                   onUnlock={async () => {
                     await tradeMutation.mutateAsync({
                       athleteId: athlete.id,
