@@ -46,7 +46,7 @@ export function usePushNotifications(): UsePushNotificationsResult {
         // Check if already subscribed
         navigator.serviceWorker.ready.then(async (registration) => {
             try {
-                const subscription = await registration.pushManager.getSubscription();
+                const subscription = await (registration as any).pushManager.getSubscription();
                 setIsSubscribed(!!subscription);
             } catch (error) {
                 console.error('[Push] Error checking subscription:', error);
@@ -116,7 +116,7 @@ export function usePushNotifications(): UsePushNotificationsResult {
             // TS DOM typings expect ArrayBuffer-backed views (not ArrayBufferLike).
             const applicationServerKey =
                 urlBase64ToUint8Array(VAPID_PUBLIC_KEY) as unknown as Uint8Array<ArrayBuffer>;
-            const subscription = await registration.pushManager.subscribe({
+            const subscription = await (registration as any).pushManager.subscribe({
                 userVisibleOnly: true,
                 applicationServerKey,
             });
@@ -162,7 +162,7 @@ export function usePushNotifications(): UsePushNotificationsResult {
             setIsLoading(true);
 
             const registration = await navigator.serviceWorker.ready;
-            const subscription = await registration.pushManager.getSubscription();
+            const subscription = await (registration as any).pushManager.getSubscription();
 
             if (subscription) {
                 // Remove from Supabase

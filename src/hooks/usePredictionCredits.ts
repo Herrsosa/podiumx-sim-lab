@@ -111,7 +111,7 @@ export function usePlaceBet() {
       }
 
       // The RPC returns JSONB which is already parsed
-      return data as PlaceBetResponse;
+      return data as unknown as PlaceBetResponse;
     },
     onSuccess: (data, variables) => {
       if (data.success) {

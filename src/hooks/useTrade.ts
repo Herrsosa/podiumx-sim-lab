@@ -47,11 +47,12 @@ export function useTrade() {
       // Fetch athlete token data to check if on-chain initialized
       const { data: token } = await supabase
         .from('athlete_tokens')
-        .select('monad_address, onchain_initialized')
+        .select('monad_wallet_address, onchain_initialized')
         .eq('athlete_id', variables.athleteId)
         .single();
 
-      const isOnChainAthlete = token?.onchain_initialized && token?.monad_address;
+      const tokenData = token as any;
+      const isOnChainAthlete = tokenData?.onchain_initialized && tokenData?.monad_wallet_address;
 
       // If user has wallet AND athlete is on-chain -> Execute on blockchain
       if (authenticated && embeddedWallet && isOnChainAthlete) {
@@ -70,14 +71,14 @@ export function useTrade() {
         // Get cost/payout estimation
         let txHash;
         if (variables.side === 'BUY') {
-          const cost = await blockchainService.getCostToBuy(token.monad_address, variables.quantity);
+          const cost = await blockchainService.getCostToBuy(tokenData.monad_wallet_address, variables.quantity);
           // Add slight buffer for price movement if needed, or send exact
-          txHash = await blockchainService.buy(walletClient, token.monad_address, variables.quantity, cost);
+          txHash = await blockchainService.buy(walletClient, tokenData.monad_wallet_address, variables.quantity, cost);
         } else {
-          const payout = await blockchainService.getPayoutToSell(token.monad_address, variables.quantity);
+          const payout = await blockchainService.getPayoutToSell(tokenData.monad_wallet_address, variables.quantity);
           // Min payout can be slippage protected
           const minPayout = (payout * 95n) / 100n; // 5% slippage tolerance
-          txHash = await blockchainService.sell(walletClient, token.monad_address, variables.quantity, minPayout);
+          txHash = await blockchainService.sell(walletClient, tokenData.monad_wallet_address, variables.quantity, minPayout);
         }
 
         toast({
