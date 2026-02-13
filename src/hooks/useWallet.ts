@@ -49,16 +49,16 @@ export function useWallet() {
 
           const { data: onChainAthletes } = await supabase
             .from('athlete_tokens')
-            .select('athlete_id, monad_address, onchain_initialized, profiles(display_name, username)')
+            .select('athlete_id, monad_wallet_address, onchain_initialized, profiles(display_name, username)')
             .eq('onchain_initialized', true)
-            .not('monad_address', 'is', null);
+            .not('monad_wallet_address', 'is', null);
 
           if (onChainAthletes && onChainAthletes.length > 0) {
             // This could be heavy if many athletes. In production, use The Graph or an Indexer.
             // For MVP (few athletes), parallel reads are okay.
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const balancePromises = (onChainAthletes as unknown as { athlete_id: string; monad_address: string; profiles: any }[]).map(async (athlete) => {
-              if (!athlete.monad_address) return null;
+            const balancePromises = (onChainAthletes as unknown as { athlete_id: string; monad_wallet_address: string; profiles: any }[]).map(async (athlete) => {
+              if (!athlete.monad_wallet_address) return null;
 
               // We need to read 'balanceOf(athlete, holder)' from the bonding curve
               // Wait, balanceOf in the bonding curve usually tracks the supply or similar? 
@@ -70,7 +70,7 @@ export function useWallet() {
                   address: import.meta.env.VITE_MONAD_BONDING_CURVE_ADDRESS as `0x${string}`,
                   abi: ATHLYST_BONDING_CURVE_ABI,
                   functionName: 'balanceOf',
-                  args: [athlete.monad_address, address]
+                  args: [athlete.monad_wallet_address, address]
                   // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 } as any) as unknown as bigint;
 
