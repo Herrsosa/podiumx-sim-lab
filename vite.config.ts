@@ -14,7 +14,7 @@ export default defineConfig(({ mode }) => ({
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
-      leaflet: path.resolve(__dirname, "./node_modules/leaflet/dist/leaflet-src.esm.js"),
+      
     },
   },
 
