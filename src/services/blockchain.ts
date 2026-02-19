@@ -71,6 +71,14 @@ export class BlockchainService {
             args: [athleteAddress, BigInt(quantity)]
         }) as bigint;
     }
+
+    async waitForTransactionReceipt(txHash: `0x${string}`) {
+        return await this.publicClient.waitForTransactionReceipt({
+            hash: txHash,
+            confirmations: 1,
+            timeout: 120_000,
+        });
+    }
 }
 
 export const blockchainService = new BlockchainService();

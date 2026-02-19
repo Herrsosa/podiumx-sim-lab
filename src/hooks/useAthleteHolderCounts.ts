@@ -7,7 +7,8 @@ interface HolderCounts {
 
 /**
  * Hook to fetch the number of unique holders for each athlete.
- * Calculates from trades by aggregating buy/sell quantities per user.
+ * Queries trades and aggregates buy/sell quantities per user to determine holders.
+ * Includes ALL trades (both on-chain and off-chain).
  */
 export function useAthleteHolderCounts(athleteIds: string[]) {
     return useQuery({
@@ -15,7 +16,7 @@ export function useAthleteHolderCounts(athleteIds: string[]) {
         queryFn: async (): Promise<HolderCounts> => {
             if (athleteIds.length === 0) return {};
 
-            // Fetch all trades for the requested athletes
+            // Fetch all trades for the requested athletes (no is_on_chain filter)
             const { data: trades, error } = await supabase
                 .from('trades')
                 .select('athlete_id, user_id, side, qty')

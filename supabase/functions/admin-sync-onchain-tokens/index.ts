@@ -112,6 +112,7 @@ serve(async (req) => {
       const { error: updateError } = await supabaseAdmin
         .from("athlete_tokens")
         .update({
+          monad_wallet_address: String(wallet).toLowerCase(),
           supply,
           treasury_balance: treasuryMon,
           athlete_earnings: earningsMon,

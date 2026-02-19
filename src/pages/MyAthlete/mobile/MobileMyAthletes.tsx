@@ -16,6 +16,7 @@ import type { PriceSeriesPoint } from '@/lib/charting/engine';
 import { getWindowUTC } from '@/lib/charting/engine';
 import { useChartPosts } from '@/hooks/useChartPosts';
 import { useAuthStore } from '@/store/auth';
+import { useAthleteHolderCounts } from '@/hooks/useAthleteHolderCounts';
 
 import { AthleteIdentityCard } from '@/components/identity';
 import { LaunchTokenPrompt } from '@/components/LaunchTokenPrompt';
@@ -144,21 +145,10 @@ export default function MobileMyAthletes({
 
 
 
-  // Calculate holders from trades - count unique traders with positive net holdings
-  // NOTE: Must be before any early returns to maintain consistent hooks order
-  const holdersCount = useMemo(() => {
-    const holdings = new Map<string, number>();
-    trades.forEach(trade => {
-      // Group by user_id (the trader), not athlete_id
-      const traderId = trade.user_id;
-      if (!traderId) return;
-      const current = holdings.get(traderId) ?? 0;
-      const qty = trade.qty ?? 0;
-      const isBuy = trade.side === 'BUY';
-      holdings.set(traderId, current + (isBuy ? qty : -qty));
-    });
-    return Array.from(holdings.values()).filter(qty => qty > 0).length;
-  }, [trades]);
+  // Fetch holders count from holdings table (covers both on-chain and off-chain trades)
+  const athleteIdArr = useMemo(() => athlete?.id ? [athlete.id] : [], [athlete?.id]);
+  const { data: holderCountsMap } = useAthleteHolderCounts(athleteIdArr);
+  const holdersCount = athlete?.id ? (holderCountsMap?.[athlete.id] ?? 0) : 0;
 
   if (!athlete) {
     return (

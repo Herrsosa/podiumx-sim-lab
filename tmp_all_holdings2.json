@@ -1,0 +1,37 @@
+[
+  {
+    "athlete_id": "00000000-0000-0000-0000-000000000001",
+    "user_id": "b90b95de-cfb1-49c1-8392-ededdf1056fe",
+    "qty": 2
+  },
+  {
+    "athlete_id": "00000000-0000-0000-0000-000000000002",
+    "user_id": "b90b95de-cfb1-49c1-8392-ededdf1056fe",
+    "qty": 1
+  },
+  {
+    "athlete_id": "00000000-0000-0000-0000-000000000003",
+    "user_id": "b90b95de-cfb1-49c1-8392-ededdf1056fe",
+    "qty": 1
+  },
+  {
+    "athlete_id": "7a777f25-e162-44dc-80b6-06d370fd75cb",
+    "user_id": "b90b95de-cfb1-49c1-8392-ededdf1056fe",
+    "qty": 1
+  },
+  {
+    "athlete_id": "a5e78006-417a-4a6c-aab1-8e22d1b0055d",
+    "user_id": "b90b95de-cfb1-49c1-8392-ededdf1056fe",
+    "qty": 1
+  },
+  {
+    "athlete_id": "d2eba5d0-2ee1-4307-afee-417c1751544c",
+    "user_id": "b90b95de-cfb1-49c1-8392-ededdf1056fe",
+    "qty": 1
+  },
+  {
+    "athlete_id": "d2eba5d0-2ee1-4307-afee-417c1751544c",
+    "user_id": "7a777f25-e162-44dc-80b6-06d370fd75cb",
+    "qty": 1
+  }
+]

@@ -1,4 +1,4 @@
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Calendar, Clock, MapPin, Activity, Trophy, Pin, PinOff, Share2 } from 'lucide-react';
@@ -98,6 +98,9 @@ export default function ViewWorkoutModal({ open, onOpenChange, workoutPost, athl
                             </Badge>
                         )}
                     </DialogTitle>
+                    <DialogDescription className="sr-only">
+                        Detailed view of {workout.type || 'workout'} session including stats and media.
+                    </DialogDescription>
 
                     {isOwner && (
                         <Button

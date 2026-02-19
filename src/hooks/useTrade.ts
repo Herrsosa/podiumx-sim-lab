@@ -32,6 +32,10 @@ const buildHeaders = (idempotencyKey: string | undefined) =>
     }
     : undefined;
 
+const BPS_DENOMINATOR = 10_000n;
+const FEE_BPS = 300n;
+const BUY_BUFFER_BPS = 500n;
+
 export function useTrade() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -44,19 +48,53 @@ export function useTrade() {
       // 1. Check for Privy Wallet (On-Chain)
       const embeddedWallet = wallets.find((w) => w.walletClientType === 'privy');
 
-      // Fetch athlete token data to check if on-chain initialized
+      // Fetch athlete token + profile wallet so we can trust the current profile wallet
+      // even if athlete_tokens.monad_wallet_address is stale.
       const { data: token } = await supabase
         .from('athlete_tokens')
-        .select('monad_wallet_address, onchain_initialized')
+        .select('monad_wallet_address, onchain_initialized, profiles!athlete_tokens_athlete_id_profiles_id_fk(monad_wallet_address)')
         .eq('athlete_id', variables.athleteId)
         .single();
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const tokenData = token as any;
-      const isOnChainAthlete = tokenData?.onchain_initialized && tokenData?.monad_wallet_address;
+      const tokenWallet = tokenData?.monad_wallet_address as string | undefined;
+      // Supabase relation shape can vary; normalize defensively.
+      const profileWalletRaw = Array.isArray(tokenData?.profiles)
+        ? tokenData?.profiles?.[0]?.monad_wallet_address
+        : tokenData?.profiles?.monad_wallet_address;
+      const profileWallet = profileWalletRaw as string | undefined;
+      const athleteWallet = profileWallet || tokenWallet;
+      const isOnChainAthlete = tokenData?.onchain_initialized && Boolean(athleteWallet);
 
-      // If user has wallet AND athlete is on-chain -> Execute on blockchain
-      if (authenticated && embeddedWallet && isOnChainAthlete) {
+      let verifiedOnChain = false;
+      if (isOnChainAthlete) {
+        const walletsToTry = [athleteWallet, tokenWallet].filter(
+          (value, index, arr): value is string => Boolean(value) && arr.indexOf(value) === index
+        );
+
+        for (const wallet of walletsToTry) {
+          // Verify against contract state to avoid "Athlete not initialized" reverts.
+          const info = await blockchainService.getAthleteInfo(wallet);
+          if (info && Array.isArray(info) && info[4] === true) {
+            verifiedOnChain = true;
+            break;
+          }
+        }
+
+        if (!verifiedOnChain) {
+          console.error('State mismatch: athlete marked on-chain but no tested wallet is initialized', {
+            athleteId: variables.athleteId,
+            athleteSlug: variables.athleteSlug,
+            profileWallet,
+            tokenWallet,
+          });
+          throw new Error(`Athlete ${variables.athleteSlug} is not initialized on the blockchain contract. Contact support.`);
+        }
+      }
+
+      // If user has wallet AND verified on-chain -> Execute on blockchain
+      if (authenticated && embeddedWallet && verifiedOnChain) {
         logger.info('Executing ON-CHAIN trade', variables);
 
         // Switch chain if needed (though embedded usually handles this)
@@ -72,14 +110,17 @@ export function useTrade() {
         // Get cost/payout estimation
         let txHash;
         if (variables.side === 'BUY') {
-          const cost = await blockchainService.getCostToBuy(tokenData.monad_wallet_address, variables.quantity);
-          // Add slight buffer for price movement if needed, or send exact
-          txHash = await blockchainService.buy(walletClient, tokenData.monad_wallet_address, variables.quantity, cost);
+          const grossCost = await blockchainService.getCostToBuy(athleteWallet!, variables.quantity);
+          const fee = (grossCost * FEE_BPS) / BPS_DENOMINATOR;
+          const totalWithFee = grossCost + fee;
+          // Match server-side approach: include fee plus extra buffer for mempool supply movement.
+          const valueWithBuffer = (totalWithFee * (BPS_DENOMINATOR + BUY_BUFFER_BPS)) / BPS_DENOMINATOR;
+          txHash = await blockchainService.buy(walletClient, athleteWallet!, variables.quantity, valueWithBuffer);
         } else {
-          const payout = await blockchainService.getPayoutToSell(tokenData.monad_wallet_address, variables.quantity);
+          const payout = await blockchainService.getPayoutToSell(athleteWallet!, variables.quantity);
           // Min payout can be slippage protected
           const minPayout = (payout * 95n) / 100n; // 5% slippage tolerance
-          txHash = await blockchainService.sell(walletClient, tokenData.monad_wallet_address, variables.quantity, minPayout);
+          txHash = await blockchainService.sell(walletClient, athleteWallet!, variables.quantity, minPayout);
         }
 
         toast({
@@ -87,13 +128,32 @@ export function useTrade() {
           description: `Hash: ${txHash}`,
         });
 
-        // Return a mock envelope for now - real reconciliation happens via webhook/indexer later
-        // In a real app, we might wait for receipt here or let the UI update optimistically
+        // Wait for inclusion, then index the on-chain trade into DB read models.
+        await blockchainService.waitForTransactionReceipt(txHash as `0x${string}`);
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+
+        const { data: confirmData, error: confirmError } = await supabase.functions.invoke('confirm-onchain-trade', {
+          body: {
+            tx_hash: txHash,
+            athlete_id: variables.athleteId,
+            side: variables.side.toLowerCase(),
+            quantity: variables.quantity,
+          },
+          headers: session?.access_token
+            ? { Authorization: `Bearer ${session.access_token}` }
+            : undefined,
+        });
+
+        if (confirmError) {
+          throw new Error(`On-chain trade confirmed but indexing failed: ${confirmError.message}`);
+        }
+
         return {
-          status: 'success',
-          tradeId: txHash,
-          // ... fake other fields to satisfy type until we unify types
-        } as unknown as TradeServerEnvelope;
+          tradeId: confirmData?.tradeId ?? txHash,
+          serverTime: confirmData?.serverTime ?? new Date().toISOString(),
+        } as TradeServerEnvelope;
       }
 
       // 2. Fallback to Off-Chain (Database) Trade
@@ -187,6 +247,17 @@ export function useTrade() {
         totalCost: 0,
         athleteName: variables.athleteSlug || 'Athlete',
       });
+
+      if (user?.id) {
+        queryClient.invalidateQueries({ queryKey: ['wallet', user.id] });
+        queryClient.invalidateQueries({ queryKey: ['positions', user.id] });
+        queryClient.invalidateQueries({ queryKey: ['user-trades', user.id] });
+      }
+      queryClient.invalidateQueries({ queryKey: ['trades', variables.athleteId] });
+      queryClient.invalidateQueries({ queryKey: ['athlete-price', { athleteId: variables.athleteId }] });
+      queryClient.invalidateQueries({ queryKey: ['athlete-holder-counts'] });
+      queryClient.invalidateQueries({ queryKey: ['athletes-paginated'] });
+      queryClient.invalidateQueries({ queryKey: ['market-overview'] });
     }
   });
 }

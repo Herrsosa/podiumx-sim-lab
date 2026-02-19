@@ -11,7 +11,7 @@ import { supabase } from '@/integrations/supabase/client';
 export function useWallet() {
   const user = useUser();
   const queryClient = useQueryClient();
-  const { address, authenticated } = useSmartWallet();
+  const { address, authenticated, connect } = useSmartWallet();
 
   const query = useQuery<Wallet | null>({
     queryKey: ['wallet', user?.id, address], // Include address to re-fetch when it changes
@@ -40,28 +40,35 @@ export function useWallet() {
 
           // Fetch user's holdings from on-chain tokens
           // This part is tricky because we need to know WHICH tokens to check.
-          // For now, we can rely on our database 'holdings' table or indexer, 
+          // For now, we can rely on our database 'holdings' table or indexer,
           // but if we want true on-chain read, we'd need a list of token addresses.
-          // 
-          // STRATEGY: 
+          //
+          // STRATEGY:
           // We will fetch all athletes that are 'on_chain_initialized' from DB,
           // get their contract addresses, and read 'balanceOf' for the user.
 
           const { data: onChainAthletes } = await supabase
             .from('athlete_tokens')
-            .select('athlete_id, monad_wallet_address, onchain_initialized, profiles(display_name, username)')
-            .eq('onchain_initialized', true)
-            .not('monad_wallet_address', 'is', null);
+            .select('athlete_id, monad_wallet_address, profiles!athlete_tokens_athlete_id_profiles_id_fk(display_name, username, monad_wallet_address)');
 
           if (onChainAthletes && onChainAthletes.length > 0) {
             // This could be heavy if many athletes. In production, use The Graph or an Indexer.
             // For MVP (few athletes), parallel reads are okay.
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const balancePromises = (onChainAthletes as unknown as { athlete_id: string; monad_wallet_address: string; profiles: any }[]).map(async (athlete) => {
-              if (!athlete.monad_wallet_address) return null;
+            const balancePromises = (
+              onChainAthletes as unknown as {
+                athlete_id: string;
+                monad_wallet_address: string | null;
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                profiles: any;
+              }[]
+            ).map(async (athlete) => {
+              const profile = Array.isArray(athlete.profiles) ? athlete.profiles[0] : athlete.profiles;
+              const athleteWallet = profile?.monad_wallet_address || athlete.monad_wallet_address;
+              if (!athleteWallet) return null;
 
               // We need to read 'balanceOf(athlete, holder)' from the bonding curve
-              // Wait, balanceOf in the bonding curve usually tracks the supply or similar? 
+              // Wait, balanceOf in the bonding curve usually tracks the supply or similar?
               // Let's check ABI: "function balanceOf(address athlete, address holder) external view returns (uint256)"
               // Yes, the contract tracks balances.
 
@@ -70,17 +77,16 @@ export function useWallet() {
                   address: import.meta.env.VITE_MONAD_BONDING_CURVE_ADDRESS as `0x${string}`,
                   abi: ATHLYST_BONDING_CURVE_ABI,
                   functionName: 'balanceOf',
-                  args: [athlete.monad_wallet_address, address]
+                  args: [athleteWallet, address]
                   // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 } as any) as unknown as bigint;
 
                 if (balance > 0n) {
                   // We also need current price to calculate value/pnl
-                  // For now, let's just get the quantity. 
+                  // For now, let's just get the quantity.
                   // To do PnL properly on-chain requires event history which is complex without indexer.
                   // We will return basic position info.
                   const qty = Number(balance);
-                  const profile = athlete.profiles;
                   const name = profile?.display_name || profile?.username || 'Unknown';
 
                   return {
@@ -115,17 +121,29 @@ export function useWallet() {
         }
       }
 
-      // Merge Wallets
-      // If we have on-chain balance, use it (or add it? usually it replaces the simulate balance for those specific tokens)
-      // For MON, we probably want to show the Smart Wallet balance if connected.
+      // Merge positions: prefer off-chain avgCost/price when on-chain has placeholder 0s
+      const mergedPositions: Wallet['positions'] = { ...offChainWallet?.positions };
+      for (const [athleteId, onChainPos] of Object.entries(onChainPositions)) {
+        const offChainPos = mergedPositions[athleteId];
+        if (offChainPos) {
+          // On-chain quantity is authoritative, but keep off-chain financial data
+          // when on-chain returns placeholder 0s (no indexer available)
+          mergedPositions[athleteId] = {
+            ...offChainPos,
+            quantity: onChainPos.quantity > 0 ? onChainPos.quantity : offChainPos.quantity,
+            avgCost: onChainPos.avgCost > 0 ? onChainPos.avgCost : offChainPos.avgCost,
+            currentPrice: onChainPos.currentPrice > 0 ? onChainPos.currentPrice : offChainPos.currentPrice,
+            pnl: onChainPos.pnl !== 0 ? onChainPos.pnl : offChainPos.pnl,
+            pnlPercent: onChainPos.pnlPercent !== 0 ? onChainPos.pnlPercent : offChainPos.pnlPercent,
+          };
+        } else {
+          mergedPositions[athleteId] = onChainPos;
+        }
+      }
 
       const mergedWallet: Wallet = {
-        // Prefer on-chain balance if connected, otherwise DB balance
         mon: (authenticated && address) ? onChainBalance : (offChainWallet?.mon ?? 0),
-        positions: {
-          ...offChainWallet?.positions,
-          ...onChainPositions // On-chain positions override off-chain ones for same athlete
-        }
+        positions: mergedPositions,
       };
 
       queryClient.setQueryData(['positions', user.id], mergedWallet.positions);
@@ -136,6 +154,9 @@ export function useWallet() {
   return {
     ...query,
     data: query.data ?? null,
+    isAuthenticated: authenticated,
+    connect,
+    address,
   };
 }
 

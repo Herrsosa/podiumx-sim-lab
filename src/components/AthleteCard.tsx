@@ -223,6 +223,7 @@ export const AthleteCard = memo(({ athlete, chartData, holdersCount, onClick, on
   if (prev.athlete.id !== next.athlete.id) return false;
   if (prev.athlete.price !== next.athlete.price) return false;
   if (prev.athlete.change24h !== next.athlete.change24h) return false;
+  if (prev.holdersCount !== next.holdersCount) return false;
   if (prev.chartData.length !== next.chartData.length) return false;
 
   if (prev.chartData.length === 0) {

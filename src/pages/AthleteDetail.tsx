@@ -11,6 +11,7 @@ import { useAthlete } from '@/hooks/useAthlete';
 import { useWallet } from '@/hooks/useWallet';
 import { useTrades } from '@/hooks/useTrades';
 import { useTrade } from '@/hooks/useTrade';
+import { useAthleteHolderCounts } from '@/hooks/useAthleteHolderCounts';
 import { priceAt, costToBuy, payoutToSell, FEE, type Curve } from '@/utils/pricing';
 import type { Post } from '@/types';
 import ProofOfSweat from '@/components/ProofOfSweat';
@@ -74,7 +75,7 @@ export default function AthleteDetail() {
   const chatSectionRef = useRef<HTMLDivElement | null>(null);
 
   const { data: athlete, isLoading: athleteLoading } = useAthlete(slug!);
-  const { data: wallet, isLoading: walletLoading } = useWallet();
+  const { data: wallet, isLoading: walletLoading, connect } = useWallet();
   const { data: trades, isLoading: tradesLoading } = useTrades(athlete?.id, {
     enabled: Boolean(athlete?.id),
   });
@@ -343,16 +344,10 @@ export default function AthleteDetail() {
 
   const isOwnProfile = user?.id === athlete?.id;
 
-  // Calculate holders count from trades data
-  const holdersCount = useMemo(() => {
-    if (!trades) return 0;
-    const holdings = new Map<string, number>();
-    trades.forEach(trade => {
-      const current = holdings.get(trade.athleteId) ?? 0;
-      holdings.set(trade.athleteId, current + (trade.type === 'buy' ? trade.quantity : -trade.quantity));
-    });
-    return Array.from(holdings.values()).filter(qty => qty > 0).length;
-  }, [trades]);
+  // Fetch holders count from holdings table (covers both on-chain and off-chain trades)
+  const athleteIdArr = useMemo(() => athlete?.id ? [athlete.id] : [], [athlete?.id]);
+  const { data: holderCountsMap } = useAthleteHolderCounts(athleteIdArr);
+  const holdersCount = athlete?.id ? (holderCountsMap?.[athlete.id] ?? 0) : 0;
 
   const isBootstrapping = athleteLoading || walletLoading || tradesLoading;
 
@@ -380,6 +375,10 @@ export default function AthleteDetail() {
 
   // Trade handler for mobile profile
   const handleMobileTrade = useCallback(async (athleteId: string, quantity: number, side: 'BUY' | 'SELL') => {
+    if (!wallet && connect) {
+      connect();
+      return;
+    }
     if (!athlete) return;
     await tradeMutation.mutateAsync({
       athleteId,
@@ -387,7 +386,7 @@ export default function AthleteDetail() {
       quantity,
       side,
     });
-  }, [athlete, tradeMutation]);
+  }, [athlete, tradeMutation, wallet, connect]);
 
   useEffect(() => {
     if (activeTab === 'overview') {
@@ -711,8 +710,8 @@ export default function AthleteDetail() {
 
                       <Button
                         className="w-full"
-                        disabled={!canTrade || tradeMutation.isPending}
-                        onClick={handleTrade}
+                        disabled={(!wallet && !connect) || (wallet && (!canTrade || tradeMutation.isPending))}
+                        onClick={!wallet && connect ? connect : handleTrade}
                       >
                         {tradeMutation.isPending
                           ? 'Processing...'
@@ -769,7 +768,7 @@ export default function AthleteDetail() {
                   athleteHandle={athlete.slug}
                   athleteAvatar={athlete.avatar}
                   viewerHoldings={userHoldings}
-                  
+
                   onUnlock={async () => {
                     await tradeMutation.mutateAsync({
                       athleteId: athlete.id,
