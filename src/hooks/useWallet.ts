@@ -54,7 +54,6 @@ export function useWallet() {
           if (onChainAthletes && onChainAthletes.length > 0) {
             // This could be heavy if many athletes. In production, use The Graph or an Indexer.
             // For MVP (few athletes), parallel reads are okay.
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const balancePromises = (
               onChainAthletes as unknown as {
                 athlete_id: string;
