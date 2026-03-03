@@ -413,7 +413,7 @@ export default function AthleteDetail() {
       if (metaTwitterTitle) metaTwitterTitle.setAttribute('content', title);
 
       // Calculate total all-time km for description
-      const totalKm = athlete.workouts?.reduce((sum, w) => sum + (parseFloat(w.distance as any) || 0), 0) || 0;
+      const totalKm = athlete.workouts?.reduce((sum, w) => sum + (parseFloat(String(w.distance)) || 0), 0) || 0;
       const desc = `${totalKm.toFixed(1)}km logged | ${holdersCount} holders | Track the 185KM journey`;
 
       const metaOgDesc = document.querySelector('meta[property="og:description"]');
@@ -467,7 +467,7 @@ export default function AthleteDetail() {
         />
 
         {/* 185KM Campaign Module (Only for the experimental athlete profile) */}
-        {['nilshertzner', 'nils', '185km'].includes(athlete.slug?.toLowerCase()) || athlete.name?.toLowerCase().includes('nils') || true ? (
+        {['nilshertzner', 'nils', '185km'].includes(athlete.slug?.toLowerCase()) || athlete.name?.toLowerCase().includes('nils') ? (
           <Feature185km workouts={filteredWorkouts} />
         ) : null}
 

@@ -32,7 +32,7 @@ export function Feature185km({ workouts }: Feature185kmProps) {
                 const d = new Date(w.date).getTime();
                 return !isNaN(d) && d >= START_DATE;
             })
-            .reduce((sum, w) => sum + (parseFloat(w.distance as any) || 0), 0);
+            .reduce((sum, w) => sum + (parseFloat(String(w.distance)) || 0), 0);
     }, [workouts]);
 
     const remainingMs = RACE_DATE - now;
