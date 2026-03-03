@@ -232,10 +232,22 @@ export default function ViewWorkoutModal({ open, onOpenChange, workoutPost, athl
                     </div>
                 </div>
 
-                <div className="p-4 border-t bg-background shrink-0 sm:rounded-b-lg flex justify-end">
-                    <Button variant="outline" onClick={() => onOpenChange(false)}>
-                        Close
-                    </Button>
+                <div className="p-4 border-t bg-background shrink-0 sm:rounded-b-lg flex flex-col sm:flex-row justify-between items-center gap-4">
+                    {!user && athleteName && (
+                        <div className="flex-1 text-left w-full sm:w-auto">
+                            <Button
+                                className="w-full sm:w-auto font-bold bg-[#00FF41]/20 text-[#00FF41] hover:bg-[#00FF41]/30 border border-[#00FF41]/30"
+                                onClick={() => window.location.href = '/auth'}
+                            >
+                                Collect Card & Join Inner Circle
+                            </Button>
+                        </div>
+                    )}
+                    <div className={cn("flex w-full sm:w-auto justify-end", !user && "sm:w-auto")}>
+                        <Button variant="outline" onClick={() => onOpenChange(false)} className="w-full sm:w-auto">
+                            Close
+                        </Button>
+                    </div>
                 </div>
             </DialogContent>
         </Dialog>

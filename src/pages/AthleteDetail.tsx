@@ -46,6 +46,7 @@ import { useIdentityKernel } from '@/hooks/useIdentityKernel';
 import { DatePickerWithRange } from '@/components/DatePickerWithRange';
 import { DateRange } from 'react-day-picker';
 import { useWorkouts } from '@/hooks/useWorkouts';
+import { Feature185km } from '@/components/athlete/Feature185km';
 
 const AthletePriceChart = lazy(() => import('@/components/charts/AthletePriceChart'));
 
@@ -401,6 +402,35 @@ export default function AthleteDetail() {
     }
   }, [initialLoadComplete, isBootstrapping]);
 
+  useEffect(() => {
+    if (athlete) {
+      const title = `${athlete.name} on Athlyst — ${formatMoney(athlete.marketCap)} Market Cap`;
+      document.title = title;
+
+      const metaOgTitle = document.querySelector('meta[property="og:title"]');
+      if (metaOgTitle) metaOgTitle.setAttribute('content', title);
+      const metaTwitterTitle = document.querySelector('meta[name="twitter:title"]');
+      if (metaTwitterTitle) metaTwitterTitle.setAttribute('content', title);
+
+      // Calculate total all-time km for description
+      const totalKm = athlete.workouts?.reduce((sum, w) => sum + (parseFloat(w.distance as any) || 0), 0) || 0;
+      const desc = `${totalKm.toFixed(1)}km logged | ${holdersCount} holders | Track the 185KM journey`;
+
+      const metaOgDesc = document.querySelector('meta[property="og:description"]');
+      if (metaOgDesc) metaOgDesc.setAttribute('content', desc);
+      const metaTwitterDesc = document.querySelector('meta[name="twitter:description"]');
+      if (metaTwitterDesc) metaTwitterDesc.setAttribute('content', desc);
+
+      const metaOgImage = document.querySelector('meta[property="og:image"]');
+      if (metaOgImage && athlete.avatar) metaOgImage.setAttribute('content', athlete.avatar);
+      const metaTwitterImage = document.querySelector('meta[name="twitter:image"]');
+      if (metaTwitterImage && athlete.avatar) metaTwitterImage.setAttribute('content', athlete.avatar);
+
+      const metaOgUrl = document.querySelector('meta[property="og:url"]');
+      if (metaOgUrl) metaOgUrl.setAttribute('content', `https://athlyst.com/athlete/${athlete.slug}`);
+    }
+  }, [athlete, holdersCount]);
+
   const showInitialSkeleton = !initialLoadComplete && isBootstrapping;
 
   // Now check loading and not found states
@@ -435,6 +465,11 @@ export default function AthleteDetail() {
           athlete={athlete}
           auraCard={<AthleteIdentityCard athleteId={athlete.id} />}
         />
+
+        {/* 185KM Campaign Module (Only for the experimental athlete profile) */}
+        {['nilshertzner', 'nils', '185km'].includes(athlete.slug?.toLowerCase()) || athlete.name?.toLowerCase().includes('nils') || true ? (
+          <Feature185km workouts={filteredWorkouts} />
+        ) : null}
 
         {/* Chart Section */}
         <Card className="glass-card">
@@ -781,6 +816,18 @@ export default function AthleteDetail() {
                   onWorkoutUpdated={handleWorkoutUpdated}
                   onConnectStrava={isOwnProfile ? () => navigate('/my-athlete') : undefined}
                 />
+
+                {!user && (
+                  <div className="mt-8 text-center p-6 bg-card/40 rounded-xl border border-border/40 backdrop-blur-sm">
+                    <h3 className="text-xl font-bold mb-2 text-white">Join {athlete.name}'s Journey</h3>
+                    <p className="text-muted-foreground mb-6">
+                      Sign up to collect {athlete.name}'s Athlete Card, access the Inner Circle restricted content, and start building your Athlete Aura.
+                    </p>
+                    <Button onClick={() => navigate('/auth')} size="lg" className="px-8 w-full sm:w-auto font-bold bg-[#00FF41]/20 text-[#00FF41] hover:bg-[#00FF41]/30 border border-[#00FF41]/30">
+                      Collect {athlete.name}'s Card
+                    </Button>
+                  </div>
+                )}
 
                 {hasNextPage && (
                   <div className="flex justify-center py-6">
