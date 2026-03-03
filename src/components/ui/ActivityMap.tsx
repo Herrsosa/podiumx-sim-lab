@@ -1,4 +1,6 @@
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo } from 'react';
+import { MapContainer, TileLayer, Polyline, useMap } from 'react-leaflet';
+import 'leaflet/dist/leaflet.css';
 
 interface ActivityMapProps {
   polyline: string;
@@ -46,27 +48,31 @@ function decodePolyline(encoded: string): [number, number][] {
   return points;
 }
 
-function toSvgPolyline(points: [number, number][], padding = 8, size = 100): string {
-  if (points.length === 0) return '';
+function FitBounds({ points }: { points: [number, number][] }) {
+  const map = useMap();
 
-  const lats = points.map(([lat]) => lat);
-  const lngs = points.map(([, lng]) => lng);
-  const minLat = Math.min(...lats);
-  const maxLat = Math.max(...lats);
-  const minLng = Math.min(...lngs);
-  const maxLng = Math.max(...lngs);
+  useEffect(() => {
+    if (points.length > 0) {
+      // Force a resize check in case container dimensions just settled
+      map.invalidateSize();
 
-  const latRange = maxLat - minLat || 1;
-  const lngRange = maxLng - minLng || 1;
-  const inner = size - padding * 2;
+      map.fitBounds(points, {
+        padding: [20, 20],
+        animate: false
+      });
 
-  return points
-    .map(([lat, lng]) => {
-      const x = padding + ((lng - minLng) / lngRange) * inner;
-      const y = padding + (1 - (lat - minLat) / latRange) * inner;
-      return `${x.toFixed(2)},${y.toFixed(2)}`;
-    })
-    .join(' ');
+      // Double check after a small tick to ensure layout is final
+      setTimeout(() => {
+        map.invalidateSize();
+        map.fitBounds(points, {
+          padding: [20, 20],
+          animate: false
+        });
+      }, 100);
+    }
+  }, [map, points]);
+
+  return null;
 }
 
 export function ActivityMap({
@@ -80,37 +86,43 @@ export function ActivityMap({
     return decodePolyline(polyline);
   }, [polyline]);
 
-  const svgPoints = useMemo(() => toSvgPolyline(points), [points]);
-
-  if (!svgPoints) return null;
+  if (points.length === 0) return null;
 
   return (
     <div className={`w-full h-full relative overflow-hidden rounded-lg ${className}`} style={{ zIndex: 0 }}>
-      <svg
-        viewBox="0 0 100 100"
-        preserveAspectRatio="xMidYMid meet"
-        className="w-full h-full block"
-        role="img"
-        aria-label="Activity route map"
+      <MapContainer
+        key={polyline}
+        center={points[0]}
+        zoom={13}
+        style={{ width: '100%', height: '100%', background: '#18181b', zIndex: 0 }}
+        zoomControl={false}
+        dragging={false}
+        scrollWheelZoom={false}
+        doubleClickZoom={false}
+        touchZoom={false}
+        attributionControl={false}
       >
-        <defs>
-          <linearGradient id="routeBg" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="#18181b" />
-            <stop offset="100%" stopColor="#0f172a" />
-          </linearGradient>
-        </defs>
-        <rect x="0" y="0" width="100" height="100" fill="url(#routeBg)" />
-        <polyline
-          points={svgPoints}
-          fill="none"
-          stroke={strokeColor}
-          strokeWidth={Math.max(0.5, strokeWidth / 2)}
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          vectorEffect="non-scaling-stroke"
+        {/* Dark Matter Tiles */}
+        <TileLayer
+          url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
         />
-      </svg>
 
+        <Polyline
+          positions={points}
+          pathOptions={{
+            color: strokeColor,
+            weight: strokeWidth,
+            opacity: 1,
+            lineCap: 'round',
+            lineJoin: 'round'
+          }}
+        />
+
+        <FitBounds points={points} />
+      </MapContainer>
+
+      {/* Overlay to prevent interaction and add subtle vignette if needed */}
       <div className="absolute inset-0 pointer-events-none z-[1000]" />
     </div>
   );
