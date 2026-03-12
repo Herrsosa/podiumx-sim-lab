@@ -296,7 +296,7 @@ export default function Portfolio() {
                 <div className="text-4xl sm:text-5xl font-bold tracking-tight text-foreground tabular-nums">
                   <CountUp
                     value={totalValue}
-                    suffix=" MON"
+                    suffix=" SOL"
                     decimalPlaces={2}
                     duration={1.5}
                   />
@@ -316,7 +316,7 @@ export default function Portfolio() {
                 <div className={cn("text-xl font-bold tabular-nums", totalPnlClass.split(' ')[2])}>
                   {totalPnL >= 0 ? '+' : '-'}<CountUp
                     value={Math.abs(totalPnL)}
-                    suffix=" MON"
+                    suffix=" SOL"
                     decimalPlaces={2}
                   />
                 </div>
@@ -328,30 +328,30 @@ export default function Portfolio() {
               <div>
                 <p className="text-xs text-muted-foreground mb-1 uppercase tracking-wider">Invested</p>
                 <p className="text-lg font-semibold text-foreground/80 tabular-nums">
-                  <CountUp value={totalCostBasis} suffix=" MON" decimalPlaces={2} />
+                  <CountUp value={totalCostBasis} suffix=" SOL" decimalPlaces={2} />
                 </p>
               </div>
               <div>
                 <p className="text-xs text-muted-foreground mb-1 uppercase tracking-wider">Realized P&L</p>
                 <p className={cn("text-lg font-semibold tabular-nums", realizedPnL >= 0 ? "text-success" : "text-destructive")}>
-                  {realizedPnL >= 0 ? '+' : '-'}<CountUp value={Math.abs(realizedPnL)} suffix=" MON" decimalPlaces={2} />
+                  {realizedPnL >= 0 ? '+' : '-'}<CountUp value={Math.abs(realizedPnL)} suffix=" SOL" decimalPlaces={2} />
                 </p>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        {/* Right: MON Balance + Collection (Combined Card) */}
+        {/* Right: SOL Balance + Collection (Combined Card) */}
         <Card className="glass-card flex flex-col">
           <CardContent className="p-6">
-            {/* MON Balance Section */}
+            {/* SOL Balance Section */}
             <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-medium text-muted-foreground uppercase tracking-wider">MON Balance</span>
+              <span className="text-sm font-medium text-muted-foreground uppercase tracking-wider">SOL Balance</span>
               <Coins className="h-5 w-5 text-primary/60" />
             </div>
             <div className="flex items-center justify-between mb-5">
               <div className="text-3xl font-bold tabular-nums">
-                <CountUp value={wallet.mon} suffix=" MON" decimalPlaces={2} />
+                <CountUp value={wallet.sol} suffix=" SOL" decimalPlaces={2} />
               </div>
               <AddFundsDialog />
             </div>

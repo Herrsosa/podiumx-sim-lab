@@ -75,7 +75,7 @@ export interface Position {
 }
 
 export interface Wallet {
-  mon: number;
+  sol: number;
   positions: Record<string, Position>;
 }
 

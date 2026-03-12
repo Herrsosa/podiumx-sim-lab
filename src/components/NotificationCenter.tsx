@@ -9,6 +9,7 @@ import { cn } from '@/lib/utils';
 import { useNotifications, type Notification } from '@/hooks/useNotifications';
 import { featureFlags } from '@/lib/config/featureFlags';
 import { useUser } from '@/store/auth';
+import { getNotificationActorName } from '@/lib/notifications';
 
 interface NotificationCenterProps {
     className?: string;
@@ -170,6 +171,8 @@ interface NotificationItemProps {
 function NotificationItem({ notification, onClick }: NotificationItemProps) {
     const isUnread = !notification.read_at;
 
+    const actorName = getNotificationActorName(notification.actor);
+
     const getIcon = () => {
         switch (notification.type) {
             case 'prop_received':
@@ -216,7 +219,7 @@ function NotificationItem({ notification, onClick }: NotificationItemProps) {
             </div>
             <div className="flex-1 min-w-0">
                 <p className="text-sm text-foreground">
-                    <span className="font-medium">Someone</span>{' '}
+                    <span className="font-medium">{actorName}</span>{' '}
                     <span className="text-muted-foreground">{getMessage()}</span>
                 </p>
                 <p className="text-xs text-muted-foreground mt-0.5">

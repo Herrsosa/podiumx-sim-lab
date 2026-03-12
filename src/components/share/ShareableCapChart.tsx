@@ -150,7 +150,7 @@ export const ShareableCapChart = forwardRef<ShareableCapChartRef, ShareableCapCh
                     <div className="text-center mb-8">
                         <div className="flex items-baseline justify-center gap-3 mb-2">
                             <span className="text-8xl font-bold text-white tracking-tight">
-                                {(athlete.price || 0).toFixed(4)} MON
+                                {(athlete.price || 0).toFixed(4)} SOL
                             </span>
                         </div>
                         <div

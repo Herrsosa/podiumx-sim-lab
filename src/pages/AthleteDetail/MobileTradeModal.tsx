@@ -174,7 +174,7 @@ export function MobileTradeModal({
                     <div>
                         <Label className="text-sm text-muted-foreground">Amount</Label>
                         <div className="relative mt-1.5">
-                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm font-medium">MON</span>
+                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm font-medium">SOL</span>
                             <Input
                                 type="number"
                                 inputMode="decimal"
@@ -184,7 +184,7 @@ export function MobileTradeModal({
                                 className="pl-12 pr-14 h-12 text-lg"
                             />
                             <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">
-                                MON
+                                SOL
                             </span>
                         </div>
                         <p className="text-xs text-muted-foreground mt-1.5">
@@ -207,7 +207,7 @@ export function MobileTradeModal({
                             <div className="flex justify-between text-sm">
                                 <span className="text-muted-foreground">Price per Card</span>
                                 <span className="font-medium">
-                                    {currencyFormatter.format(impact.pricePerToken)} MON
+                                    {currencyFormatter.format(impact.pricePerToken)} SOL
                                 </span>
                             </div>
                         </div>
@@ -244,15 +244,15 @@ export function MobileTradeModal({
                                 </div>
                                 <div className="flex justify-between">
                                     <span className="text-muted-foreground">Platform fee (1.5%)</span>
-                                    <span>{currencyFormatter.format(impact.platformFee)} MON</span>
+                                    <span>{currencyFormatter.format(impact.platformFee)} SOL</span>
                                 </div>
                                 <div className="flex justify-between">
                                     <span className="text-muted-foreground">Athlete fee (1.5%)</span>
-                                    <span>{currencyFormatter.format(impact.athleteFee)} MON</span>
+                                    <span>{currencyFormatter.format(impact.athleteFee)} SOL</span>
                                 </div>
                                 <div className="flex justify-between pt-2 border-t border-border/50 font-medium">
                                     <span>Total {isBuy ? 'cost' : 'proceeds'}</span>
-                                    <span>{currencyFormatter.format(impact.total)} MON</span>
+                                    <span>{currencyFormatter.format(impact.total)} SOL</span>
                                 </div>
                             </div>
                         )}

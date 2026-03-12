@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useCallback, useRef, Suspense, lazy } from 'react';
 import { Plus, TrendingUp, MessageSquare, DollarSign, Share2, Mail, Globe } from 'lucide-react';
 import type { TimeRangeKey } from '@/utils/chartData';
-import { formatNumber } from '@/lib/format';
+import { formatNumber, formatMoney } from '@/lib/format';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { EarningsSection } from '@/components/EarningsSection';
@@ -219,7 +219,7 @@ export function PersonalConsole({
                 <div>
                   <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1">Your Market Cap</p>
                   <div className="text-4xl font-bold tracking-tight tabular-nums bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text">
-                    ${formatNumber(athlete?.marketCap || 0)}
+                    {formatMoney(athlete?.marketCap || 0)}
                   </div>
                   <div className="flex items-center gap-2 mt-2">
                     <span className={`text-sm font-semibold px-2 py-0.5 rounded ${(athlete?.change24h || 0) > 0 ? 'bg-success/10 text-success' : (athlete?.change24h || 0) < 0 ? 'bg-destructive/10 text-destructive' : 'bg-muted text-muted-foreground'}`}>
@@ -235,7 +235,7 @@ export function PersonalConsole({
                 <div className="grid grid-cols-3 gap-3 mt-4 pt-4 border-t border-border/50">
                   <div>
                     <p className="text-xs text-muted-foreground uppercase tracking-wider">Price</p>
-                    <p className="text-lg font-semibold">${formatNumber(athlete?.price || 0)}</p>
+                    <p className="text-lg font-semibold">{formatMoney(athlete?.price || 0)}</p>
                   </div>
                   <div>
                     <p className="text-xs text-muted-foreground uppercase tracking-wider">Cards</p>
@@ -243,7 +243,7 @@ export function PersonalConsole({
                   </div>
                   <div>
                     <p className="text-xs text-muted-foreground uppercase tracking-wider">Earnings</p>
-                    <p className="text-lg font-semibold">${formatNumber(athlete?.athleteRevenue || 0)}</p>
+                    <p className="text-lg font-semibold">{formatMoney(athlete?.athleteRevenue || 0)}</p>
                   </div>
                 </div>
               </CardContent>
@@ -269,7 +269,7 @@ export function PersonalConsole({
                 <div>
                   <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1">Your Market Cap</p>
                   <div className="text-2xl font-bold tracking-tight tabular-nums">
-                    ${formatNumber(athlete?.marketCap || 0)}
+                    {formatMoney(athlete?.marketCap || 0)}
                   </div>
                 </div>
                 <div className="text-right">
@@ -391,7 +391,7 @@ export function PersonalConsole({
                 <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Price</span>
-                    <span className="font-medium">${formatNumber(athlete?.price || 0)}</span>
+                    <span className="font-medium">{formatMoney(athlete?.price || 0)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">24h Change</span>
@@ -401,7 +401,7 @@ export function PersonalConsole({
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Market Cap</span>
-                    <span className="font-medium">${formatNumber(athlete?.marketCap || 0)}</span>
+                    <span className="font-medium">{formatMoney(athlete?.marketCap || 0)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Card Holders</span>
@@ -409,11 +409,11 @@ export function PersonalConsole({
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Reserve</span>
-                    <span className="font-medium">${formatNumber(athlete?.reserve || 0)}</span>
+                    <span className="font-medium">{formatMoney(athlete?.reserve || 0)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Earnings</span>
-                    <span className="font-medium">${formatNumber(athlete?.athleteRevenue || 0)}</span>
+                    <span className="font-medium">{formatMoney(athlete?.athleteRevenue || 0)}</span>
                   </div>
                 </div>
               </div>

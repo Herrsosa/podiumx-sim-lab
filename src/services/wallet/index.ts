@@ -71,7 +71,7 @@ class WalletService {
     }
 
     return {
-      mon: walletRow?.balance ?? 0,
+      sol: walletRow?.balance ?? 0,
       positions,
     };
   }
@@ -80,7 +80,7 @@ class WalletService {
     const walletRow = await this.getWalletRow(userId);
 
     if (!walletRow) {
-      // Create wallet with initial 1000 MON balance for new users
+      // Create wallet with initial 1000 SOL balance for new users
       const { error } = await supabase
         .from('wallets')
         .insert({ user_id: userId, balance: 1000 });

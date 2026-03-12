@@ -343,7 +343,7 @@ export function MobileAthleteProfile({
                                                     )}
                                                 >
                                                     {isBuy ? '+' : '-'}
-                                                    {currencyFormatter.format(amount)} MON
+                                                    {currencyFormatter.format(amount)} SOL
                                                 </span>
                                             </div>
                                         );

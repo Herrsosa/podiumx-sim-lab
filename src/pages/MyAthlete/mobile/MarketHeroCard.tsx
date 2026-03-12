@@ -2,6 +2,7 @@ import { ArrowUpRight, ArrowDownRight, Flame, ChevronRight, Share2 } from 'lucid
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { formatMoney } from '@/lib/format';
 
 interface MarketHeroCardProps {
     marketCap: number;
@@ -13,12 +14,6 @@ interface MarketHeroCardProps {
     onShareAura?: () => void;
     className?: string;
 }
-
-const currencyFormatter = new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    maximumFractionDigits: 0,
-});
 
 const percentFormatter = new Intl.NumberFormat('en-US', {
     style: 'percent',
@@ -65,7 +60,7 @@ export function MarketHeroCard({
                         Your Market Cap
                     </p>
                     <p className="text-4xl font-bold bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text text-transparent">
-                        {currencyFormatter.format(marketCap)}
+                        {formatMoney(marketCap)}
                     </p>
                     <div className="flex items-center justify-center gap-1 mt-1">
                         {priceChange !== 0 && (

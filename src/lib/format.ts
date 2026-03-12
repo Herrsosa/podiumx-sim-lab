@@ -56,7 +56,7 @@ export function formatMoney(value: number | null | undefined): string {
   }
 
   const sign = value! < 0 ? "-" : "";
-  return sign + toCompactString(value!) + " MON";
+  return sign + toCompactString(value!) + " SOL";
 }
 
 export const formatPrice = formatMoney;

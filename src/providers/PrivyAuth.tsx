@@ -1,7 +1,7 @@
 import { PrivyProvider } from '@privy-io/react-auth';
 import { supportedChains } from '@/lib/chains';
 
-const appId = 'cmlkrbvm001ar0bl59tofq53x';
+const appId = import.meta.env.VITE_PRIVY_APP_ID || '';
 
 export function PrivyAuth({ children }: { children: React.ReactNode }) {
     if (!appId) {

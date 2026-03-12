@@ -76,7 +76,7 @@ export default function AthleteDetail() {
   const chatSectionRef = useRef<HTMLDivElement | null>(null);
 
   const { data: athlete, isLoading: athleteLoading } = useAthlete(slug!);
-  const { data: wallet, isLoading: walletLoading, connect } = useWallet();
+  const { data: wallet, isLoading: walletLoading } = useWallet();
   const { data: trades, isLoading: tradesLoading } = useTrades(athlete?.id, {
     enabled: Boolean(athlete?.id),
   });
@@ -250,7 +250,7 @@ export default function AthleteDetail() {
   }, [tradeType, quantity, athlete]);
 
   const isSelfBuy = user?.id === athlete?.id && tradeType === 'buy';
-  const walletMonBalance = Number.isFinite(wallet?.mon) ? wallet.mon : 0;
+  const walletSolBalance = Number.isFinite(wallet?.sol) ? wallet.sol : 0;
 
   const canTrade =
     !isSelfBuy &&
@@ -259,7 +259,7 @@ export default function AthleteDetail() {
     impact &&
     wallet &&
     athlete &&
-    (tradeType === 'buy' ? walletMonBalance >= impact.total : position && position.quantity >= quantity);
+    (tradeType === 'buy' ? walletSolBalance >= impact.total : position && position.quantity >= quantity);
 
   const userHoldings = position?.quantity || 0;
 
@@ -376,10 +376,6 @@ export default function AthleteDetail() {
 
   // Trade handler for mobile profile
   const handleMobileTrade = useCallback(async (athleteId: string, quantity: number, side: 'BUY' | 'SELL') => {
-    if (!wallet && connect) {
-      connect();
-      return;
-    }
     if (!athlete) return;
     await tradeMutation.mutateAsync({
       athleteId,
@@ -387,7 +383,7 @@ export default function AthleteDetail() {
       quantity,
       side,
     });
-  }, [athlete, tradeMutation, wallet, connect]);
+  }, [athlete, tradeMutation]);
 
   useEffect(() => {
     if (activeTab === 'overview') {
@@ -633,7 +629,7 @@ export default function AthleteDetail() {
                         ) : impact && wallet && (
                           <p className="mb-2 text-xs text-muted-foreground">
                             {tradeType === 'buy'
-                              ? `You can buy up to ${Math.floor(walletMonBalance / impact.avgPrice)} Cards with your balance`
+                              ? `You can buy up to ${Math.floor(walletSolBalance / impact.avgPrice)} Cards with your balance`
                               : position
                                 ? `You have ${position.quantity} Card${position.quantity !== 1 ? 's' : ''}`
                                 : "You don't own any Cards"}
@@ -665,15 +661,15 @@ export default function AthleteDetail() {
                           <div className="space-y-2">
                             <div className="flex justify-between">
                               <span className="text-muted-foreground">Current Price</span>
-                              <span className="font-medium">{impact.oldPrice.toFixed(4)} MON</span>
+                              <span className="font-medium">{impact.oldPrice.toFixed(4)} SOL</span>
                             </div>
                             <div className="flex justify-between">
                               <span className="text-muted-foreground">New Price</span>
-                              <span className="font-medium">{impact.newPrice.toFixed(4)} MON</span>
+                              <span className="font-medium">{impact.newPrice.toFixed(4)} SOL</span>
                             </div>
                             <div className="flex justify-between">
                               <span className="text-muted-foreground">Avg Fill Price</span>
-                              <span className="font-medium">{impact.avgPrice.toFixed(4)} MON</span>
+                              <span className="font-medium">{impact.avgPrice.toFixed(4)} SOL</span>
                             </div>
                             <div className="flex items-center justify-between">
                               <span className="text-muted-foreground">Price Impact</span>
@@ -691,7 +687,7 @@ export default function AthleteDetail() {
                             <div className="flex justify-between">
                               <span className="text-muted-foreground">New Market Cap</span>
                               <span className="font-medium">
-                                {((impact.newPrice * impact.newSupply) / 1000).toFixed(2)}k MON
+                                {((impact.newPrice * impact.newSupply) / 1000).toFixed(2)}k SOL
                               </span>
                             </div>
                           </div>
@@ -699,19 +695,19 @@ export default function AthleteDetail() {
                           <div className="border-t border-border pt-2 space-y-2">
                             <div className="flex justify-between">
                               <span>Subtotal</span>
-                              <span className="font-medium">{impact.subtotal.toFixed(2)} MON</span>
+                              <span className="font-medium">{impact.subtotal.toFixed(2)} SOL</span>
                             </div>
                             <div className="flex justify-between text-xs">
                               <span className="text-muted-foreground">Fee (1.5% → Athlete)</span>
-                              <span className="text-muted-foreground">{(impact.fee / 2).toFixed(2)} MON</span>
+                              <span className="text-muted-foreground">{(impact.fee / 2).toFixed(2)} SOL</span>
                             </div>
                             <div className="flex justify-between text-xs">
                               <span className="text-muted-foreground">Fee (1.5% → Treasury)</span>
-                              <span className="text-muted-foreground">{(impact.fee / 2).toFixed(2)} MON</span>
+                              <span className="text-muted-foreground">{(impact.fee / 2).toFixed(2)} SOL</span>
                             </div>
                             <div className="flex justify-between border-t border-border pt-2 font-bold">
                               <span>Total {tradeType === 'buy' ? 'Cost' : 'Proceeds'}</span>
-                              <span>{impact.total.toFixed(2)} MON</span>
+                              <span>{impact.total.toFixed(2)} SOL</span>
                             </div>
                           </div>
                         </div>
@@ -720,8 +716,8 @@ export default function AthleteDetail() {
                       {/* Wallet Info */}
                       <div className="space-y-2 text-sm">
                         <div className="flex justify-between">
-                          <span className="text-muted-foreground">Your MON</span>
-                          <span className="font-medium">{walletMonBalance.toFixed(2)} MON</span>
+                          <span className="text-muted-foreground">Your SOL</span>
+                          <span className="font-medium">{walletSolBalance.toFixed(2)} SOL</span>
                         </div>
                         {position && (
                           <>
@@ -731,12 +727,12 @@ export default function AthleteDetail() {
                             </div>
                             <div className="flex justify-between">
                               <span className="text-muted-foreground">Avg Cost</span>
-                              <span className="font-medium">{position.avgCost.toFixed(2)} MON</span>
+                              <span className="font-medium">{position.avgCost.toFixed(2)} SOL</span>
                             </div>
                             <div className="flex justify-between">
                               <span className="text-muted-foreground">Unrealized P&L</span>
                               <span className={`font-medium ${position.pnl >= 0 ? 'text-success' : 'text-destructive'}`}>
-                                {position.pnl.toFixed(2)} MON ({position.pnl >= 0 ? '+' : ''}{position.pnlPercent.toFixed(2)}%)
+                                {position.pnl.toFixed(2)} SOL ({position.pnl >= 0 ? '+' : ''}{position.pnlPercent.toFixed(2)}%)
                               </span>
                             </div>
                           </>
@@ -745,8 +741,8 @@ export default function AthleteDetail() {
 
                       <Button
                         className="w-full"
-                        disabled={(!wallet && !connect) || (wallet && (!canTrade || tradeMutation.isPending))}
-                        onClick={!wallet && connect ? connect : handleTrade}
+                        disabled={!wallet || !canTrade || tradeMutation.isPending}
+                        onClick={handleTrade}
                       >
                         {tradeMutation.isPending
                           ? 'Processing...'
@@ -759,12 +755,12 @@ export default function AthleteDetail() {
                                 : isSelfBuy
                                   ? 'Self-purchase not allowed'
                                   : tradeType === 'buy'
-                                    ? walletMonBalance < impact.total
-                                      ? `Need ${(impact.total - walletMonBalance).toFixed(2)} more MON`
-                                      : `Buy for ${impact.total.toFixed(2)} MON`
+                                    ? walletSolBalance < impact.total
+                                      ? `Need ${(impact.total - walletSolBalance).toFixed(2)} more SOL`
+                                      : `Buy for ${impact.total.toFixed(2)} SOL`
                                     : !position || position.quantity < quantity
                                       ? `Need ${quantity - (position?.quantity || 0)} more Card${quantity - (position?.quantity || 0) !== 1 ? 's' : ''}`
-                                      : `Sell for ${impact.total.toFixed(2)} MON`
+                                      : `Sell for ${impact.total.toFixed(2)} SOL`
                         }
                       </Button>
 
@@ -1058,7 +1054,7 @@ export default function AthleteDetail() {
         priceSeries={priceSeries}
         trades={athleteTrades}
         position={position}
-        userBalance={walletMonBalance}
+        userBalance={walletSolBalance}
         timeRange={timeRange}
         onTimeRangeChange={setTimeRange}
         onBack={() => navigate(-1)}

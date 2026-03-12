@@ -212,7 +212,7 @@ export default function Onboarding() {
 
       const uid = user.id;
 
-      // 1. Create or update wallet with 1000 MON starting balance
+      // 1. Create or update wallet with 1000 SOL starting balance
       const { error: walletError } = await supabase
         .from('wallets')
         .upsert(
@@ -463,7 +463,7 @@ export default function Onboarding() {
                     <p className="text-sm text-muted-foreground">You're all set to start trading</p>
                   </div>
                 </div>
-                <div className="text-3xl font-bold text-primary">1,000 MON</div>
+                <div className="text-3xl font-bold text-primary">1,000 SOL</div>
                 <p className="text-sm text-muted-foreground">
                   This is test currency for exploring the platform. Use it to buy Athlete Cards!
                 </p>

@@ -1,3 +1,5 @@
+// LEGACY: Monad/Base chain definitions. Still imported by PrivyAuth.tsx for dormant Privy config.
+// Will be replaced with Solana chain definition when Privy is re-enabled for Solana.
 const monadRpc = import.meta.env.VITE_MONAD_RPC_URL || 'https://rpc.monad.xyz';
 const monadTestnetRpc = import.meta.env.VITE_MONAD_TESTNET_RPC_URL || 'https://testnet-rpc.monad.xyz';
 const baseRpc = import.meta.env.VITE_BASE_RPC_URL || 'https://mainnet.base.org';

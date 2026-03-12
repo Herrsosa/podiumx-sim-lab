@@ -135,7 +135,7 @@ export function AthleteHero({ athlete, auraCard }: AthleteHeroProps) {
                         <div className="group relative overflow-hidden rounded-xl border border-white/5 bg-white/5 p-3 backdrop-blur-sm transition-all hover:bg-white/10">
                             <div className="mb-0.5 text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Price</div>
                             <div className="text-xl font-bold text-white md:text-2xl">
-                                <CountUp value={athlete.price} decimalPlaces={4} duration={1.5} /> MON
+                                <CountUp value={athlete.price} decimalPlaces={4} duration={1.5} /> SOL
                             </div>
                             <div className={cn("mt-0.5 flex items-center gap-1 text-[10px] font-medium", athlete.change24h === 0 ? "text-muted-foreground" : isPositive ? "text-success" : "text-destructive")}>
                                 {athlete.change24h !== 0 && (isPositive ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />)}

@@ -7,6 +7,7 @@ import { cn } from '@/lib/utils';
 import { useNotifications, type Notification } from '@/hooks/useNotifications';
 import { featureFlags } from '@/lib/config/featureFlags';
 import { UserAvatar } from '@/components/UserAvatar';
+import { getNotificationActorName } from '@/lib/notifications';
 
 /**
  * Full-page notifications view for mobile
@@ -136,7 +137,7 @@ interface NotificationRowProps {
 function NotificationRow({ notification, onClick }: NotificationRowProps) {
     const isUnread = !notification.read_at;
     const actor = notification.actor;
-    const actorName = actor?.display_name || actor?.username || 'Someone';
+    const actorName = getNotificationActorName(actor);
 
     const getIcon = () => {
         switch (notification.type) {

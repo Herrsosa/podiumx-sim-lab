@@ -1,4 +1,4 @@
-const isDev = import.meta.env.DEV;
+const isDev = typeof import.meta !== 'undefined' && import.meta.env ? import.meta.env.DEV : process.env.NODE_ENV !== 'production';
 
 export type LogLevel = 'info' | 'warn' | 'error';
 

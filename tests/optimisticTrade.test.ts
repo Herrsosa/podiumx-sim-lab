@@ -8,6 +8,7 @@ import {
 } from '../src/hooks/optimisticTrade';
 import type { Wallet } from '../src/types';
 import type { AthletePriceSnapshot } from '../src/hooks/useAthletePrice';
+import { athletePriceQueryKey } from '../src/hooks/useAthletePrice';
 import type { ChartSeries } from '../src/hooks/useAthleteTradeHistory';
 import type { TradeServerEnvelope } from '../src/hooks/optimisticTrade';
 
@@ -28,7 +29,7 @@ const userId = 'user-1';
 const baseCurve = { a: 0.0002, b: 0.02, c: 1 };
 
 const baseWallet: Wallet = {
-  usdc: 1_000,
+  sol: 1_000,
   positions: {
     [athleteId]: {
       athleteId,
@@ -50,6 +51,7 @@ const basePrice: AthletePriceSnapshot = {
   athleteRevenue: 500,
   curve: baseCurve,
   updatedAt: new Date().toISOString(),
+  tokenCreatedAt: null,
 };
 
 const baseAccess = { balance: 10, tier: 'backer' as const };
@@ -66,9 +68,9 @@ const baseChart: ChartSeries = {
 const seedClient = (client: QueryClient) => {
   client.setQueryData(['wallet', userId], structuredClone(baseWallet));
   client.setQueryData(['positions', userId], structuredClone(baseWallet.positions));
-  client.setQueryData(['athlete-price', athleteId], { ...basePrice });
+  client.setQueryData(athletePriceQueryKey(athleteId), { ...basePrice });
   client.setQueryData(['locker-access', userId, athleteId], { ...baseAccess });
-  client.setQueryData(['chart', athleteId, '24h'], {
+  client.setQueryData(['athleteChart', athleteId, '24h'], {
     data: baseChart.data.map((point) => ({ ...point })),
     changePct: baseChart.changePct,
     volume: baseChart.volume,
@@ -78,9 +80,9 @@ const seedClient = (client: QueryClient) => {
 const snapshotClientState = (client: QueryClient) => ({
   wallet: client.getQueryData(['wallet', userId]),
   positions: client.getQueryData(['positions', userId]),
-  athletePrice: client.getQueryData(['athlete-price', athleteId]),
+  athletePrice: client.getQueryData(athletePriceQueryKey(athleteId)),
   access: client.getQueryData(['locker-access', userId, athleteId]),
-  chart: client.getQueryData(['chart', athleteId, '24h']),
+  chart: client.getQueryData(['athleteChart', athleteId, '24h']),
 });
 
 test('optimistic update rolls back cleanly on error (offline/slow network)', () => {
@@ -130,7 +132,7 @@ test('idempotent reconciliation does not double-apply server snapshot', () => {
     tradeId: 'trade-123',
     serverTime: new Date().toISOString(),
     wallet: {
-      usdc: 980,
+      sol: 980,
       positions: {
         [athleteId]: {
           athleteId,
@@ -162,6 +164,7 @@ test('idempotent reconciliation does not double-apply server snapshot', () => {
       athleteRevenue: 500.3,
       curve: baseCurve,
       updatedAt: new Date().toISOString(),
+      tokenCreatedAt: null,
     },
     access: { balance: 11, tier: 'backer' },
     priceTick: {
@@ -202,7 +205,7 @@ test('chart series incorporates realtime price tick for cross-client convergence
     idempotencyKey: 'chart-test-1',
   });
 
-  const baseChartSeries = client.getQueryData<ChartSeries>(['chart', athleteId, '24h']);
+  const baseChartSeries = client.getQueryData<ChartSeries>(['athleteChart', athleteId, '24h']);
   const baseLength = baseChartSeries?.data.length ?? 0;
 
   const payload: TradeServerEnvelope = {
@@ -218,6 +221,7 @@ test('chart series incorporates realtime price tick for cross-client convergence
       athleteRevenue: basePrice.athleteRevenue + 0.3,
       curve: baseCurve,
       updatedAt: new Date().toISOString(),
+      tokenCreatedAt: null,
     },
     access: { balance: 11, tier: 'backer' },
     priceTick: {
@@ -235,7 +239,7 @@ test('chart series incorporates realtime price tick for cross-client convergence
 
   reconcileTradeSuccess(client, context, payload);
 
-  const updatedChart = client.getQueryData<ChartSeries>(['chart', athleteId, '24h']);
+  const updatedChart = client.getQueryData<ChartSeries>(['athleteChart', athleteId, '24h']);
   assert.ok(updatedChart);
   assert.ok((updatedChart?.data.length ?? 0) >= baseLength);
   assert.equal(updatedChart?.data[updatedChart.data.length - 1].price, 9.1);

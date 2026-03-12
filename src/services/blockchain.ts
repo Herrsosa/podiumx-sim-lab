@@ -1,3 +1,4 @@
+// ARCHIVED: Monad on-chain service. Kept for reference. Will be replaced with Solana integration.
 import { createPublicClient, http, WalletClient } from 'viem';
 import { monad } from '@/lib/chains';
 import { ATHLYST_BONDING_CURVE_ABI } from '@/lib/abi/AthlystBondingCurve';

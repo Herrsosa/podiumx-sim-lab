@@ -83,7 +83,7 @@ const REWARD_TIERS = [
     { count: 1, type: 'early_access', value: 'skip_waitlist', label: 'Skip Waitlist', icon: '🚀' },
     { count: 3, type: 'points', value: '500', label: '500 Sweat Points', icon: '⚡' },
     { count: 5, type: 'badge', value: 'founding', label: 'Founding Badge', icon: '🏅' },
-    { count: 10, type: 'usdc', value: '5', label: '5 MON Airdrop', icon: '💰' },
+    { count: 10, type: 'usdc', value: '5', label: '5 SOL Airdrop', icon: '💰' },
 ];
 
 export function ReferralDashboard({ className }: ReferralDashboardProps) {

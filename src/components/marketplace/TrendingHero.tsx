@@ -131,7 +131,7 @@ function TrendingCard({ athlete, rank, onClick }: TrendingCardProps) {
 
                         <div className="text-right ml-2 md:ml-4">
                             <div className="text-xl md:text-3xl font-bold text-white">
-                                {athlete.price.toFixed(2)} MON
+                                {athlete.price.toFixed(2)} SOL
                             </div>
                             <div className="text-[10px] md:text-xs text-white/60">
                                 MCap: {formatMoney(athlete.marketCap)}

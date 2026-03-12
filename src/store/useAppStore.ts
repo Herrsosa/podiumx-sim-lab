@@ -10,7 +10,7 @@ export const useAppStore = create<AppState>()(
   persist(
     (set, get) => ({
       athletes: [],
-      wallet: { mon: 0, positions: {} },
+      wallet: { sol: 0, positions: {} },
       trades: [],
       userProfile: generateSeedProfile(),
       userAthleteId: undefined,
@@ -46,9 +46,9 @@ export const useAppStore = create<AppState>()(
         const avgPrice = grossCost / quantity;
         const newReserve = athlete.reserve + grossCost;
 
-        // Check if user has enough MON
-        if (state.wallet.mon < total) {
-          throw new Error('Insufficient MON balance');
+        // Check if user has enough SOL
+        if (state.wallet.sol < total) {
+          throw new Error('Insufficient SOL balance');
         }
 
         // Update athlete
@@ -94,7 +94,7 @@ export const useAppStore = create<AppState>()(
         newPosition.pnlPercent = ((newPosition.currentPrice - newPosition.avgCost) / newPosition.avgCost) * 100;
 
         const updatedWallet = {
-          mon: state.wallet.mon - total,
+          sol: state.wallet.sol - total,
           positions: {
             ...state.wallet.positions,
             [athleteId]: newPosition,
@@ -173,7 +173,7 @@ export const useAppStore = create<AppState>()(
         }
 
         const updatedWallet = {
-          mon: state.wallet.mon + total,
+          sol: state.wallet.sol + total,
           positions: updatedPositions,
         };
 
@@ -206,7 +206,7 @@ export const useAppStore = create<AppState>()(
         const athleteId = `user-athlete-${Date.now()}`;
         const slug = state.userProfile.displayName.toLowerCase().replace(/\s+/g, '-');
 
-        // Calculate initial reserve (0.1 MON per token)
+        // Calculate initial reserve (0.1 SOL per token)
         const initialPrice = 0.1;
         const initialReserve = initialPrice * initialSupply;
 
@@ -308,7 +308,7 @@ export const useAppStore = create<AppState>()(
         set({
           wallet: {
             ...state.wallet,
-            mon: state.wallet.mon + amount,
+            sol: state.wallet.sol + amount,
           },
         });
       },

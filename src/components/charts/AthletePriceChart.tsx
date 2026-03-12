@@ -421,7 +421,7 @@ const AthletePriceChart = memo(({
     [glowFilterId],
   );
 
-  const formatPriceTick = useCallback((value: number) => `${value.toFixed(2)} MON`, []);
+  const formatPriceTick = useCallback((value: number) => `${value.toFixed(2)} SOL`, []);
 
   const renderTooltip = useCallback(({ active, label, payload }: TooltipProps<number, string>) => {
     if (!active || !payload || payload.length === 0 || typeof label !== 'number') {
@@ -442,7 +442,7 @@ const AthletePriceChart = memo(({
       <div className="rounded-lg border border-border/60 bg-card/95 backdrop-blur-sm px-3 py-2 shadow-xl">
         <div className="text-xs font-medium text-muted-foreground mb-1">{dateLabel}</div>
         {typeof price === 'number' && (
-          <div className="text-base font-bold text-foreground mb-1">{price.toFixed(4)} MON</div>
+          <div className="text-base font-bold text-foreground mb-1">{price.toFixed(4)} SOL</div>
         )}
         {dataPoint?.carried && dataPoint.lastTradeTime && (
           <div className="text-xs text-muted-foreground italic mb-1">

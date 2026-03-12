@@ -41,11 +41,18 @@ export function MobileActionBar({ actions, className }: MobileActionBarProps) {
     if (isSimulating) return;
     setIsSimulating(true);
     try {
-      const { runDailySimulation } = await import('@/simulation/engine');
-      const result = await runDailySimulation();
+      const { supabase } = await import('@/integrations/supabase/client');
+      const { data: sessionData } = await supabase.auth.getSession();
+      const { data: result, error } = await supabase.functions.invoke('run-simulation', {
+        headers: sessionData?.session?.access_token
+          ? { Authorization: `Bearer ${sessionData.session.access_token}` }
+          : undefined
+      });
+
+      if (error) throw new Error(error.message || 'Simulation failed');
 
       const summary = `Simulated: ${result.trades} trades, ${result.posts} posts, ${result.messages} msgs`;
-      if (result.errors.length > 0) {
+      if (result.errors && result.errors.length > 0) {
         console.error('Simulation errors:', result.errors);
         alert(`${summary}\n(See console for ${result.errors.length} errors)`);
       } else {
