@@ -443,6 +443,11 @@ export default function AthleteDetail() {
     );
   }
 
+  const showMenorcaFeature =
+    ['nilshertzner', 'nils', '185km', 'hairoxsage'].includes(athlete.slug?.toLowerCase()) ||
+    athlete.name?.toLowerCase().includes('nils') ||
+    athlete.name?.toLowerCase().includes('hairoxsage');
+
   const desktopContent = (
     <div className="container mx-auto px-4 pb-32 pt-8 md:pb-8 overflow-x-hidden">
       {/* Back Button */}
@@ -463,7 +468,7 @@ export default function AthleteDetail() {
         />
 
         {/* 185KM Campaign Module (Only for the experimental athlete profile) */}
-        {['nilshertzner', 'nils', '185km'].includes(athlete.slug?.toLowerCase()) || athlete.name?.toLowerCase().includes('nils') ? (
+        {showMenorcaFeature ? (
           <Feature185km workouts={filteredWorkouts} />
         ) : null}
 
@@ -1025,6 +1030,8 @@ export default function AthleteDetail() {
           <SelfMobileProfile
             athlete={athlete}
             userHoldings={userHoldings}
+            workouts={filteredWorkouts}
+            showMenorcaFeature={showMenorcaFeature}
             onAddProof={() => setAddWorkoutOpen(true)}
             onConnectStrava={() => navigate('/my-athlete')}
             isLoadingPosts={showInitialSkeleton}
@@ -1066,6 +1073,8 @@ export default function AthleteDetail() {
         auraBreakdown={identityKernel?.scoreBreakdown}
         streak={identityKernel?.streak}
         userId={user?.id}
+        workouts={filteredWorkouts}
+        showMenorcaFeature={showMenorcaFeature}
       />
     );
   }

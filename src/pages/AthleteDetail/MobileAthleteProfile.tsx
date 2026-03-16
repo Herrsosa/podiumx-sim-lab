@@ -23,6 +23,7 @@ import type { PriceSeriesPoint } from '@/lib/charting/engine';
 import type { TimeRangeKey } from '@/utils/chartData';
 import { DatePickerWithRange } from '@/components/DatePickerWithRange';
 import { DateRange } from 'react-day-picker';
+import { Feature185km } from '@/components/athlete/Feature185km';
 
 const AthletePriceChart = lazy(() => import('@/components/charts/AthletePriceChart'));
 
@@ -47,6 +48,8 @@ interface MobileAthleteProfileProps {
     };
     streak?: number;
     userId?: string;
+    workouts: Athlete['workouts'];
+    showMenorcaFeature?: boolean;
 }
 
 const currencyFormatter = new Intl.NumberFormat('en-US', {
@@ -75,6 +78,8 @@ export function MobileAthleteProfile({
     auraBreakdown,
     streak = 0,
     userId,
+    workouts,
+    showMenorcaFeature = false,
 }: MobileAthleteProfileProps) {
     const [activeTab, setActiveTab] = useState<'pos' | 'stats' | 'globe'>('pos');
     const [tradeModalOpen, setTradeModalOpen] = useState(false);
@@ -163,6 +168,8 @@ export function MobileAthleteProfile({
                         {athlete.location && ` · ${athlete.location}`}
                     </p>
                 </div>
+
+                {showMenorcaFeature ? <Feature185km workouts={workouts} /> : null}
 
                 {/* Market Cap Hero Card */}
                 <OtherAthleteHeroCard

@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import type { LockerTab } from '@/pages/MyAthlete/LockerView';
 import { cn } from '@/lib/utils';
 import { AthleteIdentityCard } from '@/components/identity';
+import { Feature185km } from '@/components/athlete/Feature185km';
 
 type FeedFilter = 'all' | 'pos' | 'media';
 
@@ -42,6 +43,8 @@ type LockerViewComponent = ComponentType<{
 interface SelfMobileProfileProps {
   athlete: Athlete;
   userHoldings: number;
+  workouts: Athlete['workouts'];
+  showMenorcaFeature?: boolean;
   onAddProof: () => void;
   onConnectStrava: () => void;
   isLoadingPosts: boolean;
@@ -59,6 +62,8 @@ interface SelfMobileProfileProps {
 export function SelfMobileProfile({
   athlete,
   userHoldings,
+  workouts,
+  showMenorcaFeature = false,
   onAddProof,
   onConnectStrava,
   isLoadingPosts,
@@ -151,6 +156,8 @@ export function SelfMobileProfile({
       <main className="flex-1 overflow-x-hidden px-4 pb-28 pt-4">
         {/* Identity Card - always visible at top */}
         <AthleteIdentityCard className="mb-4" />
+
+        {showMenorcaFeature ? <Feature185km workouts={workouts} /> : null}
 
         {activeTab === 'feed' && (
           <section className="space-y-4">
