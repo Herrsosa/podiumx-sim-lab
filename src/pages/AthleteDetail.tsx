@@ -469,7 +469,7 @@ export default function AthleteDetail() {
 
         {/* 185KM Campaign Module (Only for the experimental athlete profile) */}
         {showMenorcaFeature ? (
-          <Feature185km workouts={filteredWorkouts} />
+          <Feature185km workouts={athlete.workouts} />
         ) : null}
 
         {/* Chart Section */}
@@ -1030,7 +1030,7 @@ export default function AthleteDetail() {
           <SelfMobileProfile
             athlete={athlete}
             userHoldings={userHoldings}
-            workouts={filteredWorkouts}
+            workouts={athlete.workouts}
             showMenorcaFeature={showMenorcaFeature}
             onAddProof={() => setAddWorkoutOpen(true)}
             onConnectStrava={() => navigate('/my-athlete')}
@@ -1073,7 +1073,7 @@ export default function AthleteDetail() {
         auraBreakdown={identityKernel?.scoreBreakdown}
         streak={identityKernel?.streak}
         userId={user?.id}
-        workouts={filteredWorkouts}
+        workouts={athlete.workouts}
         showMenorcaFeature={showMenorcaFeature}
       />
     );
