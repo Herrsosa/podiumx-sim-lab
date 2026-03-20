@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { Flame } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Bot, Flame } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -16,6 +16,9 @@ import { ShareButton } from '@/components/share';
 import { cn } from '@/lib/utils';
 import { formatMoney } from '@/lib/format';
 import type { Sport, Workout } from '@/types';
+import { ContributionCard } from '@/components/contribution/ContributionCard';
+import { getRequiredTokens } from '@/lib/proofOfContribution';
+import { isPersistedPostId } from '@/lib/postIds';
 
 interface ProofOfSweatFeedProps {
   athleteId?: string;
@@ -28,12 +31,6 @@ interface ProofOfSweatFeedProps {
   maxVisible?: number;
   scrollable?: boolean;
 }
-
-const getRequiredTokens = (visibility: 'public' | 'supporters' | 'backers', minTokens: number) => {
-  if (visibility === 'public') return 0;
-  if (visibility === 'supporters') return Math.max(1, minTokens || 1);
-  return Math.max(10, minTokens || 10);
-};
 
 const createSampleFeedItem = ({
   id,
@@ -69,7 +66,9 @@ const createSampleFeedItem = ({
       author_id: athleteId,
       visibility: workoutData.visibility,
       min_tokens_required: minTokens,
+      post_type: 'proof_of_sweat',
     },
+    contribution: null,
     workout: workoutData,
     athlete: {
       id: athleteId,
@@ -251,19 +250,23 @@ export function ProofOfSweatFeed({
           <div className="space-y-8">
             {visibleItems.map((item) => {
               const viewerHoldings = holdings[item.athlete.id]?.quantity ?? 0;
-              const requiredTokens = getRequiredTokens(item.post.visibility, item.post.min_tokens_required);
+              const requiredTokens = getRequiredTokens(item.post);
               const isOwner = user?.id === item.athlete.id;
               const canView = isOwner || viewerHoldings >= requiredTokens || requiredTokens === 0;
               const createdAt = new Date(item.post.created_at);
+              const isPersistedPost = isPersistedPostId(item.post.id);
               const showSupportCta = !isOwner;
-              const metrics = [
-                item.workout.type !== 'Other' ? item.workout.type : null,
-                item.workout.distance ? `${item.workout.distance} km` : null,
-                item.workout.duration
-                  ? `${Math.floor(item.workout.duration / 60)}h ${item.workout.duration % 60}m`
-                  : null,
-                item.workout.rpe ? `RPE ${item.workout.rpe}` : null,
-              ].filter(Boolean);
+              const metrics = item.workout
+                ? [
+                    item.workout.type !== 'Other' ? item.workout.type : null,
+                    item.workout.distance ? `${item.workout.distance} km` : null,
+                    item.workout.duration
+                      ? `${Math.floor(item.workout.duration / 60)}h ${item.workout.duration % 60}m`
+                      : null,
+                    item.workout.rpe ? `RPE ${item.workout.rpe}` : null,
+                  ].filter(Boolean)
+                : [];
+              const isContribution = item.post.post_type === 'proof_of_contribution';
 
               return (
                 <div key={item.post.id} className="relative flex flex-col gap-4 sm:pl-10">
@@ -284,7 +287,15 @@ export function ProofOfSweatFeed({
                         />
                         <div>
                           <p className="font-semibold leading-tight">{item.athlete.name}</p>
-                          <p className="text-sm text-muted-foreground">@{item.athlete.slug}</p>
+                          <div className="flex items-center gap-2">
+                            <p className="text-sm text-muted-foreground">@{item.athlete.slug}</p>
+                            {item.athlete.profileType === 'agent' && (
+                              <span className="inline-flex items-center gap-1 rounded-full bg-sky-500/10 px-2 py-0.5 text-[11px] font-medium text-sky-300">
+                                <Bot className="h-3 w-3" />
+                                Agent
+                              </span>
+                            )}
+                          </div>
                         </div>
                       </div>
                       <div className="ml-auto text-xs text-muted-foreground">
@@ -304,6 +315,18 @@ export function ProofOfSweatFeed({
                               {metric}
                             </span>
                           ))
+                        ) : isContribution && item.contribution ? (
+                          <>
+                            <span className="rounded-full bg-background/70 px-3 py-1 text-xs font-medium text-muted-foreground">
+                              {item.contribution.contribution_type}
+                            </span>
+                            <span className="rounded-full bg-background/70 px-3 py-1 text-xs font-medium text-muted-foreground">
+                              {item.contribution.status}
+                            </span>
+                            <span className="rounded-full bg-background/70 px-3 py-1 text-xs font-medium text-muted-foreground">
+                              {item.contribution.artifacts.length} artifact{item.contribution.artifacts.length === 1 ? '' : 's'}
+                            </span>
+                          </>
                         ) : (
                           <span className="text-xs text-muted-foreground">Fresh drop</span>
                         )}
@@ -340,36 +363,43 @@ export function ProofOfSweatFeed({
                       )}
                     </div>
 
-                    {/* Image section inside card */}
-                    {(item.post.image_url || item.workout.mediaUrl) && (
+                    {isContribution && item.contribution ? (
                       <div className="px-4 pb-3">
-                        <WorkoutGridCard
-                          workout={item.workout}
-                          post={item.post}
-                          canView={canView}
-                          onClick={() => navigate(`/athlete/${item.athlete.slug}`)}
-                          variant="feed"
-                        />
+                        <ContributionCard post={item.post} canView={canView} variant="feed" />
                       </div>
+                    ) : (
+                      (item.post.image_url || item.workout?.mediaUrl) && (
+                        <div className="px-4 pb-3">
+                          <WorkoutGridCard
+                            workout={item.workout!}
+                            post={item.post}
+                            canView={canView}
+                            onClick={() => navigate(`/athlete/${item.athlete.slug}`)}
+                            variant="feed"
+                          />
+                        </div>
+                      )
                     )}
 
                     {/* Engagement Bar inside card with divider */}
-                    {canView && (
+                    {canView && isPersistedPost && (
                       <div className="flex items-center gap-4 px-4 pb-4 border-t border-white/5 pt-3">
                         <PropButton postId={item.post.id} size="sm" />
                         <CommentButtonWithModal postId={item.post.id} size="sm" />
-                        <ShareButton
-                          workout={item.workout}
-                          athleteName={item.athlete.name}
-                          athleteHandle={item.athlete.slug}
-                          athleteAvatar={item.athlete.avatar}
-                          imageUrl={item.post.image_url || item.workout.mediaUrl}
-                          athleteProfileUrl={`${window.location.origin}/athlete/${item.athlete.slug}`}
-                          location={item.post.location_lat != null && item.post.location_lng != null
-                            ? { lat: item.post.location_lat, lng: item.post.location_lng }
-                            : null}
-                          size="sm"
-                        />
+                        {!isContribution && item.workout && (
+                          <ShareButton
+                            workout={item.workout}
+                            athleteName={item.athlete.name}
+                            athleteHandle={item.athlete.slug}
+                            athleteAvatar={item.athlete.avatar}
+                            imageUrl={item.post.image_url || item.workout.mediaUrl}
+                            athleteProfileUrl={`${window.location.origin}/athlete/${item.athlete.slug}`}
+                            location={item.post.location_lat != null && item.post.location_lng != null
+                              ? { lat: item.post.location_lat, lng: item.post.location_lng }
+                              : null}
+                            size="sm"
+                          />
+                        )}
                       </div>
                     )}
                   </div>
@@ -388,7 +418,7 @@ export function ProofOfSweatFeed({
               Loading more...
             </div>
           ) : (
-            <div className="h-4" /> // Spacer for observer
+            <div className="h-4" />
           )}
         </div>
       )}

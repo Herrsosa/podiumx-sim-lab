@@ -1,28 +1,47 @@
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import type { Database } from '@/integrations/supabase/types';
-import type { Post, Sport, Workout } from '@/types';
+import type { Post, ProofOfContribution, Sport, Workout } from '@/types';
 import { resolveAvatarUrl } from '@/utils/avatar';
 import { mapPostRowToLockerWorkout, mapPostRowToPost } from '@/hooks/useWorkouts';
 import { athleteAvatars } from '@/utils/athleteAvatars';
 import { priceAt } from '@/utils/pricing';
+import { withContribution } from '@/lib/proofOfContribution';
+import {
+  isPostEnhancementSchemaError,
+  markPostEnhancementsUnavailable,
+  shouldUsePostEnhancements,
+} from '@/lib/postSchemaCompat';
 
 type PostRow = Database['public']['Tables']['posts']['Row'];
 type ProfileRow = Database['public']['Tables']['profiles']['Row'];
+type ContributionRow = Database['public']['Tables']['proof_of_contributions']['Row'];
 
 interface FeedPostRow extends PostRow {
-  profiles: Pick<ProfileRow, 'id' | 'display_name' | 'username' | 'avatar_url' | 'sport'> | null;
+  profiles: Pick<ProfileRow, 'id' | 'display_name' | 'username' | 'avatar_url' | 'sport' | 'type'> | null;
+  proof_of_contributions?:
+    | (ContributionRow & {
+        proof_of_contribution_artifacts?: Database['public']['Tables']['proof_of_contribution_artifacts']['Row'][] | null;
+      })
+    | Array<
+        ContributionRow & {
+          proof_of_contribution_artifacts?: Database['public']['Tables']['proof_of_contribution_artifacts']['Row'][] | null;
+        }
+      >
+    | null;
 }
 
 export interface ProofOfSweatFeedItem {
   post: Post;
-  workout: Workout;
+  workout: Workout | null;
+  contribution: ProofOfContribution | null;
   athlete: {
     id: string;
     name: string;
     slug: string;
     avatar?: string | null;
     sport?: Sport;
+    profileType?: 'human' | 'agent';
     marketCap?: number;
     holdersCount?: number;
   };
@@ -68,39 +87,118 @@ export function useProofOfSweatFeed(options: UseProofOfSweatFeedOptions = {}) {
       const from = currentPage * pageSize;
       const to = from + pageSize - 1;
 
-      let query = supabase
-        .from('posts')
-        .select(
-          `
-            id,
-            created_at,
-            author_id,
-            workout_json,
-            image_url,
-            text,
-            token_gated,
-            strava_activity_id,
-            visibility,
-            min_tokens_required,
-            is_pinned,
-            profiles:profiles!posts_author_id_profiles_id_fk (
-              id,
-              display_name,
-              username,
-              avatar_url,
-              sport
-            )
-          `,
-          { count: 'exact' },
-        )
-        .order('created_at', { ascending: false })
-        .range(from, to);
+      const buildQuery = (includeEnhancements: boolean) =>
+        supabase
+          .from('posts')
+          .select(
+            includeEnhancements
+              ? `
+                  id,
+                  created_at,
+                  author_id,
+                  workout_json,
+                  image_url,
+                  text,
+                  token_gated,
+                  strava_activity_id,
+                  visibility,
+                  min_tokens_required,
+                  is_pinned,
+                  post_type,
+                  monad_tx_hash,
+                  location_city,
+                  location_country,
+                  location_country_code,
+                  location_lat,
+                  location_lng,
+                  profiles:profiles (
+                    id,
+                    display_name,
+                    username,
+                    avatar_url,
+                    sport,
+                    type
+                  ),
+                  proof_of_contributions (
+                    post_id,
+                    title,
+                    contribution_type,
+                    task_brief,
+                    workflow_summary,
+                    result_summary,
+                    started_at,
+                    completed_at,
+                    duration_minutes,
+                    status,
+                    verification_status,
+                    accepted_by_user_id,
+                    accepted_at,
+                    verifier_note,
+                    task_id,
+                    bounty_id,
+                    attestation_hash,
+                    external_reference,
+                    reproducibility_metadata,
+                    created_at,
+                    updated_at,
+                    proof_of_contribution_artifacts (
+                      id,
+                      contribution_post_id,
+                      artifact_type,
+                      label,
+                      url,
+                      storage_path,
+                      notes,
+                      metadata,
+                      sort_order,
+                      created_at,
+                      updated_at
+                    )
+                  )
+                `
+              : `
+                  id,
+                  created_at,
+                  author_id,
+                  workout_json,
+                  image_url,
+                  text,
+                  token_gated,
+                  strava_activity_id,
+                  visibility,
+                  min_tokens_required,
+                  is_pinned,
+                  profiles:profiles (
+                    id,
+                    display_name,
+                    username,
+                    avatar_url,
+                    sport,
+                    type
+                  )
+                `,
+            { count: 'exact' },
+          )
+          .order('created_at', { ascending: false })
+          .range(from, to);
+
+      const preferEnhancements = shouldUsePostEnhancements();
+      let query = buildQuery(preferEnhancements);
 
       if (athleteId) {
         query = query.eq('author_id', athleteId);
       }
 
-      const { data, error, count } = await query;
+      let { data, error, count } = await query;
+
+      if (preferEnhancements && error && isPostEnhancementSchemaError(error)) {
+        markPostEnhancementsUnavailable();
+        query = buildQuery(false);
+        if (athleteId) {
+          query = query.eq('author_id', athleteId);
+        }
+        ({ data, error, count } = await query);
+      }
 
       if (error) {
         throw error;
@@ -165,10 +263,10 @@ export function useProofOfSweatFeed(options: UseProofOfSweatFeedOptions = {}) {
 
       const items: ProofOfSweatFeedItem[] = rows.map((row) => {
         const lockerWorkout = mapPostRowToLockerWorkout(row);
-        const post = mapPostRowToPost(row);
-        const workout =
-          lockerWorkout.workout ??
-          ensureWorkoutFromPost(post);
+        const post = withContribution(mapPostRowToPost(row), row.proof_of_contributions);
+        const workout = post.post_type === 'proof_of_sweat'
+          ? (lockerWorkout.workout ?? ensureWorkoutFromPost(post))
+          : null;
 
         const profile = row.profiles;
         const slug = profile?.username ?? row.author_id;
@@ -191,17 +289,21 @@ export function useProofOfSweatFeed(options: UseProofOfSweatFeedOptions = {}) {
 
         return {
           post,
-          workout: {
-            ...workout,
-            mediaUrl: workout.mediaUrl ?? lockerWorkout.imageUrl ?? post.image_url ?? undefined,
-            visibility: post.visibility,
-            minTokensRequired: post.min_tokens_required ?? workout.minTokensRequired,
-          },
+          workout: workout
+            ? {
+                ...workout,
+                mediaUrl: workout.mediaUrl ?? lockerWorkout.imageUrl ?? post.image_url ?? undefined,
+                visibility: post.visibility,
+                minTokensRequired: post.min_tokens_required ?? workout.minTokensRequired,
+              }
+            : null,
+          contribution: post.proof_of_contribution ?? null,
           athlete: {
             id: row.author_id,
             name,
             slug,
             sport: (profile?.sport as Sport) || 'Running',
+            profileType: (profile?.type as 'human' | 'agent' | undefined) ?? 'human',
             avatar: resolveAvatarUrl(
               (profile?.username && athleteAvatars[profile.username]) ?? profile?.avatar_url ?? undefined,
               {

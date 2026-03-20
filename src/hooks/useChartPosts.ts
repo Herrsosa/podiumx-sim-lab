@@ -2,6 +2,11 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import type { Post } from '@/types';
 import type { Database } from '@/integrations/supabase/types';
+import {
+  isPostEnhancementSchemaError,
+  markPostEnhancementsUnavailable,
+  shouldUsePostEnhancements,
+} from '@/lib/postSchemaCompat';
 
 type PostRow = Database['public']['Tables']['posts']['Row'];
 
@@ -16,6 +21,7 @@ const mapPostRowToPost = (row: PostRow): Post => ({
   strava_activity_id: row.strava_activity_id,
   visibility: row.visibility as Post['visibility'],
   min_tokens_required: row.min_tokens_required ?? 0,
+  post_type: (row.post_type as Post['post_type']) ?? 'proof_of_sweat',
 });
 
 /**
@@ -47,19 +53,32 @@ export function useChartPosts(athleteId: string | undefined, startDate?: number)
     queryFn: async () => {
       if (!athleteId) return [];
 
-      let query = supabase
-        .from('posts')
-        .select('id, created_at, author_id')
-        .eq('author_id', athleteId)
-        .not('workout_json', 'is', null)
-        .order('created_at', { ascending: true });
+      const buildQuery = (includePostType: boolean) => {
+        let query = supabase
+          .from('posts')
+          .select(includePostType ? 'id, created_at, author_id, post_type' : 'id, created_at, author_id')
+          .eq('author_id', athleteId)
+          .not('workout_json', 'is', null)
+          .order('created_at', { ascending: true });
 
-      if (startDate) {
-        const startDateISO = new Date(startDate).toISOString();
-        query = query.gte('created_at', startDateISO);
+        if (includePostType) {
+          query = query.eq('post_type', 'proof_of_sweat');
+        }
+
+        if (startDate) {
+          const startDateISO = new Date(startDate).toISOString();
+          query = query.gte('created_at', startDateISO);
+        }
+
+        return query;
+      };
+
+      const preferEnhancements = shouldUsePostEnhancements();
+      let { data, error } = await buildQuery(preferEnhancements);
+      if (preferEnhancements && error && isPostEnhancementSchemaError(error)) {
+        markPostEnhancementsUnavailable();
+        ({ data, error } = await buildQuery(false));
       }
-
-      const { data, error } = await query;
       if (error) throw error;
 
       return (data ?? []) as PostRow[];

@@ -5,10 +5,10 @@ import {
   MOBILE_TAB_KEYS,
   shouldUseMobileAccordion,
   isDesktopViewport,
-} from '../src/pages/my-athletes/mobile-config.js';
+} from '../src/pages/MyAthlete/mobile/mobile-config.js';
 
 test('mobile tabs maintain expected ordering', () => {
-  assert.deepEqual(MOBILE_TAB_KEYS, ['overview', 'chart', 'trades', 'posts', 'dm']);
+  assert.deepEqual(MOBILE_TAB_KEYS, ['overview', 'chart', 'trades', 'posts', 'globe', 'dm']);
 });
 
 test('accordion is enabled below tablet breakpoint', () => {

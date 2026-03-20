@@ -8,6 +8,11 @@ import { priceAt } from '@/utils/pricing';
 import { resolveAvatarUrl } from '@/utils/avatar';
 import { useAthleteMetrics } from './useAthleteMetrics';
 import type { Database } from '@/integrations/supabase/types';
+import {
+  isPostEnhancementSchemaError,
+  markPostEnhancementsUnavailable,
+  shouldUsePostEnhancements,
+} from '@/lib/postSchemaCompat';
 
 type PostRow = Database['public']['Tables']['posts']['Row'];
 
@@ -27,6 +32,7 @@ type BatchAthleteRow = {
   c: number;
   treasury_balance: number;
   athlete_earnings: number;
+  type?: 'human' | 'agent' | null;
   onchain_initialized?: boolean | null;
   onchain_price?: number | string | null;
   onchain_updated_at?: string | null;
@@ -52,12 +58,26 @@ export function useAthletesByIds(athleteIds: string[]) {
 
       const postsLimit = Math.min(Math.max(athleteIds.length * 25, 50), 500);
 
-      const { data: posts, error: postsError } = await supabase
-        .from('posts')
-        .select('id, created_at, author_id, workout_json, image_url, text, token_gated, strava_activity_id, visibility, min_tokens_required')
-        .in('author_id', athleteIds)
-        .order('created_at', { ascending: false })
-        .limit(postsLimit);
+      const buildPostsQuery = (includePostType: boolean) => {
+        const select = includePostType
+          ? 'id, created_at, author_id, workout_json, image_url, text, token_gated, strava_activity_id, visibility, min_tokens_required, post_type'
+          : 'id, created_at, author_id, workout_json, image_url, text, token_gated, strava_activity_id, visibility, min_tokens_required';
+
+        return supabase
+          .from('posts')
+          .select(select)
+          .in('author_id', athleteIds)
+          .order('created_at', { ascending: false })
+          .limit(postsLimit);
+      };
+
+      const preferEnhancements = shouldUsePostEnhancements();
+      let { data: posts, error: postsError } = await buildPostsQuery(preferEnhancements);
+
+      if (preferEnhancements && postsError && isPostEnhancementSchemaError(postsError)) {
+        markPostEnhancementsUnavailable();
+        ({ data: posts, error: postsError } = await buildPostsQuery(false));
+      }
 
       if (postsError) throw postsError;
 
@@ -74,6 +94,7 @@ export function useAthletesByIds(athleteIds: string[]) {
         author_id: post.author_id,
         visibility: (post.visibility as 'public' | 'supporters' | 'backers') || 'public',
         min_tokens_required: post.min_tokens_required || 0,
+        post_type: (post.post_type as Post['post_type']) || 'proof_of_sweat',
       }));
 
       // Combine batch data with posts
@@ -90,6 +111,7 @@ export function useAthletesByIds(athleteIds: string[]) {
 
         // Convert posts to workouts format
         const workouts = athletePosts
+          .filter((post) => post.post_type === 'proof_of_sweat')
           .filter((post) => post.workout_json && typeof post.workout_json === 'object' && !Array.isArray(post.workout_json))
           .map((post) => ({
             id: post.id,
@@ -119,6 +141,7 @@ export function useAthletesByIds(athleteIds: string[]) {
           volume24h: 0,
           workouts,
           posts: athletePosts,
+          profileType: row.type ?? 'human',
         };
       });
 

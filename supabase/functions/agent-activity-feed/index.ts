@@ -18,7 +18,7 @@ serve(async (req) => {
         );
 
         // Validate API key
-        const apiKey = req.headers.get("x-api-key");
+        const apiKey = req.headers.get("x-api-key") || req.headers.get("apikey");
         if (!apiKey) {
             return new Response(JSON.stringify({ error: "API key required" }), {
                 headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -119,25 +119,45 @@ serve(async (req) => {
         if (!activityType || activityType === "posts" || activityType === "all") {
             const { data: posts } = await supabaseAdmin
                 .from("posts")
-                .select("id, author_id, title, activity_type, props_count, created_at")
+                .select(`
+                    id,
+                    author_id,
+                    text,
+                    post_type,
+                    created_at,
+                    profiles:profiles (
+                        username
+                    ),
+                    proof_of_contributions (
+                        title,
+                        contribution_type
+                    )
+                `)
                 .order("created_at", { ascending: false })
                 .limit(limit);
 
             for (const p of posts || []) {
-                const { data: user } = await supabaseAdmin
-                    .from("profiles")
-                    .select("username")
-                    .eq("id", p.author_id)
-                    .single();
+                const contribution = Array.isArray((p as any).proof_of_contributions)
+                    ? (p as any).proof_of_contributions[0]
+                    : (p as any).proof_of_contributions;
+                const username = Array.isArray((p as any).profiles)
+                    ? (p as any).profiles[0]?.username
+                    : (p as any).profiles?.username;
+                const target = p.post_type === "proof_of_contribution"
+                    ? contribution?.contribution_type || "contribution"
+                    : "workout";
+                const details = p.post_type === "proof_of_contribution"
+                    ? contribution?.title || p.text?.slice(0, 60) || "Proof of Contribution"
+                    : p.text?.slice(0, 60) || "Proof of Sweat";
 
                 activities.push({
                     type: "post",
                     id: p.id,
-                    user: user?.username,
+                    user: username,
                     action: "posted",
-                    target: p.activity_type || "workout",
-                    details: p.title?.slice(0, 40) || "Proof of Sweat",
-                    amount: `${p.props_count || 0} props`,
+                    target,
+                    details,
+                    amount: p.post_type === "proof_of_contribution" ? "Proof of Contribution" : "Proof of Sweat",
                     timestamp: p.created_at,
                 });
             }

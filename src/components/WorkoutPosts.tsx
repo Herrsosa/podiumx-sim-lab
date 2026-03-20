@@ -10,11 +10,15 @@ import { ActivityMap } from '@/components/ui/ActivityMap';
 import { cn } from '@/lib/utils';
 import { ReactionBar } from '@/components/ReactionBar';
 import { PropButton } from '@/components/PropButton';
+import { ContributionCard } from '@/components/contribution/ContributionCard';
+import { getRequiredTokens } from '@/lib/proofOfContribution';
+import type { ProfileType } from '@/types';
 
 interface WorkoutPostsProps {
   athleteId: string;
   userHoldings: number;
   posts: Post[];
+  profileType?: ProfileType;
   isLoading: boolean;
   onUnlockClick: () => void;
   onConnectStrava?: () => void;
@@ -86,11 +90,14 @@ export default function WorkoutPosts({
   athleteId,
   userHoldings,
   posts,
+  profileType,
   isLoading,
   onUnlockClick,
   onConnectStrava
 }: WorkoutPostsProps) {
   const user = useUser();
+  const isAgentProfile = profileType === 'agent' || posts.some((post) => post.post_type === 'proof_of_contribution');
+  const isOwner = user?.id === athleteId;
 
   const handleConnectStrava = () => {
     if (onConnectStrava) {
@@ -106,11 +113,7 @@ export default function WorkoutPosts({
   const canViewPost = (post: Post) => {
     // User is the athlete
     if (user?.id === athleteId) return true;
-    // Post is not token-gated
-    if (!post.token_gated) return true;
-    // User holds tokens
-    if (userHoldings > 0) return true;
-    return false;
+    return userHoldings >= getRequiredTokens(post);
   };
 
   if (isLoading) {
@@ -142,10 +145,14 @@ export default function WorkoutPosts({
         <CardContent className="p-6">
           <EmptyState
             icon={<Activity className="h-8 w-8" />}
-            title="No workouts yet"
-            description="Connect Strava to auto-sync training sessions or add a manual post to kick things off."
-            ctaLabel="Connect Strava"
-            onCta={handleConnectStrava}
+            title={isAgentProfile ? 'No contributions yet' : 'No workouts yet'}
+            description={
+              isAgentProfile
+                ? 'Publish useful work with artifacts to start building visible reputation.'
+                : 'Connect Strava to auto-sync training sessions or add a manual post to kick things off.'
+            }
+            ctaLabel={isAgentProfile ? (isOwner ? 'Add contribution' : undefined) : 'Connect Strava'}
+            onCta={isAgentProfile ? (isOwner ? onUnlockClick : undefined) : handleConnectStrava}
           />
         </CardContent>
       </Card>
@@ -156,6 +163,25 @@ export default function WorkoutPosts({
     <div className="space-y-4">
       {posts.map((post) => {
         const canView = canViewPost(post);
+        if (post.post_type === 'proof_of_contribution') {
+          return (
+            <div key={post.id} className="space-y-3">
+              <ContributionCard post={post} canView={canView} />
+              {canView ? (
+                <div className="flex items-center gap-3 px-1">
+                  <ReactionBar postId={post.id} compact />
+                  <PropButton postId={post.id} size="sm" />
+                </div>
+              ) : (
+                <Button onClick={onUnlockClick} variant="outline" className="w-full gap-2">
+                  <Lock className="h-4 w-4" />
+                  Buy Cards to Unlock
+                </Button>
+              )}
+            </div>
+          );
+        }
+
         const workout = (post.workout_json && typeof post.workout_json === 'object' && !Array.isArray(post.workout_json))
           ? post.workout_json as Partial<Workout>
           : {} as Partial<Workout>;

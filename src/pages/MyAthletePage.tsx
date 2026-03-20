@@ -20,6 +20,7 @@ import { useWorkoutEditor } from '@/hooks/useWorkoutEditor';
 import { useUser } from '@/store/auth';
 import { supabase } from '@/integrations/supabase/client';
 import AddWorkoutModal from '@/components/AddWorkoutModal';
+import AddContributionModal from '@/components/contributions/AddContributionModal';
 import EditWorkoutModal from '@/components/EditWorkoutModal';
 import { StravaCard } from '@/components/strava/StravaCard';
 import TokengatedChat from '@/components/TokengatedChat';
@@ -93,6 +94,7 @@ export default function MyAthletePage() {
   const [isEditing, setIsEditing] = useState(false);
   const [savingProfile, setSavingProfile] = useState(false);
   const [addWorkoutOpen, setAddWorkoutOpen] = useState(false);
+  const [addContributionOpen, setAddContributionOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'workouts' | 'community' | 'messages' | 'earnings'>('workouts');
   const [newAvatarFile, setNewAvatarFile] = useState<File | null>(null);
   const [chartTimeRange, setChartTimeRange] = useState<TimeRangeKey>('7d');
@@ -178,12 +180,20 @@ export default function MyAthletePage() {
 
   const workouts = useMemo(() => {
     const allPosts = pages.flatMap(p => p?.athlete?.posts ?? []);
-    return allPosts.map(post => ({
-      id: post.id,
-      ...(post.workout_json as Workout),
-      mediaUrl: post.image_url ?? undefined,
-      mediaType: post.image_url ? ('image' as const) : undefined,
-    }));
+    return allPosts
+      .filter(
+        (post) =>
+          post.post_type === 'proof_of_sweat' &&
+          post.workout_json &&
+          typeof post.workout_json === 'object' &&
+          !Array.isArray(post.workout_json),
+      )
+      .map(post => ({
+        id: post.id,
+        ...(post.workout_json as Workout),
+        mediaUrl: post.image_url ?? undefined,
+        mediaType: post.image_url ? ('image' as const) : undefined,
+      }));
   }, [pages]);
 
   const posts = useMemo(() => {
@@ -364,6 +374,14 @@ export default function MyAthletePage() {
   }, []);
 
   const isMobile = !isDesktop;
+  const isAgentProfile = myAthletePage?.athlete?.profileType === 'agent';
+
+  const handleContributionCreated = useCallback(() => {
+    if (user?.id) {
+      void queryClient.invalidateQueries({ queryKey: ['my-athlete', user.id] });
+      void queryClient.invalidateQueries({ queryKey: ['proof-of-sweat-feed'] });
+    }
+  }, [queryClient, user?.id]);
 
   const modalStack = (
     <>
@@ -373,6 +391,15 @@ export default function MyAthletePage() {
           onOpenChange={setAddWorkoutOpen}
           athleteId={user.id}
           onSuccess={handleWorkoutCreated}
+        />
+      )}
+
+      {user && (
+        <AddContributionModal
+          open={addContributionOpen}
+          onOpenChange={setAddContributionOpen}
+          authorId={user.id}
+          onSuccess={handleContributionCreated}
         />
       )}
 
@@ -414,6 +441,8 @@ export default function MyAthletePage() {
           timeRange={chartTimeRange}
           onTimeRangeChange={setChartTimeRange}
           onAddWorkout={() => setAddWorkoutOpen(true)}
+          onAddContribution={() => setAddContributionOpen(true)}
+          isAgentProfile={Boolean(isAgentProfile)}
           editedProfile={editedProfile}
           isEditingProfile={isEditing}
           onStartEditProfile={handleStartEditProfile}
@@ -446,7 +475,9 @@ export default function MyAthletePage() {
         <div className="mb-8 flex items-center justify-between">
           <div>
             <h1 className="mb-2 text-4xl font-bold">My Athlete Profile</h1>
-            <p className="text-muted-foreground">Manage your profile and workout timeline</p>
+            <p className="text-muted-foreground">
+              {isAgentProfile ? 'Manage your profile and contribution timeline' : 'Manage your profile and workout timeline'}
+            </p>
           </div>
           {isDesktop && (
             <Button variant="ghost" size="icon" onClick={() => setSettingsOpen(true)} className="h-10 w-10">
@@ -483,6 +514,8 @@ export default function MyAthletePage() {
             onWorkoutEdit={handleEditWorkout}
             onWorkoutDelete={() => { }}
             onAddWorkout={() => setAddWorkoutOpen(true)}
+            onAddContribution={() => setAddContributionOpen(true)}
+            isAgentProfile={Boolean(isAgentProfile)}
             hasNextPage={Boolean(hasNextPage)}
             fetchNextPage={hasNextPage ? () => { void fetchNextPage(); } : undefined}
             isFetchingNextPage={isFetchingNextPage}
@@ -518,6 +551,8 @@ export default function MyAthletePage() {
                 onWorkoutEdit={handleEditWorkout}
                 onWorkoutDelete={() => { }}
                 onAddWorkout={() => setAddWorkoutOpen(true)}
+                onAddContribution={() => setAddContributionOpen(true)}
+                isAgentProfile={Boolean(isAgentProfile)}
                 hasNextPage={Boolean(hasNextPage)}
                 fetchNextPage={hasNextPage ? () => { void fetchNextPage(); } : undefined}
                 isFetchingNextPage={isFetchingNextPage}
@@ -540,11 +575,11 @@ export default function MyAthletePage() {
             actions={[
               {
                 id: 'add-pos',
-                label: 'Add Proof of Sweat',
+                label: isAgentProfile ? 'Add Proof of Contribution' : 'Add Proof of Sweat',
                 icon: <Activity className="h-5 w-5" aria-hidden="true" />,
                 variant: 'primary',
-                onPress: handleMobileLogPos,
-                ariaLabel: 'Add proof-of-sweat workout',
+                onPress: isAgentProfile ? () => setAddContributionOpen(true) : handleMobileLogPos,
+                ariaLabel: isAgentProfile ? 'Add proof-of-contribution post' : 'Add proof-of-sweat workout',
               },
             ]}
           />

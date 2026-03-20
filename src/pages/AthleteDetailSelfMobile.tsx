@@ -15,6 +15,7 @@ type WorkoutPostsComponent = ComponentType<{
   athleteId: string;
   posts: Athlete['posts'];
   userHoldings: number;
+  profileType?: Athlete['profileType'];
   isLoading: boolean;
   onUnlockClick: () => void;
   onConnectStrava: () => void;
@@ -79,6 +80,7 @@ export function SelfMobileProfile({
     lockerView: LockerViewComponent,
   } = components;
   const resolvedAvatarSrc = avatarUrl ?? athlete.avatar ?? '/placeholder.svg';
+  const isAgentProfile = athlete.profileType === 'agent';
 
   const [activeTab, setActiveTab] = useState<'feed' | 'locker' | 'chat'>(initialViewTab);
   const [feedFilter, setFeedFilter] = useState<FeedFilter>('all');
@@ -91,7 +93,10 @@ export function SelfMobileProfile({
     switch (feedFilter) {
       case 'pos':
         return posts.filter(
-          (post) => post.workout_json && typeof post.workout_json === 'object',
+          (post) =>
+            isAgentProfile
+              ? post.post_type === 'proof_of_contribution'
+              : post.workout_json && typeof post.workout_json === 'object',
         );
       case 'media':
         return posts.filter((post) => Boolean(post.image_url));
@@ -99,7 +104,7 @@ export function SelfMobileProfile({
       default:
         return posts;
     }
-  }, [athlete.posts, feedFilter]);
+  }, [athlete.posts, feedFilter, isAgentProfile]);
 
   const hasLockedPosts = useMemo(
     () => athlete.posts?.some((post) => post.token_gated) ?? false,
@@ -127,9 +132,10 @@ export function SelfMobileProfile({
             onClick={onConnectStrava}
             className="min-h-[44px] px-4"
             aria-label="Connect Strava account"
+            disabled={isAgentProfile}
           >
             <Activity className="mr-2 h-4 w-4" />
-            Sync
+            {isAgentProfile ? 'Agent' : 'Sync'}
           </Button>
         </div>
         <div className="mt-4">
@@ -164,14 +170,18 @@ export function SelfMobileProfile({
             <Card className="border border-border/60 shadow-sm">
               <CardContent className="space-y-3 p-4">
                 <div>
-                  <p className="text-sm font-semibold">Add Proof of Sweat</p>
+                  <p className="text-sm font-semibold">
+                    {isAgentProfile ? 'Add Proof of Contribution' : 'Add Proof of Sweat'}
+                  </p>
                   <p className="text-xs text-muted-foreground">
-                    Share today&apos;s grind — attach metrics, photos, and notes.
+                    {isAgentProfile
+                      ? 'Ship useful work with artifacts, workflow notes, and truthful verification.'
+                      : 'Share today&apos;s grind — attach metrics, photos, and notes.'}
                   </p>
                 </div>
                 <Button className="w-full" size="lg" onClick={onAddProof}>
                   <Activity className="mr-2 h-4 w-4" />
-                  Add Proof of Sweat
+                  {isAgentProfile ? 'Add Proof of Contribution' : 'Add Proof of Sweat'}
                 </Button>
               </CardContent>
             </Card>
@@ -190,7 +200,7 @@ export function SelfMobileProfile({
                 onClick={() => setFeedFilter('all')}
               />
               <FilterChip
-                label="PoS"
+                label={isAgentProfile ? 'PoC' : 'PoS'}
                 active={feedFilter === 'pos'}
                 onClick={() => setFeedFilter('pos')}
               />
@@ -205,8 +215,9 @@ export function SelfMobileProfile({
               athleteId={athlete.id}
               posts={filteredPosts}
               userHoldings={userHoldings}
+              profileType={athlete.profileType}
               isLoading={isLoadingPosts}
-              onUnlockClick={() => undefined}
+              onUnlockClick={onAddProof}
               onConnectStrava={onConnectStrava}
             />
           </section>
@@ -221,12 +232,14 @@ export function SelfMobileProfile({
                   <div>
                     <p className="font-semibold">No locked content yet</p>
                     <p className="text-sm text-muted-foreground">
-                      Create an exclusive post for supporters — only card holders will see it.
+                      {isAgentProfile
+                        ? 'Create exclusive contribution drops for supporters and backers.'
+                        : 'Create an exclusive post for supporters — only card holders will see it.'}
                     </p>
                   </div>
                   <Button variant="outline" onClick={onAddProof}>
                     <Activity className="mr-2 h-4 w-4" />
-                    Create Locked Post
+                    {isAgentProfile ? 'Create Locked Contribution' : 'Create Locked Post'}
                   </Button>
                 </CardContent>
               </Card>
@@ -286,7 +299,7 @@ export function SelfMobileProfile({
             onClick={onAddProof}
           >
             <Activity className="mr-2 h-5 w-5" />
-            Add Proof of Sweat
+            {isAgentProfile ? 'Add Proof of Contribution' : 'Add Proof of Sweat'}
           </Button>
         </div>
       </div>

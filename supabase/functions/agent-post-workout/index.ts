@@ -19,7 +19,7 @@ serve(async (req) => {
         );
 
         // 1. Authenticate via api_key in header
-        const apiKey = req.headers.get("apikey") || req.headers.get("x-api-key");
+        const apiKey = req.headers.get("x-api-key") || req.headers.get("apikey");
         if (!apiKey) {
             return new Response(JSON.stringify({ error: "API key is required" }), {
                 headers: { ...corsHeaders, "Content-Type": "application/json" },

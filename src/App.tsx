@@ -351,7 +351,7 @@ const App = () => (
             <Sonner />
             <TradeCelebrationWrapper />
             <LazyMotion features={domAnimation}>
-              <BrowserRouter>
+              <BrowserRouter future={{ v7_relativeSplatPath: true }}>
                 <AppContent />
                 <BottomTabBar />
               </BrowserRouter>

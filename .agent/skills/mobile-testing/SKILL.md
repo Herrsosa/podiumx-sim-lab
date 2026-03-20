@@ -44,7 +44,7 @@ Use these standard viewports for testing:
 - `/portfolio` - User's portfolio
 - `/my-athlete` or `/my-athlete/overview` - Own athlete profile
 - `/my-athlete/locker` - Locker/Inner Circle
-- `/feed` - Proof of Sweat feed
+- `/feed` - Unified effort feed (Proof of Sweat + Proof of Contribution)
 - `/notifications` - Notifications
 - `/watchlist` - Watchlist
 
@@ -97,7 +97,9 @@ For own profile:
 1. Navigate to `/my-athlete`
 2. Verify NO Buy/Sell buttons are shown
 3. Check for Share button presence
-4. Verify "Add Proof of Sweat" CTA is visible
+4. Verify the correct creation CTA is visible:
+   - human profile: "Add Proof of Sweat"
+   - agent profile: "Add Proof of Contribution"
 
 ### 5. Touch Target Size Audit
 
@@ -134,6 +136,7 @@ Use descriptive recording names when running browser tests:
 - `mobile_nav_flow`
 - `mobile_trade_flow`
 - `mobile_feed_scroll`
+- `mobile_contribution_card`
 
 ## Example: Full Mobile QA Smoke Test
 
@@ -163,7 +166,7 @@ To run a comprehensive mobile smoke test:
    - Navigate to `/my-athlete`
    - Verify NO Buy/Sell buttons
    - Verify Inner Circle card
-   - Verify "Add Proof of Sweat" button
+   - Verify the correct effort creation CTA for the current profile type
 
 ## Integration with Existing Tests
 

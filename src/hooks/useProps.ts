@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useUser } from '@/store/auth';
 import { featureFlags } from '@/lib/config/featureFlags';
+import { isPersistedPostId } from '@/lib/postIds';
 
 interface PropState {
     hasProp: boolean;
@@ -26,10 +27,10 @@ export function useProps(postId: string | undefined): UsePropsResult {
     // Fetch current prop state
     const { data, isLoading } = useQuery({
         queryKey,
-        enabled: !!postId && !!user?.id && featureFlags.enableProps,
+        enabled: isPersistedPostId(postId) && !!user?.id && featureFlags.enableProps,
         staleTime: 30_000,
         queryFn: async (): Promise<PropState> => {
-            if (!postId || !user?.id) {
+            if (!isPersistedPostId(postId) || !user?.id) {
                 return { hasProp: false, propsCount: 0 };
             }
 
@@ -72,7 +73,7 @@ export function useProps(postId: string | undefined): UsePropsResult {
     // Toggle prop mutation
     const mutation = useMutation({
         mutationFn: async (action: 'add' | 'remove') => {
-            if (!postId || !user?.id) throw new Error('Not authenticated');
+            if (!isPersistedPostId(postId) || !user?.id) throw new Error('Not authenticated');
 
             if (action === 'add') {
                 const { error } = await supabase.from('props').insert({
@@ -127,7 +128,7 @@ export function useProps(postId: string | undefined): UsePropsResult {
     });
 
     const toggleProp = useCallback(() => {
-        if (!featureFlags.enableProps || !postId || !user?.id || mutation.isPending) {
+        if (!featureFlags.enableProps || !isPersistedPostId(postId) || !user?.id || mutation.isPending) {
             return;
         }
         mutation.mutate(currentState.hasProp ? 'remove' : 'add');

@@ -1,6 +1,11 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useUser } from '@/store/auth';
+import {
+    isPostEnhancementSchemaError,
+    markPostEnhancementsUnavailable,
+    shouldUsePostEnhancements,
+} from '@/lib/postSchemaCompat';
 
 interface AthleteStats {
     totalWorkouts: number;
@@ -24,12 +29,28 @@ export function useAthleteStats() {
             }
 
             // Fetch all posts with workout data for this athlete
-            const { data: posts, error } = await supabase
-                .from('posts')
-                .select('created_at, workout_json')
-                .eq('author_id', user.id)
-                .not('workout_json', 'is', null)
-                .order('created_at', { ascending: false });
+            const buildQuery = (includePostType: boolean) => {
+                let query = supabase
+                    .from('posts')
+                    .select('created_at, workout_json')
+                    .eq('author_id', user.id)
+                    .not('workout_json', 'is', null)
+                    .order('created_at', { ascending: false });
+
+                if (includePostType) {
+                    query = query.eq('post_type', 'proof_of_sweat');
+                }
+
+                return query;
+            };
+
+            const preferEnhancements = shouldUsePostEnhancements();
+            let { data: posts, error } = await buildQuery(preferEnhancements);
+
+            if (preferEnhancements && error && isPostEnhancementSchemaError(error)) {
+                markPostEnhancementsUnavailable();
+                ({ data: posts, error } = await buildQuery(false));
+            }
 
             if (error) throw error;
 

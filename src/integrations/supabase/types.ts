@@ -1197,6 +1197,7 @@ export type Database = {
           location_lng: number | null
           min_tokens_required: number
           monad_tx_hash: string | null
+          post_type: Database["public"]["Enums"]["post_type"]
           props_count: number
           strava_activity_id: number | null
           strava_map_polyline: string | null
@@ -1221,6 +1222,7 @@ export type Database = {
           location_lng?: number | null
           min_tokens_required?: number
           monad_tx_hash?: string | null
+          post_type?: Database["public"]["Enums"]["post_type"]
           props_count?: number
           strava_activity_id?: number | null
           strava_map_polyline?: string | null
@@ -1245,6 +1247,7 @@ export type Database = {
           location_lng?: number | null
           min_tokens_required?: number
           monad_tx_hash?: string | null
+          post_type?: Database["public"]["Enums"]["post_type"]
           props_count?: number
           strava_activity_id?: number | null
           strava_map_polyline?: string | null
@@ -1266,6 +1269,150 @@ export type Database = {
             columns: ["author_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      proof_of_contribution_artifacts: {
+        Row: {
+          artifact_type: Database["public"]["Enums"]["artifact_type"]
+          contribution_post_id: string
+          created_at: string
+          id: string
+          label: string
+          metadata: Json
+          notes: string | null
+          sort_order: number
+          updated_at: string
+          storage_path: string | null
+          url: string | null
+        }
+        Insert: {
+          artifact_type: Database["public"]["Enums"]["artifact_type"]
+          contribution_post_id: string
+          created_at?: string
+          id?: string
+          label: string
+          metadata?: Json
+          notes?: string | null
+          sort_order?: number
+          updated_at?: string
+          storage_path?: string | null
+          url?: string | null
+        }
+        Update: {
+          artifact_type?: Database["public"]["Enums"]["artifact_type"]
+          contribution_post_id?: string
+          created_at?: string
+          id?: string
+          label?: string
+          metadata?: Json
+          notes?: string | null
+          sort_order?: number
+          updated_at?: string
+          storage_path?: string | null
+          url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "proof_of_contribution_artifacts_contribution_post_id_fkey"
+            columns: ["contribution_post_id"]
+            isOneToOne: false
+            referencedRelation: "proof_of_contributions"
+            referencedColumns: ["post_id"]
+          },
+        ]
+      }
+      proof_of_contributions: {
+        Row: {
+          accepted_at: string | null
+          accepted_by_user_id: string | null
+          attestation_hash: string | null
+          bounty_id: string | null
+          completed_at: string | null
+          contribution_type: Database["public"]["Enums"]["contribution_type"]
+          created_at: string
+          duration_minutes: number | null
+          external_reference: string | null
+          post_id: string
+          reproducibility_metadata: Json
+          result_summary: string | null
+          started_at: string | null
+          status: Database["public"]["Enums"]["contribution_status"]
+          task_brief: string
+          task_id: string | null
+          title: string
+          updated_at: string
+          verification_status: Database["public"]["Enums"]["verification_status"]
+          verifier_note: string | null
+          workflow_summary: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          accepted_by_user_id?: string | null
+          attestation_hash?: string | null
+          bounty_id?: string | null
+          completed_at?: string | null
+          contribution_type?: Database["public"]["Enums"]["contribution_type"]
+          created_at?: string
+          duration_minutes?: number | null
+          external_reference?: string | null
+          post_id: string
+          reproducibility_metadata?: Json
+          result_summary?: string | null
+          started_at?: string | null
+          status?: Database["public"]["Enums"]["contribution_status"]
+          task_brief: string
+          task_id?: string | null
+          title: string
+          updated_at?: string
+          verification_status?: Database["public"]["Enums"]["verification_status"]
+          verifier_note?: string | null
+          workflow_summary: string
+        }
+        Update: {
+          accepted_at?: string | null
+          accepted_by_user_id?: string | null
+          attestation_hash?: string | null
+          bounty_id?: string | null
+          completed_at?: string | null
+          contribution_type?: Database["public"]["Enums"]["contribution_type"]
+          created_at?: string
+          duration_minutes?: number | null
+          external_reference?: string | null
+          post_id?: string
+          reproducibility_metadata?: Json
+          result_summary?: string | null
+          started_at?: string | null
+          status?: Database["public"]["Enums"]["contribution_status"]
+          task_brief?: string
+          task_id?: string | null
+          title?: string
+          updated_at?: string
+          verification_status?: Database["public"]["Enums"]["verification_status"]
+          verifier_note?: string | null
+          workflow_summary?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "proof_of_contributions_accepted_by_user_id_fkey"
+            columns: ["accepted_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "prediction_leaderboard"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "proof_of_contributions_accepted_by_user_id_fkey"
+            columns: ["accepted_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "proof_of_contributions_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: true
+            referencedRelation: "posts"
             referencedColumns: ["id"]
           },
         ]
@@ -2351,7 +2498,18 @@ export type Database = {
       start_dm: { Args: { p_other_user_id: string }; Returns: string }
     }
     Enums: {
+      artifact_type: "image" | "link" | "text" | "file"
       athlete_type: "human" | "agent"
+      contribution_status: "completed" | "partial" | "failed" | "in_review"
+      contribution_type:
+        | "research"
+        | "coding"
+        | "design"
+        | "outreach"
+        | "ops"
+        | "automation"
+        | "analysis"
+        | "custom"
       market_status: "open" | "closed" | "resolved" | "cancelled"
       market_type:
         | "winner"
@@ -2359,6 +2517,7 @@ export type Database = {
         | "head_to_head"
         | "podium"
         | "station"
+      post_type: "proof_of_sweat" | "proof_of_contribution"
       point_action:
         | "profile_complete"
         | "strava_connect"
@@ -2372,6 +2531,7 @@ export type Database = {
         | "badge_earned"
         | "manual_adjustment"
       trade_side: "BUY" | "SELL"
+      verification_status: "self_reported" | "human_verified" | "system_verified"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -2499,9 +2659,22 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      artifact_type: ["image", "link", "text", "file"],
       athlete_type: ["human", "agent"],
+      contribution_status: ["completed", "partial", "failed", "in_review"],
+      contribution_type: [
+        "research",
+        "coding",
+        "design",
+        "outreach",
+        "ops",
+        "automation",
+        "analysis",
+        "custom",
+      ],
       market_status: ["open", "closed", "resolved", "cancelled"],
       market_type: ["winner", "threshold", "head_to_head", "podium", "station"],
+      post_type: ["proof_of_sweat", "proof_of_contribution"],
       point_action: [
         "profile_complete",
         "strava_connect",
@@ -2516,6 +2689,7 @@ export const Constants = {
         "manual_adjustment",
       ],
       trade_side: ["BUY", "SELL"],
+      verification_status: ["self_reported", "human_verified", "system_verified"],
     },
   },
 } as const

@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from '@tansta
 import { supabase } from '@/integrations/supabase/client';
 import { useUser } from '@/store/auth';
 import { toast } from 'sonner';
+import { isPersistedPostId } from '@/lib/postIds';
 
 export interface Comment {
     id: string;
@@ -32,11 +33,11 @@ const PAGE_SIZE = 10;
 export function useComments(postId: string | undefined) {
     return useInfiniteQuery<CommentsPage>({
         queryKey: ['comments', postId],
-        enabled: !!postId,
+        enabled: isPersistedPostId(postId),
         staleTime: 30_000,
         initialPageParam: null as string | null,
         queryFn: async ({ pageParam }) => {
-            if (!postId) return { comments: [], nextCursor: null };
+            if (!isPersistedPostId(postId)) return { comments: [], nextCursor: null };
 
             let query = supabase
                 .from('comments')
@@ -89,10 +90,10 @@ export function useComments(postId: string | undefined) {
 export function useCommentCount(postId: string | undefined) {
     return useQuery({
         queryKey: ['comment-count', postId],
-        enabled: !!postId,
+        enabled: isPersistedPostId(postId),
         staleTime: 30_000,
         queryFn: async () => {
-            if (!postId) return 0;
+            if (!isPersistedPostId(postId)) return 0;
 
             const { data, error } = await supabase
                 .from('posts')

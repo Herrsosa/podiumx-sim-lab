@@ -7,7 +7,6 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import ProofOfSweat from '@/components/ProofOfSweat';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Activity, Plus } from 'lucide-react';
 import type { EditableProfile } from './types';
 import { StravaCard } from '@/components/strava/StravaCard';
@@ -15,7 +14,6 @@ import { MobileActionBar } from '@/components/MobileActionBar';
 import type { PriceSeriesPoint } from '@/lib/charting/engine';
 import { getWindowUTC } from '@/lib/charting/engine';
 import { useChartPosts } from '@/hooks/useChartPosts';
-import { useAuthStore } from '@/store/auth';
 import { useAthleteHolderCounts } from '@/hooks/useAthleteHolderCounts';
 
 import { AthleteIdentityCard } from '@/components/identity';
@@ -34,6 +32,8 @@ import { ShareAuraModal } from '@/components/share/ShareAuraModal';
 import { useDmConversations } from '@/hooks/useDmConversations';
 import { DatePickerWithRange } from '@/components/DatePickerWithRange';
 import { DateRange } from 'react-day-picker';
+import ProofOfContributionList from '@/components/contributions/ProofOfContributionList';
+import { ContributionStatsCard } from '@/components/myathlete/ContributionStatsCard';
 
 interface MobileMyAthletesProps {
   athlete?: Athlete;
@@ -43,6 +43,8 @@ interface MobileMyAthletesProps {
   hasRealTrades: boolean;
   trades?: AthleteTrade[];
   onAddWorkout: () => void;
+  onAddContribution?: () => void;
+  isAgentProfile?: boolean;
   editedProfile: EditableProfile;
   isEditingProfile: boolean;
   onStartEditProfile: () => void;
@@ -70,6 +72,8 @@ export default function MobileMyAthletes({
   hasRealTrades,
   trades = [],
   onAddWorkout,
+  onAddContribution,
+  isAgentProfile = false,
   editedProfile,
   isEditingProfile,
   onStartEditProfile,
@@ -108,6 +112,18 @@ export default function MobileMyAthletes({
       return date >= from && date < to;
     });
   }, [workouts, dateRange]);
+  const filteredContributionPosts = useMemo(() => {
+    const contributionPosts = posts.filter((post) => post.post_type === 'proof_of_contribution');
+    if (!dateRange?.from) return contributionPosts;
+
+    const from = dateRange.from.getTime();
+    const to = dateRange.to ? dateRange.to.getTime() + 86400000 : from + 86400000;
+
+    return contributionPosts.filter((post) => {
+      const date = new Date(post.created_at).getTime();
+      return date >= from && date < to;
+    });
+  }, [dateRange, posts]);
 
   // Identity kernel for Aura score
   const { data: kernel } = useIdentityKernel();
@@ -208,14 +224,17 @@ export default function MobileMyAthletes({
           />
         </div>
 
-        {/* Strava Integration */}
-        <StravaCard />
+        {!isAgentProfile && <StravaCard />}
 
-        {/* Proof of Sweat Section */}
+        {isAgentProfile && athlete.contributionStats && (
+          <ContributionStatsCard stats={athlete.contributionStats} className="glass-card" />
+        )}
+
+        {/* Effort Section */}
         <div className="space-y-3" data-tour="proof-of-sweat">
           <div className="flex items-center justify-between">
             <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-              Proof of Sweat
+              {isAgentProfile ? 'Proof of Contribution' : 'Proof of Sweat'}
             </h2>
             <div className="flex items-center gap-2">
               <DatePickerWithRange
@@ -223,7 +242,12 @@ export default function MobileMyAthletes({
                 setDate={setDateRange}
                 className="w-[180px]"
               />
-              <Button onClick={onAddWorkout} size="sm" variant="outline" className="gap-2">
+              <Button
+                onClick={isAgentProfile ? (onAddContribution ?? onAddWorkout) : onAddWorkout}
+                size="sm"
+                variant="outline"
+                className="gap-2"
+              >
                 <Plus className="h-4 w-4" />
                 Add
               </Button>
@@ -235,6 +259,12 @@ export default function MobileMyAthletes({
               <Skeleton className="h-40 w-full" />
               <Skeleton className="h-40 w-full" />
             </div>
+          ) : isAgentProfile ? (
+            <ProofOfContributionList
+              posts={filteredContributionPosts}
+              emptyTitle="No contributions yet"
+              emptyDescription="Publish useful work with artifacts to start building visible reputation."
+            />
           ) : workouts.length === 0 ? (
             <Card className="border-white/10 bg-card/60">
               <CardContent className="space-y-4 p-6 text-center text-sm text-muted-foreground">
@@ -278,11 +308,11 @@ export default function MobileMyAthletes({
         actions={[
           {
             id: 'add-pos',
-            label: 'Add Proof of Sweat',
+            label: isAgentProfile ? 'Add Proof of Contribution' : 'Add Proof of Sweat',
             icon: <Activity className="h-5 w-5" />,
-            onPress: onAddWorkout,
+            onPress: isAgentProfile ? (onAddContribution ?? onAddWorkout) : onAddWorkout,
             variant: 'primary',
-            ariaLabel: 'Add proof-of-sweat workout',
+            ariaLabel: isAgentProfile ? 'Add proof-of-contribution post' : 'Add proof-of-sweat workout',
           },
         ]}
       />

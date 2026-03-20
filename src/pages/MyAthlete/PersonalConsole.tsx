@@ -12,11 +12,12 @@ import { useUser } from '@/store/auth';
 import TokengatedChat from '@/components/TokengatedChat';
 const LockerMessages = lazy(() => import('@/components/myathlete/LockerMessages').then(module => ({ default: module.LockerMessages })));
 const LockerGlobe = lazy(() => import('@/components/myathlete/LockerGlobe').then(module => ({ default: module.LockerGlobe })));
-import { useQueryClient } from '@tanstack/react-query';
 import { ProfileDetailsCard } from '@/components/myathlete/ProfileDetailsCard';
 import { ProfileStatsCard } from '@/components/myathlete/ProfileStatsCard';
 import type { EditableProfile } from '@/pages/MyAthlete/mobile/types';
 import ProofOfSweat from '@/components/ProofOfSweat';
+import ProofOfContributionList from '@/components/contributions/ProofOfContributionList';
+import { ContributionStatsCard } from '@/components/myathlete/ContributionStatsCard';
 import { StravaCard } from '@/components/strava/StravaCard';
 import ConnectXButton from '@/components/social/ConnectXButton';
 import { useXConnection } from '@/hooks/useXConnection';
@@ -51,6 +52,8 @@ interface PersonalConsoleProps {
   onWorkoutEdit: (workout: Workout) => void;
   onWorkoutDelete: (id: string) => void;
   onAddWorkout: () => void;
+  onAddContribution?: () => void;
+  isAgentProfile?: boolean;
   hasNextPage?: boolean;
   fetchNextPage?: () => void;
   isFetchingNextPage?: boolean;
@@ -81,6 +84,8 @@ export function PersonalConsole({
   onWorkoutEdit,
   onWorkoutDelete,
   onAddWorkout,
+  onAddContribution,
+  isAgentProfile = false,
   hasNextPage = false,
   fetchNextPage,
   isFetchingNextPage = false,
@@ -91,7 +96,6 @@ export function PersonalConsole({
   initialPostId,
 }: PersonalConsoleProps) {
   const user = useUser();
-  const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<'workouts' | 'community' | 'messages' | 'earnings'>('workouts');
   const [chartShareOpen, setChartShareOpen] = useState(false);
   const [groupChatOpen, setGroupChatOpen] = useState(false);
@@ -191,8 +195,19 @@ export function PersonalConsole({
       location_country_code: w.locationCountryCode,
       location_lat: w.locationLat,
       location_lng: w.locationLng,
+      post_type: 'proof_of_sweat' as const,
     } as Post)) || [];
   }, [lockerWorkouts, athlete?.id]);
+  const filteredContributionPosts = useMemo(() => {
+    const contributionPosts = posts.filter((post) => post.post_type === 'proof_of_contribution');
+    if (!dateRange?.from) return contributionPosts;
+    const from = dateRange.from.getTime();
+    const to = dateRange.to ? dateRange.to.getTime() + 86400000 : from + 86400000;
+    return contributionPosts.filter((post) => {
+      const createdAt = new Date(post.created_at).getTime();
+      return createdAt >= from && createdAt < to;
+    });
+  }, [dateRange, posts]);
 
   return (
     <>
@@ -313,11 +328,13 @@ export function PersonalConsole({
           </CardContent>
         </Card>
 
-        {/* Strava Card */}
-        <StravaCard />
+        {!isAgentProfile && <StravaCard />}
 
-        {/* Stats Card - fetches its own data */}
-        <ProfileStatsCard className="glass-card" />
+        {isAgentProfile && athlete?.contributionStats ? (
+          <ContributionStatsCard stats={athlete.contributionStats} className="glass-card" />
+        ) : (
+          <ProfileStatsCard className="glass-card" />
+        )}
 
         {/* X.com Integration Card */}
         {xLoading ? (
@@ -428,7 +445,7 @@ export function PersonalConsole({
           className="w-full"
         >
           <TabsList className="grid w-full grid-cols-2 max-w-md">
-            <TabsTrigger value="workouts">Proof of Sweat</TabsTrigger>
+            <TabsTrigger value="workouts">{isAgentProfile ? 'Proof of Contribution' : 'Proof of Sweat'}</TabsTrigger>
             <TabsTrigger value="earnings" className="gap-2">
               <DollarSign className="h-4 w-4" />
               Earnings
@@ -439,10 +456,10 @@ export function PersonalConsole({
             <Card className="glass-card">
               <CardHeader>
                 <div className="flex items-center justify-between">
-                  <CardTitle>Proof of Sweat</CardTitle>
-                  <Button className="gap-2" onClick={onAddWorkout}>
+                  <CardTitle>{isAgentProfile ? 'Proof of Contribution' : 'Proof of Sweat'}</CardTitle>
+                  <Button className="gap-2" onClick={isAgentProfile ? onAddContribution : onAddWorkout}>
                     <Plus className="h-4 w-4" />
-                    Add Workout
+                    {isAgentProfile ? 'Add Contribution' : 'Add Workout'}
                   </Button>
                 </div>
                 <div className="mt-4 flex justify-end">
@@ -450,7 +467,13 @@ export function PersonalConsole({
                 </div>
               </CardHeader>
               <CardContent>
-                {!filteredWorkouts || (filteredWorkouts.length === 0 && !isWorkoutsLoading) ? (
+                {isAgentProfile ? (
+                  <ProofOfContributionList
+                    posts={filteredContributionPosts}
+                    emptyTitle="No contributions yet"
+                    emptyDescription="Publish useful work with evidence to start building agent reputation."
+                  />
+                ) : !filteredWorkouts || (filteredWorkouts.length === 0 && !isWorkoutsLoading) ? (
                   <div className="py-8 text-center text-muted-foreground">
                     No workouts found
                   </div>

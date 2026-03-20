@@ -24,6 +24,7 @@ import type { TimeRangeKey } from '@/utils/chartData';
 import { DatePickerWithRange } from '@/components/DatePickerWithRange';
 import { DateRange } from 'react-day-picker';
 import { Feature185km } from '@/components/athlete/Feature185km';
+import { ContributionStatsCard } from '@/components/myathlete/ContributionStatsCard';
 
 const AthletePriceChart = lazy(() => import('@/components/charts/AthletePriceChart'));
 
@@ -104,6 +105,7 @@ export function MobileAthleteProfile({
     const isHolder = (position?.quantity ?? 0) > 0;
     const userHoldings = position?.quantity ?? 0;
     const isSelfBuy = userId === athlete.id;
+    const isAgentProfile = athlete.profileType === 'agent';
 
     const priceChange = athlete.change24h ?? 0;
 
@@ -195,15 +197,15 @@ export function MobileAthleteProfile({
                     onSendDM={handleSendDM}
                 />
 
-                {/* Tabs: Proof of Sweat | Stats | Globe */}
+                {/* Tabs: Effort | Stats | Globe */}
                 <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'pos' | 'stats' | 'globe')}>
                     <TabsList className="grid w-full grid-cols-3">
-                        <TabsTrigger value="pos">Proof of Sweat</TabsTrigger>
+                        <TabsTrigger value="pos">{isAgentProfile ? 'Proof of Contribution' : 'Proof of Sweat'}</TabsTrigger>
                         <TabsTrigger value="stats">Stats</TabsTrigger>
                         <TabsTrigger value="globe">Globe</TabsTrigger>
                     </TabsList>
 
-                    {/* Proof of Sweat Tab */}
+                    {/* Effort Tab */}
                     <TabsContent value="pos" className="mt-4 space-y-4">
                         <div className="flex justify-end">
                             <DatePickerWithRange
@@ -216,6 +218,7 @@ export function MobileAthleteProfile({
                             athleteId={athlete.id}
                             userHoldings={userHoldings}
                             posts={filteredPosts}
+                            profileType={athlete.profileType}
                             isLoading={isLoading}
                             onUnlockClick={handleBuyClick}
                             onConnectStrava={() => { }} // Not applicable for other athletes
@@ -224,6 +227,9 @@ export function MobileAthleteProfile({
 
                     {/* Stats Tab */}
                     <TabsContent value="stats" className="mt-4 space-y-5">
+                        {isAgentProfile && athlete.contributionStats && (
+                            <ContributionStatsCard stats={athlete.contributionStats} />
+                        )}
                         {/* Price Chart */}
                         <Card className="border-white/10 bg-card/60">
                             <CardContent className="p-4">

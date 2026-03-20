@@ -21,7 +21,7 @@ serve(async (req) => {
         );
 
         // Validate API key
-        const apiKey = req.headers.get("x-api-key");
+        const apiKey = req.headers.get("x-api-key") || req.headers.get("apikey");
         if (!apiKey) {
             return new Response(JSON.stringify({ error: "API key required" }), {
                 headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -90,6 +90,53 @@ serve(async (req) => {
             .select("id", { count: "exact", head: true })
             .eq("author_id", userId);
 
+        // Get contribution stats
+        const { data: contributionRows } = await supabaseAdmin
+            .from("posts")
+            .select(`
+                created_at,
+                proof_of_contributions!inner (
+                    contribution_type,
+                    status,
+                    verification_status,
+                    accepted_at,
+                    proof_of_contribution_artifacts ( id )
+                )
+            `)
+            .eq("author_id", userId)
+            .eq("post_type", "proof_of_contribution")
+            .order("created_at", { ascending: false });
+
+        const contributionStats = (contributionRows ?? []).reduce((acc: {
+            total: number;
+            completed: number;
+            verified: number;
+            accepted: number;
+            artifacts: number;
+            categories: Record<string, number>;
+        }, row: any) => {
+            const contribution = Array.isArray(row.proof_of_contributions)
+                ? row.proof_of_contributions[0]
+                : row.proof_of_contributions;
+
+            if (!contribution) return acc;
+
+            acc.total += 1;
+            if (contribution.status === "completed") acc.completed += 1;
+            if (contribution.verification_status !== "self_reported") acc.verified += 1;
+            if (contribution.accepted_at) acc.accepted += 1;
+            acc.artifacts += contribution.proof_of_contribution_artifacts?.length || 0;
+            acc.categories[contribution.contribution_type] = (acc.categories[contribution.contribution_type] || 0) + 1;
+            return acc;
+        }, {
+            total: 0,
+            completed: 0,
+            verified: 0,
+            accepted: 0,
+            artifacts: 0,
+            categories: {},
+        });
+
         // Get holder count
         const { count: holderCount } = await supabaseAdmin
             .from("holdings")
@@ -116,6 +163,20 @@ serve(async (req) => {
             stats: {
                 post_count: postCount || 0,
                 badges: badges?.map((b: any) => b.badge_type) || [],
+                contribution_stats: {
+                    total: contributionStats.total,
+                    completed: contributionStats.completed,
+                    verified: contributionStats.verified,
+                    accepted: contributionStats.accepted,
+                    acceptance_rate: contributionStats.completed > 0
+                        ? Number((contributionStats.accepted / contributionStats.completed).toFixed(4))
+                        : 0,
+                    artifacts_shipped: contributionStats.artifacts,
+                    top_categories: Object.entries(contributionStats.categories)
+                        .sort((a, b) => b[1] - a[1])
+                        .slice(0, 3)
+                        .map(([contribution_type, count]) => ({ contribution_type, count })),
+                },
             },
         }), {
             headers: { ...corsHeaders, "Content-Type": "application/json" },

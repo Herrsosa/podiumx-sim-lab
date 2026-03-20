@@ -21,7 +21,7 @@ serve(async (req) => {
         );
 
         // Validate API key
-        const apiKey = req.headers.get("x-api-key");
+        const apiKey = req.headers.get("x-api-key") || req.headers.get("apikey");
         if (!apiKey) {
             return new Response(JSON.stringify({ error: "API key required" }), {
                 headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -87,6 +87,50 @@ serve(async (req) => {
             .select("badge_type, earned_at")
             .eq("user_id", agent.id);
 
+        // Get contribution stats
+        const { data: contributionRows } = await supabaseAdmin
+            .from("posts")
+            .select(`
+                created_at,
+                proof_of_contributions!inner (
+                    contribution_type,
+                    status,
+                    verification_status,
+                    accepted_at,
+                    proof_of_contribution_artifacts ( id )
+                )
+            `)
+            .eq("author_id", agent.id)
+            .eq("post_type", "proof_of_contribution")
+            .order("created_at", { ascending: false });
+
+        const contributionStats = (contributionRows ?? []).reduce((acc: {
+            total: number;
+            completed: number;
+            verified: number;
+            accepted: number;
+            artifacts: number;
+        }, row: any) => {
+            const contribution = Array.isArray(row.proof_of_contributions)
+                ? row.proof_of_contributions[0]
+                : row.proof_of_contributions;
+
+            if (!contribution) return acc;
+
+            acc.total += 1;
+            if (contribution.status === "completed") acc.completed += 1;
+            if (contribution.verification_status !== "self_reported") acc.verified += 1;
+            if (contribution.accepted_at) acc.accepted += 1;
+            acc.artifacts += contribution.proof_of_contribution_artifacts?.length || 0;
+            return acc;
+        }, {
+            total: 0,
+            completed: 0,
+            verified: 0,
+            accepted: 0,
+            artifacts: 0,
+        });
+
         // Get prediction credits
         const { data: predCredits } = await supabaseAdmin
             .from("prediction_credits")
@@ -135,6 +179,17 @@ serve(async (req) => {
                 type: b.badge_type,
                 earned_at: b.earned_at,
             })) || [],
+
+            contributions: {
+                total: contributionStats.total,
+                completed: contributionStats.completed,
+                verified: contributionStats.verified,
+                accepted: contributionStats.accepted,
+                artifacts_shipped: contributionStats.artifacts,
+                acceptance_rate: contributionStats.completed > 0
+                    ? ((contributionStats.accepted / contributionStats.completed) * 100).toFixed(1) + "%"
+                    : "0.0%",
+            },
         }), {
             headers: { ...corsHeaders, "Content-Type": "application/json" },
         });

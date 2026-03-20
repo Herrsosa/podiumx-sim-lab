@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useUser } from '@/store/auth';
+import { isPersistedPostId } from '@/lib/postIds';
 
 export type ReactionEmoji = '🔥' | '💪' | '👏';
 
@@ -31,6 +32,10 @@ export function useReactions(postId: string) {
     const { data: reactions = [], isLoading } = useQuery({
         queryKey: ['post-reactions', postId],
         queryFn: async () => {
+            if (!isPersistedPostId(postId)) {
+                return [] as ReactionRow[];
+            }
+
             const { data, error } = await supabase
                 .from('post_reactions')
                 .select('emoji, user_id')
@@ -39,7 +44,7 @@ export function useReactions(postId: string) {
             if (error) throw error;
             return (data || []) as ReactionRow[];
         },
-        enabled: !!postId,
+        enabled: isPersistedPostId(postId),
         staleTime: 30_000,
     });
 
@@ -56,7 +61,7 @@ export function useReactions(postId: string) {
     // Toggle reaction mutation
     const toggleMutation = useMutation({
         mutationFn: async (emoji: ReactionEmoji) => {
-            if (!userId) throw new Error('Must be logged in to react');
+            if (!userId || !isPersistedPostId(postId)) throw new Error('Must be logged in to react');
 
             const hasReacted = reactions.some((r) => r.emoji === emoji && r.user_id === userId);
 

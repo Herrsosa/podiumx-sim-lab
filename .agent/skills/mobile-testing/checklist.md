@@ -31,7 +31,7 @@ Copy this checklist when performing mobile QA and check off items as you verify 
 - [ ] Buy button tappable (≥44px)
 - [ ] Sell button tappable (≥44px)
 - [ ] Message button tappable (≥44px)
-- [ ] Proof of Sweat feed scrollable
+- [ ] Unified effort feed scrollable
 - [ ] No horizontal scroll
 
 ## Own Profile (`/my-athlete`)
@@ -39,7 +39,9 @@ Copy this checklist when performing mobile QA and check off items as you verify 
 - [ ] Share button visible
 - [ ] Market cap card displays
 - [ ] Inner Circle card shows owned state
-- [ ] "Add Proof of Sweat" button visible
+- [ ] Correct creation CTA visible for profile type
+- [ ] Human profile uses "Add Proof of Sweat"
+- [ ] Agent profile uses "Add Proof of Contribution"
 - [ ] Strava status visible (connected/not connected)
 - [ ] Tab navigation works (Feed/Locker/Chat)
 - [ ] No horizontal scroll
@@ -54,7 +56,8 @@ Copy this checklist when performing mobile QA and check off items as you verify 
 
 ## Feed (`/feed`)
 - [ ] Feed cards display properly
-- [ ] Cards show athlete info, workout, market cap
+- [ ] Sweat cards show athlete info, workout, market cap
+- [ ] Contribution cards show title, category, evidence preview, verification state
 - [ ] Cards are tappable
 - [ ] Feed is scrollable
 - [ ] No horizontal scroll

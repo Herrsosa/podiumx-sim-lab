@@ -1,6 +1,6 @@
 import { lazy, Suspense, useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Info, Plus, Minus, Edit, ShoppingCart, TrendingDown, MessageCircle, Activity, TrendingUp } from 'lucide-react';
+import { ArrowLeft, Info, Plus, Minus, Edit, TrendingDown, MessageCircle, Activity, TrendingUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -18,19 +18,18 @@ import ProofOfSweat from '@/components/ProofOfSweat';
 import TokengatedChat from '@/components/TokengatedChat';
 import WorkoutPosts from '@/components/WorkoutPosts';
 import AddWorkoutModal from '@/components/AddWorkoutModal';
+import { AddContributionModal } from '@/components/contribution/AddContributionModal';
 import { LockerGate } from '@/components/myathlete/LockerGate';
 import { LockerView, type LockerTab } from '@/pages/MyAthlete/LockerView';
 import { LockerMessages } from '@/components/myathlete/LockerMessages';
 import { useQueryClient } from '@tanstack/react-query';
 import AthleteDetailSkeleton from '@/components/skeletons/AthleteDetailSkeleton';
 import { ChartSkeleton } from '@/components/ui/skeletons';
-import { SectionTitle, Body, Small } from '@/components/ui/typography';
 import { formatMoney, formatNumber } from '@/lib/format';
 import { cn } from '@/lib/utils';
-import { getAvatarAsset, resolveAvatarUrl } from '@/utils/avatar';
+import { resolveAvatarUrl } from '@/utils/avatar';
 import { useUser } from '@/store/auth';
 import { MobileActionBar } from '@/components/MobileActionBar';
-import { OptimizedImage } from '@/components/OptimizedImage';
 import { SelfMobileProfile } from '@/pages/AthleteDetailSelfMobile';
 import { getWindowUTC } from '@/lib/charting/engine';
 import type { Athlete, Workout } from '@/types';
@@ -47,6 +46,7 @@ import { DatePickerWithRange } from '@/components/DatePickerWithRange';
 import { DateRange } from 'react-day-picker';
 import { useWorkouts } from '@/hooks/useWorkouts';
 import { Feature185km } from '@/components/athlete/Feature185km';
+import { ContributionStatsCard } from '@/components/myathlete/ContributionStatsCard';
 
 const AthletePriceChart = lazy(() => import('@/components/charts/AthletePriceChart'));
 
@@ -65,10 +65,12 @@ export default function AthleteDetail() {
   const [quantityError, setQuantityError] = useState<string | null>(null);
   const [, setShowTradeModal] = useState(false);
   const [showAddWorkout, setShowAddWorkout] = useState(false);
+  const [showAddContribution, setShowAddContribution] = useState(false);
   const [timeRange, setTimeRange] = useState<TimeRange>('7d');
   const [activeTab, setActiveTab] = useState<'overview' | 'locker'>('overview');
   const [lockerInitialTab, setLockerInitialTab] = useState<LockerTab>('workouts');
   const [addWorkoutOpen, setAddWorkoutOpen] = useState(false);
+  const [addContributionOpen, setAddContributionOpen] = useState(false);
   const [tradeMode, setTradeMode] = useState<'buy' | 'sell'>('buy');
   const [tradeModalOpen, setTradeModalOpen] = useState(false);
   const timeRanges: TimeRange[] = ['7d', '30d', 'all'];
@@ -120,8 +122,21 @@ export default function AthleteDetail() {
       location_country_code: w.locationCountryCode,
       location_lat: w.locationLat,
       location_lng: w.locationLng,
+      post_type: 'proof_of_sweat' as const,
     } as Post)) || [];
   }, [lockerWorkouts, athlete?.id]);
+  const filteredTimelinePosts = useMemo(() => {
+    const timelinePosts = athlete?.posts ?? [];
+    if (!dateRange?.from) return timelinePosts;
+
+    const from = dateRange.from.getTime();
+    const to = dateRange.to ? dateRange.to.getTime() + 86400000 : from + 86400000;
+
+    return timelinePosts.filter((post) => {
+      const createdAt = new Date(post.created_at).getTime();
+      return createdAt >= from && createdAt < to;
+    });
+  }, [athlete?.posts, dateRange]);
   const tradeMutation = useTrade();
   const isMobile = !useMediaQuery('(min-width: 480px)', true);
   const { data: identityKernel } = useIdentityKernel(athlete?.id);
@@ -344,6 +359,7 @@ export default function AthleteDetail() {
   );
 
   const isOwnProfile = user?.id === athlete?.id;
+  const isAgentProfile = athlete?.profileType === 'agent';
 
   // Fetch holders count from holdings table (covers both on-chain and off-chain trades)
   const athleteIdArr = useMemo(() => athlete?.id ? [athlete.id] : [], [athlete?.id]);
@@ -791,32 +807,53 @@ export default function AthleteDetail() {
                 </CardContent>
               </Card>
 
-              {/* Proof of Sweat & Training */}
+              {/* Visible effort */}
               <div className="lg:col-span-2 space-y-6">
                 <div className="flex justify-end mb-2">
                   <DatePickerWithRange date={dateRange} setDate={setDateRange} />
                 </div>
-                <ProofOfSweat
-                  workouts={filteredWorkouts}
-                  posts={filteredPosts}
-                  athleteId={athlete.id}
-                  athleteName={athlete.name}
-                  athleteHandle={athlete.slug}
-                  athleteAvatar={athlete.avatar}
-                  viewerHoldings={userHoldings}
-
-                  onUnlock={async () => {
-                    await tradeMutation.mutateAsync({
-                      athleteId: athlete.id,
-                      athleteSlug: athlete.slug,
-                      quantity: 1,
-                      side: 'BUY',
-                    });
-                  }}
-                  onWorkoutDeleted={handleWorkoutDeleted}
-                  onWorkoutUpdated={handleWorkoutUpdated}
-                  onConnectStrava={isOwnProfile ? () => navigate('/my-athlete') : undefined}
-                />
+                {isAgentProfile && athlete.contributionStats && (
+                  <ContributionStatsCard stats={athlete.contributionStats} className="glass-card" />
+                )}
+                {isAgentProfile ? (
+                  <WorkoutPosts
+                    athleteId={athlete.id}
+                    userHoldings={userHoldings}
+                    posts={filteredTimelinePosts}
+                    profileType={athlete.profileType}
+                    isLoading={showInitialSkeleton}
+                    onUnlockClick={async () => {
+                      await tradeMutation.mutateAsync({
+                        athleteId: athlete.id,
+                        athleteSlug: athlete.slug,
+                        quantity: 1,
+                        side: 'BUY',
+                      });
+                    }}
+                    onConnectStrava={() => undefined}
+                  />
+                ) : (
+                  <ProofOfSweat
+                    workouts={filteredWorkouts}
+                    posts={filteredPosts}
+                    athleteId={athlete.id}
+                    athleteName={athlete.name}
+                    athleteHandle={athlete.slug}
+                    athleteAvatar={athlete.avatar}
+                    viewerHoldings={userHoldings}
+                    onUnlock={async () => {
+                      await tradeMutation.mutateAsync({
+                        athleteId: athlete.id,
+                        athleteSlug: athlete.slug,
+                        quantity: 1,
+                        side: 'BUY',
+                      });
+                    }}
+                    onWorkoutDeleted={handleWorkoutDeleted}
+                    onWorkoutUpdated={handleWorkoutUpdated}
+                    onConnectStrava={isOwnProfile ? () => navigate('/my-athlete') : undefined}
+                  />
+                )}
 
                 {!user && (
                   <div className="mt-8 text-center p-6 bg-card/40 rounded-xl border border-border/40 backdrop-blur-sm">
@@ -830,7 +867,7 @@ export default function AthleteDetail() {
                   </div>
                 )}
 
-                {hasNextPage && (
+                {!isAgentProfile && hasNextPage && (
                   <div className="flex justify-center py-6">
                     <Button onClick={() => fetchNextPage()} disabled={isFetchingNextPage} variant="outline">
                       {isFetchingNextPage ? 'Loading...' : 'Load More'}
@@ -843,16 +880,21 @@ export default function AthleteDetail() {
                     {/* Workout Posts Section */}
                     <div>
                       <div className="flex items-center justify-between mb-4">
-                        <h2 className="text-2xl font-bold">Training Feed</h2>
-                        <Button onClick={() => setShowAddWorkout(true)} size="sm" className="gap-2">
+                        <h2 className="text-2xl font-bold">{isAgentProfile ? 'Contribution Feed' : 'Training Feed'}</h2>
+                        <Button
+                          onClick={() => (isAgentProfile ? setShowAddContribution(true) : setShowAddWorkout(true))}
+                          size="sm"
+                          className="gap-2"
+                        >
                           <Edit className="h-4 w-4" />
-                          Add Workout
+                          {isAgentProfile ? 'Add Contribution' : 'Add Workout'}
                         </Button>
                       </div>
                       <WorkoutPosts
                         athleteId={athlete.id}
                         userHoldings={userHoldings}
                         posts={athlete.posts || []}
+                        profileType={athlete.profileType}
                         isLoading={showInitialSkeleton}
                         onUnlockClick={async () => {
                           await tradeMutation.mutateAsync({
@@ -951,25 +993,49 @@ export default function AthleteDetail() {
   );
 
   const sharedWorkoutModal = (
-    <AddWorkoutModal
-      open={showAddWorkout}
-      onOpenChange={setShowAddWorkout}
-      athleteId={athlete.id}
-      onSuccess={handleWorkoutCreated}
-    />
+    isAgentProfile ? (
+      <AddContributionModal
+        open={showAddContribution}
+        onOpenChange={setShowAddContribution}
+        athleteId={athlete.id}
+        onCreated={() => {
+          void queryClient.invalidateQueries({ queryKey: ['athlete', slug] });
+          setShowAddContribution(false);
+        }}
+      />
+    ) : (
+      <AddWorkoutModal
+        open={showAddWorkout}
+        onOpenChange={setShowAddWorkout}
+        athleteId={athlete.id}
+        onSuccess={handleWorkoutCreated}
+      />
+    )
   );
 
   const addProofOfSweatModal =
     isOwnProfile && user ? (
-      <AddWorkoutModal
-        open={addWorkoutOpen}
-        onOpenChange={setAddWorkoutOpen}
-        athleteId={user.id}
-        onSuccess={(result) => {
-          handleWorkoutCreated(result);
-          setAddWorkoutOpen(false);
-        }}
-      />
+      isAgentProfile ? (
+        <AddContributionModal
+          open={addContributionOpen}
+          onOpenChange={setAddContributionOpen}
+          athleteId={user.id}
+          onCreated={() => {
+            void queryClient.invalidateQueries({ queryKey: ['athlete', slug] });
+            setAddContributionOpen(false);
+          }}
+        />
+      ) : (
+        <AddWorkoutModal
+          open={addWorkoutOpen}
+          onOpenChange={setAddWorkoutOpen}
+          athleteId={user.id}
+          onSuccess={(result) => {
+            handleWorkoutCreated(result);
+            setAddWorkoutOpen(false);
+          }}
+        />
+      )
     ) : null;
 
   const mobileActionBar = (
@@ -980,11 +1046,11 @@ export default function AthleteDetail() {
           ? [
             {
               id: 'add-pos',
-              label: 'Add Proof of Sweat',
+              label: isAgentProfile ? 'Add Proof of Contribution' : 'Add Proof of Sweat',
               icon: <Activity className="h-5 w-5" />,
-              onPress: () => setAddWorkoutOpen(true),
+              onPress: () => (isAgentProfile ? setAddContributionOpen(true) : setAddWorkoutOpen(true)),
               variant: 'primary',
-              ariaLabel: 'Add proof of sweat workout',
+              ariaLabel: isAgentProfile ? 'Add proof of contribution post' : 'Add proof of sweat workout',
             },
           ]
           : [
@@ -1032,7 +1098,7 @@ export default function AthleteDetail() {
             userHoldings={userHoldings}
             workouts={athlete.workouts}
             showMenorcaFeature={showMenorcaFeature}
-            onAddProof={() => setAddWorkoutOpen(true)}
+            onAddProof={() => (isAgentProfile ? setAddContributionOpen(true) : setAddWorkoutOpen(true))}
             onConnectStrava={() => navigate('/my-athlete')}
             isLoadingPosts={showInitialSkeleton}
             lockerInitialTab={lockerInitialTab}

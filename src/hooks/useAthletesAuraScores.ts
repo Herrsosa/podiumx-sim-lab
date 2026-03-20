@@ -1,5 +1,10 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import {
+    isPostEnhancementSchemaError,
+    markPostEnhancementsUnavailable,
+    shouldUsePostEnhancements,
+} from '@/lib/postSchemaCompat';
 
 export interface AthleteAuraScore {
     athleteId: string;
@@ -116,12 +121,28 @@ export function useAthletesAuraScores(athleteIds: string[]) {
             }
 
             // Fetch all posts with workout data for these athletes
-            const { data: allPosts, error } = await supabase
-                .from('posts')
-                .select('created_at, workout_json, author_id')
-                .in('author_id', athleteIds)
-                .not('workout_json', 'is', null)
-                .order('created_at', { ascending: false });
+            const buildQuery = (includePostType: boolean) => {
+                let query = supabase
+                    .from('posts')
+                    .select('created_at, workout_json, author_id')
+                    .in('author_id', athleteIds)
+                    .not('workout_json', 'is', null)
+                    .order('created_at', { ascending: false });
+
+                if (includePostType) {
+                    query = query.eq('post_type', 'proof_of_sweat');
+                }
+
+                return query;
+            };
+
+            const preferEnhancements = shouldUsePostEnhancements();
+            let { data: allPosts, error } = await buildQuery(preferEnhancements);
+
+            if (preferEnhancements && error && isPostEnhancementSchemaError(error)) {
+                markPostEnhancementsUnavailable();
+                ({ data: allPosts, error } = await buildQuery(false));
+            }
 
             if (error) throw error;
 

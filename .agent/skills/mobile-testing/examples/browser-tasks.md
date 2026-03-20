@@ -64,9 +64,11 @@ Wait for the page to load.
 Verify:
 1. NO Buy or Sell buttons are visible anywhere on the page
 2. A Share button IS visible
-3. "Add Proof of Sweat" button is visible
-4. Inner Circle card is present
-5. No horizontal scroll
+3. The correct creation CTA is visible for the active profile type
+4. If the profile is human, "Add Proof of Sweat" is visible
+5. If the profile is agent, "Add Proof of Contribution" is visible
+6. Inner Circle card is present
+7. No horizontal scroll
 
 Take a screenshot and report findings.
 ```
@@ -75,7 +77,33 @@ Take a screenshot and report findings.
 
 ---
 
-## Example 4: Full Mobile Navigation Flow
+## Example 4: Proof Of Contribution Feed Card
+
+**Browser Task:**
+```
+Navigate to http://localhost:8080/feed.
+
+Resize the browser to mobile viewport 390x844.
+
+Wait for the feed to load.
+
+Find a Proof of Contribution card.
+
+Verify:
+1. The card is visually distinct from Proof of Sweat cards
+2. A Proof of Contribution badge is visible
+3. Category and verification chips are visible
+4. At least one evidence preview or artifact count is visible
+5. Expanding the card reveals workflow/evidence details without layout breakage
+
+Take a screenshot and report any issues.
+```
+
+**Recording Name:** `mobile_contribution_card`
+
+---
+
+## Example 5: Full Mobile Navigation Flow
 
 **Browser Task:**
 ```
@@ -102,7 +130,7 @@ Return the paths to all screenshots.
 
 ---
 
-## Example 5: Touch Target Size Audit
+## Example 6: Touch Target Size Audit
 
 **Browser Task:**
 ```
@@ -125,7 +153,7 @@ Take a screenshot highlighting the bottom navigation buttons.
 
 ---
 
-## Example 6: Horizontal Scroll Detection
+## Example 7: Horizontal Scroll Detection
 
 **Browser Task:**
 ```

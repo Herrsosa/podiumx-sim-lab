@@ -4,6 +4,11 @@ import { supabase } from '@/integrations/supabase/client';
 import type { Workout, Post } from '@/types';
 import { useToast } from '@/hooks/use-toast';
 import type { Database } from '@/integrations/supabase/types';
+import {
+  isPostEnhancementSchemaError,
+  markPostEnhancementsUnavailable,
+  shouldUsePostEnhancements,
+} from '@/lib/postSchemaCompat';
 
 export type WorkoutVisibility = 'public' | 'supporters' | 'backers';
 
@@ -85,8 +90,10 @@ export const mapPostRowToPost = (row: PostRow): Post => ({
   text: row.text,
   token_gated: Boolean(row.token_gated),
   strava_activity_id: row.strava_activity_id,
+  monad_tx_hash: row.monad_tx_hash ?? null,
   visibility: (row.visibility as WorkoutVisibility) ?? 'public',
   min_tokens_required: row.min_tokens_required ?? 0,
+  post_type: (row.post_type as Post['post_type']) ?? 'proof_of_sweat',
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   is_pinned: (row as any).is_pinned,
   // Location fields
@@ -95,6 +102,7 @@ export const mapPostRowToPost = (row: PostRow): Post => ({
   location_country_code: row.location_country_code ?? null,
   location_lat: row.location_lat ?? null,
   location_lng: row.location_lng ?? null,
+  proof_of_contribution: null,
 });
 
 interface UseWorkoutsOptions {
@@ -253,24 +261,39 @@ export function useWorkouts(
       const from = offset;
       const to = offset + pageSize - 1;
 
-      let query = supabase
-        .from('posts')
-        .select(
-          'id, created_at, author_id, workout_json, image_url, text, visibility, min_tokens_required, token_gated, strava_activity_id, is_pinned, location_city, location_country, location_country_code, location_lat, location_lng, strava_map_polyline',
-          { count: 'exact' },
-        )
-        .eq('author_id', athleteId)
-        .order('created_at', { ascending: false })
-        .range(from, to);
+      const buildQuery = (includeEnhancements: boolean) => {
+        let query = supabase
+          .from('posts')
+          .select(
+            includeEnhancements
+              ? 'id, created_at, author_id, workout_json, image_url, text, visibility, min_tokens_required, token_gated, strava_activity_id, monad_tx_hash, is_pinned, location_city, location_country, location_country_code, location_lat, location_lng, strava_map_polyline, post_type'
+              : 'id, created_at, author_id, workout_json, image_url, text, visibility, min_tokens_required, token_gated, strava_activity_id, is_pinned, strava_map_polyline',
+            { count: 'exact' },
+          )
+          .eq('author_id', athleteId)
+          .order('created_at', { ascending: false })
+          .range(from, to);
 
-      if (startDate) {
-        query = query.gte('created_at', startDate.toISOString());
-      }
-      if (endDate) {
-        query = query.lte('created_at', endDate.toISOString());
-      }
+        if (includeEnhancements) {
+          query = query.eq('post_type', 'proof_of_sweat');
+        }
+        if (startDate) {
+          query = query.gte('created_at', startDate.toISOString());
+        }
+        if (endDate) {
+          query = query.lte('created_at', endDate.toISOString());
+        }
 
-      const { data, error, count } = await query;
+        return query;
+      };
+
+      const preferEnhancements = shouldUsePostEnhancements();
+      let { data, error, count } = await buildQuery(preferEnhancements);
+
+      if (preferEnhancements && error && isPostEnhancementSchemaError(error)) {
+        markPostEnhancementsUnavailable();
+        ({ data, error, count } = await buildQuery(false));
+      }
 
       if (error) throw error;
 

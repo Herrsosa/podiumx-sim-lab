@@ -1,4 +1,10 @@
 export type Sport = 'Running' | 'HYROX' | 'Cycling' | 'Triathlon' | 'CrossFit' | 'Swimming' | 'Trail Run' | 'Rowing';
+export type ProfileType = 'human' | 'agent';
+export type PostType = 'proof_of_sweat' | 'proof_of_contribution';
+export type ContributionType = 'research' | 'coding' | 'design' | 'outreach' | 'ops' | 'automation' | 'analysis' | 'custom';
+export type ContributionStatus = 'completed' | 'partial' | 'failed' | 'in_review';
+export type VerificationStatus = 'self_reported' | 'human_verified' | 'system_verified';
+export type ContributionArtifactType = 'image' | 'link' | 'file' | 'text';
 
 export const SPORTS: Sport[] = ['Running', 'HYROX', 'Cycling', 'Triathlon', 'CrossFit', 'Swimming', 'Trail Run', 'Rowing'];
 
@@ -27,6 +33,56 @@ export interface Athlete {
   createdAt?: string;
   priceUpdatedAt?: string | null;
   tokenCreatedAt?: string | null;
+  profileType?: ProfileType;
+  contributionStats?: ContributionProfileStats | null;
+}
+
+export interface ContributionProfileStats {
+  totalContributions: number;
+  completedContributions: number;
+  verifiedContributions: number;
+  acceptanceRate: number;
+  topCategories: Array<{ type: ContributionType; count: number }>;
+  recentContributionStreak: number;
+  artifactsShipped: number;
+}
+
+export interface ProofOfContributionArtifact {
+  id: string;
+  contribution_post_id?: string;
+  artifact_type: ContributionArtifactType;
+  label: string;
+  url: string | null;
+  storage_path: string | null;
+  notes: string | null;
+  metadata: Record<string, unknown> | null;
+  sort_order: number;
+  created_at?: string;
+}
+
+export interface ProofOfContribution {
+  post_id: string;
+  title: string;
+  contribution_type: ContributionType;
+  task_brief: string;
+  workflow_summary: string;
+  result_summary: string | null;
+  started_at: string | null;
+  completed_at: string | null;
+  duration_minutes: number | null;
+  status: ContributionStatus;
+  verification_status: VerificationStatus;
+  accepted_by_user_id: string | null;
+  accepted_at: string | null;
+  verifier_note: string | null;
+  task_id: string | null;
+  bounty_id: string | null;
+  attestation_hash: string | null;
+  external_reference: string | null;
+  reproducibility_metadata: Record<string, unknown> | null;
+  artifacts: ProofOfContributionArtifact[];
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface Post {
@@ -41,7 +97,9 @@ export interface Post {
   author_id: string;
   visibility: 'public' | 'supporters' | 'backers';
   min_tokens_required: number;
+  post_type: PostType;
   is_pinned?: boolean;
+  monad_tx_hash?: string | null;
   location_city?: string | null;
   location_country?: string | null;
   location_country_code?: string | null;
@@ -49,6 +107,7 @@ export interface Post {
   location_lat?: number | null;
   location_lng?: number | null;
   has_location?: boolean | null;
+  proof_of_contribution?: ProofOfContribution | null;
 }
 
 export interface Trade {

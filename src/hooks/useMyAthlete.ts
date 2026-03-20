@@ -8,14 +8,34 @@ import { useUser } from '@/store/auth';
 import { useAthleteMetrics } from './useAthleteMetrics';
 import { getActivityRaw } from '@/utils/stravaActivity';
 import type { Database } from '@/integrations/supabase/types';
+import { computeContributionStats, withContribution } from '@/lib/proofOfContribution';
+import {
+  isPostEnhancementSchemaError,
+  markPostEnhancementsUnavailable,
+  shouldUsePostEnhancements,
+} from '@/lib/postSchemaCompat';
 
 type ProfileRow = Database['public']['Tables']['profiles']['Row'];
 type TokenRow = Database['public']['Tables']['athlete_tokens']['Row'];
 type PostRow = Database['public']['Tables']['posts']['Row'];
+type ContributionRow = Database['public']['Tables']['proof_of_contributions']['Row'];
+
+interface AthletePostRow extends PostRow {
+  proof_of_contributions?:
+    | (ContributionRow & {
+        proof_of_contribution_artifacts?: Database['public']['Tables']['proof_of_contribution_artifacts']['Row'][] | null;
+      })
+    | Array<
+        ContributionRow & {
+          proof_of_contribution_artifacts?: Database['public']['Tables']['proof_of_contribution_artifacts']['Row'][] | null;
+        }
+      >
+    | null;
+}
 
 type ProfileSummary = Pick<
   ProfileRow,
-  'id' | 'username' | 'display_name' | 'sport' | 'avatar_url' | 'bio' | 'instagram_url' | 'strava_url' | 'created_at'
+  'id' | 'username' | 'display_name' | 'sport' | 'avatar_url' | 'bio' | 'instagram_url' | 'strava_url' | 'created_at' | 'type'
 >;
 
 export type MyAthletePageResult = {
@@ -46,27 +66,112 @@ export function useMyAthlete() {
       const [profileResult, tokenResult, postsResult] = await Promise.all([
         supabase
           .from('profiles')
-          .select('id, username, display_name, sport, avatar_url, bio, instagram_url, strava_url, created_at')
+          .select('id, username, display_name, sport, avatar_url, bio, instagram_url, strava_url, created_at, type')
           .eq('id', user.id)
           .single(),
         supabase
           .from('athlete_tokens')
           .select('athlete_id, symbol, supply, a, b, c, treasury_balance, athlete_earnings')
           .eq('athlete_id', user.id),
-        supabase
-          .from('posts')
-          .select(
-            'id, created_at, author_id, workout_json, image_url, text, token_gated, strava_activity_id, visibility, min_tokens_required, is_pinned, location_city, location_country, location_country_code, location_lat, location_lng',
-          )
-          .eq('author_id', user.id)
-          .order('created_at', { ascending: false })
-          .range(from, to),
+        (async () => {
+          const buildPostsQuery = (includeEnhancements: boolean) =>
+            supabase
+              .from('posts')
+              .select(
+                includeEnhancements
+                  ? `
+                      id,
+                      created_at,
+                      author_id,
+                      workout_json,
+                      image_url,
+                      text,
+                      token_gated,
+                      strava_activity_id,
+                      visibility,
+                      min_tokens_required,
+                      is_pinned,
+                      location_city,
+                      location_country,
+                      location_country_code,
+                      location_lat,
+                      location_lng,
+                      post_type,
+                      monad_tx_hash,
+                      proof_of_contributions (
+                        post_id,
+                        title,
+                        contribution_type,
+                        task_brief,
+                        workflow_summary,
+                        result_summary,
+                        started_at,
+                        completed_at,
+                        duration_minutes,
+                        status,
+                        verification_status,
+                        accepted_by_user_id,
+                        accepted_at,
+                        verifier_note,
+                        task_id,
+                        bounty_id,
+                        attestation_hash,
+                        external_reference,
+                        reproducibility_metadata,
+                        created_at,
+                        updated_at,
+                        proof_of_contribution_artifacts (
+                          id,
+                          contribution_post_id,
+                          artifact_type,
+                          label,
+                          url,
+                          storage_path,
+                          notes,
+                          metadata,
+                          sort_order,
+                          created_at,
+                          updated_at
+                        )
+                      )
+                    `
+                  : `
+                      id,
+                      created_at,
+                      author_id,
+                      workout_json,
+                      image_url,
+                      text,
+                      token_gated,
+                      strava_activity_id,
+                      visibility,
+                      min_tokens_required,
+                      is_pinned,
+                      location_city,
+                      location_country,
+                      location_country_code,
+                      location_lat,
+                      location_lng
+                    `,
+              )
+              .eq('author_id', user.id)
+              .order('created_at', { ascending: false })
+              .range(from, to);
+
+          const preferEnhancements = shouldUsePostEnhancements();
+          let result = await buildPostsQuery(preferEnhancements);
+          if (preferEnhancements && result.error && isPostEnhancementSchemaError(result.error)) {
+            markPostEnhancementsUnavailable();
+            result = await buildPostsQuery(false);
+          }
+          return result;
+        })(),
       ]);
 
       const { data: rawPosts, error: postsError } = postsResult;
       if (postsError) throw postsError;
 
-      const postRows: PostRow[] = (rawPosts ?? []) as unknown as PostRow[];
+      const postRows: AthletePostRow[] = (rawPosts ?? []) as unknown as AthletePostRow[];
 
       // Fetch linked activities for these posts to get map data
       const stravaActivityIds = postRows
@@ -133,8 +238,10 @@ export function useMyAthlete() {
         strava_activity_id: post.strava_activity_id,
         strava_map_polyline: post.strava_activity_id ? activityMap.get(post.strava_activity_id) : null,
         author_id: post.author_id,
+        monad_tx_hash: post.monad_tx_hash ?? null,
         visibility: (post.visibility as Post['visibility']) ?? 'public',
         min_tokens_required: post.min_tokens_required ?? 0,
+        post_type: (post.post_type as Post['post_type']) ?? 'proof_of_sweat',
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         is_pinned: (post as any).is_pinned,
         // Location fields
@@ -143,9 +250,10 @@ export function useMyAthlete() {
         location_country_code: post.location_country_code ?? null,
         location_lat: post.location_lat ?? null,
         location_lng: post.location_lng ?? null,
-      }));
+      })).map((post) => withContribution(post, postRows.find((row) => row.id === post.id)?.proof_of_contributions));
 
       const workouts: Workout[] = posts
+        .filter((p) => p.post_type === 'proof_of_sweat')
         .filter((p) => p.workout_json && typeof p.workout_json === 'object' && !Array.isArray(p.workout_json))
         .map((p) => {
           const workoutJson = p.workout_json as Partial<Workout>;
@@ -189,6 +297,8 @@ export function useMyAthlete() {
         volume24h: 0,
         workouts,
         posts,
+        profileType: (profileData.type as Athlete['profileType']) ?? 'human',
+        contributionStats: computeContributionStats(posts),
       };
 
       const metrics = metricsMap?.get(athlete.id);
