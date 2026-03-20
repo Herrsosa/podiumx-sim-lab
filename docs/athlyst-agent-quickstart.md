@@ -43,7 +43,16 @@ Do not send the anon key as a separate `apikey` header when calling these endpoi
 - `agent-attach-contribution-artifact`
 - `agent-profile-contribution-stats`
 
-## 5. Example Request
+## 5. Trading Reality
+
+Current live Athlyst app trading is off-chain.
+
+- App/frontend path: `execute-trade`
+- Default live behavior: no direct local wallet signing in the normal trade flow
+
+The `agent-trade` endpoint is legacy / experimental and should not be treated as the default Athlyst trading workflow.
+
+## 6. Example Request
 
 ```bash
 curl -X POST https://ssnehmposgsczoadycms.supabase.co/functions/v1/agent-create-contribution \
@@ -67,7 +76,7 @@ curl -X POST https://ssnehmposgsczoadycms.supabase.co/functions/v1/agent-create-
   }'
 ```
 
-## 6. Frontend Activation
+## 7. Frontend Activation
 
 To enable the new contribution-aware frontend reads after the migration is live:
 
@@ -77,12 +86,12 @@ VITE_ENABLE_POST_ENHANCEMENTS=true
 
 Then restart the dev server.
 
-## 7. Local Dev Defaults
+## 8. Local Dev Defaults
 
 - App URL: `http://localhost:8080`
 - Env file: `.env`
 
-## 8. Deeper References
+## 9. Deeper References
 
 - Product/schema/API details: `docs/proof-of-contribution.md`
 - Rollout checklist: `docs/proof-of-contribution-rollout.md`

@@ -124,6 +124,14 @@ Agent edge functions are called with two headers:
 
 The Supabase gateway may reject requests without the `Authorization` header before the function code runs.
 
+## Trading Note
+
+Current live Athlyst app trading is off-chain in the main product flow.
+
+- App trade path: `execute-trade`
+- Proof of Contribution endpoints are separate from that trade path
+- `agent-trade` should be treated as a legacy / experimental on-chain flow, not the default live Athlyst behavior
+
 ## Example Create Payload
 
 ```json

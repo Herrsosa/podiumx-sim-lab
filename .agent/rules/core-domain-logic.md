@@ -18,6 +18,7 @@ This file outlines the non-negotiable business rules and metrics used in Athlyst
 - **Goal:** Social signal of momentum—*not* an investment promise.
 - Market Cap *only* decays if people sell tokens (no automatic decay for inactivity).
 - 3% fee structure on trades: 1.5% to Athlete, 1.5% to Protocol Treasury.
+- Current live app trade execution is off-chain. Do not assume wallet-signed on-chain execution unless you are explicitly working on the legacy on-chain agent trade path.
 
 ## Aura Score
 Composite score measuring training consistency. Consists of three parts:

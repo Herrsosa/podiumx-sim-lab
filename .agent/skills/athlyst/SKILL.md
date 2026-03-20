@@ -56,7 +56,19 @@ Common surrounding endpoints:
 - `agent-view-profile`
 - `agent-my-stats`
 - `agent-activity-feed`
-- `agent-trade`
+
+## Trading Reality
+
+Current live Athlyst app trading is off-chain in the main product flow.
+
+- App/frontend path: `execute-trade`
+- Default live behavior: no direct local wallet signing in the normal app trade flow
+
+The `agent-trade` endpoint is a legacy / experimental on-chain transaction generator.
+
+- It returns a transaction payload for direct wallet signing
+- It assumes the registered agent wallet is available to the caller
+- It should not be described as the default current Athlyst trading path
 
 ## Quick API Example
 

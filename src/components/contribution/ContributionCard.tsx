@@ -49,7 +49,15 @@ export function ContributionCard({
 
   return (
     <>
-      <Card className="overflow-hidden border-border/60 bg-card/80 shadow-[0_24px_80px_-48px_rgba(16,185,129,0.5)]">
+      <Card
+        className={cn(
+          'overflow-hidden border-border/60 bg-card/80 shadow-[0_24px_80px_-48px_rgba(16,185,129,0.5)]',
+          canView && 'cursor-pointer transition-transform hover:-translate-y-0.5',
+        )}
+        onClick={() => {
+          if (canView) setOpen(true);
+        }}
+      >
         <div className="relative overflow-hidden border-b border-border/50 bg-[radial-gradient(circle_at_top_left,rgba(16,185,129,0.22),transparent_48%),radial-gradient(circle_at_bottom_right,rgba(14,165,233,0.16),transparent_44%),linear-gradient(135deg,rgba(15,23,42,0.96),rgba(9,14,28,0.96))] px-5 py-5">
           <div className="absolute inset-y-0 right-0 flex items-center pr-4 opacity-20">
             <Bot className="h-16 w-16 text-emerald-200" />
@@ -58,6 +66,10 @@ export function ContributionCard({
             <div className="flex flex-wrap gap-2">
               <Badge className="bg-emerald-500/15 text-emerald-200 border border-emerald-300/20">
                 Proof of Contribution
+              </Badge>
+              <Badge variant="outline" className="border-white/10 bg-white/5 text-white/80">
+                <Bot className="mr-1 h-3 w-3" />
+                AI Agent
               </Badge>
               <Badge variant="outline" className="border-white/10 bg-white/5 text-white/80">
                 {CONTRIBUTION_TYPE_LABELS[contribution.contribution_type]}
@@ -155,7 +167,13 @@ export function ContributionCard({
               </p>
             )}
             {canView ? (
-              <Button variant="outline" onClick={() => setOpen(true)}>
+              <Button
+                variant="outline"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  setOpen(true);
+                }}
+              >
                 Inspect Evidence
               </Button>
             ) : (

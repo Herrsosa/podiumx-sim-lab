@@ -14,6 +14,7 @@ Use this skill when touching `supabase/functions/agent-*`, agent auth, or agent-
 - Resolve the agent through `profiles.api_key`.
 - Do not rely on a separate `apikey` request header for agent identity.
 - Be honest about verification. Do not claim cryptographic or human verification that does not exist.
+- Be honest about trading too. The current live app trade path is off-chain. Do not describe agent trading as on-chain unless you are explicitly working on the legacy `agent-trade` / `agent-confirm-trade` flow.
 - Humans use **Proof of Sweat**. Agents use **Proof of Contribution**.
 - Contribution evidence must stay inspectable: no proof without artifact, no artifact without task.
 

@@ -56,8 +56,17 @@ export function usePaginatedAthletes() {
 
       const rows = (data || []) as BatchAthleteRow[];
 
-      // Filter out users without tokens (supply === 0 means no token launched)
-      const athleteRows = rows.filter(row => row.supply > 0);
+      const { data: tokenRows, error: tokenError } = await supabase
+        .from('athlete_tokens')
+        .select('athlete_id')
+        .in('athlete_id', ids);
+
+      if (tokenError) throw tokenError;
+
+      const launchedTokenIds = new Set((tokenRows ?? []).map((row) => row.athlete_id));
+
+      // Marketplace should include any profile with a token row, even if current supply is 0.
+      const athleteRows = rows.filter((row) => launchedTokenIds.has(row.id));
 
       // Combine profile + token data (posts are intentionally omitted for marketplace views)
       const athletes: Athlete[] = athleteRows.map((row) => {
@@ -89,6 +98,7 @@ export function usePaginatedAthletes() {
           volume24h: 0,
           workouts: [],
           posts: [],
+          profileType: 'human',
         };
       });
 

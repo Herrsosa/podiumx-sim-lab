@@ -5,7 +5,6 @@ type MaybePostgrestError = {
   hint?: string | null;
 };
 
-const POST_ENHANCEMENTS_STORAGE_KEY = 'athlyst-post-enhancements-enabled';
 const POST_ENHANCEMENTS_ENV_ENABLED = import.meta.env.VITE_ENABLE_POST_ENHANCEMENTS === 'true';
 let cachedPostEnhancementsEnabled: boolean | null = null;
 
@@ -41,22 +40,6 @@ export function isPostEnhancementSchemaError(error: unknown): error is MaybePost
   );
 }
 
-function readStoredPostEnhancementPreference(): boolean | null {
-  if (typeof window === 'undefined') {
-    return null;
-  }
-
-  try {
-    const stored = window.localStorage.getItem(POST_ENHANCEMENTS_STORAGE_KEY);
-    if (stored === 'true') return true;
-    if (stored === 'false') return false;
-  } catch {
-    // Ignore storage access failures and fall back to env/config.
-  }
-
-  return null;
-}
-
 export function shouldUsePostEnhancements(): boolean {
   if (!POST_ENHANCEMENTS_ENV_ENABLED) {
     return false;
@@ -66,21 +49,10 @@ export function shouldUsePostEnhancements(): boolean {
     return cachedPostEnhancementsEnabled;
   }
 
-  const storedPreference = readStoredPostEnhancementPreference();
-  cachedPostEnhancementsEnabled = storedPreference ?? true;
+  cachedPostEnhancementsEnabled = true;
   return cachedPostEnhancementsEnabled;
 }
 
 export function markPostEnhancementsUnavailable() {
   cachedPostEnhancementsEnabled = false;
-
-  if (typeof window === 'undefined') {
-    return;
-  }
-
-  try {
-    window.localStorage.setItem(POST_ENHANCEMENTS_STORAGE_KEY, 'false');
-  } catch {
-    // Ignore storage access failures.
-  }
 }

@@ -246,6 +246,10 @@ serve(async (req) => {
                 const grossMon = Number(ethers.formatEther(grossCostWei));
 
                 return new Response(JSON.stringify({
+                    mode: "legacy_onchain",
+                    warning:
+                        "Current live Athlyst app trading uses the off-chain execute-trade flow. " +
+                        "agent-trade is a legacy/experimental endpoint that returns a transaction for direct wallet signing.",
                     transaction: {
                         to: bondingCurveAddress,
                         data: transactionData,
@@ -276,8 +280,8 @@ serve(async (req) => {
                         explorer_url: monad.explorerUrl,
                     },
                     instructions:
-                        `Sign this transaction with your wallet and submit to Monad (chainId: ${monad.chainId}). ` +
-                        `After submission, call POST /agent-confirm-trade with the tx_hash to index your trade.`,
+                        `Legacy on-chain flow: sign this transaction with the registered agent wallet and submit to Monad (chainId: ${monad.chainId}). ` +
+                        `After submission, call POST /agent-confirm-trade with the tx_hash to index the trade.`,
                 }), {
                     headers: { ...corsHeaders, "Content-Type": "application/json" },
                 });
@@ -299,6 +303,10 @@ serve(async (req) => {
             const grossMon = Number(ethers.formatEther(grossPayoutWei));
 
             return new Response(JSON.stringify({
+                mode: "legacy_onchain",
+                warning:
+                    "Current live Athlyst app trading uses the off-chain execute-trade flow. " +
+                    "agent-trade is a legacy/experimental endpoint that returns a transaction for direct wallet signing.",
                 transaction: {
                     to: bondingCurveAddress,
                     data: transactionData,
@@ -325,8 +333,8 @@ serve(async (req) => {
                     explorer_url: monad.explorerUrl,
                 },
                 instructions:
-                    `Sign this transaction with your wallet and submit to Monad (chainId: ${monad.chainId}). ` +
-                    `After submission, call POST /agent-confirm-trade with the tx_hash to index your trade.`,
+                    `Legacy on-chain flow: sign this transaction with the registered agent wallet and submit to Monad (chainId: ${monad.chainId}). ` +
+                    `After submission, call POST /agent-confirm-trade with the tx_hash to index the trade.`,
             }), {
                 headers: { ...corsHeaders, "Content-Type": "application/json" },
             });
