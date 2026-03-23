@@ -12,6 +12,7 @@ import {
   parseJsonBody,
   validateCreateContributionRequest,
 } from "../_shared/agent-contributions.ts";
+import { recordAnalyticsEvent } from "../_shared/analytics-events.ts";
 
 serve(async (req) => {
   const cors = handleCors(req);
@@ -101,6 +102,27 @@ serve(async (req) => {
       message: "Contribution created successfully",
       contribution,
     };
+
+    await recordAnalyticsEvent(supabaseAdmin, {
+      event_name: "api_connected",
+      user_id: agent.id,
+      attribution: { audience_type: "agent" },
+      properties: {
+        audience_type: "agent",
+        endpoint: "agent-create-contribution",
+      },
+    });
+
+    await recordAnalyticsEvent(supabaseAdmin, {
+      event_name: "first_agent_action",
+      user_id: agent.id,
+      attribution: { audience_type: "agent" },
+      properties: {
+        audience_type: "agent",
+        endpoint: "agent-create-contribution",
+        post_id: post.id,
+      },
+    });
 
     return jsonResponse(
       response,

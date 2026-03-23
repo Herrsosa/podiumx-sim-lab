@@ -13,6 +13,7 @@ import type { Database } from '@/integrations/supabase/types';
 import { Upload, Trophy, ShoppingBag, Dumbbell, Rocket } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { trackProfileCompleted } from "@/lib/analytics";
 
 import { useOnboardingStatus } from "@/hooks/useOnboardingStatus";
 import { useUser } from "@/store/auth";
@@ -168,6 +169,7 @@ export default function Onboarding() {
         });
 
       if (error) throw error;
+      trackProfileCompleted();
       await queryClient.invalidateQueries({ queryKey: profileQueryKey });
       setStep('WALLET');
     } catch (error: unknown) {

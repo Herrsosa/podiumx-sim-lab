@@ -15,7 +15,13 @@ export type AnalyticsEvent =
     | 'signup_started'
     | 'signup_completed'
     | 'waitlist_joined'
+    | 'profile_completed'
     | 'strava_connected'
+    | 'garmin_connected'
+    | 'wallet_connected'
+    | 'api_connected'
+    | 'agent_profile_completed'
+    | 'first_agent_action'
     | 'workout_posted'
     | 'workout_shared'
     | 'token_purchased'
@@ -37,6 +43,13 @@ export interface UTMData {
     utm_campaign?: string;
     utm_content?: string;
     utm_term?: string;
+    experiment_id?: string;
+    channel?: string;
+    audience_type?: 'athlete' | 'agent';
+    landing_page?: string;
+    referral_code?: string;
+    invite_link_id?: string;
+    message_template_id?: string;
     referrer?: string;
 }
 
@@ -59,6 +72,13 @@ export function captureUTMParams(): UTMData {
         utm_campaign: params.get('utm_campaign') || undefined,
         utm_content: params.get('utm_content') || undefined,
         utm_term: params.get('utm_term') || undefined,
+        experiment_id: params.get('experiment_id') || params.get('xp') || undefined,
+        channel: params.get('channel') || undefined,
+        audience_type: (params.get('audience_type') as 'athlete' | 'agent' | null) || undefined,
+        landing_page: params.get('landing_page') || window.location.pathname || undefined,
+        referral_code: params.get('referral_code') || params.get('invite') || undefined,
+        invite_link_id: params.get('invite_link_id') || undefined,
+        message_template_id: params.get('message_template_id') || undefined,
         referrer: document.referrer || undefined,
     };
 
@@ -144,7 +164,6 @@ export async function trackEvent(
             user_id: user?.id || null,
             anonymous_id: user?.id ? null : getAnonymousId(),
             event_name: eventName,
-            properties,
             utm_source: utmData.utm_source || null,
             utm_medium: utmData.utm_medium || null,
             utm_campaign: utmData.utm_campaign || null,
@@ -152,6 +171,16 @@ export async function trackEvent(
             utm_term: utmData.utm_term || null,
             referrer: utmData.referrer || null,
             user_agent: typeof navigator !== 'undefined' ? navigator.userAgent : null,
+            properties: {
+                experiment_id: utmData.experiment_id || null,
+                channel: utmData.channel || null,
+                audience_type: utmData.audience_type || null,
+                landing_page: utmData.landing_page || (typeof window !== 'undefined' ? window.location.pathname : null),
+                referral_code: utmData.referral_code || null,
+                invite_link_id: utmData.invite_link_id || null,
+                message_template_id: utmData.message_template_id || null,
+                ...properties,
+            },
         };
 
         // Insert into analytics_events table
@@ -179,6 +208,7 @@ export function trackPageView(pageName: string, properties: AnalyticsProperties 
     trackEvent('page_view', {
         page: pageName,
         url: typeof window !== 'undefined' ? window.location.href : '',
+        landing_page: pageName,
         ...properties,
     });
 }
@@ -186,15 +216,15 @@ export function trackPageView(pageName: string, properties: AnalyticsProperties 
 /**
  * Track signup started (user began signup flow)
  */
-export function trackSignupStarted(method: 'email' | 'google' = 'email'): void {
-    trackEvent('signup_started', { method });
+export function trackSignupStarted(method: 'email' | 'google' = 'email', audienceType: 'athlete' | 'agent' = 'athlete'): void {
+    trackEvent('signup_started', { method, audience_type: audienceType });
 }
 
 /**
  * Track signup completed
  */
-export function trackSignupCompleted(): void {
-    trackEvent('signup_completed', {});
+export function trackSignupCompleted(audienceType: 'athlete' | 'agent' = 'athlete'): void {
+    trackEvent('signup_completed', { audience_type: audienceType });
 }
 
 /**
@@ -209,6 +239,13 @@ export function trackWaitlistJoined(email: string): void {
  */
 export function trackStravaConnected(): void {
     trackEvent('strava_connected', {});
+}
+
+/**
+ * Track athlete profile completion
+ */
+export function trackProfileCompleted(): void {
+    trackEvent('profile_completed', { audience_type: 'athlete' });
 }
 
 /**
@@ -316,6 +353,7 @@ export default {
     trackSignupStarted,
     trackSignupCompleted,
     trackWaitlistJoined,
+    trackProfileCompleted,
     trackStravaConnected,
     trackWorkoutPosted,
     trackWorkoutShared,

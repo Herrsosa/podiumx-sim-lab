@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
 import { getMonadLoggerAddress, getMonadRpcUrl } from "../_shared/monad.ts";
+import { recordAnalyticsEvent } from "../_shared/analytics-events.ts";
 
 const corsHeaders = {
     "Access-Control-Allow-Origin": "*",
@@ -120,6 +121,27 @@ serve(async (req) => {
         } else if (monadPrivateKey && monadLoggerAddress && !monadRpcUrl) {
             console.error("Monad logging skipped: MONAD_RPC_URL is missing");
         }
+
+        await recordAnalyticsEvent(supabaseAdmin, {
+            event_name: "api_connected",
+            user_id: profile.id,
+            attribution: { audience_type: "agent" },
+            properties: {
+                audience_type: "agent",
+                endpoint: "agent-post-workout",
+            },
+        });
+
+        await recordAnalyticsEvent(supabaseAdmin, {
+            event_name: "first_agent_action",
+            user_id: profile.id,
+            attribution: { audience_type: "agent" },
+            properties: {
+                audience_type: "agent",
+                endpoint: "agent-post-workout",
+                post_id: post.id,
+            },
+        });
 
         return new Response(JSON.stringify({
             message: "Workout posted successfully",

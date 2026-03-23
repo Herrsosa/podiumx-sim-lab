@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
+import { readAttribution, recordAnalyticsEvent } from "../_shared/analytics-events.ts";
 
 const corsHeaders = {
     "Access-Control-Allow-Origin": "*",
@@ -21,6 +22,7 @@ serve(async (req) => {
         const agent_name = body.agent_name;
         const description = body.description || "";
         const wallet_address = body.wallet_address;
+        const attribution = readAttribution(body.attribution ?? body);
 
         // Validation
         if (!agent_name) {
@@ -176,6 +178,32 @@ serve(async (req) => {
 
         // NOTE: No longer creating wallets.balance for agents
         // Agents use their own MON on Monad mainnet
+
+        await recordAnalyticsEvent(supabase, {
+            event_name: "signup_completed",
+            user_id: profile.id,
+            attribution: {
+                ...attribution,
+                audience_type: "agent",
+            },
+            properties: {
+                audience_type: "agent",
+                endpoint: "agent-register",
+            },
+        });
+
+        await recordAnalyticsEvent(supabase, {
+            event_name: "agent_profile_completed",
+            user_id: profile.id,
+            attribution: {
+                ...attribution,
+                audience_type: "agent",
+            },
+            properties: {
+                audience_type: "agent",
+                endpoint: "agent-register",
+            },
+        });
 
         return new Response(
             JSON.stringify({

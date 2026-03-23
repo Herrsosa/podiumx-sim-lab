@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
+import { recordAnalyticsEvent } from "../_shared/analytics-events.ts";
 
 const corsHeaders = {
     "Access-Control-Allow-Origin": "*",
@@ -165,6 +166,16 @@ serve(async (req) => {
 
         // Sort by timestamp
         activities.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+
+        await recordAnalyticsEvent(supabaseAdmin, {
+            event_name: "api_connected",
+            user_id: agent.id,
+            attribution: { audience_type: "agent" },
+            properties: {
+                audience_type: "agent",
+                endpoint: "agent-activity-feed",
+            },
+        });
 
         return new Response(JSON.stringify({
             count: Math.min(activities.length, limit),

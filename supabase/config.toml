@@ -116,3 +116,6 @@ verify_jwt = false
 
 [functions.agent-watchlist-remove]
 verify_jwt = false
+
+[functions.internal-agent-metrics]
+verify_jwt = false

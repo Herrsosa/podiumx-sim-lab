@@ -7,6 +7,7 @@ import { useUser } from "@/store/auth";
 import { useQueryClient } from "@tanstack/react-query";
 import { stravaConnectionQueryKey } from "@/hooks/useStravaConnection";
 import { useAwardPoints } from "@/hooks/usePoints";
+import { trackStravaConnected } from "@/lib/analytics";
 
 type Status = "idle" | "loading" | "success" | "error" | "missing";
 
@@ -103,6 +104,7 @@ export default function StravaLinkedResult() {
 
       setStatus("success");
       setMessage("Strava account connected successfully.");
+      trackStravaConnected();
       toast({
         title: "Strava connected",
         description: "Your workouts will sync automatically.",

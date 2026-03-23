@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, Instagram, CheckCircle2, Eye, EyeOff, UserPlus } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { captureUTMParams, trackSignupStarted, trackSignupCompleted, trackWaitlistJoined } from "@/lib/analytics";
+import { captureUTMParams, getAnonymousId, getUTMData, trackSignupStarted, trackSignupCompleted, trackWaitlistJoined } from "@/lib/analytics";
 import { validateReferralCode, applyReferral } from "@/hooks/useReferral";
 
 export default function Auth() {
@@ -187,6 +187,8 @@ export default function Auth() {
           emailRedirectTo: `${window.location.origin}/auth`,
           data: {
             referral_code: referralCode, // Store referral code in user metadata
+            signup_anonymous_id: getAnonymousId(),
+            signup_attribution: getUTMData(),
           },
         },
       });

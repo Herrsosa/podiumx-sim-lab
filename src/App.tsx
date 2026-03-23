@@ -23,6 +23,7 @@ import { AuthProvider } from "@/providers/AuthProvider";
 import { useAuthLoading, useUser } from "@/store/auth";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import { captureUTMParams, trackPageView } from "@/lib/analytics";
 
 // Lazy load heavy pages
 const Onboarding = lazy(() => import("./pages/Onboarding"));
@@ -109,10 +110,18 @@ function RouteGuard({ requireAuth = false, children }: RouteGuardProps) {
 
 function AppContent() {
   const initializeStore = useAppStore((state) => state.initializeStore);
+  const location = useLocation();
 
   useEffect(() => {
     initializeStore();
   }, [initializeStore]);
+
+  useEffect(() => {
+    captureUTMParams();
+    trackPageView(location.pathname, {
+      search: location.search || null,
+    });
+  }, [location.pathname, location.search]);
 
   return (
     <>

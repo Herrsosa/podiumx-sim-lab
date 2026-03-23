@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
 import { ethers } from "https://esm.sh/ethers@6.9.0";
+import { recordAnalyticsEvent } from "../_shared/analytics-events.ts";
 
 const corsHeaders = {
     "Access-Control-Allow-Origin": "*",
@@ -94,6 +95,26 @@ serve(async (req) => {
                 status: 500,
             });
         }
+
+        await recordAnalyticsEvent(supabaseAdmin, {
+            event_name: "wallet_connected",
+            user_id: agent.id,
+            attribution: { audience_type: "agent" },
+            properties: {
+                audience_type: "agent",
+                endpoint: "agent-connect-wallet",
+            },
+        });
+
+        await recordAnalyticsEvent(supabaseAdmin, {
+            event_name: "api_connected",
+            user_id: agent.id,
+            attribution: { audience_type: "agent" },
+            properties: {
+                audience_type: "agent",
+                endpoint: "agent-connect-wallet",
+            },
+        });
 
         return new Response(JSON.stringify({
             success: true,

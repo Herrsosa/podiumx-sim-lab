@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
+import { recordAnalyticsEvent } from "../_shared/analytics-events.ts";
 
 const corsHeaders = {
     "Access-Control-Allow-Origin": "*",
@@ -143,6 +144,16 @@ serve(async (req) => {
             .select("user_id", { count: "exact", head: true })
             .eq("athlete_id", userId)
             .gt("qty", 0);
+
+        await recordAnalyticsEvent(supabaseAdmin, {
+            event_name: "api_connected",
+            user_id: agent.id,
+            attribution: { audience_type: "agent" },
+            properties: {
+                audience_type: "agent",
+                endpoint: "agent-view-profile",
+            },
+        });
 
         return new Response(JSON.stringify({
             user_id: userId,

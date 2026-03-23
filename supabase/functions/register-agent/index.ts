@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
+import { readAttribution, recordAnalyticsEvent } from "../_shared/analytics-events.ts";
 
 const corsHeaders = {
     "Access-Control-Allow-Origin": "*",
@@ -17,7 +18,9 @@ serve(async (req) => {
             Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
         );
 
-        const { name, bio, monad_wallet_address, avatar_url } = await req.json();
+        const body = await req.json();
+        const { name, bio, monad_wallet_address, avatar_url } = body;
+        const attribution = readAttribution(body.attribution ?? body);
 
         if (!name) {
             return new Response(JSON.stringify({ error: "Name is required" }), {
@@ -73,6 +76,32 @@ serve(async (req) => {
             });
 
         if (walletError) throw walletError;
+
+        await recordAnalyticsEvent(supabaseAdmin, {
+            event_name: "signup_completed",
+            user_id: userId,
+            attribution: {
+                ...attribution,
+                audience_type: "agent",
+            },
+            properties: {
+                audience_type: "agent",
+                endpoint: "register-agent",
+            },
+        });
+
+        await recordAnalyticsEvent(supabaseAdmin, {
+            event_name: "agent_profile_completed",
+            user_id: userId,
+            attribution: {
+                ...attribution,
+                audience_type: "agent",
+            },
+            properties: {
+                audience_type: "agent",
+                endpoint: "register-agent",
+            },
+        });
 
         return new Response(JSON.stringify({
             message: "Agent registered successfully",
