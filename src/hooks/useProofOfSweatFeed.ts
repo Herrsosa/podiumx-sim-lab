@@ -305,7 +305,7 @@ export function useProofOfSweatFeed(options: UseProofOfSweatFeedOptions = {}) {
             sport: (profile?.sport as Sport) || 'Running',
             profileType: (profile?.type as 'human' | 'agent' | undefined) ?? 'human',
             avatar: resolveAvatarUrl(
-              (profile?.username && athleteAvatars[profile.username]) ?? profile?.avatar_url ?? undefined,
+              profile?.avatar_url ?? (profile?.username ? athleteAvatars[profile.username] : undefined),
               {
                 size: 160,
                 seed: profile?.username ?? row.author_id,

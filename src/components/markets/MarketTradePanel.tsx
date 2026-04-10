@@ -5,7 +5,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
-import { usePredictionCredits, usePlaceBet, useUserMarketPositions } from '@/hooks/usePredictionCredits';
+import {
+  usePlacePredictionEntry,
+  usePredictionWalletSummary,
+  useUserPredictionPositions,
+} from '@/hooks/usePredictionWallet';
 import { cn } from '@/lib/utils';
 import type { MarketWithOutcomes } from '@/types/markets';
 
@@ -18,45 +22,46 @@ const STAKE_OPTIONS = [10, 25, 50, 100];
 
 export function MarketTradePanel({ market, onBetPlaced }: MarketTradePanelProps) {
   const { toast } = useToast();
-  const { data: credits, isLoading: creditsLoading } = usePredictionCredits();
-  const { data: positions } = useUserMarketPositions(market.id);
-  const placeBet = usePlaceBet();
+  const { data: walletSummary, isLoading: walletLoading } = usePredictionWalletSummary();
+  const { data: positions } = useUserPredictionPositions(market.id);
+  const placeEntry = usePlacePredictionEntry();
 
   const [selectedOutcome, setSelectedOutcome] = useState<string | null>(null);
   const [stake, setStake] = useState(25);
 
   const isOpen = market.status === 'open' && new Date(market.closesAt) > new Date();
+  const isLocked = market.status === 'locked' || market.status === 'resolving';
   const isResolved = market.status === 'resolved';
 
-  const handlePlaceBet = async () => {
-    if (!selectedOutcome || !credits) return;
+  const handlePlaceEntry = async () => {
+    if (!selectedOutcome || !walletSummary) return;
 
-    if (credits.balance < stake) {
+    if (walletSummary.availableBalance < stake) {
       toast({
-        title: 'Insufficient credits',
-        description: `You have ${ credits.balance } credits but need ${ stake } `,
+        title: 'Insufficient SOL',
+        description: `You have ${ walletSummary.availableBalance } SOL available but need ${ stake } SOL`,
         variant: 'destructive',
       });
       return;
     }
 
     try {
-      const result = await placeBet.mutateAsync({
+      const result = await placeEntry.mutateAsync({
         marketId: market.id,
         outcomeId: selectedOutcome,
-        stake,
+        stakeAmount: stake,
       });
 
       if (result.success) {
         toast({
-          title: 'Bet placed!',
-          description: `You received ${ result.shares_received?.toFixed(2) } shares`,
+          title: 'Prediction placed',
+          description: `Locked ${ result.stakeAmount ?? stake } SOL on your selected outcome`,
         });
         setSelectedOutcome(null);
         onBetPlaced?.();
       } else {
         toast({
-          title: 'Bet failed',
+          title: 'Prediction failed',
           description: result.error || 'Unknown error',
           variant: 'destructive',
         });
@@ -102,7 +107,12 @@ export function MarketTradePanel({ market, onBetPlaced }: MarketTradePanelProps)
                 Open
               </Badge>
             )}
-            {!isOpen && !isResolved && (
+            {isLocked && (
+              <Badge variant="secondary" className="bg-amber-500/10 text-amber-400 border-amber-500/20">
+                Locked
+              </Badge>
+            )}
+            {!isOpen && !isLocked && !isResolved && (
               <Badge variant="secondary" className="bg-muted text-muted-foreground">
                 Closed
               </Badge>
@@ -114,15 +124,21 @@ export function MarketTradePanel({ market, onBetPlaced }: MarketTradePanelProps)
               </Badge>
             )}
             <span className="text-xs text-muted-foreground">
-              {isOpen ? `Closes in ${ getTimeRemaining() } ` : isResolved ? 'Ended' : getTimeRemaining()}
+              {isOpen
+                ? `Locks in ${ getTimeRemaining() }`
+                : isLocked
+                  ? 'Awaiting resolution'
+                  : isResolved
+                    ? 'Resolved'
+                    : getTimeRemaining()}
             </span>
           </div>
         </div>
 
         <div className="flex items-center gap-4 text-sm text-muted-foreground mt-2">
-          <span>{market.totalTrades.toLocaleString()} trades</span>
+          <span>{market.totalTrades.toLocaleString()} entries</span>
           <span className="text-primary font-medium">
-            {market.totalPool.toLocaleString()} credits pooled
+            {market.totalPool.toLocaleString()} SOL staked
           </span>
         </div>
       </CardHeader>
@@ -158,7 +174,7 @@ export function MarketTradePanel({ market, onBetPlaced }: MarketTradePanelProps)
                     <span className="font-semibold">{outcome.label}</span>
                     {position && (
                       <Badge variant="outline" className="text-xs">
-                        {position.totalShares.toFixed(1)} shares
+                        {position.totalStake.toFixed(0)} SOL
                       </Badge>
                     )}
                     {isWinner && (
@@ -190,7 +206,7 @@ export function MarketTradePanel({ market, onBetPlaced }: MarketTradePanelProps)
             {/* Stake selector */}
             <div>
               <label className="text-sm font-medium text-muted-foreground mb-2 block">
-                Stake (credits)
+                Stake (SOL)
               </label>
               <div className="flex gap-2">
                 {STAKE_OPTIONS.map((option) => (
@@ -210,28 +226,28 @@ export function MarketTradePanel({ market, onBetPlaced }: MarketTradePanelProps)
             {/* Balance and bet button */}
             <div className="flex items-center justify-between">
               <div className="text-sm">
-                <span className="text-muted-foreground">Balance: </span>
-                {creditsLoading ? (
+                <span className="text-muted-foreground">Available: </span>
+                {walletLoading ? (
                   <Loader2 className="inline h-4 w-4 animate-spin" />
                 ) : (
                   <span className="font-semibold text-primary">
-                    {credits?.balance.toLocaleString() || 0} credits
+                    {walletSummary?.availableBalance.toLocaleString() || 0} SOL
                   </span>
                 )}
               </div>
 
               <Button
-                onClick={handlePlaceBet}
-                disabled={!selectedOutcome || placeBet.isPending || (credits?.balance || 0) < stake}
+                onClick={handlePlaceEntry}
+                disabled={!selectedOutcome || placeEntry.isPending || (walletSummary?.availableBalance || 0) < stake}
                 className="min-w-32"
               >
-                {placeBet.isPending ? (
+                {placeEntry.isPending ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     Placing...
                   </>
                 ) : (
-                  `Bet ${ stake } credits`
+                  `Stake ${ stake } SOL`
                 )}
               </Button>
             </div>
@@ -257,11 +273,11 @@ export function MarketTradePanel({ market, onBetPlaced }: MarketTradePanelProps)
                   <div>
                     <span className="font-medium">{position.outcomeLabel}</span>
                     <span className="text-sm text-muted-foreground ml-2">
-                      {position.totalShares.toFixed(2)} shares
+                      {position.entryCount} entr{position.entryCount === 1 ? 'y' : 'ies'}
                     </span>
                   </div>
                   <span className="text-sm font-medium text-muted-foreground">
-                    {position.totalStake} credits
+                    {position.totalStake} SOL
                   </span>
                 </div>
               ))}
@@ -273,8 +289,7 @@ export function MarketTradePanel({ market, onBetPlaced }: MarketTradePanelProps)
         <div className="flex items-start gap-2 p-3 rounded-lg bg-muted/30 text-xs text-muted-foreground">
           <AlertCircle className="h-4 w-4 flex-shrink-0 mt-0.5" />
           <span>
-            Credits only. No real money involved. This is for entertainment and community engagement
-            purposes.
+            Uses the offchain Athlyst wallet balance, currently labeled SOL. No real money is involved.
           </span>
         </div>
       </CardContent>

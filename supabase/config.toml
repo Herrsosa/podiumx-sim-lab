@@ -9,6 +9,18 @@ verify_jwt = true
 [functions.execute-trade]
 verify_jwt = true
 
+[functions.place-prediction-entry-v2]
+verify_jwt = true
+
+[functions.create-prediction-market-v2]
+verify_jwt = false
+
+[functions.resolve-prediction-market-v2]
+verify_jwt = false
+
+[functions.cancel-prediction-market-v2]
+verify_jwt = false
+
 [functions.credit-test-balance]
 verify_jwt = true
 

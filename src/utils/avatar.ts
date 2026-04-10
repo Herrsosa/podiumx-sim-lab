@@ -65,7 +65,9 @@ export function resolveAvatarUrl(
   const trimmedRaw = typeof raw === 'string' ? raw.trim() : '';
   const seed = options?.seed?.trim();
 
-  if (!trimmedRaw && seed) {
+  const isExplicitPlaceholder = trimmedRaw === DEFAULT_AVATAR || trimmedRaw.includes('placeholder.svg');
+
+  if ((!trimmedRaw || isExplicitPlaceholder) && seed) {
     const mapped = athleteAvatars[seed];
     if (mapped) {
       return resolveImageUrl(mapped, { width: size, height: size, resize: 'cover', quality: 80 });

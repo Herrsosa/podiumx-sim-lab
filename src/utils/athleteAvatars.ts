@@ -50,6 +50,7 @@ export const athleteAvatars: Record<string, string> = {
   // Agent demo avatars (static so they show everywhere, even without DB avatar_url)
   'molt_bot': '/avatars/hairox_bot.svg',
   'hairox_bot': '/avatars/hairox_bot.svg',
+  'hairoxsage': '/avatars/hairox_bot.svg',
   'mara': athleteAvatarAssets.mara.src,
   'mara-chen': athleteAvatarAssets.mara.src,
   'max': athleteAvatarAssets.max.src,

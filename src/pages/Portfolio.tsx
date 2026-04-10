@@ -160,6 +160,7 @@ export default function Portfolio() {
             <div className="flex items-center gap-3 flex-1 min-w-0">
               <UserAvatar
                 src={athlete.avatar}
+                seed={athlete.slug}
                 alt={athlete.name}
                 size={40}
                 className="ring-2 ring-primary/20 flex-shrink-0"
@@ -449,6 +450,7 @@ export default function Portfolio() {
                         <div className="flex items-center gap-3 min-w-0">
                           <UserAvatar
                             src={athlete.avatar}
+                            seed={athlete.slug}
                             alt={athlete.name}
                             size={44}
                             className="ring-2 ring-primary/20 flex-shrink-0"
@@ -546,6 +548,7 @@ export default function Portfolio() {
                             <div className="flex items-center gap-3">
                               <UserAvatar
                                 src={athlete.avatar}
+                                seed={athlete.slug}
                                 alt={athlete.name}
                                 size={40}
                                 className="ring-2 ring-primary/20"

@@ -118,7 +118,7 @@ export function useAthletesByIds(athleteIds: string[]) {
             ...(post.workout_json as Workout),
           }));
 
-        const avatarSource = athleteAvatars[row.username] ?? row.avatar_url;
+        const avatarSource = row.avatar_url ?? athleteAvatars[row.username];
 
         return {
           id: row.id,

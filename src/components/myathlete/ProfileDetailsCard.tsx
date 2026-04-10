@@ -55,8 +55,11 @@ export function ProfileDetailsCard({
 
   const displayAvatar = useMemo(() => {
     if (!avatarSource) return '';
-    return resolveAvatarUrl(avatarSource, { size: 192 });
-  }, [avatarSource]);
+    // athlete.avatar is already resolved (including data URIs) from the hook.
+    // Only re-resolve if it's a raw storage path, not a data URI.
+    if (avatarSource.startsWith('data:')) return avatarSource;
+    return resolveAvatarUrl(avatarSource, { size: 192, seed: athlete?.slug ?? athlete?.id });
+  }, [avatarSource, athlete?.slug, athlete?.id]);
 
   const avatarAsset = useMemo(() => getAvatarAsset(avatarSource ?? undefined), [avatarSource]);
 

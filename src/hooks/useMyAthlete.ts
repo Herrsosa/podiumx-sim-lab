@@ -274,7 +274,7 @@ export function useMyAthlete() {
           } as Workout;
         });
 
-      const avatarSource = athleteAvatars[profileData.username] ?? profileData.avatar_url;
+      const avatarSource = profileData.avatar_url ?? athleteAvatars[profileData.username];
 
       const athlete: Athlete = {
         id: profileData.id,

@@ -32,20 +32,33 @@ export function UserAvatar({
         .toUpperCase();
 
   const resolvedSrc = resolveAvatarUrl(src, { size, seed });
+  const isDataUri = resolvedSrc?.startsWith('data:');
 
   return (
     <Avatar
       className={cn('overflow-hidden', className)}
       style={{ width: dimension, height: dimension }}
     >
-      <AvatarImage
-        src={resolvedSrc}
-        alt={alt}
-        width={size}
-        height={size}
-        loading={loading}
-      />
-      <AvatarFallback style={{ width: dimension, height: dimension }}>{initials || '?'}</AvatarFallback>
+      {isDataUri ? (
+        <img
+          src={resolvedSrc}
+          alt={alt}
+          width={size}
+          height={size}
+          className="h-full w-full object-cover"
+        />
+      ) : (
+        <AvatarImage
+          src={resolvedSrc}
+          alt={alt}
+          width={size}
+          height={size}
+          loading={loading}
+        />
+      )}
+      {!isDataUri && (
+        <AvatarFallback style={{ width: dimension, height: dimension }}>{initials || '?'}</AvatarFallback>
+      )}
     </Avatar>
   );
 }

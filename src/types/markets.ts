@@ -1,7 +1,7 @@
 // Prediction Markets Types
 
-export type MarketStatus = 'open' | 'closed' | 'resolved' | 'cancelled';
-export type MarketType = 'winner' | 'threshold' | 'head_to_head' | 'podium' | 'station';
+export type MarketStatus = 'draft' | 'open' | 'closed' | 'locked' | 'resolving' | 'resolved' | 'cancelled';
+export type MarketType = 'binary' | 'winner' | 'threshold' | 'head_to_head' | 'podium' | 'station';
 
 export interface Market {
   id: string;
@@ -31,6 +31,7 @@ export interface MarketOutcome {
   description: string | null;
   shares: number;
   probability: number;
+  totalStake: number;
   metadata: Record<string, unknown>;
   createdAt: string;
 }
@@ -100,9 +101,48 @@ export interface LeaderboardEntry {
 export interface UserMarketPosition {
   outcomeId: string;
   outcomeLabel: string;
-  totalShares: number;
   totalStake: number;
-  avgPrice: number;
+  entryCount: number;
+}
+
+export interface PredictionWalletSummary {
+  availableBalance: number;
+  lockedPredictionBalance: number;
+  totalBalance: number;
+}
+
+export interface PredictionOutcomeV2 {
+  id: string;
+  marketId: string;
+  outcomeKey: 'yes' | 'no' | string;
+  label: string;
+  description: string | null;
+  totalStake: number;
+  sortOrder: number;
+}
+
+export interface PredictionMarketCardV2 {
+  id: string;
+  title: string;
+  question: string;
+  status: MarketStatus;
+  marketScope: 'hyrox' | 'athlete';
+  eventName: string;
+  eventCity: string | null;
+  division: string | null;
+  locksAt: string;
+  totalPool: number;
+  totalTrades: number;
+  outcomes: PredictionOutcomeV2[];
+}
+
+export interface PredictionMarketV2 extends PredictionMarketCardV2 {
+  description: string | null;
+  eventDate: string | null;
+  officialSource: string | null;
+  settlementRuleText: string | null;
+  winningOutcomeId: string | null;
+  resolvedAt: string | null;
 }
 
 // API Response types
@@ -115,6 +155,18 @@ export interface PlaceBetResponse {
   outcome_probability?: number;
   error?: string;
   balance?: number;
+}
+
+export interface PlacePredictionEntryResponse {
+  success: boolean;
+  replayed?: boolean;
+  entryId?: string | null;
+  marketId?: string | null;
+  outcomeId?: string | null;
+  stakeAmount?: number | null;
+  wallet?: PredictionWalletSummary | null;
+  error?: string;
+  errorCode?: string;
 }
 
 export interface ResolveMarketResponse {

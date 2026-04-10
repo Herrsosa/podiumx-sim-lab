@@ -1,268 +1,264 @@
-import { useState } from 'react';
-import { Flame, TrendingUp, TrendingDown, Minus, Zap, Calendar, Share2 } from 'lucide-react';
+import { useState, useCallback, useEffect } from 'react';
+import { Share2 } from 'lucide-react';
+import {
+  motion,
+  AnimatePresence,
+  useMotionValue,
+  useMotionTemplate,
+  useTransform,
+} from 'framer-motion';
 import { cn } from '@/lib/utils';
-import { useIdentityKernel, type Archetype } from '@/hooks/useIdentityKernel';
+import { useIdentityKernel } from '@/hooks/useIdentityKernel';
+import { useAthletesByIds } from '@/hooks/useAthletesByIds';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ShareAuraModal } from '@/components/share/ShareAuraModal';
 import { useMyAthlete } from '@/hooks/useMyAthlete';
+import { use3DCardTilt } from '@/hooks/use3DCardTilt';
+import { CardFront } from './CardFront';
+import {
+  GlowLayer,
+  ReflectionLayer,
+  EdgeHighlight,
+  BackgroundTexture,
+  IDENTITY_OBJECT_TONES,
+} from './CardLayers';
 
 interface AthleteIdentityCardProps {
-    className?: string;
-    athleteId?: string;
+  className?: string;
+  athleteId?: string;
+  identityLine?: string;
 }
 
-// Archetype color themes
-const ARCHETYPE_THEMES: Record<Archetype, { gradient: string; glow: string; text: string }> = {
-    'Runner': {
-        gradient: 'from-emerald-500/20 via-green-500/10 to-transparent',
-        glow: 'shadow-emerald-500/20',
-        text: 'text-emerald-400',
-    },
-    'Lifter': {
-        gradient: 'from-purple-500/20 via-violet-500/10 to-transparent',
-        glow: 'shadow-purple-500/20',
-        text: 'text-purple-400',
-    },
-    'Triathlete': {
-        gradient: 'from-cyan-500/20 via-blue-500/10 to-transparent',
-        glow: 'shadow-cyan-500/20',
-        text: 'text-cyan-400',
-    },
-    'HYROX Athlete': {
-        gradient: 'from-orange-500/20 via-amber-500/10 to-transparent',
-        glow: 'shadow-orange-500/20',
-        text: 'text-orange-400',
-    },
-    'Hybrid': {
-        gradient: 'from-yellow-500/20 via-amber-500/10 to-transparent',
-        glow: 'shadow-yellow-500/20',
-        text: 'text-yellow-400',
-    },
-    'Endurance': {
-        gradient: 'from-rose-500/20 via-pink-500/10 to-transparent',
-        glow: 'shadow-rose-500/20',
-        text: 'text-rose-400',
-    },
-    'Emerging': {
-        gradient: 'from-zinc-500/20 via-gray-500/10 to-transparent',
-        glow: 'shadow-zinc-500/20',
-        text: 'text-zinc-400',
-    },
-};
+export function AthleteIdentityCard({
+  className,
+  athleteId,
+  identityLine,
+}: AthleteIdentityCardProps) {
+  const { data: kernel, isLoading } = useIdentityKernel(athleteId);
+  const { data: myAthleteData } = useMyAthlete();
+  const { data: athleteBatch } = useAthletesByIds(athleteId ? [athleteId] : []);
+  const athlete = athleteId ? athleteBatch?.[0] : myAthleteData?.athlete;
 
-/**
- * Premium Athlete Identity Card displaying the 5-metric Identity Kernel:
- * - Aura Score (hero number)
- * - Archetype (badge)
- * - Streak (days)
- * - This Week (sessions + minutes)
- * - Progress Delta (vs last 30d)
- */
-export function AthleteIdentityCard({ className, athleteId }: AthleteIdentityCardProps) {
-    const { data: kernel, isLoading } = useIdentityKernel(athleteId);
-    const { data: myAthleteData } = useMyAthlete();
-    const athlete = myAthleteData?.athlete;
-    const [shareOpen, setShareOpen] = useState(false);
+  const [isInspecting, setIsInspecting] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
 
-    if (isLoading) {
-        return <IdentityCardSkeleton className={className} />;
-    }
+  const fallbackHover = useMotionValue(0);
+  const tilt = use3DCardTilt<HTMLDivElement>({
+    maxTilt: isInspecting ? 3.6 : 3.2,
+    springConfig: { stiffness: 78, damping: 19, mass: 1.04 },
+  });
+  const activeHover = tilt.isHovering ?? fallbackHover;
 
-    if (!kernel) {
-        return null;
-    }
+  const contentShiftX = useTransform(tilt.mouseX, [-1, 1], [-6, 6]);
+  const contentShiftY = useTransform(tilt.mouseY, [-1, 1], [-5, 5]);
+  const reflectionShiftX = useTransform(tilt.mouseX, [-1, 1], [-10, 10]);
+  const reflectionShiftY = useTransform(tilt.mouseY, [-1, 1], [-6, 6]);
+  const shadowShiftX = useTransform(tilt.mouseX, [-1, 1], [-10, 10]);
+  const shadowBlur = useTransform(activeHover, [0, 1], [72, 96]);
+  const cardScale = useTransform(activeHover, [0, 1], [1, 1.012]);
+  const cardLift = useTransform(activeHover, [0, 1], [0, -4]);
+  const underGlowOpacity = useTransform(activeHover, [0, 1], [0.34, 0.46]);
 
-    const theme = ARCHETYPE_THEMES[kernel.archetype];
-    const TrendIcon = kernel.progressDelta.direction === 'up'
-        ? TrendingUp
-        : kernel.progressDelta.direction === 'down'
-            ? TrendingDown
-            : Minus;
+  const cardShadow = useMotionTemplate`${shadowShiftX}px 38px ${shadowBlur}px rgba(0,0,0,0.72), 0 18px 32px rgba(0,0,0,0.52), 0 0 18px rgba(121,216,210,0.16), 0 0 64px rgba(121,216,210,0.08), 0 0 14px rgba(196,131,61,0.09), 0 0 48px rgba(196,131,61,0.04)`;
+  const underGlow = useMotionTemplate`radial-gradient(ellipse at center, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.44) 46%, transparent 80%)`;
 
-    return (
-        <div
-            className={cn(
-                'relative overflow-hidden rounded-2xl border border-white/10',
-                'bg-gradient-to-br from-zinc-900/90 via-zinc-900/80 to-zinc-950/90',
-                'backdrop-blur-xl p-5 h-full',
-                `shadow-lg ${theme.glow}`,
-                className
-            )}
-            data-tour="aura-score"
+  useEffect(() => {
+    if (!isInspecting) return;
+
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setIsInspecting(false);
+      }
+    };
+
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [isInspecting]);
+
+  const handleDoubleClick = useCallback((event: React.MouseEvent) => {
+    event.stopPropagation();
+    setIsInspecting((prev) => !prev);
+  }, []);
+
+  const handleShareClick = useCallback((event: React.MouseEvent) => {
+    event.stopPropagation();
+    setShareOpen(true);
+  }, []);
+
+  if (isLoading) {
+    return <IdentityCardSkeleton className={className} />;
+  }
+
+  if (!kernel) {
+    return null;
+  }
+
+  return (
+    <>
+      <AnimatePresence>
+        {isInspecting ? (
+          <motion.div
+            className="fixed inset-0 z-50 bg-black/[0.8] backdrop-blur-2xl"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setIsInspecting(false)}
+          />
+        ) : null}
+      </AnimatePresence>
+
+      <div
+        className={cn(
+          'relative',
+          isInspecting && 'fixed inset-0 z-50 flex items-center justify-center px-6 pointer-events-none',
+          className
+        )}
+        data-tour="aura-score"
+      >
+        <button
+          type="button"
+          onClick={handleShareClick}
+          className="absolute right-3 top-3 z-40 rounded-full border border-white/[0.07] bg-black/[0.42] p-2 text-white/[0.42] backdrop-blur-md transition-colors hover:bg-black/[0.5] hover:text-white/[0.68]"
+          title="Share Aura Score"
         >
-            {/* Background gradient orb */}
-            <div className={cn(
-                'absolute -top-10 -right-10 w-40 h-40 rounded-full blur-3xl opacity-60',
-                `bg-gradient-to-br ${theme.gradient}`
-            )} />
+          <Share2 className="h-3.5 w-3.5" />
+        </button>
 
-            {/* Share button */}
-            <button
-                onClick={() => setShareOpen(true)}
-                className="absolute top-3 right-3 p-2 rounded-full bg-white/5 hover:bg-white/10 transition-colors border border-white/10 z-20"
-                title="Share Aura Score"
+        <motion.div
+          ref={tilt.ref}
+          className={cn('relative w-full', isInspecting && 'pointer-events-auto max-w-[392px]')}
+          style={{
+            perspective: 1200,
+            width: isInspecting ? 'min(392px, 100%)' : '100%',
+          }}
+          onDoubleClick={handleDoubleClick}
+          onMouseMove={tilt.handleMouseMove}
+          onMouseLeave={tilt.handleMouseLeave}
+          onTouchMove={tilt.handleTouchMove}
+          onTouchEnd={tilt.handleTouchEnd}
+        >
+          <GlowLayer archetype={kernel.archetype} isHovering={activeHover} />
+
+          <motion.div
+            className="absolute inset-x-[10%] bottom-[-4%] -z-10 h-24 rounded-full blur-[38px]"
+            style={{
+              x: shadowShiftX,
+              opacity: underGlowOpacity,
+              backgroundImage: underGlow,
+            }}
+          />
+
+          <motion.div
+            className="relative"
+            style={{
+              transformStyle: 'preserve-3d',
+              rotateX: tilt.rotateX,
+              rotateY: tilt.rotateY,
+              scale: cardScale,
+              y: cardLift,
+            }}
+          >
+            <div
+              className="relative rounded-[2.4rem] p-[12px]"
+              style={{
+                background: [
+                  'linear-gradient(145deg, rgba(52,58,62,0.98) 0%, rgba(22,25,28,0.99) 34%, rgba(18,20,22,0.995) 74%, rgba(36,31,26,0.98) 100%)',
+                  'radial-gradient(circle at 10% 12%, rgba(121,216,210,0.18) 0%, transparent 24%)',
+                  'radial-gradient(circle at 92% 92%, rgba(196,131,61,0.1) 0%, transparent 20%)',
+                ].join(', '),
+                boxShadow: cardShadow,
+              }}
             >
-                <Share2 className="w-4 h-4 text-white/70" />
-            </button>
+              <div
+                className="absolute inset-[1px] rounded-[2.24rem]"
+                style={{
+                  background:
+                    'linear-gradient(135deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.013) 12%, transparent 30%, rgba(196,131,61,0.03) 82%, rgba(255,255,255,0.008) 100%)',
+                }}
+              />
 
-            {/* Share Modal */}
-            {athlete && (
-                <ShareAuraModal
-                    open={shareOpen}
-                    onOpenChange={setShareOpen}
-                    kernel={kernel}
-                    athleteName={athlete.name}
-                    athleteHandle={athlete.slug || ''}
-                    athleteAvatar={athlete.avatar}
-                    athleteProfileUrl={`${window.location.origin}/athlete/${athlete.id}`}
+              <div
+                className="relative h-[532px] overflow-hidden rounded-[2.05rem]"
+                style={{
+                  background: [
+                    'linear-gradient(180deg, #15181c 0%, #0c0e12 35%, #06070a 100%)',
+                    'radial-gradient(circle at 14% 10%, rgba(121,216,210,0.085) 0%, transparent 26%)',
+                    'radial-gradient(circle at 90% 92%, rgba(196,131,61,0.05) 0%, transparent 20%)',
+                  ].join(', '),
+                }}
+              >
+                <div
+                  className="absolute inset-0 rounded-[2.05rem]"
+                  style={{
+                    boxShadow: [
+                      'inset 0 1px 0 rgba(255,255,255,0.055)',
+                      'inset 0 16px 30px rgba(255,255,255,0.012)',
+                      'inset 0 -28px 52px rgba(0,0,0,0.64)',
+                      'inset 10px 0 26px rgba(121,216,210,0.03)',
+                      'inset -10px -8px 24px rgba(196,131,61,0.02)',
+                    ].join(', '),
+                  }}
                 />
-            )}
 
-            {/* Content */}
-            <div className="relative z-10">
-                {/* Top row: Aura Score + Archetype Badge */}
-                <div className="flex items-start justify-between mb-4">
-                    {/* Aura Score */}
-                    <div>
-                        <div className="text-xs text-zinc-500 uppercase tracking-wider mb-1 flex items-center gap-1">
-                            <Zap className="w-3 h-3" />
-                            Aura Score
-                        </div>
-                        <div className="flex items-baseline gap-2">
-                            <span className="text-5xl font-bold text-white tracking-tight">
-                                {kernel.auraScore}
-                            </span>
-                            {kernel.auraChange.delta !== 0 && (
-                                <span className={cn(
-                                    'text-sm font-medium',
-                                    kernel.auraChange.delta > 0 ? 'text-emerald-400' : 'text-rose-400'
-                                )}>
-                                    {kernel.auraChange.delta > 0 ? '+' : ''}{kernel.auraChange.delta}
-                                </span>
-                            )}
-                        </div>
-                        <p className="text-xs text-zinc-500 mt-1 max-w-[180px]">
-                            {kernel.auraChange.reason}
-                        </p>
-                    </div>
+                <BackgroundTexture />
+                <EdgeHighlight archetype={kernel.archetype} isHovering={activeHover} />
 
-                    {/* Archetype Badge */}
-                    <div className={cn(
-                        'flex items-center gap-1.5 px-3 py-1.5 rounded-full',
-                        'bg-white/5 border border-white/10',
-                        theme.text
-                    )}>
-                        <span className="text-base">{kernel.archetypeIcon}</span>
-                        <span className="text-xs font-medium uppercase tracking-wide">
-                            {kernel.archetype}
-                        </span>
-                    </div>
-                </div>
+                <motion.div
+                  className="relative z-20 h-full"
+                  style={{
+                    x: contentShiftX,
+                    y: contentShiftY,
+                    transformStyle: 'preserve-3d',
+                  }}
+                >
+                  <CardFront
+                    kernel={kernel}
+                    identityLine={identityLine}
+                    athleteName={athlete?.name}
+                    athleteHandle={athlete?.slug}
+                    athleteAvatar={athlete?.avatar}
+                    isHovering={activeHover}
+                  />
+                </motion.div>
 
-                {/* Divider */}
-                <div className="h-px bg-gradient-to-r from-transparent via-white/10 to-transparent mb-4" />
-
-                {/* Bottom row: Streak, This Week, Progress */}
-                <div className="grid grid-cols-3 gap-4">
-                    {/* Streak */}
-                    <div className="text-center">
-                        <div className="flex items-center justify-center gap-1 mb-1">
-                            <Flame className="w-4 h-4 text-orange-400" />
-                            <span className="text-lg font-semibold text-white">{kernel.streak}d</span>
-                        </div>
-                        <span className="text-[10px] text-zinc-500 uppercase tracking-wider">Streak</span>
-                    </div>
-
-                    {/* This Week */}
-                    <div className="text-center border-x border-white/5">
-                        <div className="flex items-center justify-center gap-1 mb-1">
-                            <Calendar className="w-4 h-4 text-cyan-400" />
-                            <span className="text-lg font-semibold text-white">
-                                {kernel.thisWeek.sessions}
-                            </span>
-                        </div>
-                        <span className="text-[10px] text-zinc-500 uppercase tracking-wider">
-                            This week • {Math.round(kernel.thisWeek.minutes / 60)}h
-                        </span>
-                    </div>
-
-                    {/* Progress Delta */}
-                    <div className="text-center">
-                        <div className="flex items-center justify-center gap-1 mb-1">
-                            <TrendIcon className={cn(
-                                'w-4 h-4',
-                                kernel.progressDelta.direction === 'up' ? 'text-emerald-400' :
-                                    kernel.progressDelta.direction === 'down' ? 'text-rose-400' : 'text-zinc-400'
-                            )} />
-                            <span className={cn(
-                                'text-lg font-semibold',
-                                kernel.progressDelta.direction === 'up' ? 'text-emerald-400' :
-                                    kernel.progressDelta.direction === 'down' ? 'text-rose-400' : 'text-white'
-                            )}>
-                                {kernel.progressDelta.direction === 'flat' ? '—' : `${kernel.progressDelta.percent}%`}
-                            </span>
-                        </div>
-                        <span className="text-[10px] text-zinc-500 uppercase tracking-wider">vs 30d</span>
-                    </div>
-                </div>
-
-                {/* Score Breakdown Section */}
-                <div className="mt-4 pt-4 border-t border-white/5">
-                    <div className="text-[10px] text-zinc-500 uppercase tracking-wider mb-2 text-center">
-                        Score Breakdown
-                    </div>
-                    <div className="grid grid-cols-3 gap-2 text-[10px]">
-                        <div className="flex flex-col items-center p-2 rounded-lg bg-white/5">
-                            <span className="text-zinc-400">📅 Discipline</span>
-                            <span className="text-emerald-400 font-bold">{kernel.scoreBreakdown.discipline.score}</span>
-                            <span className="text-zinc-600 text-center leading-tight">
-                                {kernel.scoreBreakdown.discipline.detail}
-                            </span>
-                        </div>
-                        <div className="flex flex-col items-center p-2 rounded-lg bg-white/5">
-                            <span className="text-zinc-400">🔥 Momentum</span>
-                            <span className="text-orange-400 font-bold">{kernel.scoreBreakdown.momentum.score}</span>
-                            <span className="text-zinc-600 text-center leading-tight">
-                                {kernel.scoreBreakdown.momentum.detail}
-                            </span>
-                        </div>
-                        <div className="flex flex-col items-center p-2 rounded-lg bg-white/5">
-                            <span className="text-zinc-400">💪 Output</span>
-                            <span className="text-purple-400 font-bold">{kernel.scoreBreakdown.output.score}</span>
-                            <span className="text-zinc-600 text-center leading-tight">
-                                {kernel.scoreBreakdown.output.detail}
-                            </span>
-                        </div>
-                    </div>
-                </div>
+                <motion.div style={{ x: reflectionShiftX, y: reflectionShiftY }}>
+                  <ReflectionLayer
+                    glowX={tilt.glowX}
+                    glowY={tilt.glowY}
+                    isHovering={activeHover}
+                  />
+                </motion.div>
+              </div>
             </div>
-        </div>
-    );
+          </motion.div>
+        </motion.div>
+      </div>
+
+      <ShareAuraModal open={shareOpen} onOpenChange={setShareOpen} athleteId={athleteId} />
+    </>
+  );
 }
 
 function IdentityCardSkeleton({ className }: { className?: string }) {
-    return (
-        <div className={cn(
-            'rounded-2xl border border-white/10 bg-zinc-900/80 p-5',
-            className
-        )}>
-            <div className="flex items-start justify-between mb-4">
-                <div>
-                    <Skeleton className="h-3 w-16 mb-2" />
-                    <Skeleton className="h-12 w-20 mb-1" />
-                    <Skeleton className="h-3 w-32" />
-                </div>
-                <Skeleton className="h-8 w-24 rounded-full" />
-            </div>
-            <div className="h-px bg-white/5 mb-4" />
-            <div className="grid grid-cols-3 gap-4">
-                {[1, 2, 3].map(i => (
-                    <div key={i} className="flex flex-col items-center">
-                        <Skeleton className="h-6 w-10 mb-1" />
-                        <Skeleton className="h-2 w-12" />
-                    </div>
-                ))}
-            </div>
+  return (
+    <div className={cn('relative w-full', className)}>
+      <div
+        className="rounded-[2.4rem] p-[12px]"
+        style={{
+          background:
+            'linear-gradient(145deg, rgba(84,101,102,0.9) 0%, rgba(18,21,24,0.98) 42%, rgba(89,64,40,0.9) 100%)',
+          boxShadow: '0 42px 82px rgba(0,0,0,0.52)',
+        }}
+      >
+        <div
+          className="overflow-hidden rounded-[2.05rem] border border-white/[0.04]"
+          style={{
+            background: `linear-gradient(180deg, ${IDENTITY_OBJECT_TONES.surface} 0%, ${IDENTITY_OBJECT_TONES.base} 100%)`,
+          }}
+        >
+          <Skeleton className="h-[532px] w-full rounded-[2.05rem]" />
         </div>
-    );
+      </div>
+    </div>
+  );
 }

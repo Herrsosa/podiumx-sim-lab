@@ -26,14 +26,21 @@ function transformMarket(row: any): Market {
   };
 }
 
-function transformOutcome(row: any): MarketOutcome {
+function toOutcomeProbability(totalStake: number, totalPool: number) {
+  if (totalPool <= 0) return 0;
+  return totalStake / totalPool;
+}
+
+function transformOutcome(row: any, totalPool: number): MarketOutcome {
+  const totalStake = Number(row.total_stake ?? 0);
   return {
     id: row.id,
     marketId: row.market_id,
     label: row.label,
     description: row.description,
-    shares: row.shares,
-    probability: row.probability,
+    shares: totalStake,
+    probability: toOutcomeProbability(totalStake, Number(totalPool ?? 0)),
+    totalStake,
     metadata: row.metadata || {},
     createdAt: row.created_at,
   };
@@ -44,11 +51,10 @@ export function useMarkets(status?: MarketStatus | MarketStatus[]) {
   return useQuery({
     queryKey: ['markets', status],
     queryFn: async (): Promise<Market[]> => {
-      console.log('[useMarkets] Fetching markets with status:', status);
-
-      let query = supabase
+      let query = (supabase as any)
         .from('prediction_markets')
         .select('*')
+        .eq('legacy_model', 'binary_wallet')
         .order('closes_at', { ascending: true });
 
       if (status) {
@@ -60,8 +66,6 @@ export function useMarkets(status?: MarketStatus | MarketStatus[]) {
       }
 
       const { data, error } = await query;
-
-      console.log('[useMarkets] Result:', { data, error });
 
       if (error) throw error;
       return (data || []).map(transformMarket);
@@ -77,26 +81,28 @@ export function useMarket(marketId: string | undefined) {
     queryFn: async (): Promise<MarketWithOutcomes | null> => {
       if (!marketId) return null;
 
-      const { data: marketData, error: marketError } = await supabase
+      const { data: marketData, error: marketError } = await (supabase as any)
         .from('prediction_markets')
         .select('*')
+        .eq('legacy_model', 'binary_wallet')
         .eq('id', marketId)
         .single();
 
       if (marketError) throw marketError;
       if (!marketData) return null;
 
-      const { data: outcomesData, error: outcomesError } = await supabase
+      const { data: outcomesData, error: outcomesError } = await (supabase as any)
         .from('market_outcomes')
         .select('*')
         .eq('market_id', marketId)
-        .order('probability', { ascending: false });
+        .order('sort_order', { ascending: true });
 
       if (outcomesError) throw outcomesError;
 
+      const market = transformMarket(marketData);
       return {
-        ...transformMarket(marketData),
-        outcomes: (outcomesData || []).map(transformOutcome),
+        ...market,
+        outcomes: (outcomesData || []).map((row: any) => transformOutcome(row, market.totalPool)),
       };
     },
     enabled: !!marketId,
@@ -109,15 +115,16 @@ export function useMarketCards(status?: MarketStatus | MarketStatus[]) {
   return useQuery({
     queryKey: ['market-cards', status],
     queryFn: async (): Promise<MarketCard[]> => {
-      let query = supabase
+      let query = (supabase as any)
         .from('prediction_markets')
         .select(`
           *,
           market_outcomes (
             label,
-            probability
+            total_stake
           )
         `)
+        .eq('legacy_model', 'binary_wallet')
         .order('closes_at', { ascending: true });
 
       if (status) {
@@ -143,11 +150,11 @@ export function useMarketCards(status?: MarketStatus | MarketStatus[]) {
         totalPool: row.total_pool,
         totalTrades: row.total_trades,
         topOutcomes: (row.market_outcomes || [])
-          .sort((a: any, b: any) => b.probability - a.probability)
+          .sort((a: any, b: any) => Number(b.total_stake ?? 0) - Number(a.total_stake ?? 0))
           .slice(0, 3)
           .map((o: any) => ({
             label: o.label,
-            probability: o.probability,
+            probability: toOutcomeProbability(Number(o.total_stake ?? 0), Number(row.total_pool ?? 0)),
           })),
       }));
     },
@@ -162,14 +169,20 @@ export function useMarketOutcomes(marketId: string | undefined) {
     queryFn: async (): Promise<MarketOutcome[]> => {
       if (!marketId) return [];
 
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('market_outcomes')
         .select('*')
         .eq('market_id', marketId)
-        .order('probability', { ascending: false });
+        .order('sort_order', { ascending: true });
 
       if (error) throw error;
-      return (data || []).map(transformOutcome);
+      const { data: marketData } = await (supabase as any)
+        .from('prediction_markets')
+        .select('total_pool')
+        .eq('id', marketId)
+        .maybeSingle();
+
+      return (data || []).map((row: any) => transformOutcome(row, Number(marketData?.total_pool ?? 0)));
     },
     enabled: !!marketId,
     staleTime: 10 * 1000,
@@ -181,15 +194,16 @@ export function useTrendingMarkets(limit: number = 4) {
   return useQuery({
     queryKey: ['trending-markets', limit],
     queryFn: async (): Promise<MarketCard[]> => {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('prediction_markets')
         .select(`
           *,
           market_outcomes (
             label,
-            probability
+            total_stake
           )
         `)
+        .eq('legacy_model', 'binary_wallet')
         .eq('status', 'open')
         .order('total_trades', { ascending: false })
         .limit(limit);
@@ -207,11 +221,11 @@ export function useTrendingMarkets(limit: number = 4) {
         totalPool: row.total_pool,
         totalTrades: row.total_trades,
         topOutcomes: (row.market_outcomes || [])
-          .sort((a: any, b: any) => b.probability - a.probability)
+          .sort((a: any, b: any) => Number(b.total_stake ?? 0) - Number(a.total_stake ?? 0))
           .slice(0, 3)
           .map((o: any) => ({
             label: o.label,
-            probability: o.probability,
+            probability: toOutcomeProbability(Number(o.total_stake ?? 0), Number(row.total_pool ?? 0)),
           })),
       }));
     },
@@ -224,16 +238,17 @@ export function useResolvedMarkets(limit: number = 5) {
   return useQuery({
     queryKey: ['resolved-markets', limit],
     queryFn: async (): Promise<MarketCard[]> => {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('prediction_markets')
         .select(`
           *,
           market_outcomes (
             id,
             label,
-            probability
+            total_stake
           )
         `)
+        .eq('legacy_model', 'binary_wallet')
         .eq('status', 'resolved')
         .order('resolved_at', { ascending: false })
         .limit(limit);
@@ -254,7 +269,7 @@ export function useResolvedMarkets(limit: number = 5) {
           .filter((o: any) => o.id === row.winning_outcome_id)
           .map((o: any) => ({
             label: o.label,
-            probability: o.probability,
+            probability: toOutcomeProbability(Number(o.total_stake ?? 0), Number(row.total_pool ?? 0)),
           })),
       }));
     },

@@ -50,6 +50,7 @@ import type { WorkoutMutationResult } from '@/hooks/useWorkouts';
 import { AthleteIdentityCard } from '@/components/identity';
 import { LaunchTokenPrompt } from '@/components/LaunchTokenPrompt';
 import { Skeleton } from '@/components/ui/skeleton';
+import { resolveAvatarUrl } from '@/utils/avatar';
 const LockerSettings = lazy(() => import('@/components/myathlete/LockerSettings').then(m => ({ default: m.LockerSettings })));
 
 export default function MyAthletePage() {
@@ -252,7 +253,7 @@ export default function MyAthletePage() {
       if (newAvatarFile) {
         // If there was an old avatar, delete it
         if (myAthletePage?.athlete?.avatar && myAthletePage.athlete.avatar.includes('avatars')) {
-          const oldImageKey = myAthletePage.athlete.avatar.split('/avatars/').pop();
+          const oldImageKey = myAthletePage.athlete.avatar.split('/avatars/').pop()?.split('?')[0];
           if (oldImageKey) {
             await supabase.storage.from('avatars').remove([oldImageKey]);
           }
@@ -288,9 +289,34 @@ export default function MyAthletePage() {
 
       if (error) throw error;
 
+      const resolvedAvatar = resolveAvatarUrl(avatarUrl, {
+        size: 192,
+        seed: myAthletePage?.athlete?.slug ?? user.id,
+      });
+
+      updateMyAthleteCache((prev) => ({
+        ...prev,
+        name: editedProfile.displayName,
+        sport: editedProfile.sport,
+        bio: editedProfile.bio,
+        avatar: resolvedAvatar,
+        socials: {
+          ...prev.socials,
+          instagram: editedProfile.socials.instagram || undefined,
+          strava: editedProfile.socials.strava || undefined,
+        },
+      }));
+
       // After saving, reset the new avatar file state
       setNewAvatarFile(null);
-      queryClient.invalidateQueries({ queryKey: ['my-athlete', user?.id] });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['my-athlete', user.id] }),
+        queryClient.invalidateQueries({ queryKey: ['athlete'] }),
+        queryClient.invalidateQueries({ queryKey: ['athletes-by-ids'] }),
+        queryClient.invalidateQueries({ queryKey: ['athletes-batch'] }),
+        queryClient.invalidateQueries({ queryKey: ['athletes-paginated'] }),
+        queryClient.invalidateQueries({ queryKey: ['proof-of-sweat-feed'] }),
+      ]);
 
       setIsEditing(false);
       toast.success('Profile updated!');

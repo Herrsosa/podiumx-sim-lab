@@ -44,7 +44,10 @@ export default function Navigation() {
     }
   };
 
-  const isActive = (path: string) => location.pathname === path;
+  const isActive = (path: string) => {
+    if (path === '/predictions') return location.pathname.startsWith('/predictions');
+    return location.pathname === path;
+  };
 
   const prefetchMarketplace = useCallback(() => {
     void import('../pages/Marketplace');
@@ -52,6 +55,10 @@ export default function Navigation() {
 
   const prefetchFeed = useCallback(() => {
     void import('../pages/Feed');
+  }, []);
+
+  const prefetchPredictions = useCallback(() => {
+    void import('../pages/Predictions');
   }, []);
 
   const prefetchPortfolio = useCallback(() => {
@@ -142,6 +149,21 @@ export default function Navigation() {
               >
                 Feed
                 {isActive('/feed') && (
+                  <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-full" />
+                )}
+              </Button>
+            </Link>
+            <Link to="/predictions" onMouseEnter={prefetchPredictions}>
+              <Button
+                variant="ghost"
+                size="sm"
+                className={cn(
+                  "font-medium transition-all px-3 h-8 relative",
+                  isActive('/predictions') && "text-primary"
+                )}
+              >
+                Predictions
+                {isActive('/predictions') && (
                   <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-full" />
                 )}
               </Button>

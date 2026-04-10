@@ -3,7 +3,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useLocation, useParams } from "react-router-dom";
 import { useAppStore } from "@/store/useAppStore";
 import Navigation from "@/components/Navigation";
 import Landing from "./pages/Landing";
@@ -40,8 +40,9 @@ const LearnPage = lazy(() => import("./pages/Learn"));
 const WatchlistPage = lazy(() => import("./pages/Watchlist"));
 const Privacy = lazy(() => import("./pages/Privacy"));
 const Rewards = lazy(() => import("./pages/Rewards"));
-const Markets = lazy(() => import("./pages/Markets"));
-const MarketDetail = lazy(() => import("./pages/MarketDetail"));
+const Predictions = lazy(() => import("./pages/Predictions"));
+const PredictionDetail = lazy(() => import("./pages/PredictionDetail"));
+const InternalCreatePredictionMarket = lazy(() => import("./pages/InternalCreatePredictionMarket"));
 
 import { TourPromptModal } from "@/components/TourPromptModal";
 
@@ -106,6 +107,12 @@ function RouteGuard({ requireAuth = false, children }: RouteGuardProps) {
   }
 
   return <>{children}</>;
+}
+
+function LegacyMarketDetailRedirect() {
+  const { id } = useParams<{ id: string }>();
+
+  return <Navigate to={id ? `/predictions/${id}` : "/predictions"} replace />;
 }
 
 function AppContent() {
@@ -304,15 +311,15 @@ function AppContent() {
             </Suspense>
           </RouteGuard>
         } />
-        <Route path="/markets" element={
+        <Route path="/predictions" element={
           <RouteGuard>
             <Navigation />
             <Suspense fallback={<MarketsSkeleton />}>
-              <Markets />
+              <Predictions />
             </Suspense>
           </RouteGuard>
         } />
-        <Route path="/markets/:id" element={
+        <Route path="/predictions/:id" element={
           <RouteGuard>
             <Navigation />
             <Suspense fallback={
@@ -320,10 +327,24 @@ function AppContent() {
                 <LoadingSpinner size="lg" />
               </div>
             }>
-              <MarketDetail />
+              <PredictionDetail />
             </Suspense>
           </RouteGuard>
         } />
+        <Route path="/internal/predictions/create" element={
+          <RouteGuard requireAuth>
+            <Navigation />
+            <Suspense fallback={
+              <div className="min-h-screen flex items-center justify-center">
+                <LoadingSpinner size="lg" />
+              </div>
+            }>
+              <InternalCreatePredictionMarket />
+            </Suspense>
+          </RouteGuard>
+        } />
+        <Route path="/markets" element={<Navigate to="/predictions" replace />} />
+        <Route path="/markets/:id" element={<LegacyMarketDetailRedirect />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
       <TourPromptModal />

@@ -1,4 +1,4 @@
-import { forwardRef, type ImgHTMLAttributes, useState } from 'react';
+import { forwardRef, type ImgHTMLAttributes, useState, useCallback, useEffect, useRef as useReactRef } from 'react';
 import { cn } from '@/lib/utils';
 
 interface OptimizedImageProps extends ImgHTMLAttributes<HTMLImageElement> {
@@ -11,10 +11,31 @@ export const OptimizedImage = forwardRef<HTMLImageElement, OptimizedImageProps>(
   ({ webpSrc, eager = false, loading, blurDataURL, className, ...rest }, ref) => {
     const [isLoaded, setIsLoaded] = useState(false);
     const resolvedLoading = eager ? 'eager' : loading ?? 'lazy';
-    
+    const internalRef = useReactRef<HTMLImageElement | null>(null);
+
+    // Check if the image is already complete (cached / data URI) after mount
+    useEffect(() => {
+      if (internalRef.current?.complete && !isLoaded) {
+        setIsLoaded(true);
+      }
+    });
+
+    const handleRef = useCallback(
+      (el: HTMLImageElement | null) => {
+        internalRef.current = el;
+        if (el?.complete) {
+          setIsLoaded(true);
+        }
+        if (typeof ref === 'function') ref(el);
+        else if (ref) ref.current = el;
+      },
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+      [ref],
+    );
+
     const image = (
       <img
-        ref={ref}
+        ref={handleRef}
         loading={resolvedLoading}
         onLoad={() => setIsLoaded(true)}
         className={cn(

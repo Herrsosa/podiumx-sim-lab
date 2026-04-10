@@ -169,7 +169,7 @@ export function useAthlete(slug: string) {
           ...(p.workout_json as Workout),
         }));
 
-      const avatarSource = athleteAvatars[profile.username] ?? profile.avatar_url;
+      const avatarSource = profile.avatar_url ?? athleteAvatars[profile.username];
 
       const athlete: Athlete = {
         id: profile.id,

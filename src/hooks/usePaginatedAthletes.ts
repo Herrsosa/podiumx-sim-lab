@@ -75,7 +75,7 @@ export function usePaginatedAthletes() {
           ? onchainPrice
           : priceAt(row.supply, { a: row.a, b: row.b, c: row.c });
         const marketCap = price * row.supply;
-        const avatarSource = athleteAvatars[row.username] ?? row.avatar_url;
+        const avatarSource = row.avatar_url ?? athleteAvatars[row.username];
 
         return {
           id: row.id,

@@ -65,11 +65,11 @@ export const CompactAthleteCard = memo(({ athlete, onClick }: CompactAthleteCard
     return (
         <Card
             onClick={onClick}
-            className="glass-card overflow-hidden cursor-pointer transition-all duration-200 active:scale-[0.98] hover:bg-muted/50"
+            className="border-white/10 bg-zinc-950/80 backdrop-blur-xl overflow-hidden cursor-pointer transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] hover:bg-zinc-900/90 shadow-lg"
         >
             <CardContent className="p-0">
                 {/* Square Photo */}
-                <div className="relative aspect-square overflow-hidden bg-muted">
+                <div className="relative aspect-square overflow-hidden bg-zinc-900">
                     {hasAvatar ? (
                         <OptimizedImage
                             src={avatarUrl}

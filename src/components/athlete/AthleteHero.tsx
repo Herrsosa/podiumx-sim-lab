@@ -177,7 +177,7 @@ export function AthleteHero({ athlete, auraCard }: AthleteHeroProps) {
                         transition={{ duration: 0.5, delay: 0.3 }}
                         className="hidden md:flex md:items-stretch"
                     >
-                        <div className="w-full min-w-[280px] max-w-[320px]">
+                        <div className="w-full min-w-[320px] max-w-[360px]">
                             {auraCard}
                         </div>
                     </motion.div>
